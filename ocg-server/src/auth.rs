@@ -553,6 +553,7 @@ pub(crate) struct PasswordCredentials {
 // User types and implementations.
 
 /// Represents a user in the system.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub(crate) struct User {
     /// Unique user ID.

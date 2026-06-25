@@ -241,6 +241,7 @@ pub(crate) async fn log_out(
 }
 
 /// Handler that completes the oauth2 authorization process.
+#[allow(clippy::too_many_arguments)]
 #[instrument(skip_all)]
 pub(crate) async fn oauth2_callback(
     mut auth_session: AuthSession,
@@ -292,6 +293,7 @@ pub(crate) async fn oauth2_redirect(
 }
 
 /// Handler that completes the oidc authorization process.
+#[allow(clippy::too_many_arguments)]
 #[instrument(skip_all)]
 pub(crate) async fn oidc_callback(
     mut auth_session: AuthSession,
@@ -518,6 +520,7 @@ impl CallbackAuth for AuthSession {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn oauth2_callback_with_auth<A, F>(
     auth: &mut A,
     session: Session,
@@ -616,6 +619,7 @@ async fn try_auto_join_linkedin_baku_chapter(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn oidc_callback_with_auth<A, F>(
     auth: &mut A,
     session: Session,
