@@ -71,7 +71,7 @@
         {{ form_fields::image_field(label = "Image", name = "image_url", image_kind = "banner", legend = "Optional spotlight image shown on the group page and spotlight cards.", field_class = "col-span-full") -}}
         <label class="block">
           <span class="label">Link URL</span>
-          <input name="link_url" class="input" placeholder="https://...">
+          <input name="link_url" class="input" type="url" placeholder="https://...">
         </label>
       </div>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -176,6 +176,7 @@
               <span class="label">Link URL</span>
               <input name="link_url"
                      class="input"
+                     type="url"
                      value="{{ spotlight.link_url.as_deref().unwrap_or("") }}">
             </label>
           </div>
