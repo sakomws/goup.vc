@@ -114,11 +114,15 @@
           {% endif -%}
           {# End social network links -#}
 
-          <div class="text-center mt-6 lg:mt-8">
+          <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row lg:mt-8">
             <a href="/explore?alliance[0]={{ alliance.name }}"
                hx-boost="true"
                hx-target="body"
                class="btn-primary-anchor text-md lg:text-lg px-8 font-semibold">Explore alliance groups and events</a>
+            <a href="/{{ alliance.name }}/members"
+               hx-boost="true"
+               hx-target="body"
+               class="btn-secondary-anchor text-md lg:text-lg px-8 font-semibold">Member directory</a>
           </div>
         </div>
         {# End about this alliance -#}

@@ -73,6 +73,14 @@ pub struct GroupMember {
     pub linkedin_url: Option<String>,
     /// Whether the user has a connected `LinkedIn` provider.
     pub linkedin_connected: bool,
+    /// Whether this member offers mentorship services for businesses.
+    #[serde(default)]
+    pub mentorship_businesses: bool,
+    /// Whether this member offers mentorship services for individuals.
+    #[serde(default)]
+    pub mentorship_individuals: bool,
+    /// Optional mentorship description.
+    pub mentorship_note: Option<String>,
     /// Full name.
     pub name: Option<String>,
     /// URL to user's avatar.

@@ -60,6 +60,14 @@ pub(crate) struct PublicUserProfile {
     pub github_url: Option<String>,
     /// `LinkedIn` profile URL.
     pub linkedin_url: Option<String>,
+    /// Whether this member offers mentorship services for businesses.
+    #[serde(default)]
+    pub mentorship_businesses: bool,
+    /// Whether this member offers mentorship services for individuals.
+    #[serde(default)]
+    pub mentorship_individuals: bool,
+    /// Optional description of this member's mentorship offering.
+    pub mentorship_note: Option<String>,
     /// Full name.
     pub name: Option<String>,
     /// URL to user's avatar.

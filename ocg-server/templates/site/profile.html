@@ -73,6 +73,67 @@
           <p class="mt-8 max-w-3xl text-base leading-7 text-stone-700">{{ bio }}</p>
         {% endif -%}
 
+        {% if profile.mentorship_individuals || profile.mentorship_businesses -%}
+          <section id="mentorship"
+                   class="mt-8 rounded-3xl border border-primary-100 bg-primary-50/70 p-5">
+            <div class="text-sm font-semibold uppercase tracking-wide text-primary-700">Mentorship services</div>
+            <div class="mt-4 flex flex-wrap gap-2">
+              {% if profile.mentorship_individuals -%}
+                <span class="rounded-full bg-white px-3 py-1 text-sm font-semibold text-primary-700 ring-1 ring-inset ring-primary-100">
+                  Individuals
+                </span>
+              {% endif -%}
+              {% if profile.mentorship_businesses -%}
+                <span class="rounded-full bg-white px-3 py-1 text-sm font-semibold text-primary-700 ring-1 ring-inset ring-primary-100">
+                  Businesses
+                </span>
+              {% endif -%}
+            </div>
+            {% if let Some(mentorship_note) = &profile.mentorship_note -%}
+              <p class="mt-4 text-sm/6 text-stone-700">{{ mentorship_note }}</p>
+            {% endif -%}
+            {% if mentorship_request_sent -%}
+              <div class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">
+                Mentorship request sent. The member will receive your details by email.
+              </div>
+            {% endif -%}
+            <form method="post"
+                  action="/profiles/{{ profile.username }}/mentorship-requests"
+                  class="mt-5 grid gap-4 rounded-2xl border border-primary-100 bg-white/80 p-4">
+              <div class="grid gap-3 sm:grid-cols-[180px_1fr]">
+                <label class="form-label" for="mentorship-audience-type">Request type</label>
+                <select id="mentorship-audience-type"
+                        name="audience_type"
+                        class="select-primary"
+                        required>
+                  {% if profile.mentorship_individuals -%}
+                    <option value="individual">Individual mentorship</option>
+                  {% endif -%}
+                  {% if profile.mentorship_businesses -%}
+                    <option value="business">Business mentorship</option>
+                  {% endif -%}
+                </select>
+              </div>
+              <div class="grid gap-3">
+                <label class="form-label" for="mentorship-message">Request details</label>
+                <textarea id="mentorship-message"
+                          name="message"
+                          rows="4"
+                          maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }}"
+                          class="input-primary resize-y"
+                          placeholder="Share what you need help with, timing, and the best way to follow up."
+                          required></textarea>
+                <p class="form-legend">
+                  We track requests and email your details to the member. You may be asked to log in first.
+                </p>
+              </div>
+              <div class="flex justify-end">
+                <button class="btn-primary" type="submit">Request mentorship</button>
+              </div>
+            </form>
+          </section>
+        {% endif -%}
+
         <div class="mt-8 border-t border-stone-200 pt-6">
           <div class="text-sm font-semibold uppercase tracking-wide text-stone-500">Connect</div>
           <div class="mt-4 flex flex-wrap gap-3">

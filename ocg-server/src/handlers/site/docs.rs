@@ -77,9 +77,25 @@ async fn render_doc(
 }
 
 fn render_markdown(markdown: &str, doc_path: &str) -> String {
-    let html = markdown::to_html_with_options(markdown, &markdown::Options::gfm())
+    let markdown = strip_html_comments(markdown);
+    let html = markdown::to_html_with_options(&markdown, &markdown::Options::gfm())
         .unwrap_or_else(|_| "Unable to render docs.".to_string());
     rewrite_relative_doc_links(&html, doc_path)
+}
+
+fn strip_html_comments(markdown: &str) -> String {
+    let mut output = String::with_capacity(markdown.len());
+    let mut remaining = markdown;
+    while let Some(start) = remaining.find("<!--") {
+        let (before, after_start) = remaining.split_at(start);
+        output.push_str(before);
+        let Some(end) = after_start.find("-->") else {
+            return output;
+        };
+        remaining = &after_start[end + 3..];
+    }
+    output.push_str(remaining);
+    output
 }
 
 fn normalize_doc_path(raw_path: &str) -> Option<String> {
@@ -95,7 +111,10 @@ fn normalize_doc_path(raw_path: &str) -> Option<String> {
     } else if !path.contains('.') {
         path.push_str(".md");
     }
-    path.ends_with(".md").then_some(path)
+    std::path::Path::new(&path)
+        .extension()
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("md"))
+        .then_some(path)
 }
 
 fn rewrite_relative_doc_links(html: &str, doc_path: &str) -> String {
@@ -191,5 +210,14 @@ mod tests {
             rewrite_href("https://example.com/docs", INDEX_DOC),
             "https://example.com/docs"
         );
+    }
+
+    #[test]
+    fn test_strip_html_comments() {
+        assert_eq!(
+            strip_html_comments("<!-- markdownlint-disable MD013 -->\n# Docs"),
+            "\n# Docs"
+        );
+        assert_eq!(strip_html_comments("# Docs\n\nBody"), "# Docs\n\nBody");
     }
 }

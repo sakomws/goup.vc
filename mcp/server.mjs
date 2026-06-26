@@ -336,7 +336,7 @@ async function searchAll(args) {
         },
         {
           key: "wiki",
-          title: "Reading Brief",
+          title: "Tech News",
           total: wiki.length,
           results: wiki.map((source) => ({
             title: source.source_label,

@@ -4,15 +4,21 @@ use askama::Template;
 use axum::{
     extract::{Path, State},
     http::Uri,
-    response::{Html, IntoResponse},
+    response::{Html, IntoResponse, Redirect},
 };
 use tracing::instrument;
 
 use crate::{
     config::HttpServerConfig,
     db::DynDB,
-    handlers::{error::HandlerError, site::not_found},
+    handlers::{
+        error::HandlerError,
+        extractors::{CurrentUser, ValidatedForm},
+        site::not_found,
+    },
     router::PUBLIC_SHARED_CACHE_HEADERS,
+    services::notifications::{DynNotificationsManager, OutboundEmail},
+    templates::site::profile::{MentorshipRequestInput, MentorshipRequestRecord},
     templates::{PageId, auth::User, site::profile::Page},
 };
 
@@ -37,9 +43,65 @@ pub(crate) async fn page(
         path: uri.path().to_string(),
         page_id: PageId::SiteHome,
         profile,
+        mentorship_request_sent: uri
+            .query()
+            .is_some_and(|query| query.contains("mentorship=requested")),
         site_settings,
         user: User::default(),
     };
 
     Ok((PUBLIC_SHARED_CACHE_HEADERS, Html(template.render()?)).into_response())
+}
+
+/// Records a mentorship request and sends the mentor an email.
+#[instrument(skip_all, err)]
+pub(crate) async fn request_mentorship(
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    State(notifications_manager): State<DynNotificationsManager>,
+    Path(username): Path<String>,
+    ValidatedForm(input): ValidatedForm<MentorshipRequestInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let request = db.add_mentorship_request(user.user_id, &username, &input).await?;
+    let email = OutboundEmail {
+        body: mentorship_request_email_body(&request),
+        subject: mentorship_request_email_subject(&request),
+        to: request.mentor_email.clone(),
+    };
+    notifications_manager.send_email(&email).await?;
+
+    Ok(Redirect::to(&format!(
+        "/profiles/{}?mentorship=requested#mentorship",
+        request.mentor_username
+    )))
+}
+
+fn mentorship_request_email_subject(request: &MentorshipRequestRecord) -> String {
+    format!("GOUP mentorship request from {}", request.requester_label())
+}
+
+fn mentorship_request_email_body(request: &MentorshipRequestRecord) -> String {
+    format!(
+        "\
+New GOUP mentorship request
+
+Mentor: {mentor}
+Requester: {requester} (@{requester_username})
+Requester email: {requester_email}
+Request type: {audience}
+Request ID: {request_id}
+Total requests received: {request_count}
+
+Message:
+{message}
+",
+        mentor = request.mentor_label(),
+        requester = request.requester_label(),
+        requester_username = request.requester_username,
+        requester_email = request.requester_email,
+        audience = request.audience_label(),
+        request_id = request.mentorship_request_id,
+        request_count = request.request_count,
+        message = request.message.trim(),
+    )
 }

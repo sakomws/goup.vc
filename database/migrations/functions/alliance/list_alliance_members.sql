@@ -1,20 +1,28 @@
--- Returns paginated group members with join date and basic profile info.
-create or replace function list_group_members(p_group_id uuid, p_filters jsonb)
+-- Returns paginated alliance members across all groups with basic profile info.
+create or replace function list_alliance_members(p_alliance_id uuid, p_filters jsonb)
 returns json as $$
     with
-        -- Parse pagination filters
         filters as (
             select
                 (p_filters->>'limit')::int as limit_value,
                 (p_filters->>'offset')::int as offset_value,
                 nullif(trim(p_filters->>'query'), '') as query
         ),
-        -- Filter members before pagination so totals reflect the search query
+        member_groups as (
+            select
+                gm.user_id,
+                array_agg(distinct g.name order by g.name) as group_names
+            from group_member gm
+            join "group" g using (group_id)
+            where g.alliance_id = p_alliance_id
+              and g.active = true
+              and g.deleted = false
+            group by gm.user_id
+        ),
         filtered_members as (
             select
-                gm.created_at,
+                mg.group_names,
                 u.user_id,
-                u.email,
                 u.username,
                 u.bio,
                 u.bluesky_url,
@@ -34,42 +42,42 @@ returns json as $$
                 u.twitter_url,
                 u.website_url,
                 coalesce(u.provider ? 'linkedin', false) as linkedin_connected
-            from group_member gm
+            from member_groups mg
             join "user" u using (user_id)
             cross join filters f
-            where gm.group_id = p_group_id
-            and (
-                f.query is null
-                or concat_ws(
-                    ' ',
-                    u.email,
-                    u.username,
-                    u.bio,
-                    u.bluesky_url,
-                    u.city,
-                    u.company,
-                    u.country,
-                    u.facebook_url,
-                    u.github_url,
-                    array_to_string(u.interests, ' '),
-                    u.linkedin_url,
-                    u.mentorship_note,
-                    u.name,
-                    u.title,
-                    u.twitter_url,
-                    u.website_url,
-                    case when coalesce(u.provider ? 'linkedin', false) then 'linkedin' end
-                ) ilike '%' || escape_ilike_pattern(f.query) || '%' escape '\'
-            )
+            where u.email_verified = true
+              and u.registration_status = 'registered'
+              and (
+                  f.query is null
+                  or concat_ws(
+                      ' ',
+                      u.username,
+                      u.bio,
+                      u.bluesky_url,
+                      u.city,
+                      u.company,
+                      u.country,
+                      u.facebook_url,
+                      u.github_url,
+                      array_to_string(u.interests, ' '),
+                      u.linkedin_url,
+                      u.mentorship_note,
+                      u.name,
+                      u.title,
+                      u.twitter_url,
+                      u.website_url,
+                      array_to_string(mg.group_names, ' '),
+                      case when u.mentorship_individuals then 'individual mentorship individuals mentor' end,
+                      case when u.mentorship_businesses then 'business mentorship businesses mentor' end,
+                      case when coalesce(u.provider ? 'linkedin', false) then 'linkedin' end
+                  ) ilike '%' || escape_ilike_pattern(f.query) || '%' escape '\'
+              )
         ),
-        -- Select the paginated member list
         members as (
             select
-                extract(epoch from fm.created_at)::bigint as created_at,
+                fm.group_names,
                 fm.user_id,
-                fm.email,
                 fm.username,
-
                 fm.bio,
                 fm.bluesky_url,
                 fm.city,
@@ -93,17 +101,14 @@ returns json as $$
             offset (select offset_value from filters)
             limit (select limit_value from filters)
         ),
-        -- Count total members before pagination
         totals as (
             select count(*)::int as total
             from filtered_members
         ),
-        -- Render members as JSON
         members_json as (
             select coalesce(json_agg(row_to_json(members)), '[]'::json) as members
             from members
         )
-    -- Build final payload
     select json_build_object(
         'members', members_json.members,
         'total', totals.total
