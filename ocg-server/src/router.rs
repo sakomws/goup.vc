@@ -309,6 +309,7 @@ pub(crate) async fn setup(
         .route("/jobs", get(site::jobs::page))
         .route("/jobs/{slug}", get(site::jobs::details))
         .route("/landscape", get(site::landscape::page))
+        .route("/privacy", get(site::privacy::page))
         .route("/profiles/{username}", get(site::profile::page))
         .route("/search", get(site::search::page))
         .route(

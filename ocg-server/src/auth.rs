@@ -612,6 +612,8 @@ pub(crate) struct User {
     pub mentorship_individuals: bool,
     /// Optional description of the user's mentorship offering.
     pub mentorship_note: Option<String>,
+    /// Optional price or pricing guidance for mentorship.
+    pub mentorship_price: Option<String>,
     /// User's password hash (if present).
     pub password: Option<String>,
     /// User's photo URL.

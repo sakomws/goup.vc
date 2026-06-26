@@ -881,6 +881,7 @@ select columns_are('user', array[
     'mentorship_businesses',
     'mentorship_individuals',
     'mentorship_note',
+    'mentorship_price',
     'name',
     'optional_notifications_enabled',
     'password',

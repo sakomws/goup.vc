@@ -31,6 +31,7 @@ returns json as $$
         'mentorship_businesses', mentorship_businesses,
         'mentorship_individuals', mentorship_individuals,
         'mentorship_note', mentorship_note,
+        'mentorship_price', mentorship_price,
         'password', case when p_include_password then password else null end,
         'photo_url', photo_url,
         'provider', provider,

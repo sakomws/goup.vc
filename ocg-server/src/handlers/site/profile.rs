@@ -3,8 +3,8 @@
 use askama::Template;
 use axum::{
     extract::{Path, State},
-    http::Uri,
-    response::{Html, IntoResponse, Redirect},
+    http::{HeaderMap, StatusCode, Uri},
+    response::{Html, IntoResponse, Redirect, Response},
 };
 use tracing::instrument;
 
@@ -60,8 +60,17 @@ pub(crate) async fn request_mentorship(
     State(db): State<DynDB>,
     State(notifications_manager): State<DynNotificationsManager>,
     Path(username): Path<String>,
+    headers: HeaderMap,
     ValidatedForm(input): ValidatedForm<MentorshipRequestInput>,
-) -> Result<impl IntoResponse, HandlerError> {
+) -> Result<Response, HandlerError> {
+    if user.username.eq_ignore_ascii_case(&username) {
+        return Ok(mentorship_request_alert(
+            "You cannot request mentorship from yourself.",
+            MentorshipRequestAlertKind::Error,
+        )
+        .into_response());
+    }
+
     let request = db.add_mentorship_request(user.user_id, &username, &input).await?;
     let email = OutboundEmail {
         body: mentorship_request_email_body(&request),
@@ -70,10 +79,49 @@ pub(crate) async fn request_mentorship(
     };
     notifications_manager.send_email(&email).await?;
 
+    if is_htmx_request(&headers) {
+        return Ok(mentorship_request_alert(
+            "Mentorship request sent. The member will receive your details by email.",
+            MentorshipRequestAlertKind::Success,
+        )
+        .into_response());
+    }
+
     Ok(Redirect::to(&format!(
         "/profiles/{}?mentorship=requested#mentorship",
         request.mentor_username
-    )))
+    ))
+    .into_response())
+}
+
+enum MentorshipRequestAlertKind {
+    Error,
+    Success,
+}
+
+fn mentorship_request_alert(message: &str, kind: MentorshipRequestAlertKind) -> impl IntoResponse {
+    let class_name = match kind {
+        MentorshipRequestAlertKind::Error => {
+            "rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900"
+        }
+        MentorshipRequestAlertKind::Success => {
+            "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900"
+        }
+    };
+
+    (
+        StatusCode::OK,
+        Html(format!(
+            r#"<div class="{class_name}" role="alert">{message}</div>"#
+        )),
+    )
+}
+
+fn is_htmx_request(headers: &HeaderMap) -> bool {
+    headers
+        .get("HX-Request")
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| value == "true")
 }
 
 fn mentorship_request_email_subject(request: &MentorshipRequestRecord) -> String {
@@ -89,6 +137,7 @@ Mentor: {mentor}
 Requester: {requester} (@{requester_username})
 Requester email: {requester_email}
 Request type: {audience}
+Listed price: {mentor_price}
 Request ID: {request_id}
 Total requests received: {request_count}
 
@@ -100,6 +149,7 @@ Message:
         requester_username = request.requester_username,
         requester_email = request.requester_email,
         audience = request.audience_label(),
+        mentor_price = request.mentor_price.as_deref().unwrap_or("Not listed"),
         request_id = request.mentorship_request_id,
         request_count = request.request_count,
         message = request.message.trim(),

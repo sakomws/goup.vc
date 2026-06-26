@@ -858,6 +858,7 @@ pub(crate) fn sample_group_member() -> GroupMember {
         mentorship_businesses: false,
         mentorship_individuals: false,
         mentorship_note: None,
+        mentorship_price: None,
         name: Some("Group Member".to_string()),
         photo_url: Some("https://example.test/photo.png".to_string()),
         title: Some("Engineer".to_string()),

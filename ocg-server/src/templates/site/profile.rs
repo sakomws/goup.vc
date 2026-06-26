@@ -106,6 +106,8 @@ pub(crate) struct MentorshipRequestRecord {
     pub mentor_username: String,
     /// Mentor display name.
     pub mentor_name: Option<String>,
+    /// Mentor's listed mentorship price, if configured.
+    pub mentor_price: Option<String>,
     /// Requester user identifier.
     pub requester_user_id: Uuid,
     /// Requester email address.

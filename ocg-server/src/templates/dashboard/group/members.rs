@@ -81,6 +81,8 @@ pub struct GroupMember {
     pub mentorship_individuals: bool,
     /// Optional mentorship description.
     pub mentorship_note: Option<String>,
+    /// Optional price or pricing guidance for mentorship.
+    pub mentorship_price: Option<String>,
     /// Full name.
     pub name: Option<String>,
     /// URL to user's avatar.

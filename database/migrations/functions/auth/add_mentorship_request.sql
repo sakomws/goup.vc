@@ -26,7 +26,8 @@ begin
         username,
         name,
         mentorship_businesses,
-        mentorship_individuals
+        mentorship_individuals,
+        mentorship_price
     into v_mentor
     from "user"
     where lower(username) = lower(p_mentor_username)
@@ -84,6 +85,7 @@ begin
         'mentor_email', v_mentor.email,
         'mentor_username', v_mentor.username,
         'mentor_name', v_mentor.name,
+        'mentor_price', v_mentor.mentorship_price,
         'requester_user_id', v_requester.user_id,
         'requester_email', v_requester.email,
         'requester_username', v_requester.username,

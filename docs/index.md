@@ -84,9 +84,15 @@ GOUP supports practical community opportunities:
 - Mentorship requests are tracked and emailed to mentors.
 - Sponsors can submit inquiries after logging in.
 
-## Technology Stack
+## Architecture
 
-GOUP is a server-rendered Rust application with progressive enhancement.
+GOUP is a server-rendered Rust application with progressive enhancement. The web app owns
+the public site, dashboards, member workflows, and background notifications, while PostgreSQL
+stores product data and exposes most business workflows through SQL functions.
+
+![GOUP architecture diagram](images/architecture.svg)
+
+## Technology Stack
 
 | Layer | Technology |
 | --- | --- |

@@ -175,6 +175,9 @@ pub(crate) struct UserDetails {
     /// Optional description of the user's mentorship offering.
     #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION_SHORT))]
     pub mentorship_note: Option<String>,
+    /// Optional price or pricing guidance for mentorship.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub mentorship_price: Option<String>,
     /// Whether the user authenticated with `LinkedIn`.
     #[serde(default)]
     #[garde(skip)]
@@ -218,6 +221,7 @@ impl From<crate::auth::User> for UserDetails {
             mentorship_businesses: user.mentorship_businesses,
             mentorship_individuals: user.mentorship_individuals,
             mentorship_note: user.mentorship_note,
+            mentorship_price: user.mentorship_price,
             photo_url: user.photo_url,
             timezone: user.timezone,
             title: user.title,

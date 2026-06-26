@@ -20,6 +20,7 @@ begin
         mentorship_businesses = coalesce((p_user->>'mentorship_businesses')::boolean, false),
         mentorship_individuals = coalesce((p_user->>'mentorship_individuals')::boolean, false),
         mentorship_note = nullif(p_user->>'mentorship_note', ''),
+        mentorship_price = nullif(p_user->>'mentorship_price', ''),
         optional_notifications_enabled = coalesce(
             (p_user->>'optional_notifications_enabled')::boolean,
             optional_notifications_enabled

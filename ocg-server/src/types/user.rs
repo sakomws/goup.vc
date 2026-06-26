@@ -68,6 +68,8 @@ pub(crate) struct PublicUserProfile {
     pub mentorship_individuals: bool,
     /// Optional description of this member's mentorship offering.
     pub mentorship_note: Option<String>,
+    /// Optional price or pricing guidance for mentorship.
+    pub mentorship_price: Option<String>,
     /// Full name.
     pub name: Option<String>,
     /// URL to user's avatar.

@@ -392,6 +392,7 @@ where
                 'mentorship_businesses', mentorship_businesses,
                 'mentorship_individuals', mentorship_individuals,
                 'mentorship_note', mentorship_note,
+                'mentorship_price', mentorship_price,
                 'name', name,
                 'photo_url', photo_url,
                 'title', title,
