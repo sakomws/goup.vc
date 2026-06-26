@@ -322,7 +322,9 @@
                   <article class="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
                     <div class="flex items-start gap-3">
                       <logo-image
-                      {% if let Some(photo_url) = &spotlight.photo_url -%} image-url="{{ photo_url }}" {% endif -%}
+                      {% if let Some(photo_url) = &spotlight.photo_url -%}
+                        image-url="{{ photo_url }}"
+                      {% endif -%}
                       size="size-11" placeholder="{{ self::user_initials(spotlight.name.as_deref() , spotlight.username.as_str()) }}">
                       </logo-image>
                       <div class="min-w-0 flex-1">

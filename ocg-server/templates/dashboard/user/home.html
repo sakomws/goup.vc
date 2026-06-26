@@ -65,11 +65,10 @@
             </div>
             <div>
               <div class="text-sm font-semibold text-stone-900">
-                You have {{ pending_invitation_count }} pending invitation{% if pending_invitation_count != 1 %}s{% endif %}
+                You have {{ pending_invitation_count }} pending invitation
+                {% if pending_invitation_count != 1 %}s{% endif %}
               </div>
-              <p class="mt-1 text-sm text-stone-600">
-                Review your invitations to accept or reject them.
-              </p>
+              <p class="mt-1 text-sm text-stone-600">Review your invitations to accept or reject them.</p>
             </div>
           </div>
           <a href="/dashboard/user?tab=invitations"
@@ -77,9 +76,7 @@
              hx-target="body"
              hx-indicator="#dashboard-spinner"
              hx-push-url="true"
-             class="btn-primary whitespace-nowrap">
-            Review invitations
-          </a>
+             class="btn-primary whitespace-nowrap">Review invitations</a>
         </div>
       </div>
     {% endif -%}

@@ -40,7 +40,9 @@
           <a href="/{{ group.alliance.name }}/group/{{ group.public_slug() }}"
              class="text-sm font-medium text-primary-700 hover:text-primary-900">← Back to {{ group.name|demoji }}</a>
           <h1 class="mt-4 text-3xl font-semibold text-stone-950 sm:text-4xl">Member spotlights</h1>
-          <p class="mt-3 max-w-2xl text-base leading-7 text-stone-600">Success stories from {{ group.name|demoji }} members.</p>
+          <p class="mt-3 max-w-2xl text-base leading-7 text-stone-600">
+            Success stories from {{ group.name|demoji }} members.
+          </p>
         </div>
         <share-modal trigger-variant="button" title="{{ self.preview_title() }}" url="/{{ group.alliance.name }}/group/{{ group.public_slug() }}/spotlights">
         </share-modal>
@@ -77,7 +79,9 @@
                 <p class="mt-4 whitespace-pre-line text-base leading-7 text-stone-700">{{ spotlight.story }}</p>
                 <div class="mt-6 flex items-center gap-3 border-t border-stone-100 pt-5">
                   <logo-image
-                  {% if let Some(photo_url) = &spotlight.photo_url -%} image-url="{{ photo_url }}" {% endif -%}
+                  {% if let Some(photo_url) = &spotlight.photo_url -%}
+                    image-url="{{ photo_url }}"
+                  {% endif -%}
                   size="size-12" placeholder="{{ self::user_initials(spotlight.name.as_deref() , spotlight.username.as_str()) }}">
                   </logo-image>
                   <div class="min-w-0 flex-1">
