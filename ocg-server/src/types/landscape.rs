@@ -194,6 +194,7 @@ pub(crate) fn parse_tags(input: Option<&str>) -> Vec<String> {
         .collect()
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
 fn valid_landscape_kind(value: &impl AsRef<str>, _ctx: &()) -> garde::Result {
     let value = value.as_ref().trim();
     if LANDSCAPE_KINDS.contains(&value) {
