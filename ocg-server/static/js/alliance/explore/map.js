@@ -129,7 +129,7 @@ const fitMapToBbox = (map, bbox) => {
   const southWest = L.latLng(bbox.sw_lat, bbox.sw_lon);
   const northEast = L.latLng(bbox.ne_lat, bbox.ne_lon);
   const bounds = L.latLngBounds(southWest, northEast);
-  map.fitBounds(bounds, FIT_BOUNDS_OPTIONS);
+  map.flyToBounds(bounds, FIT_BOUNDS_OPTIONS);
 };
 
 /**
@@ -381,6 +381,8 @@ export class Map {
    * @param {object} bbox - Optional bounding box to fit the map view
    */
   addMarkers(items, bbox) {
+    let markerCount = 0;
+
     // Create marker cluster group
     const markers = window.L.markerClusterGroup({
       showCoverageOnHover: false,
@@ -410,6 +412,7 @@ export class Map {
 
       // Add marker to the marker cluster group
       markers.addLayer(marker);
+      markerCount += 1;
     });
 
     // Add marker cluster group to the map
@@ -417,8 +420,8 @@ export class Map {
 
     if (bbox && checkValidBbox(bbox)) {
       fitMapToBbox(this.map, bbox);
-    } else if (markers.getLayers().length > 0) {
-      this.map.fitBounds(markers.getBounds(), FIT_BOUNDS_OPTIONS);
+    } else if (markerCount > 0 && typeof markers.getBounds === "function") {
+      this.map.flyToBounds(markers.getBounds(), FIT_BOUNDS_OPTIONS);
     }
   }
 }
