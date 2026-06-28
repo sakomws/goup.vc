@@ -79,7 +79,11 @@
             {% if github_leaderboard.unavailable_count > 0 -%}
               <p class="mt-3 rounded-2xl border border-[#eadcc9] bg-white/70 px-4 py-3 text-sm/6 text-stone-600">
                 {{ github_leaderboard.unavailable_count }} GitHub
-                {% if github_leaderboard.unavailable_count == 1 %}repository was{% else %}repositories were{% endif %}
+                {% if github_leaderboard.unavailable_count == 1 %}
+                  repository was
+                {% else %}
+                  repositories were
+                {% endif %}
                 skipped because live metrics were unavailable.
               </p>
             {% endif -%}
@@ -120,37 +124,37 @@
               </div>
             {% else -%}
               {% for project in github_leaderboard.entries -%}
-              <a class="grid gap-4 border-b border-[#eadcc9] px-4 py-4 transition last:border-b-0 hover:bg-[#f5efe7] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center"
-                 href="{{ project.entry.github_url.as_deref().unwrap_or("#") }}"
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 hx-boost="false">
-                <div class="flex size-10 items-center justify-center rounded-2xl bg-[#f5efe7] text-sm font-black text-stone-950 ring-1 ring-inset ring-[#d8c7b2]">
-                  {{ loop.index }}
-                </div>
-                <div class="min-w-0">
-                  <div class="truncate text-base font-bold text-stone-950">{{ project.entry.name }}</div>
-                  <div class="truncate text-xs font-medium text-stone-500">{{ project.repository }}</div>
-                </div>
-                <div class="grid grid-cols-2 gap-2 text-left sm:grid-cols-4 sm:gap-3 sm:text-right">
-                  <div class="rounded-2xl bg-[#fffaf5] px-3 py-2 ring-1 ring-inset ring-[#eadcc9] sm:bg-transparent sm:p-0 sm:ring-0">
-                    <div class="text-sm font-black text-stone-950">{{ project.metrics.stargazers_count|num_fmt }}</div>
-                    <div class="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-stone-500">Stars</div>
+                <a class="grid gap-4 border-b border-[#eadcc9] px-4 py-4 transition last:border-b-0 hover:bg-[#f5efe7] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center"
+                   href="{{ project.entry.github_url.as_deref().unwrap_or("#") }}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   hx-boost="false">
+                  <div class="flex size-10 items-center justify-center rounded-2xl bg-[#f5efe7] text-sm font-black text-stone-950 ring-1 ring-inset ring-[#d8c7b2]">
+                    {{ loop.index }}
                   </div>
-                  <div class="rounded-2xl bg-[#fffaf5] px-3 py-2 ring-1 ring-inset ring-[#eadcc9] sm:bg-transparent sm:p-0 sm:ring-0">
-                    <div class="text-sm font-black text-stone-950">{{ project.metrics.forks_count|num_fmt }}</div>
-                    <div class="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-stone-500">Forks</div>
+                  <div class="min-w-0">
+                    <div class="truncate text-base font-bold text-stone-950">{{ project.entry.name }}</div>
+                    <div class="truncate text-xs font-medium text-stone-500">{{ project.repository }}</div>
                   </div>
-                  <div class="px-3 py-1 sm:p-0">
-                    <div class="text-sm font-black text-stone-950">{{ project.metrics.open_issues_count|num_fmt }}</div>
-                    <div class="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-stone-500">Issues</div>
+                  <div class="grid grid-cols-2 gap-2 text-left sm:grid-cols-4 sm:gap-3 sm:text-right">
+                    <div class="rounded-2xl bg-[#fffaf5] px-3 py-2 ring-1 ring-inset ring-[#eadcc9] sm:bg-transparent sm:p-0 sm:ring-0">
+                      <div class="text-sm font-black text-stone-950">{{ project.metrics.stargazers_count|num_fmt }}</div>
+                      <div class="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-stone-500">Stars</div>
+                    </div>
+                    <div class="rounded-2xl bg-[#fffaf5] px-3 py-2 ring-1 ring-inset ring-[#eadcc9] sm:bg-transparent sm:p-0 sm:ring-0">
+                      <div class="text-sm font-black text-stone-950">{{ project.metrics.forks_count|num_fmt }}</div>
+                      <div class="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-stone-500">Forks</div>
+                    </div>
+                    <div class="px-3 py-1 sm:p-0">
+                      <div class="text-sm font-black text-stone-950">{{ project.metrics.open_issues_count|num_fmt }}</div>
+                      <div class="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-stone-500">Issues</div>
+                    </div>
+                    <div class="px-3 py-1 sm:p-0">
+                      <div class="text-sm font-black text-stone-950">{{ project.metrics.watchers_count|num_fmt }}</div>
+                      <div class="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-stone-500">Watchers</div>
+                    </div>
                   </div>
-                  <div class="px-3 py-1 sm:p-0">
-                    <div class="text-sm font-black text-stone-950">{{ project.metrics.watchers_count|num_fmt }}</div>
-                    <div class="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-stone-500">Watchers</div>
-                  </div>
-                </div>
-              </a>
+                </a>
               {% endfor -%}
             {% endif -%}
           </div>

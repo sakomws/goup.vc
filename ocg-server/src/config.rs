@@ -270,7 +270,7 @@ impl MeetingsZoomConfig {
 /// Recording publishing configuration.
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub(crate) struct RecordingPublishingConfig {
-    /// YouTube publishing configuration.
+    /// `YouTube` publishing configuration.
     pub youtube: Option<RecordingPublishingYouTubeConfig>,
 }
 
@@ -285,7 +285,7 @@ impl RecordingPublishingConfig {
     }
 }
 
-/// YouTube video visibility.
+/// `YouTube` video visibility.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub(crate) enum YouTubeVideoVisibility {
@@ -308,7 +308,7 @@ impl std::fmt::Display for YouTubeVideoVisibility {
     }
 }
 
-/// YouTube recording publishing configuration.
+/// `YouTube` recording publishing configuration.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub(crate) struct RecordingPublishingYouTubeConfig {
     /// OAuth client identifier.
@@ -317,20 +317,20 @@ pub(crate) struct RecordingPublishingYouTubeConfig {
     pub client_secret: String,
     /// Optional Google Drive folder ID to limit recording searches.
     pub drive_folder_id: Option<String>,
-    /// Whether YouTube auto-publishing is enabled.
+    /// Whether `YouTube` auto-publishing is enabled.
     pub enabled: bool,
     /// Minutes after meeting end before checking for a recording.
     pub publish_delay_minutes: i64,
     /// Minutes to wait before checking again when no recording is found.
     pub retry_delay_minutes: i64,
-    /// OAuth refresh token with Drive read and YouTube upload scopes.
+    /// OAuth refresh token with Drive read and `YouTube` upload scopes.
     pub refresh_token: String,
     /// Visibility for uploaded videos.
     pub visibility: YouTubeVideoVisibility,
 }
 
 impl RecordingPublishingYouTubeConfig {
-    /// Validate YouTube publishing configuration.
+    /// Validate `YouTube` publishing configuration.
     fn validate(&self) -> Result<()> {
         if !self.enabled {
             return Ok(());

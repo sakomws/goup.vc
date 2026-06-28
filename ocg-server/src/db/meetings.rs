@@ -392,7 +392,7 @@ pub(crate) struct MeetingAutoEndCandidate {
     pub provider_meeting_id: String,
 }
 
-/// Candidate Google Meet recording to publish to YouTube.
+/// Candidate Google Meet recording to publish to `YouTube`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 pub(crate) struct GoogleMeetRecordingPublishCandidate {
     pub ends_at: DateTime<Utc>,

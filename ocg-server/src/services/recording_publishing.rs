@@ -23,10 +23,10 @@ use crate::{
 const GOOGLE_DRIVE_BASE_URL: &str = "https://www.googleapis.com/drive/v3";
 /// Google OAuth token endpoint.
 const GOOGLE_TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
-/// YouTube upload API base URL.
+/// `YouTube` upload API base URL.
 const YOUTUBE_UPLOAD_URL: &str = "https://www.googleapis.com/upload/youtube/v3/videos";
 /// Timeout for Google media API requests.
-const HTTP_TIMEOUT: Duration = Duration::from_secs(60);
+const HTTP_TIMEOUT: Duration = Duration::from_mins(1);
 /// Token refresh margin.
 const TOKEN_EXPIRY_MARGIN: Duration = Duration::from_mins(5);
 /// Number of concurrent publishing workers.
@@ -34,7 +34,7 @@ const NUM_PUBLISH_WORKERS: usize = 1;
 /// Number of claim recovery workers.
 const NUM_RECOVERY_WORKERS: usize = 1;
 /// Time after which claimed publishing requires recovery.
-const PUBLISH_PROCESSING_TIMEOUT: Duration = Duration::from_mins(60);
+const PUBLISH_PROCESSING_TIMEOUT: Duration = Duration::from_hours(1);
 /// Pause after a publishing error.
 const PAUSE_ON_PUBLISH_ERROR: Duration = Duration::from_secs(30);
 /// Pause when no recordings are ready.
@@ -48,9 +48,9 @@ const PAUSE_ON_RECOVERY_NONE: Duration = Duration::from_mins(5);
 pub(crate) struct RecordingPublishingManager;
 
 impl RecordingPublishingManager {
-    /// Create recording publishing workers when YouTube publishing is configured.
+    /// Create recording publishing workers when `YouTube` publishing is configured.
     pub(crate) fn new(
-        db: DynDB,
+        db: &DynDB,
         cfg: &RecordingPublishingYouTubeConfig,
         task_tracker: &TaskTracker,
         cancellation_token: &CancellationToken,
@@ -215,7 +215,7 @@ impl RecoveryWorker {
     }
 }
 
-/// Google media client for Drive discovery and YouTube uploads.
+/// Google media client for Drive discovery and `YouTube` uploads.
 struct GoogleMediaClient {
     cfg: RecordingPublishingYouTubeConfig,
     http_client: HttpClient,
@@ -273,7 +273,7 @@ impl GoogleMediaClient {
         Ok(response.files.into_iter().next())
     }
 
-    /// Upload a Drive recording to YouTube.
+    /// Upload a Drive recording to `YouTube`.
     #[instrument(skip(self, candidate, recording), err)]
     async fn upload_to_youtube(
         &self,
@@ -436,7 +436,7 @@ struct DriveFilesResponse {
     files: Vec<DriveRecording>,
 }
 
-/// YouTube insert metadata.
+/// `YouTube` insert metadata.
 #[skip_serializing_none]
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -468,7 +468,7 @@ impl YouTubeVideoInsertRequest {
     }
 }
 
-/// YouTube snippet metadata.
+/// `YouTube` snippet metadata.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct YouTubeVideoSnippet {
@@ -476,7 +476,7 @@ struct YouTubeVideoSnippet {
     title: String,
 }
 
-/// YouTube status metadata.
+/// `YouTube` status metadata.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct YouTubeVideoStatus {
@@ -484,7 +484,7 @@ struct YouTubeVideoStatus {
     self_declared_made_for_kids: bool,
 }
 
-/// YouTube upload response.
+/// `YouTube` upload response.
 #[derive(Debug, Deserialize)]
 struct YouTubeVideo {
     id: String,

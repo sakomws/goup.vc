@@ -23,7 +23,7 @@ use crate::{
     config::{
         Config, HttpServerConfig, ImageStorageConfig, LogFormat, MeetingsConfig, PaymentsConfig,
     },
-    db::{PgDB, pool as db_pool},
+    db::{DynDB, PgDB, pool as db_pool},
     services::{
         images::{DbImageStorage, DynImageStorage, S3ImageStorage},
         meetings::{
@@ -107,7 +107,7 @@ async fn main() -> Result<()> {
 
     // Configure background services that depend on the database
     start_meetings_workers(&cfg, db.clone(), &background_tasks);
-    start_recording_publishing_workers(&cfg, db.clone(), &background_tasks);
+    start_recording_publishing_workers(&cfg, &db, &background_tasks);
     let activity_tracker = setup_activity_tracker(db.clone(), &background_tasks);
     let notifications_manager = setup_notifications_manager(&cfg, db.clone(), &background_tasks)?;
     let payments_manager = setup_payments_manager(
@@ -225,15 +225,16 @@ fn start_meetings_workers(cfg: &Config, db: Arc<PgDB>, background_tasks: &Backgr
 /// Start recording publishing workers when configured.
 fn start_recording_publishing_workers(
     cfg: &Config,
-    db: Arc<PgDB>,
+    db: &Arc<PgDB>,
     background_tasks: &BackgroundTasks,
 ) {
     if let Some(recording_publishing_cfg) = &cfg.recording_publishing
         && let Some(youtube_cfg) = &recording_publishing_cfg.youtube
         && youtube_cfg.enabled
     {
+        let dyn_db: DynDB = db.clone();
         RecordingPublishingManager::new(
-            db,
+            &dyn_db,
             youtube_cfg,
             &background_tasks.task_tracker,
             &background_tasks.cancellation_token,
