@@ -561,6 +561,7 @@ select columns_are('group', array[
     'slack_url',
     'slug_pretty',
     'state',
+    'substack_url',
     'tags',
     'twitter_url',
     'website_url',
