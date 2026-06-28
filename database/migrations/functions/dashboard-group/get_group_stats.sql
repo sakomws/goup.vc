@@ -52,7 +52,7 @@ events as (
     select
         e.event_id,
         e.event_category_id,
-        e.kind,
+        e.event_kind_id as kind,
         e.starts_at,
         e.venue_city,
         e.venue_country_name,
