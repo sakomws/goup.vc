@@ -116,7 +116,7 @@ pub(crate) trait DBDashboardUser {
         user_id: Uuid,
     ) -> Result<Vec<GroupTeamInvitation>>;
 
-    /// Lists CoffeeMeet subscriptions available to a user.
+    /// Lists `CoffeeMeet` subscriptions available to a user.
     async fn list_user_coffee_meet_subscriptions(
         &self,
         user_id: Uuid,
@@ -182,14 +182,14 @@ pub(crate) trait DBDashboardUser {
         registration_answers: &QuestionnaireAnswers,
     ) -> Result<bool>;
 
-    /// Subscribes or updates a CoffeeMeet cadence.
+    /// Subscribes or updates a `CoffeeMeet` cadence.
     async fn upsert_coffee_meet_subscription(
         &self,
         actor_user_id: Uuid,
         subscription: &CoffeeMeetSubscriptionForm,
     ) -> Result<()>;
 
-    /// Unsubscribes from CoffeeMeet for a group.
+    /// Unsubscribes from `CoffeeMeet` for a group.
     async fn unsubscribe_coffee_meet(&self, actor_user_id: Uuid, group_id: Uuid) -> Result<()>;
 
     /// Updates a session proposal for the user.

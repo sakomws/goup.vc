@@ -84,7 +84,7 @@ impl Page {
     }
 }
 
-/// CoffeeMeet request form input.
+/// `CoffeeMeet` request form input.
 #[derive(Debug, Clone, Deserialize, Serialize, Validate)]
 pub(crate) struct CoffeeMeetRequestInput {
     /// Request details.
@@ -92,7 +92,7 @@ pub(crate) struct CoffeeMeetRequestInput {
     pub message: String,
 }
 
-/// Stored CoffeeMeet request metadata returned from the database.
+/// Stored `CoffeeMeet` request metadata returned from the database.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub(crate) struct CoffeeMeetRequestRecord {
     /// Request identifier.

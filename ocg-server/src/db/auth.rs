@@ -58,7 +58,7 @@ pub(crate) trait DBAuth {
         input: &MentorshipRequestInput,
     ) -> Result<MentorshipRequestRecord>;
 
-    /// Records a direct CoffeeMeet request.
+    /// Records a direct `CoffeeMeet` request.
     async fn add_coffee_meet_request(
         &self,
         requester_user_id: Uuid,

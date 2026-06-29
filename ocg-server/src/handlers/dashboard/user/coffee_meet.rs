@@ -1,4 +1,4 @@
-//! HTTP handlers for CoffeeMeet in the user dashboard.
+//! HTTP handlers for `CoffeeMeet` in the user dashboard.
 
 use askama::Template;
 use axum::{
@@ -20,7 +20,7 @@ use crate::{
     },
 };
 
-/// Returns CoffeeMeet subscriptions for the current user.
+/// Returns `CoffeeMeet` subscriptions for the current user.
 #[instrument(skip_all, err)]
 pub(crate) async fn list_page(
     CurrentUser(user): CurrentUser,
@@ -31,7 +31,7 @@ pub(crate) async fn list_page(
     Ok(Html(template.render()?))
 }
 
-/// Subscribes or updates a CoffeeMeet cadence.
+/// Subscribes or updates a `CoffeeMeet` cadence.
 #[instrument(skip_all, err)]
 pub(crate) async fn subscribe(
     CurrentUser(user): CurrentUser,
@@ -47,7 +47,7 @@ pub(crate) async fn subscribe(
     ))
 }
 
-/// Unsubscribes from CoffeeMeet for a group.
+/// Unsubscribes from `CoffeeMeet` for a group.
 #[instrument(skip_all, err)]
 pub(crate) async fn unsubscribe(
     CurrentUser(user): CurrentUser,
@@ -62,7 +62,7 @@ pub(crate) async fn unsubscribe(
     ))
 }
 
-/// Prepares the CoffeeMeet subscriptions list page.
+/// Prepares the `CoffeeMeet` subscriptions list page.
 #[instrument(skip(db), err)]
 pub(crate) async fn prepare_list_page(
     db: &DynDB,

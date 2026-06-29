@@ -57,7 +57,7 @@ pub(crate) async fn page(
     Ok((PUBLIC_SHARED_CACHE_HEADERS, Html(template.render()?)).into_response())
 }
 
-/// Records a direct CoffeeMeet request and sends the member an email.
+/// Records a direct `CoffeeMeet` request and sends the member an email.
 #[instrument(skip_all, err)]
 pub(crate) async fn request_coffee(
     CurrentUser(user): CurrentUser,

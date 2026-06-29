@@ -1,4 +1,4 @@
-//! Templates for the user dashboard CoffeeMeet tab.
+//! Templates for the user dashboard `CoffeeMeet` tab.
 
 use askama::Template;
 use chrono::{DateTime, Utc};
@@ -6,7 +6,7 @@ use garde::Validate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-/// List page showing CoffeeMeet subscriptions for the current user.
+/// List page showing `CoffeeMeet` subscriptions for the current user.
 #[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "dashboard/user/coffee_meet_list.html")]
 pub(crate) struct ListPage {
@@ -14,7 +14,7 @@ pub(crate) struct ListPage {
     pub subscriptions: Vec<CoffeeMeetSubscription>,
 }
 
-/// CoffeeMeet subscription row for a user's group.
+/// `CoffeeMeet` subscription row for a user's group.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CoffeeMeetSubscription {
     /// Group identifier.
@@ -55,7 +55,7 @@ impl CoffeeMeetSubscription {
     }
 }
 
-/// CoffeeMeet subscription form.
+/// `CoffeeMeet` subscription form.
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub(crate) struct CoffeeMeetSubscriptionForm {
     /// Group being subscribed to.
@@ -66,7 +66,7 @@ pub(crate) struct CoffeeMeetSubscriptionForm {
     pub frequency: String,
 }
 
-/// CoffeeMeet unsubscribe form.
+/// `CoffeeMeet` unsubscribe form.
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub(crate) struct CoffeeMeetUnsubscribeForm {
     /// Group being unsubscribed from.

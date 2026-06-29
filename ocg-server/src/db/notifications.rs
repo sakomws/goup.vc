@@ -25,7 +25,7 @@ pub(crate) trait DBNotifications {
     /// Enqueues due event reminders and returns the number of notifications created.
     async fn enqueue_due_event_reminders(&self, base_url: &str) -> Result<usize>;
 
-    /// Enqueues due CoffeeMeet suggestions and returns the number created.
+    /// Enqueues due `CoffeeMeet` suggestions and returns the number created.
     async fn enqueue_due_coffee_meet_suggestions(&self, base_url: &str) -> Result<usize>;
 
     /// Enqueues a notification to be delivered.

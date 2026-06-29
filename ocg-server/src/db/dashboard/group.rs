@@ -315,7 +315,7 @@ pub(crate) trait DBDashboardGroup {
         filters: &GroupMembersFilters,
     ) -> Result<GroupMembersOutput>;
 
-    /// Lists active CoffeeMeet subscribers for a group.
+    /// Lists active `CoffeeMeet` subscribers for a group.
     async fn list_group_coffee_meet_subscribers(
         &self,
         group_id: Uuid,

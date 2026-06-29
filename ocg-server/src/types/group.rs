@@ -157,7 +157,7 @@ pub struct GroupFull {
     pub description: Option<String>,
     /// Short group description text.
     pub description_short: Option<String>,
-    /// Discord invite or server URL.
+    /// `Discord` invite or server URL.
     pub discord_url: Option<String>,
     /// Default payload applied when creating new events for this group.
     pub event_defaults: Option<Value>,
@@ -193,7 +193,7 @@ pub struct GroupFull {
     pub slug_pretty: Option<String>,
     /// State/province where the group is based.
     pub state: Option<String>,
-    /// Substack publication URL.
+    /// `Substack` publication URL.
     pub substack_url: Option<String>,
     /// Tags associated with the group.
     pub tags: Option<Vec<String>>,
@@ -203,7 +203,7 @@ pub struct GroupFull {
     pub wechat_url: Option<String>,
     /// Group website URL.
     pub website_url: Option<String>,
-    /// WhatsApp community or chat URL.
+    /// `WhatsApp` community or chat URL.
     pub whatsapp_url: Option<String>,
     /// `YouTube` channel URL.
     pub youtube_url: Option<String>,

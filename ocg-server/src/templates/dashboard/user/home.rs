@@ -45,7 +45,7 @@ pub(crate) enum Content {
     Account(Box<auth::UpdateUserPage>),
     /// User upcoming events page.
     Events(events::ListPage),
-    /// CoffeeMeet subscriptions page.
+    /// `CoffeeMeet` subscriptions page.
     CoffeeMeet(coffee_meet::ListPage),
     /// Invitations page.
     Invitations(invitations::ListPage),
@@ -70,7 +70,7 @@ impl Content {
         matches!(self, Content::Events(_))
     }
 
-    /// Check if the content is the CoffeeMeet page.
+    /// Check if the content is the `CoffeeMeet` page.
     fn is_coffee_meet(&self) -> bool {
         matches!(self, Content::CoffeeMeet(_))
     }
@@ -128,7 +128,7 @@ pub(crate) enum Tab {
     Account,
     /// Events tab.
     Events,
-    /// CoffeeMeet tab.
+    /// `CoffeeMeet` tab.
     CoffeeMeet,
     /// Invitations tab.
     Invitations,

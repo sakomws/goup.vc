@@ -1,4 +1,4 @@
-//! HTTP handlers for CoffeeMeet in the group dashboard.
+//! HTTP handlers for `CoffeeMeet` in the group dashboard.
 
 use askama::Template;
 use axum::{
@@ -18,7 +18,7 @@ use crate::{
     types::permissions::GroupPermission,
 };
 
-/// Returns the CoffeeMeet subscribers page.
+/// Returns the `CoffeeMeet` subscribers page.
 #[instrument(skip_all, err)]
 pub(crate) async fn list_page(
     CurrentUser(user): CurrentUser,
@@ -31,7 +31,7 @@ pub(crate) async fn list_page(
     Ok(Html(template.render()?))
 }
 
-/// Prepares the group CoffeeMeet page.
+/// Prepares the group `CoffeeMeet` page.
 #[instrument(skip(db), err)]
 pub(crate) async fn prepare_list_page(
     db: &DynDB,

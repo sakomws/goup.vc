@@ -24,7 +24,7 @@ pub(crate) struct CfsSubmissionUpdated {
     pub action_required_message: Option<String>,
 }
 
-/// Template for a CoffeeMeet member suggestion.
+/// Template for a `CoffeeMeet` member suggestion.
 #[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "notifications/coffee_meet_suggestion.html")]
 pub(crate) struct CoffeeMeetSuggestion {
@@ -48,7 +48,7 @@ pub(crate) struct CoffeeMeetSuggestion {
     pub suggested_profile_url: String,
     /// Link to group page.
     pub group_url: String,
-    /// Link to manage CoffeeMeet subscriptions.
+    /// Link to manage `CoffeeMeet` subscriptions.
     pub dashboard_link: String,
     /// Theme configuration for the alliance.
     pub theme: Theme,

@@ -1,4 +1,4 @@
-//! Templates for the group dashboard CoffeeMeet tab.
+//! Templates for the group dashboard `CoffeeMeet` tab.
 
 use askama::Template;
 use chrono::{DateTime, Utc};
@@ -7,17 +7,17 @@ use uuid::Uuid;
 
 use crate::templates::helpers::user_initials;
 
-/// Group dashboard CoffeeMeet subscriber list.
+/// Group dashboard `CoffeeMeet` subscriber list.
 #[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "dashboard/group/coffee_meet_list.html")]
 pub(crate) struct ListPage {
     /// Whether the current user can manage members.
     pub can_manage_members: bool,
-    /// Active CoffeeMeet subscribers.
+    /// Active `CoffeeMeet` subscribers.
     pub subscribers: Vec<CoffeeMeetSubscriber>,
 }
 
-/// Active CoffeeMeet subscriber row.
+/// Active `CoffeeMeet` subscriber row.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CoffeeMeetSubscriber {
     /// User identifier.

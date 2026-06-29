@@ -719,7 +719,7 @@ pub(crate) struct Notification {
 pub(crate) enum NotificationKind {
     /// Notification for a CFS submission update.
     CfsSubmissionUpdated,
-    /// Notification for a CoffeeMeet member suggestion.
+    /// Notification for a `CoffeeMeet` member suggestion.
     CoffeeMeetSuggestion,
     /// Notification for a alliance team invitation.
     AllianceTeamInvitation,
