@@ -15,7 +15,7 @@ returns json as $$
     join group_member gm
         on gm.group_id = cms.group_id
         and gm.user_id = cms.user_id
-    join "user" u using (user_id)
+    join "user" u on u.user_id = cms.user_id
     left join lateral (
         select count(*)::int as total
         from coffee_meet_suggestion suggestion
