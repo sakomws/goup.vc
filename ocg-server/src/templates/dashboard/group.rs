@@ -18,3 +18,16 @@ pub(crate) mod store;
 pub(crate) mod submissions;
 pub(crate) mod team;
 pub(crate) mod waitlist;
+
+/// Presence filter for optional database fields.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, strum::Display, strum::EnumString,
+)]
+#[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
+pub(crate) enum PresenceFilter {
+    /// Field value must be missing.
+    Missing,
+    /// Field value must be present.
+    Present,
+}
