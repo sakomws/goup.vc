@@ -240,9 +240,7 @@ const COUNTRY_CALLING_CODES = [
 ];
 
 const regionFlag = (regionCode) =>
-  regionCode
-    .toUpperCase()
-    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
+  regionCode.toUpperCase().replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
 
 const optionLabel = ([regionCode, countryName, callingCode]) =>
   `${regionFlag(regionCode)} ${countryName} (${callingCode})`;

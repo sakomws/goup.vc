@@ -80,7 +80,7 @@ describe("dashboard alliance settings page", () => {
 
   it("syncs the CoffeeMeet value on init and change", () => {
     // Prepare the settings form with CoffeeMeet enabled.
-    renderSettingsForm({ checked: true });
+    renderSettingsForm({ coffeeMeetChecked: true });
 
     // Initialize settings behavior.
     initializeAllianceSettings();

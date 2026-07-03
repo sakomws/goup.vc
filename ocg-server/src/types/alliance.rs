@@ -8,7 +8,7 @@ use uuid::Uuid;
 // Alliance types.
 
 /// Full alliance information.
-#[allow(clippy::struct_field_names)]
+#[allow(clippy::struct_excessive_bools, clippy::struct_field_names)]
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AllianceFull {
     /// Whether the alliance is active.

@@ -112,6 +112,7 @@ impl GroupSummary {
 
 /// Full group information.
 #[skip_serializing_none]
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct GroupFull {
     /// Whether the group is active.
