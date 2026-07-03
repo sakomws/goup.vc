@@ -34,6 +34,9 @@ pub struct AllianceFull {
     pub group_team_management_restricted: bool,
     /// URL to the logo image shown in the page header.
     pub logo_url: String,
+    /// Whether mentorship requests are enabled across this alliance.
+    #[serde(default = "default_true")]
+    pub mentorship_enabled: bool,
     /// Unique identifier used in URLs and database references.
     pub name: String,
 
@@ -108,8 +111,14 @@ pub struct AllianceSummary {
     pub alliance_id: Uuid,
     /// Human-readable name shown in the UI (e.g., "Goup").
     pub display_name: String,
+    /// Whether group `CoffeeMeet` features are enabled across this alliance.
+    #[serde(default = "default_true")]
+    pub coffee_meet_enabled: bool,
     /// URL to the logo image.
     pub logo_url: String,
+    /// Whether mentorship requests are enabled across this alliance.
+    #[serde(default = "default_true")]
+    pub mentorship_enabled: bool,
     /// Unique identifier used in URLs and database references.
     pub name: String,
 
