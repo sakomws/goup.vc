@@ -12,6 +12,8 @@ pub(crate) mod home;
 pub(crate) mod jobs;
 /// Templates for the landscape page.
 pub(crate) mod landscape;
+/// Templates for mock interview pages.
+pub(crate) mod mock_interviews;
 /// Templates for the not found page.
 pub(crate) mod not_found;
 /// Templates for the privacy policy page.

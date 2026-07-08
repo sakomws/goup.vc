@@ -1,0 +1,83 @@
+{% extends "common/base.html" -%}
+
+{% block jumbotron -%}
+  <section class="container mx-auto max-w-4xl px-4 pt-10 pb-6 sm:px-6 lg:px-8">
+    <h1 class="text-4xl font-black text-stone-950">Mock interview onboarding</h1>
+    <p class="mt-3 text-stone-600">Tell us how you want to participate and what you are preparing for.</p>
+  </section>
+{% endblock jumbotron -%}
+
+{% block content -%}
+  <div class="container mx-auto max-w-4xl px-4 pb-12 sm:px-6 lg:px-8">
+    <form method="post" action="/mock-interviews/onboarding" class="space-y-6 rounded-[1.75rem] border border-stone-200 bg-white p-6 shadow-lg">
+      <div>
+        <label class="block text-sm font-bold text-stone-900" for="role_intent">I want to be</label>
+        <select id="role_intent" name="role_intent" class="input mt-2 w-full" required>
+          <option value="interviewee" {% if self.profile_role_intent() == "interviewee" %}selected{% endif %}>Interviewee</option>
+          <option value="interviewer" {% if self.profile_role_intent() == "interviewer" %}selected{% endif %}>Interviewer</option>
+          <option value="both" {% if self.profile_role_intent() == "both" %}selected{% endif %}>Both</option>
+        </select>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <label class="block text-sm font-bold text-stone-900" for="timezone_region">Timezone region</label>
+          <select id="timezone_region" name="timezone_region" class="input mt-2 w-full" required>
+            <option value="aze" {% if self.profile_timezone_region() == "aze" %}selected{% endif %}>AZE</option>
+            <option value="eu" {% if self.profile_timezone_region() == "eu" %}selected{% endif %}>EU</option>
+            <option value="usa_canada" {% if self.profile_timezone_region() == "usa_canada" %}selected{% endif %}>USA / Canada</option>
+            <option value="asia" {% if self.profile_timezone_region() == "asia" %}selected{% endif %}>Asia</option>
+            <option value="other" {% if self.profile_timezone_region() == "other" %}selected{% endif %}>Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-stone-900" for="seniority">Seniority</label>
+          <select id="seniority" name="seniority" class="input mt-2 w-full" required>
+            <option value="junior" {% if self.profile_seniority() == "junior" %}selected{% endif %}>Junior</option>
+            <option value="mid" {% if self.profile_seniority() == "mid" %}selected{% endif %}>Mid</option>
+            <option value="senior" {% if self.profile_seniority() == "senior" %}selected{% endif %}>Senior</option>
+            <option value="staff_plus" {% if self.profile_seniority() == "staff_plus" %}selected{% endif %}>Staff+</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold text-stone-900" for="interview_types">Interview types (comma-separated)</label>
+        <input id="interview_types" name="interview_types" class="input mt-2 w-full" value="{{ self.profile_interview_types_csv() }}" placeholder="swe, ai_ml, behavioral" />
+        <p class="mt-1 text-xs text-stone-500">Options: {% for interview_type in interview_types %}{{ interview_type }}{% if !loop.last %}, {% endif %}{% endfor %}</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold text-stone-900" for="target_company_types">Target company types (comma-separated)</label>
+        <input id="target_company_types" name="target_company_types" class="input mt-2 w-full" value="{{ self.profile_target_company_types_csv() }}" placeholder="ai_labs_faang, ai_startup" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold text-stone-900" for="availability_slots">Availability slots (JSON)</label>
+        <textarea id="availability_slots" name="availability_slots" rows="4" class="input mt-2 w-full font-mono text-sm">{{ self.profile_availability_slots_json() }}</textarea>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        <div>
+          <label class="block text-sm font-bold text-stone-900" for="linkedin_url">LinkedIn URL</label>
+          <input id="linkedin_url" name="linkedin_url" type="url" class="input mt-2 w-full" value="{{ profile.as_ref().and_then(|p| p.linkedin_url.clone()).unwrap_or_default() }}" />
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-stone-900" for="github_url">GitHub URL</label>
+          <input id="github_url" name="github_url" type="url" class="input mt-2 w-full" value="{{ profile.as_ref().and_then(|p| p.github_url.clone()).unwrap_or_default() }}" />
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-stone-900" for="resume_url">Resume URL</label>
+          <input id="resume_url" name="resume_url" type="url" class="input mt-2 w-full" value="{{ profile.as_ref().and_then(|p| p.resume_url.clone()).unwrap_or_default() }}" />
+        </div>
+      </div>
+
+      <label class="inline-flex items-center gap-2 text-sm text-stone-700">
+        <input type="checkbox" name="enabled" value="true" checked class="rounded border-stone-300" />
+        Participate in mock interviews
+      </label>
+
+      <button type="submit" class="inline-flex h-11 items-center justify-center rounded-full bg-stone-950 px-6 text-sm font-bold text-white">Save profile</button>
+    </form>
+  </div>
+{% endblock content -%}

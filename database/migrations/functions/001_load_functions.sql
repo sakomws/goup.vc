@@ -63,6 +63,17 @@
 {{ template "jobs/update_job.sql" }}
 {{ template "jobs/update_job_published.sql" }}
 
+{{ template "mock_interviews/mock_interview_profile_json.sql" }}
+{{ template "mock_interviews/get_mock_interview_profile.sql" }}
+{{ template "mock_interviews/upsert_mock_interview_profile.sql" }}
+{{ template "mock_interviews/mock_interview_request_json.sql" }}
+{{ template "mock_interviews/search_mock_interview_matches.sql" }}
+{{ template "mock_interviews/list_mock_interview_requests.sql" }}
+{{ template "mock_interviews/add_mock_interview_request.sql" }}
+{{ template "mock_interviews/respond_mock_interview_request.sql" }}
+{{ template "mock_interviews/get_mock_interview_session.sql" }}
+{{ template "mock_interviews/add_mock_interview_feedback.sql" }}
+
 {{ template "landscape/landscape_entry_json.sql" }}
 {{ template "landscape/add_landscape_entry.sql" }}
 {{ template "landscape/delete_landscape_entry.sql" }}

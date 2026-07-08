@@ -233,6 +233,32 @@ pub(crate) async fn setup(
         )
         .route("/jobs/{job_id}/apply", post(site::jobs::apply))
         .route(
+            "/mock-interviews/onboarding",
+            get(site::mock_interviews::onboarding_page)
+                .post(site::mock_interviews::save_onboarding),
+        )
+        .route("/mock-interviews/matches", get(site::mock_interviews::matches_page))
+        .route(
+            "/mock-interviews/requests",
+            get(site::mock_interviews::requests_page).post(site::mock_interviews::create_request),
+        )
+        .route(
+            "/mock-interviews/requests/{request_id}",
+            post(site::mock_interviews::respond_request),
+        )
+        .route(
+            "/mock-interviews/session/{session_id}",
+            get(site::mock_interviews::session_page),
+        )
+        .route(
+            "/mock-interviews/session/{session_id}/feedback/interviewer",
+            post(site::mock_interviews::submit_feedback),
+        )
+        .route(
+            "/mock-interviews/session/{session_id}/feedback/interviewee",
+            post(site::mock_interviews::submit_interviewee_feedback),
+        )
+        .route(
             "/profiles/{username}/mentorship-requests",
             post(site::profile::request_mentorship),
         )
@@ -320,6 +346,7 @@ pub(crate) async fn setup(
         .route("/docs/{*doc_path}", get(site::docs::page))
         .route("/jobs", get(site::jobs::page))
         .route("/jobs/{slug}", get(site::jobs::details))
+        .route("/mock-interviews", get(site::mock_interviews::page))
         .route("/landscape", get(site::landscape::page))
         .route("/privacy", get(site::privacy::page))
         .route("/profiles/{username}", get(site::profile::page))

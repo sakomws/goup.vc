@@ -6,6 +6,7 @@ pub(crate) mod explore;
 pub(crate) mod home;
 pub(crate) mod jobs;
 pub(crate) mod landscape;
+pub(crate) mod mock_interviews;
 pub(crate) mod not_found;
 pub(crate) mod privacy;
 pub(crate) mod profile;

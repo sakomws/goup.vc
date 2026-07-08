@@ -1099,6 +1099,57 @@ mock! {
     }
 
     #[async_trait]
+    impl crate::db::mock_interviews::DBMockInterviews for DB {
+        async fn get_mock_interview_profile(
+            &self,
+            user_id: Uuid,
+        ) -> Result<Option<crate::types::mock_interviews::MockInterviewProfile>>;
+        async fn upsert_mock_interview_profile(
+            &self,
+            user_id: Uuid,
+            input: &crate::types::mock_interviews::MockInterviewProfileInput,
+        ) -> Result<crate::types::mock_interviews::MockInterviewProfile>;
+        async fn search_mock_interview_matches(
+            &self,
+            user_id: Uuid,
+            filters: &crate::types::mock_interviews::MockInterviewMatchFilters,
+        ) -> Result<crate::types::mock_interviews::MockInterviewMatchesOutput>;
+        async fn list_mock_interview_requests(
+            &self,
+            user_id: Uuid,
+        ) -> Result<Vec<crate::types::mock_interviews::MockInterviewRequest>>;
+        async fn add_mock_interview_request(
+            &self,
+            user_id: Uuid,
+            input: &crate::types::mock_interviews::MockInterviewRequestInput,
+        ) -> Result<crate::types::mock_interviews::MockInterviewRequest>;
+        async fn respond_mock_interview_request(
+            &self,
+            user_id: Uuid,
+            request_id: Uuid,
+            action: &str,
+            meeting_url: Option<&str>,
+        ) -> Result<Option<Uuid>>;
+        async fn get_mock_interview_session(
+            &self,
+            user_id: Uuid,
+            session_id: Uuid,
+        ) -> Result<Option<crate::types::mock_interviews::MockInterviewSession>>;
+        async fn add_mock_interview_interviewer_feedback(
+            &self,
+            user_id: Uuid,
+            session_id: Uuid,
+            input: &crate::types::mock_interviews::MockInterviewInterviewerFeedbackInput,
+        ) -> Result<()>;
+        async fn add_mock_interview_interviewee_feedback(
+            &self,
+            user_id: Uuid,
+            session_id: Uuid,
+            input: &crate::types::mock_interviews::MockInterviewIntervieweeFeedbackInput,
+        ) -> Result<()>;
+    }
+
+    #[async_trait]
     impl crate::db::landscape::DBLandscape for DB {
         async fn search_landscape_entries(
             &self,
