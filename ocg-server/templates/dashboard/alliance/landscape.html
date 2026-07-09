@@ -306,7 +306,9 @@
                      value="{{ entry.github_url.as_deref().unwrap_or("") }}" />
             </div>
             {% let logo_value -%}
-            {% if let Some(logo_url) = &entry.logo_url %}value="{{ logo_url }}"{% endif %}
+            {% if let Some(logo_url) = &entry.logo_url %}
+              value="{{ logo_url }}"
+            {% endif %}
           {%- endlet %}
           {{ form_fields::image_field(label = "Logo", name = "logo_url", image_kind = "logo", legend = "Optional logo shown on public landscape cards.", value_attr = logo_value, field_class = "lg:col-span-2") -}}
           <div class="space-y-2">
@@ -334,7 +336,7 @@
                      class="input-primary"
                      type="url"
                      {% if let Some(accelerator) = &entry.accelerator -%}
-                       value="{{ accelerator.application_url.as_deref().unwrap_or("") }}"
+                     value="{{ accelerator.application_url.as_deref().unwrap_or("") }}"
                      {%- endif %} />
             </div>
             <div class="space-y-2 lg:col-span-6">
@@ -345,7 +347,7 @@
                      class="input-primary"
                      type="url"
                      {% if let Some(accelerator) = &entry.accelerator -%}
-                       value="{{ accelerator.curriculum_url.as_deref().unwrap_or("") }}"
+                     value="{{ accelerator.curriculum_url.as_deref().unwrap_or("") }}"
                      {%- endif %} />
             </div>
             <div class="space-y-2 lg:col-span-4">
@@ -356,13 +358,21 @@
                       class="select-primary">
                 <option value="">Not set</option>
                 <option value="planned"
-                        {% if let Some(accelerator) = &entry.accelerator %}{% if accelerator.cohort_status.as_deref() == Some("planned") %}selected{% endif %}{% endif %}>Planned</option>
+                        {% if let Some(accelerator) = &entry.accelerator %}
+                          {% if accelerator.cohort_status.as_deref() == Some("planned") %}selected{% endif %}
+                        {% endif %}>Planned</option>
                 <option value="open"
-                        {% if let Some(accelerator) = &entry.accelerator %}{% if accelerator.cohort_status.as_deref() == Some("open") %}selected{% endif %}{% endif %}>Open</option>
+                        {% if let Some(accelerator) = &entry.accelerator %}
+                          {% if accelerator.cohort_status.as_deref() == Some("open") %}selected{% endif %}
+                        {% endif %}>Open</option>
                 <option value="running"
-                        {% if let Some(accelerator) = &entry.accelerator %}{% if accelerator.cohort_status.as_deref() == Some("running") %}selected{% endif %}{% endif %}>Running</option>
+                        {% if let Some(accelerator) = &entry.accelerator %}
+                          {% if accelerator.cohort_status.as_deref() == Some("running") %}selected{% endif %}
+                        {% endif %}>Running</option>
                 <option value="completed"
-                        {% if let Some(accelerator) = &entry.accelerator %}{% if accelerator.cohort_status.as_deref() == Some("completed") %}selected{% endif %}{% endif %}>Completed</option>
+                        {% if let Some(accelerator) = &entry.accelerator %}
+                          {% if accelerator.cohort_status.as_deref() == Some("completed") %}selected{% endif %}
+                        {% endif %}>Completed</option>
               </select>
             </div>
             <div class="space-y-2 lg:col-span-4">
@@ -373,7 +383,7 @@
                      class="input-primary"
                      type="date"
                      {% if let Some(accelerator) = &entry.accelerator -%}
-                       value="{{ accelerator.starts_on.as_deref().unwrap_or("") }}"
+                     value="{{ accelerator.starts_on.as_deref().unwrap_or("") }}"
                      {%- endif %} />
             </div>
             <div class="space-y-2 lg:col-span-4">
@@ -384,7 +394,7 @@
                      class="input-primary"
                      type="date"
                      {% if let Some(accelerator) = &entry.accelerator -%}
-                       value="{{ accelerator.ends_on.as_deref().unwrap_or("") }}"
+                     value="{{ accelerator.ends_on.as_deref().unwrap_or("") }}"
                      {%- endif %} />
             </div>
             <div class="space-y-2 lg:col-span-12">
@@ -394,13 +404,13 @@
                      name="accelerator_tracks"
                      class="input-primary"
                      placeholder="AI, Open Source, Startup, Revenue"
-                     {% if let Some(accelerator) = &entry.accelerator -%}
-                       value="{{ accelerator.tracks.join(", ") }}"
-                     {%- endif %} />
+                     {% if let Some(accelerator) = &entry.accelerator -%}value="{{ accelerator.tracks.join(", ") }}"{%- endif %} />
             </div>
             <div class="space-y-2 lg:col-span-12">
               <label class="form-label"
-                     for="accelerator-weekly-agenda-{{ entry.landscape_entry_id }}">Weekly agenda JSON</label>
+                     for="accelerator-weekly-agenda-{{ entry.landscape_entry_id }}">
+                Weekly agenda JSON
+              </label>
               <textarea id="accelerator-weekly-agenda-{{ entry.landscape_entry_id }}"
                         name="accelerator_weekly_agenda"
                         rows="6"
