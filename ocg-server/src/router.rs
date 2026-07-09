@@ -286,6 +286,10 @@ pub(crate) async fn setup(
             post(crate::handlers::dashboard::jobs::update_mock_interview_feedback),
         )
         .route(
+            "/dashboard/jobs/users/search",
+            get(crate::handlers::dashboard::common::search_user),
+        )
+        .route(
             "/dashboard/jobs/{job_id}",
             put(crate::handlers::dashboard::jobs::update)
                 .delete(crate::handlers::dashboard::jobs::delete),
@@ -371,6 +375,10 @@ pub(crate) async fn setup(
         .route(
             "/{alliance}/group/{group_slug}/reports",
             get(group::report_page),
+        )
+        .route(
+            "/{alliance}/group/{group_slug}/accelerator",
+            get(group::accelerator_page),
         )
         .route("/{alliance}/group/{group_slug}", get(group::page))
         .route(

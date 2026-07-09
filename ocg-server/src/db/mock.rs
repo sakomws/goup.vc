@@ -1179,13 +1179,17 @@ mock! {
             alliance_id: Uuid,
             group_id: Uuid,
             interviewer_user_id: Uuid,
-        ) -> Result<bool>;
+        ) -> Result<Option<Uuid>>;
         async fn upsert_mock_interview_match(
             &self,
             actor_user_id: Uuid,
             request_id: Uuid,
             input: &crate::types::mock_interviews::MockInterviewMatchInput,
         ) -> Result<Uuid>;
+        async fn get_mock_interview_match_notification_context(
+            &self,
+            match_id: Uuid,
+        ) -> Result<Option<crate::types::mock_interviews::MockInterviewMatchNotificationContext>>;
         async fn update_mock_interview_feedback(
             &self,
             actor_user_id: Uuid,
