@@ -1,6 +1,6 @@
 {% import "macros/dashboard.html" as dashboard -%}
 
-{{ dashboard::page_title(title = "My Mock Interviews", description = "Review assigned mock interviews and submit feedback for your role.") -}}
+{{ dashboard::page_title(title = "My Mock Interviews", description = "Review assigned mock interviews, coordinate logistics, and submit role-specific feedback.") -}}
 
 <div class="mt-8 grid gap-4 sm:grid-cols-3">
   <div class="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm">
@@ -11,7 +11,7 @@
   <div class="rounded-[1.75rem] border border-stone-200 bg-stone-50 p-5 sm:col-span-2">
     <div class="text-sm font-black text-stone-950">Feedback</div>
     <p class="mt-2 text-sm/6 text-stone-600">
-      Coordinate the scheduled time with your match, add the meeting link, and submit feedback for your assigned role.
+      Interviewers send feedback for interviewees. Interviewees rate the interviewer and can add comments.
     </p>
   </div>
 </div>
@@ -94,18 +94,53 @@
           </div>
         </form>
 
+        {% if session.role == "interviewee" -%}
+          {% if let Some(interviewer_feedback) = &session.match_.interviewer_feedback -%}
+            <div class="mt-5 rounded-2xl border border-primary-200 bg-primary-50 p-4">
+              <div class="text-xs font-bold uppercase tracking-[0.16em] text-primary-700">Feedback from interviewer</div>
+              <p class="mt-2 whitespace-pre-line text-sm/6 text-stone-800">{{ interviewer_feedback }}</p>
+            </div>
+          {% endif -%}
+        {% endif -%}
+
         <form class="mt-5 grid gap-3 rounded-2xl border border-stone-200 bg-stone-50 p-4"
               method="post"
               action="/dashboard/user/mock-interviews/{{ session.match_.mock_interview_match_id }}/feedback"
               hx-post="/dashboard/user/mock-interviews/{{ session.match_.mock_interview_match_id }}/feedback"
               hx-target="body">
-          <label class="block">
-            <span class="form-label">{{ session.role_label() }} feedback</span>
-            <textarea name="feedback"
-                      rows="4"
-                      class="input-primary mt-2 min-h-28 resize-y"
-                      placeholder="What went well, what to improve, and recommended next steps">{{ session.current_user_feedback().unwrap_or("") }}</textarea>
-          </label>
+          {% if session.role == "interviewer" -%}
+            <label class="block">
+              <span class="form-label">Feedback for interviewee</span>
+              <textarea name="feedback"
+                        rows="4"
+                        class="input-primary mt-2 min-h-28 resize-y"
+                        placeholder="Strengths, gaps, recommended prep, and next steps. Visible to the interviewee and admins.">{{ session.current_user_feedback().unwrap_or("") }}</textarea>
+            </label>
+          {% elif session.role == "interviewee" -%}
+            <label class="block">
+              <span class="form-label">Rate the interviewer</span>
+              <select name="interviewer_rating" class="input-primary mt-2" required>
+                <option value="">Choose a rating</option>
+                <option value="5"
+                        {% if session.current_user_interviewer_rating_is(5) %}selected{% endif %}>5 - Excellent</option>
+                <option value="4"
+                        {% if session.current_user_interviewer_rating_is(4) %}selected{% endif %}>4 - Good</option>
+                <option value="3"
+                        {% if session.current_user_interviewer_rating_is(3) %}selected{% endif %}>3 - Okay</option>
+                <option value="2"
+                        {% if session.current_user_interviewer_rating_is(2) %}selected{% endif %}>2 - Needs work</option>
+                <option value="1"
+                        {% if session.current_user_interviewer_rating_is(1) %}selected{% endif %}>1 - Poor</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="form-label">Comments about the interviewer</span>
+              <textarea name="feedback"
+                        rows="4"
+                        class="input-primary mt-2 min-h-28 resize-y"
+                        placeholder="What helped, what could improve, and whether you would recommend this interviewer">{{ session.current_user_feedback().unwrap_or("") }}</textarea>
+            </label>
+          {% endif -%}
           <div class="flex justify-end">
             <button class="btn-primary" type="submit">Save feedback</button>
           </div>

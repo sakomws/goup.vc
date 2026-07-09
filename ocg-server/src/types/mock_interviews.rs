@@ -26,6 +26,23 @@ pub(crate) struct MockInterviewOption {
     pub votes: i32,
 }
 
+impl MockInterviewOption {
+    /// Returns a correctly pluralized vote label.
+    pub(crate) fn vote_label(&self) -> String {
+        if self.votes == 1 {
+            "1 vote".to_string()
+        } else {
+            format!("{} votes", self.votes)
+        }
+    }
+
+    /// Returns a bounded display percentage against the strongest poll option.
+    pub(crate) fn demand_percent(&self) -> i32 {
+        let percent = (self.votes.max(0) * 100) / 49;
+        percent.clamp(8, 100)
+    }
+}
+
 /// Practice role options from the poll.
 pub(crate) const PRACTICE_ROLE_OPTIONS: &[MockInterviewOption] = &[
     MockInterviewOption {
@@ -234,7 +251,7 @@ pub(crate) struct MockInterviewRequestInput {
     pub notes: Option<String>,
 }
 
-/// Match/scheduling input.
+/// Match input from the organizer queue.
 #[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub(crate) struct MockInterviewMatchInput {
@@ -278,6 +295,10 @@ pub(crate) struct MockInterviewFeedbackInput {
     #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION))]
     pub interviewee_feedback: Option<String>,
+    /// Interviewee rating for the interviewer.
+    #[serde(default)]
+    #[garde(range(min = 1, max = 5))]
+    pub interviewer_rating: Option<i32>,
 }
 
 /// Participant feedback input.
@@ -288,6 +309,10 @@ pub(crate) struct MockInterviewParticipantFeedbackInput {
     #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION))]
     pub feedback: Option<String>,
+    /// Interviewee rating for the interviewer.
+    #[serde(default)]
+    #[garde(range(min = 1, max = 5))]
+    pub interviewer_rating: Option<i32>,
 }
 
 /// Participant scheduling input.
@@ -315,8 +340,42 @@ pub(crate) struct MockInterviewDashboard {
     /// Stats.
     #[serde(default)]
     pub stats: Vec<MockInterviewStat>,
+    /// Aggregate metrics for the mock interview dashboard.
+    #[serde(default)]
+    pub metrics: MockInterviewMetrics,
     /// Total matching requests.
     pub total: usize,
+}
+
+/// Aggregate mock interview dashboard metrics.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct MockInterviewMetrics {
+    /// Total submitted requests.
+    pub total_requests: usize,
+    /// Requests still waiting to be matched.
+    pub pending_requests: usize,
+    /// Requests currently matched or scheduled.
+    pub active_requests: usize,
+    /// Total created matches.
+    pub total_matches: usize,
+    /// Matches currently active.
+    pub active_matches: usize,
+    /// Completed matches.
+    pub completed_matches: usize,
+    /// Canceled matches.
+    pub canceled_matches: usize,
+    /// Matches with at least one feedback or rating field.
+    pub feedback_count: usize,
+    /// Average interviewee rating for interviewers.
+    pub average_interviewer_rating: Option<f64>,
+}
+
+impl MockInterviewMetrics {
+    /// Formats average interviewer rating for display.
+    pub(crate) fn average_interviewer_rating_display(&self) -> String {
+        self.average_interviewer_rating
+            .map_or_else(|| "N/A".to_string(), |rating| format!("{rating:.1}"))
+    }
 }
 
 /// Mock interview request.
@@ -415,9 +474,62 @@ pub(crate) struct MockInterviewMatch {
     pub interviewer_feedback: Option<String>,
     /// Interviewee feedback.
     pub interviewee_feedback: Option<String>,
+    /// Interviewee rating for the interviewer.
+    pub interviewer_rating: Option<i32>,
     /// Creation time.
     #[serde(with = "chrono::serde::ts_seconds")]
     pub created_at: DateTime<Utc>,
+}
+
+impl MockInterviewMatch {
+    /// Returns whether the interviewer rating equals the given value.
+    pub(crate) fn interviewer_rating_is(&self, value: i32) -> bool {
+        self.interviewer_rating == Some(value)
+    }
+}
+
+/// Participant context used when notifying a new match.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct MockInterviewMatchNotificationContext {
+    /// Match ID.
+    pub mock_interview_match_id: Uuid,
+    /// Interviewer user ID.
+    pub interviewer_user_id: Option<Uuid>,
+    /// Interviewer username.
+    pub interviewer_username: Option<String>,
+    /// Interviewer display name.
+    pub interviewer_name: Option<String>,
+    /// Interviewee user ID.
+    pub interviewee_user_id: Option<Uuid>,
+    /// Interviewee username.
+    pub interviewee_username: Option<String>,
+    /// Interviewee display name.
+    pub interviewee_name: Option<String>,
+    /// Interview type.
+    pub interview_type: String,
+    /// Practice role.
+    pub practice_role: String,
+}
+
+impl MockInterviewMatchNotificationContext {
+    /// Returns the interviewer display label.
+    pub(crate) fn interviewer_label(&self) -> String {
+        self.interviewer_name
+            .as_deref()
+            .or(self.interviewer_username.as_deref())
+            .unwrap_or("Interviewer")
+            .to_string()
+    }
+
+    /// Returns the interviewee display label.
+    pub(crate) fn interviewee_label(&self) -> String {
+        self.interviewee_name
+            .as_deref()
+            .or(self.interviewee_username.as_deref())
+            .unwrap_or("Interviewee")
+            .to_string()
+    }
 }
 
 /// Mock interview match for the current user's dashboard.
@@ -448,6 +560,20 @@ impl UserMockInterviewMatch {
             "interviewee" => self.match_.interviewee_feedback.as_deref(),
             _ => None,
         }
+    }
+
+    /// Returns the interviewer rating editable by the interviewee.
+    pub(crate) fn current_user_interviewer_rating(&self) -> Option<i32> {
+        if self.role == "interviewee" {
+            self.match_.interviewer_rating
+        } else {
+            None
+        }
+    }
+
+    /// Returns whether the current interviewee rating equals the given value.
+    pub(crate) fn current_user_interviewer_rating_is(&self, value: i32) -> bool {
+        self.current_user_interviewer_rating() == Some(value)
     }
 }
 
