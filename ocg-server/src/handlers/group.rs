@@ -324,6 +324,39 @@ pub(crate) async fn request_member_phone(
     Ok((StatusCode::NO_CONTENT, [("HX-Refresh", "true")]).into_response())
 }
 
+/// Requests another group member as a mock interview interviewer.
+#[instrument(skip_all)]
+pub(crate) async fn request_member_mock_interview(
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    Path((alliance_name, group_slug, interviewer_user_id)): Path<(String, String, Uuid)>,
+) -> Result<impl IntoResponse, HandlerError> {
+    if user.user_id == interviewer_user_id {
+        return Ok(StatusCode::BAD_REQUEST.into_response());
+    }
+
+    let Some(alliance_id) = db.get_alliance_id_by_name(&alliance_name).await? else {
+        return Ok(StatusCode::NOT_FOUND.into_response());
+    };
+    let Some(group) = db.get_group_full_by_slug(alliance_id, &group_slug).await? else {
+        return Ok(StatusCode::NOT_FOUND.into_response());
+    };
+
+    if !group.mock_interviews_available() {
+        return Ok(StatusCode::NOT_FOUND.into_response());
+    }
+
+    let requested = db
+        .request_group_mock_interviewer(user.user_id, alliance_id, group.group_id, interviewer_user_id)
+        .await?;
+
+    if !requested {
+        return Ok(StatusCode::FORBIDDEN.into_response());
+    }
+
+    Ok((StatusCode::NO_CONTENT, [("HX-Refresh", "true")]).into_response())
+}
+
 /// Approves a pending phone visibility request for the current member.
 #[instrument(skip_all)]
 pub(crate) async fn approve_member_phone_request(

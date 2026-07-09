@@ -59,6 +59,10 @@ pub(crate) struct AllianceUpdate {
     #[serde(default = "default_true")]
     #[garde(skip)]
     pub mentorship_enabled: bool,
+    /// Whether mock interview requests are enabled across this alliance.
+    #[serde(default = "default_true")]
+    #[garde(skip)]
+    pub mock_interviews_enabled: bool,
 
     /// Target URL when users click on the advertisement banner.
     #[garde(url, length(max = MAX_LEN_L))]

@@ -236,6 +236,10 @@ pub(crate) async fn setup(
             post(group::request_member_phone),
         )
         .route(
+            "/{alliance}/group/{group_slug}/members/{user_id}/mock-interview-requests",
+            post(group::request_member_mock_interview),
+        )
+        .route(
             "/{alliance}/group/{group_slug}/members/phone-requests/{user_id}/approve",
             post(group::approve_member_phone_request),
         )

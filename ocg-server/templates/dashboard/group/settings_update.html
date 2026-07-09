@@ -235,6 +235,26 @@
     </label>
   </div>
   {# End mentorship availability -#}
+
+  {# Mock interview availability -#}
+  <div class="col-span-full rounded-xl border border-stone-200 bg-stone-50 p-4">
+    <label for="mock_interviews_enabled"
+           class="flex cursor-pointer items-start gap-3">
+      <input id="mock_interviews_enabled"
+             name="mock_interviews_enabled"
+             type="checkbox"
+             value="true"
+             class="mt-1 size-4 rounded border-stone-300 text-primary-600 focus:ring-primary-500"
+             {% if group.mock_interviews_enabled %}
+               checked
+             {% endif %}>
+      <span>
+        <span class="block text-sm font-semibold text-stone-900">Enable mock interview requests</span>
+        <span class="mt-1 block text-sm text-stone-600">When enabled, members can request mock interviews from member cards in this group.</span>
+      </span>
+    </label>
+  </div>
+  {# End mock interview availability -#}
 </div>
 </div>
 

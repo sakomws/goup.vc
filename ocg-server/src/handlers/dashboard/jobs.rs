@@ -194,8 +194,13 @@ pub(crate) async fn update_mock_interview_feedback(
     Path(match_id): Path<Uuid>,
     ValidatedForm(input): ValidatedForm<MockInterviewFeedbackInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
-    db.update_mock_interview_feedback(user.user_id, match_id, &input)
+    let updated = db
+        .update_mock_interview_feedback(user.user_id, match_id, &input)
         .await?;
+    if !updated {
+        return Err(HandlerError::NotFound);
+    }
+
     messages.success("Mock interview feedback saved.");
     Ok((
         StatusCode::SEE_OTHER,

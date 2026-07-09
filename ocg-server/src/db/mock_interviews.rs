@@ -10,7 +10,8 @@ use crate::{
     db::PgExecutor,
     types::mock_interviews::{
         MockInterviewDashboard, MockInterviewFeedbackInput, MockInterviewFilters,
-        MockInterviewMatchInput, MockInterviewRequestInput,
+        MockInterviewMatchInput, MockInterviewParticipantFeedbackInput, MockInterviewRequestInput,
+        MockInterviewParticipantScheduleInput, UserMockInterviewMatch,
     },
 };
 
@@ -23,12 +24,27 @@ pub(crate) trait DBMockInterviews {
         filters: &MockInterviewFilters,
     ) -> Result<MockInterviewDashboard>;
 
+    /// List matches where the user is an assigned participant.
+    async fn list_user_mock_interview_matches(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<UserMockInterviewMatch>>;
+
     /// Submit a mock interview request.
     async fn add_mock_interview_request(
         &self,
         user_id: Uuid,
         input: &MockInterviewRequestInput,
     ) -> Result<Uuid>;
+
+    /// Request a group member as the interviewer's match.
+    async fn request_group_mock_interviewer(
+        &self,
+        requester_user_id: Uuid,
+        alliance_id: Uuid,
+        group_id: Uuid,
+        interviewer_user_id: Uuid,
+    ) -> Result<bool>;
 
     /// Create or update a match and schedule.
     async fn upsert_mock_interview_match(
@@ -44,7 +60,23 @@ pub(crate) trait DBMockInterviews {
         actor_user_id: Uuid,
         match_id: Uuid,
         input: &MockInterviewFeedbackInput,
-    ) -> Result<()>;
+    ) -> Result<bool>;
+
+    /// Record feedback for the actor's assigned role in a match.
+    async fn update_user_mock_interview_feedback(
+        &self,
+        actor_user_id: Uuid,
+        match_id: Uuid,
+        input: &MockInterviewParticipantFeedbackInput,
+    ) -> Result<bool>;
+
+    /// Schedule an assigned match as one of its participants.
+    async fn update_user_mock_interview_schedule(
+        &self,
+        actor_user_id: Uuid,
+        match_id: Uuid,
+        input: &MockInterviewParticipantScheduleInput,
+    ) -> Result<bool>;
 }
 
 #[async_trait]
@@ -149,6 +181,43 @@ where
         .await
     }
 
+    #[instrument(skip(self), err)]
+    async fn list_user_mock_interview_matches(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<UserMockInterviewMatch>> {
+        self.fetch_json_one(
+            r#"
+            select coalesce(jsonb_agg(jsonb_build_object(
+                'mock_interview_match_id', mim.mock_interview_match_id,
+                'mock_interview_request_id', mim.mock_interview_request_id,
+                'interviewer_user_id', mim.interviewer_user_id,
+                'interviewer_label', coalesce(interviewer.name, interviewer.username),
+                'interviewee_user_id', mim.interviewee_user_id,
+                'interviewee_label', coalesce(interviewee.name, interviewee.username),
+                'scheduled_at', to_char(mim.scheduled_at at time zone 'UTC', 'YYYY-MM-DD HH24:MI "UTC"'),
+                'meeting_url', mim.meeting_url,
+                'status', mim.status,
+                'internal_notes', mim.internal_notes,
+                'interviewer_feedback', mim.interviewer_feedback,
+                'interviewee_feedback', mim.interviewee_feedback,
+                'created_at', extract(epoch from mim.created_at)::bigint,
+                'role', case
+                    when mim.interviewer_user_id = $1::uuid then 'interviewer'
+                    else 'interviewee'
+                end
+            ) order by mim.scheduled_at desc nulls last, mim.created_at desc), '[]'::jsonb)
+            from mock_interview_match mim
+            left join "user" interviewer on interviewer.user_id = mim.interviewer_user_id
+            left join "user" interviewee on interviewee.user_id = mim.interviewee_user_id
+            where mim.interviewer_user_id = $1::uuid
+            or mim.interviewee_user_id = $1::uuid
+            "#,
+            &[&user_id],
+        )
+        .await
+    }
+
     #[instrument(skip(self, input), err)]
     async fn add_mock_interview_request(
         &self,
@@ -180,6 +249,100 @@ where
             returning mock_interview_request_id
             "#,
             &[&user_id, &Json(input)],
+        )
+        .await
+    }
+
+    #[instrument(skip(self), err)]
+    async fn request_group_mock_interviewer(
+        &self,
+        requester_user_id: Uuid,
+        alliance_id: Uuid,
+        group_id: Uuid,
+        interviewer_user_id: Uuid,
+    ) -> Result<bool> {
+        self.fetch_scalar_one(
+            r#"
+            with eligible_group as (
+                select g.group_id
+                from "group" g
+                join alliance a on a.alliance_id = g.alliance_id
+                where g.group_id = $3::uuid
+                and g.alliance_id = $2::uuid
+                and g.active = true
+                and g.deleted = false
+                and g.mock_interviews_enabled = true
+                and a.mock_interviews_enabled = true
+                and exists (
+                    select 1
+                    from group_member gm
+                    where gm.group_id = g.group_id
+                    and gm.user_id = $1::uuid
+                )
+                and exists (
+                    select 1
+                    from group_member gm
+                    where gm.group_id = g.group_id
+                    and gm.user_id = $4::uuid
+                )
+                and not exists (
+                    select 1
+                    from mock_interview_match mim
+                    where mim.interviewee_user_id = $1::uuid
+                    and mim.interviewer_user_id = $4::uuid
+                    and mim.status <> 'canceled'
+                )
+            ),
+            inserted_request as (
+                insert into mock_interview_request (
+                    requester_user_id,
+                    practice_role,
+                    interview_type,
+                    target_company,
+                    seniority,
+                    location,
+                    notes,
+                    status
+                )
+                select
+                    $1::uuid,
+                    'interviewee',
+                    'other',
+                    'doesnt_matter',
+                    'mid',
+                    'other',
+                    'Requested interviewer from member card.',
+                    'matched'
+                from eligible_group
+                returning mock_interview_request_id
+            ),
+            inserted_match as (
+                insert into mock_interview_match (
+                    mock_interview_request_id,
+                    created_by_user_id,
+                    interviewer_user_id,
+                    interviewee_user_id,
+                    status,
+                    internal_notes
+                )
+                select
+                    mock_interview_request_id,
+                    $1::uuid,
+                    $4::uuid,
+                    $1::uuid,
+                    'matched',
+                    'Requested from member card.'
+                from inserted_request
+                returning 1
+            )
+            select exists(select 1 from inserted_match)
+            "#,
+            &[
+                &requester_user_id,
+                &alliance_id,
+                &group_id,
+                &interviewer_user_id,
+            ],
         )
         .await
     }
@@ -218,8 +381,8 @@ where
                 do update set
                     interviewer_user_id = excluded.interviewer_user_id,
                     interviewee_user_id = excluded.interviewee_user_id,
-                    scheduled_at = excluded.scheduled_at,
-                    meeting_url = excluded.meeting_url,
+                    scheduled_at = coalesce(excluded.scheduled_at, mock_interview_match.scheduled_at),
+                    meeting_url = coalesce(excluded.meeting_url, mock_interview_match.meeting_url),
                     status = excluded.status,
                     internal_notes = excluded.internal_notes,
                     updated_at = current_timestamp
@@ -245,11 +408,11 @@ where
     #[instrument(skip(self, input), err)]
     async fn update_mock_interview_feedback(
         &self,
-        _actor_user_id: Uuid,
+        actor_user_id: Uuid,
         match_id: Uuid,
         input: &MockInterviewFeedbackInput,
-    ) -> Result<()> {
-        self.execute(
+    ) -> Result<bool> {
+        self.fetch_scalar_one(
             r#"
             with updated_match as (
                 update mock_interview_match
@@ -258,8 +421,10 @@ where
                     interviewee_feedback = $2::jsonb ->> 'interviewee_feedback',
                     updated_at = current_timestamp
                 where mock_interview_match_id = $1::uuid
+                and created_by_user_id = $3::uuid
                 returning mock_interview_request_id, status
-            )
+            ),
+            updated_request as (
             update mock_interview_request mir
             set status = case
                     when updated_match.status = 'scheduled' then 'scheduled'
@@ -270,10 +435,85 @@ where
                 updated_at = current_timestamp
             from updated_match
             where mir.mock_interview_request_id = updated_match.mock_interview_request_id
+                returning 1
+            )
+            select exists(select 1 from updated_request)
             "#,
-            &[&match_id, &Json(input)],
+            &[&match_id, &Json(input), &actor_user_id],
         )
-        .await?;
-        Ok(())
+        .await
+    }
+
+    #[instrument(skip(self, input), err)]
+    async fn update_user_mock_interview_feedback(
+        &self,
+        actor_user_id: Uuid,
+        match_id: Uuid,
+        input: &MockInterviewParticipantFeedbackInput,
+    ) -> Result<bool> {
+        self.fetch_scalar_one(
+            r#"
+            with updated_match as (
+                update mock_interview_match
+                set interviewer_feedback = case
+                        when interviewer_user_id = $2::uuid then $3::jsonb ->> 'feedback'
+                        else interviewer_feedback
+                    end,
+                    interviewee_feedback = case
+                        when interviewee_user_id = $2::uuid then $3::jsonb ->> 'feedback'
+                        else interviewee_feedback
+                    end,
+                    updated_at = current_timestamp
+                where mock_interview_match_id = $1::uuid
+                and (interviewer_user_id = $2::uuid or interviewee_user_id = $2::uuid)
+                returning 1
+            )
+            select exists(select 1 from updated_match)
+            "#,
+            &[&match_id, &actor_user_id, &Json(input)],
+        )
+        .await
+    }
+
+    #[instrument(skip(self, input), err)]
+    async fn update_user_mock_interview_schedule(
+        &self,
+        actor_user_id: Uuid,
+        match_id: Uuid,
+        input: &MockInterviewParticipantScheduleInput,
+    ) -> Result<bool> {
+        self.fetch_scalar_one(
+            r#"
+            with updated_match as (
+                update mock_interview_match
+                set scheduled_at = ($3::jsonb ->> 'scheduled_at')::timestamptz,
+                    meeting_url = $3::jsonb ->> 'meeting_url',
+                    status = case
+                        when status in ('matched', 'scheduled') then 'scheduled'
+                        else status
+                    end,
+                    updated_at = current_timestamp
+                where mock_interview_match_id = $1::uuid
+                and (interviewer_user_id = $2::uuid or interviewee_user_id = $2::uuid)
+                returning mock_interview_request_id, status
+            ),
+            updated_request as (
+                update mock_interview_request mir
+                set status = case
+                        when updated_match.status = 'scheduled' then 'scheduled'
+                        when updated_match.status = 'completed' then 'completed'
+                        when updated_match.status = 'canceled' then 'canceled'
+                        else 'matched'
+                    end,
+                    updated_at = current_timestamp
+                from updated_match
+                where mir.mock_interview_request_id = updated_match.mock_interview_request_id
+                returning 1
+            )
+            select exists(select 1 from updated_request)
+            "#,
+            &[&match_id, &actor_user_id, &Json(input)],
+        )
+        .await
     }
 }

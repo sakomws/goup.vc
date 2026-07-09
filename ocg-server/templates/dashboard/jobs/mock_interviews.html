@@ -150,14 +150,6 @@
             </div>
             <div class="space-y-2 lg:col-span-3">
               <label class="form-label"
-                     for="scheduled-{{ request.mock_interview_request_id }}">Scheduled time</label>
-              <input id="scheduled-{{ request.mock_interview_request_id }}"
-                     name="scheduled_at"
-                     class="input-primary"
-                     placeholder="2026-07-15 19:00 +04" />
-            </div>
-            <div class="space-y-2 lg:col-span-3">
-              <label class="form-label"
                      for="status-{{ request.mock_interview_request_id }}">Status</label>
               <select id="status-{{ request.mock_interview_request_id }}"
                       name="status"
@@ -168,15 +160,7 @@
                 <option value="canceled">Canceled</option>
               </select>
             </div>
-            <div class="space-y-2 lg:col-span-5">
-              <label class="form-label"
-                     for="meeting-{{ request.mock_interview_request_id }}">Meeting URL</label>
-              <input id="meeting-{{ request.mock_interview_request_id }}"
-                     name="meeting_url"
-                     class="input-primary"
-                     placeholder="https://meet.google.com/..." />
-            </div>
-            <div class="space-y-2 lg:col-span-7">
+            <div class="space-y-2 lg:col-span-9">
               <label class="form-label"
                      for="notes-{{ request.mock_interview_request_id }}">Internal notes</label>
               <input id="notes-{{ request.mock_interview_request_id }}"

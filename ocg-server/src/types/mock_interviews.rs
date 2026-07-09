@@ -11,7 +11,7 @@ use crate::{
     types::pagination::{Pagination, ToRawQuery},
     validation::{
         MAX_LEN_DESCRIPTION, MAX_LEN_DESCRIPTION_SHORT, MAX_LEN_M, MAX_PAGINATION_LIMIT,
-        optional_trimmed_string, trimmed_non_empty_opt,
+        optional_trimmed_string, trimmed_non_empty, trimmed_non_empty_opt,
     },
 };
 
@@ -280,6 +280,29 @@ pub(crate) struct MockInterviewFeedbackInput {
     pub interviewee_feedback: Option<String>,
 }
 
+/// Participant feedback input.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub(crate) struct MockInterviewParticipantFeedbackInput {
+    /// Feedback for the current user's assigned role.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION))]
+    pub feedback: Option<String>,
+}
+
+/// Participant scheduling input.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub(crate) struct MockInterviewParticipantScheduleInput {
+    /// Scheduled time as RFC3339 or database-compatible timestamp string.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
+    pub scheduled_at: String,
+    /// Meeting URL.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(url, length(max = MAX_LEN_M), custom(trimmed_non_empty_opt))]
+    pub meeting_url: Option<String>,
+}
+
 /// Dashboard output.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub(crate) struct MockInterviewDashboard {
@@ -395,6 +418,37 @@ pub(crate) struct MockInterviewMatch {
     /// Creation time.
     #[serde(with = "chrono::serde::ts_seconds")]
     pub created_at: DateTime<Utc>,
+}
+
+/// Mock interview match for the current user's dashboard.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct UserMockInterviewMatch {
+    /// Match details.
+    #[serde(flatten)]
+    pub match_: MockInterviewMatch,
+    /// Current user's role in the match.
+    pub role: String,
+}
+
+impl UserMockInterviewMatch {
+    /// Returns a human-readable role label.
+    pub(crate) fn role_label(&self) -> &'static str {
+        match self.role.as_str() {
+            "interviewer" => "Interviewer",
+            "interviewee" => "Interviewee",
+            _ => "Participant",
+        }
+    }
+
+    /// Returns the feedback value editable by the current user.
+    pub(crate) fn current_user_feedback(&self) -> Option<&str> {
+        match self.role.as_str() {
+            "interviewer" => self.match_.interviewer_feedback.as_deref(),
+            "interviewee" => self.match_.interviewee_feedback.as_deref(),
+            _ => None,
+        }
+    }
 }
 
 /// Dashboard aggregate stat.

@@ -170,6 +170,10 @@ pub(crate) struct Group {
     #[serde(default = "default_true")]
     #[garde(skip)]
     pub mentorship_enabled: bool,
+    /// Whether mock interview requests are enabled for this group.
+    #[serde(default = "default_true")]
+    #[garde(skip)]
+    pub mock_interviews_enabled: bool,
     /// URL to the group's Open Graph image.
     #[garde(custom(image_url_opt))]
     pub og_image_url: Option<String>,
