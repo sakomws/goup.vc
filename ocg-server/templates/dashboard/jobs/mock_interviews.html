@@ -3,6 +3,10 @@
 {% import "macros/feedback.html" as feedback -%}
 {% import "macros/pagination.html" as pagination -%}
 
+{% block scripts -%}
+  <script type="module" src="/static/js/common/users/user-search-selector.js"></script>
+{% endblock scripts -%}
+
 {% block menu -%}
   <div class="mt-3 mb-6 flex items-center justify-between px-3 lg:px-5">
     <div class="text-sm font-semibold text-stone-900 lg:text-lg">Jobs Dashboard</div>
@@ -129,21 +133,13 @@
                   action="/dashboard/jobs/mock-interviews/{{ request.mock_interview_request_id }}/match"
                   hx-post="/dashboard/jobs/mock-interviews/{{ request.mock_interview_request_id }}/match"
                   hx-target="body">
-              <div class="space-y-2 lg:col-span-3">
-                <label class="form-label"
-                       for="interviewer-{{ request.mock_interview_request_id }}">Interviewer user ID</label>
-                <input id="interviewer-{{ request.mock_interview_request_id }}"
-                       name="interviewer_user_id"
-                       class="input-primary"
-                       placeholder="Optional UUID" />
+              <div class="space-y-2 lg:col-span-6">
+                <div class="form-label">Interviewer</div>
+                <user-search-selector field-name="interviewer_user_id" dashboard-type="jobs" label="interviewer" legend="Search and select the member who will run the interview." max-users="1" single-value card-selection></user-search-selector>
               </div>
-              <div class="space-y-2 lg:col-span-3">
-                <label class="form-label"
-                       for="interviewee-{{ request.mock_interview_request_id }}">Interviewee user ID</label>
-                <input id="interviewee-{{ request.mock_interview_request_id }}"
-                       name="interviewee_user_id"
-                       class="input-primary"
-                       value="{{ request.requester_user_id }}" />
+              <div class="space-y-2 lg:col-span-6">
+                <div class="form-label">Interviewee</div>
+                <user-search-selector field-name="interviewee_user_id" dashboard-type="jobs" label="interviewee" legend="Search and select the member who will practice as the interviewee." max-users="1" single-value card-selection selected-users="{{ request.requester_selection() |json }}"></user-search-selector>
               </div>
               <div class="space-y-2 lg:col-span-3">
                 <label class="form-label"
@@ -221,12 +217,30 @@
                       <span class="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">{{ scheduled_at }}</span>
                     {% endif -%}
                   </div>
-                  <p class="mt-3 text-sm text-stone-700">
-                    Interviewer:
-                    <span class="font-semibold">{{ session.interviewer_label.as_deref().unwrap_or("TBD") }}</span>
-                    · Interviewee:
-                    <span class="font-semibold">{{ session.interviewee_label.as_deref().unwrap_or("TBD") }}</span>
-                  </p>
+                  <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-2xl border border-stone-200 bg-stone-50 p-3">
+                      <div class="text-xs font-bold uppercase tracking-[0.16em] text-stone-500">Interviewer</div>
+                      <div class="mt-2 flex items-center gap-3">
+                        <div class="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-stone-600 ring-1 ring-inset ring-stone-200">
+                          {{ self::user_initials(None, session.interviewer_label.as_deref().unwrap_or("TBD")) }}
+                        </div>
+                        <div class="min-w-0 truncate text-sm font-semibold text-stone-950">
+                          {{ session.interviewer_label.as_deref().unwrap_or("TBD") }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="rounded-2xl border border-stone-200 bg-stone-50 p-3">
+                      <div class="text-xs font-bold uppercase tracking-[0.16em] text-stone-500">Interviewee</div>
+                      <div class="mt-2 flex items-center gap-3">
+                        <div class="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-stone-600 ring-1 ring-inset ring-stone-200">
+                          {{ self::user_initials(None, session.interviewee_label.as_deref().unwrap_or("TBD")) }}
+                        </div>
+                        <div class="min-w-0 truncate text-sm font-semibold text-stone-950">
+                          {{ session.interviewee_label.as_deref().unwrap_or("TBD") }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   {% if let Some(internal_notes) = &session.internal_notes -%}
                     <p class="mt-2 rounded-xl bg-stone-50 px-3 py-2 text-sm/6 text-stone-700 ring-1 ring-inset ring-stone-200">
                       {{ internal_notes }}
