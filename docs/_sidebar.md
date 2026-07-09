@@ -8,6 +8,7 @@
 
 - Guides
   - [Public Site](/guides/public-site.md)
+  - [Jobs and Mock Interviews](/guides/jobs.md)
   - [User Dashboard](/guides/user-dashboard.md)
   - [Alliance Dashboard](/guides/alliance-dashboard.md)
   - [Group Dashboard](/guides/group-dashboard.md)

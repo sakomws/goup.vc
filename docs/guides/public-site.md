@@ -18,6 +18,7 @@ If you prefer a faster task-oriented run-through first, use
 - [RSVP and Attend Events](#rsvp-and-attend-events)
 - [Check In on Event Day](#check-in-on-event-day)
 - [Submit to Call for Speakers (CFS)](#submit-to-call-for-speakers-cfs)
+- [Use Jobs and Mock Interviews](#use-jobs-and-mock-interviews)
 - [Use Stats for Platform Context](#use-stats-for-platform-context)
 - [Recommended Member Flow](#recommended-member-flow)
 
@@ -32,6 +33,7 @@ If you prefer a faster task-oriented run-through first, use
 | Group page     | `/{alliance}/group/{group_slug}`                    | Membership entry point and group-specific event stream           |
 | Event page     | `/{alliance}/group/{group_slug}/event/{event_slug}` | RSVP, schedule, CFS, and delivery details                        |
 | Check-in page  | `/{alliance}/check-in/{event_id}`                   | Event-day attendance confirmation                                |
+| Jobs           | [/jobs](/jobs ':ignore')                            | Public/member-only roles and mock interview practice             |
 
 ![Home page overview](../screenshots/home-page.png)
 
@@ -180,6 +182,17 @@ lifecycle controls, see [Event Operations](event-operations.md).
 
 ![Event page CFS](../screenshots/event-page-cfs.png)
 
+## Use Jobs and Mock Interviews
+
+[Jobs](/jobs ':ignore') helps members find opportunities shared through the GOUP network. Use it to
+search roles, filter by location or remote-friendly work, and open role details.
+
+[Mock Interviews](/jobs/mock-interviews ':ignore') helps members prepare for those opportunities.
+Logged-in members can request practice by choosing interview type, target company category,
+seniority, location, and availability. Organizers schedule matches from the Jobs dashboard.
+
+For the full workflow, read [Jobs and Mock Interviews](jobs.md).
+
 ## Use Stats for Platform Context
 
 [Stats](/stats ':ignore') helps organizers and contributors understand
@@ -193,7 +206,8 @@ momentum at a glance: groups, members, events, and attendees over time.
 2. Join one or more groups.
 3. RSVP to events.
 4. Check in on event day.
-5. Use CFS features when you are ready to submit talks.
+5. Browse jobs or request mock interview practice.
+6. Use CFS features when you are ready to submit talks.
 
 When you transition into organizer responsibilities, use
 [Choose Your Dashboard](../getting-started/choose-dashboard.md).

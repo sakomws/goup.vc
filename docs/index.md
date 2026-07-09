@@ -14,6 +14,7 @@ or contributing to the codebase.
 | Get productive quickly | [Quickstart](getting-started/quickstart.md) |
 | Choose the right dashboard | [Choose Your Dashboard](getting-started/choose-dashboard.md) |
 | Discover groups and events | [Public Site Guide](guides/public-site.md) |
+| Find jobs or practice interviews | [Jobs and Mock Interviews](guides/jobs.md) |
 | Participate as a member | [Group Members Runbook](guides/group-members-runbook.md) |
 | Lead a group | [Group Leads Runbook](guides/group-leads-runbook.md) |
 | Run alliance operations | [Alliance Dashboard Guide](guides/alliance-dashboard.md) |
@@ -34,6 +35,7 @@ Important pages:
 
 - [Explore](/explore) for groups and events.
 - [Jobs](/jobs) for public and member-only roles.
+- [Mock Interviews](/jobs/mock-interviews) for interview practice requests and scheduling.
 - [Landscape](/landscape) for startups, GitHub projects, partner communities, and podcast leads.
 - [Stats](/stats) for platform activity and engagement.
 - [Sponsor](/sponsor) for partnership inquiries.
@@ -82,6 +84,9 @@ GOUP supports practical community opportunities:
 
 - Members can post public or member-only jobs.
 - Applicants can save interest so posters can follow up.
+- Members can request mock interview practice based on role, interview type, company target,
+  seniority, and location.
+- Organizers can match, schedule, and review mock interview sessions from the Jobs dashboard.
 - Members can offer individual or business mentorship from their profile.
 - Mentorship requests are tracked and emailed to mentors.
 - Sponsors can submit inquiries after logging in.

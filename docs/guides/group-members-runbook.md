@@ -16,6 +16,8 @@ Members can use GOUP to:
 - Respond to invitations.
 - Submit talks when a Call for Speakers is open.
 - Share useful projects, jobs, and community updates through the right group or alliance channels.
+- Request mock interview practice when preparing for technical, product, founder, or behavioral
+  interviews.
 
 Start with the [Quickstart](../getting-started/quickstart.md) if you are new.
 
@@ -82,6 +84,7 @@ Good member contributions are specific and useful:
 - Offer to speak, mentor, volunteer, or help run an event.
 - Share a project with enough context for others to understand it.
 - Post jobs or opportunities through the correct dashboard flow.
+- Use [Jobs and Mock Interviews](jobs.md) to find roles or join the practice queue.
 - Nominate members for spotlights when they shipped something worth celebrating.
 - Keep messages respectful and relevant to the group.
 
