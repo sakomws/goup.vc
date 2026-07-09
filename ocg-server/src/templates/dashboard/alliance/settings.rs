@@ -31,6 +31,7 @@ pub(crate) struct UpdatePage {
 
 /// Alliance update form data.
 #[skip_serializing_none]
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
 pub(crate) struct AllianceUpdate {
     /// URL to the alliance banner image optimized for mobile devices.

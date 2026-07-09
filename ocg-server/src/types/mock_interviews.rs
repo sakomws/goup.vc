@@ -1,5 +1,7 @@
 //! Mock interview domain types.
 
+#![allow(clippy::ref_option, clippy::trivially_copy_pass_by_ref)]
+
 use chrono::{DateTime, Utc};
 use garde::Validate;
 use serde::{Deserialize, Serialize};

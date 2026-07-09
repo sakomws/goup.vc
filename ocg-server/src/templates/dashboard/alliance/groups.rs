@@ -95,6 +95,7 @@ crate::impl_pagination_and_raw_query!(AllianceGroupsFilters, limit, offset);
 
 /// Group details for dashboard management.
 #[skip_serializing_none]
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
 pub(crate) struct Group {
     /// Category this group belongs to.

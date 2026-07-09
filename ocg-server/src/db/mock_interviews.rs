@@ -96,6 +96,9 @@ where
         &self,
         filters: &MockInterviewFilters,
     ) -> Result<MockInterviewDashboard> {
+        let limit = i32::try_from(filters.limit.unwrap_or(25))?;
+        let offset = i32::try_from(filters.offset.unwrap_or(0))?;
+
         self.fetch_json_one(
             r#"
             with filtered_requests as (
@@ -232,8 +235,8 @@ where
             "#,
             &[
                 &filters.status,
-                &(filters.limit.unwrap_or(25) as i32),
-                &(filters.offset.unwrap_or(0) as i32),
+                &limit,
+                &offset,
             ],
         )
         .await
@@ -284,7 +287,7 @@ where
         input: &MockInterviewRequestInput,
     ) -> Result<Uuid> {
         self.fetch_scalar_one(
-            r#"
+            r"
             insert into mock_interview_request (
                 requester_user_id,
                 practice_role,
@@ -306,7 +309,7 @@ where
                 $2::jsonb ->> 'notes'
             )
             returning mock_interview_request_id
-            "#,
+            ",
             &[&user_id, &Json(input)],
         )
         .await
@@ -414,7 +417,7 @@ where
         input: &MockInterviewMatchInput,
     ) -> Result<Uuid> {
         self.fetch_scalar_one(
-            r#"
+            r"
             with upserted as (
                 insert into mock_interview_match (
                     mock_interview_request_id,
@@ -458,7 +461,7 @@ where
             from upserted
             where mir.mock_interview_request_id = $1::uuid
             returning upserted.mock_interview_match_id
-            "#,
+            ",
             &[&request_id, &actor_user_id, &Json(input)],
         )
         .await
@@ -502,7 +505,7 @@ where
         input: &MockInterviewFeedbackInput,
     ) -> Result<bool> {
         self.fetch_scalar_one(
-            r#"
+            r"
             with updated_match as (
                 update mock_interview_match
                 set status = $2::jsonb ->> 'status',
@@ -528,7 +531,7 @@ where
                 returning 1
             )
             select exists(select 1 from updated_request)
-            "#,
+            ",
             &[&match_id, &Json(input), &actor_user_id],
         )
         .await
@@ -542,7 +545,7 @@ where
         input: &MockInterviewParticipantFeedbackInput,
     ) -> Result<bool> {
         self.fetch_scalar_one(
-            r#"
+            r"
             with updated_match as (
                 update mock_interview_match
                 set interviewer_feedback = case
@@ -563,7 +566,7 @@ where
                 returning 1
             )
             select exists(select 1 from updated_match)
-            "#,
+            ",
             &[&match_id, &actor_user_id, &Json(input)],
         )
         .await
@@ -577,7 +580,7 @@ where
         input: &MockInterviewParticipantScheduleInput,
     ) -> Result<bool> {
         self.fetch_scalar_one(
-            r#"
+            r"
             with updated_match as (
                 update mock_interview_match
                 set scheduled_at = ($3::jsonb ->> 'scheduled_at')::timestamptz,
@@ -605,7 +608,7 @@ where
                 returning 1
             )
             select exists(select 1 from updated_request)
-            "#,
+            ",
             &[&match_id, &actor_user_id, &Json(input)],
         )
         .await
