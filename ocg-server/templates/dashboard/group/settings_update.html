@@ -258,92 +258,92 @@
         </div>
       </div>
 
-      {# Location section -#}
-      <div class="border-b border-stone-900/10 pb-12">
-        {% let clear_location_button -%}
-        <button id="clear-location-fields"
-                type="button"
-                class="btn-primary-outline btn-mini whitespace-nowrap"
-                aria-label="Clear location details">Clear location</button>
-      {%- endlet %}
-      {{ dashboard::form_title(title = "Location", description = "Optional location information for the group.",
-            button = clear_location_button) -}}
+          {# Location section -#}
+          <div class="border-b border-stone-900/10 pb-12">
+            {% let clear_location_button -%}
+            <button id="clear-location-fields"
+                    type="button"
+                    class="btn-primary-outline btn-mini whitespace-nowrap"
+                    aria-label="Clear location details">Clear location</button>
+          {%- endlet %}
+          {{ dashboard::form_title(title = "Location", description = "Optional location information for the group.",
+                    button = clear_location_button) -}}
 
-      <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
-        {# Location search -#}
-        <div class="col-span-full">
-          <location-search-field id="group-location-search" placeholder-text="Search for a city, state, country..." venue-city-field-name="city" state-field-name="state" country-name-field-name="country_name" country-code-field-name="country_code" latitude-field-name="latitude" longitude-field-name="longitude"
-          {% if let Some(city) = &group.city %}initial-venue-city="{{ city }}"{% endif %}
+          <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
+            {# Location search -#}
+            <div class="col-span-full">
+              <location-search-field id="group-location-search" placeholder-text="Search for a city, state, country..." venue-city-field-name="city" state-field-name="state" country-name-field-name="country_name" country-code-field-name="country_code" latitude-field-name="latitude" longitude-field-name="longitude"
+              {% if let Some(city) = &group.city %}initial-venue-city="{{ city }}"{% endif %}
 
-          {% if let Some(state) = &group.state %}initial-state="{{ state }}"{% endif %}
+              {% if let Some(state) = &group.state %}initial-state="{{ state }}"{% endif %}
 
-          {% if let Some(country_name) = &group.country_name %}initial-country-name="{{ country_name }}"{% endif %}
+              {% if let Some(country_name) = &group.country_name %}initial-country-name="{{ country_name }}"{% endif %}
 
-          {% if let Some(country_code) = &group.country_code %}initial-country-code="{{ country_code }}"{% endif %}
+              {% if let Some(country_code) = &group.country_code %}initial-country-code="{{ country_code }}"{% endif %}
 
-          {% if let Some(lat) = &group.latitude %}initial-latitude="{{ lat }}"{% endif %}
+              {% if let Some(lat) = &group.latitude %}initial-latitude="{{ lat }}"{% endif %}
 
-          {% if let Some(lng) = &group.longitude %}initial-longitude="{{ lng }}"{% endif %}
-          >
-          </location-search-field>
-        </div>
-        {# End Location search -#}
-      </div>
-    </div>
-    {# End location section -#}
-
-    {% if payments_enabled -%}
-      {# Payments section -#}
-      <div class="border-b border-stone-900/10 pb-12">
-        {{ dashboard::form_title(title = "Payments", description = "Configure how this group receives money for paid events.") -}}
-
-        <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
-          <input type="hidden" name="payment_recipient[provider]" value="stripe">
-
-          <div class="col-span-full lg:col-span-4">
-            <label for="payment_recipient_recipient_id" class="form-label">Stripe Recipient</label>
-            <div class="mt-2">
-              <input type="text"
-                     name="payment_recipient[recipient_id]"
-                     id="payment_recipient_recipient_id"
-                     class="input-primary"
-                     placeholder="acct_..."
-                     {% if let Some(payment_recipient) = &group.payment_recipient %}
-                       value="{{ payment_recipient.recipient_id }}"
-                     {% endif %}>
+              {% if let Some(lng) = &group.longitude %}initial-longitude="{{ lng }}"{% endif %}
+              >
+              </location-search-field>
             </div>
-            <p class="form-legend">
-              Enter the Stripe connected account that should receive money for this group's paid events.
-              Leave this blank to keep the group on free events only.
-            </p>
+            {# End Location search -#}
           </div>
         </div>
-      </div>
-      {# End payments section -#}
-    {% endif -%}
+        {# End location section -#}
 
-    {# Social links section -#}
-    <div class="border-b border-stone-900/10 pb-12">
-      {{ dashboard::form_title(title = "Social links", description = "Optional social media profiles and website links.") -}}
+        {% if payments_enabled -%}
+          {# Payments section -#}
+          <div class="border-b border-stone-900/10 pb-12">
+            {{ dashboard::form_title(title = "Payments", description = "Configure how this group receives money for paid events.") -}}
 
-      <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
-        {% let website_value -%}
-        {% if let Some(website_url) = &group.website_url %}value="{{ website_url }}"{% endif %}
+            <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
+              <input type="hidden" name="payment_recipient[provider]" value="stripe">
+
+              <div class="col-span-full lg:col-span-4">
+                <label for="payment_recipient_recipient_id" class="form-label">Stripe Recipient</label>
+                <div class="mt-2">
+                  <input type="text"
+                         name="payment_recipient[recipient_id]"
+                         id="payment_recipient_recipient_id"
+                         class="input-primary"
+                         placeholder="acct_..."
+                         {% if let Some(payment_recipient) = &group.payment_recipient %}
+                           value="{{ payment_recipient.recipient_id }}"
+                         {% endif %}>
+                </div>
+                <p class="form-legend">
+                  Enter the Stripe connected account that should receive money for this group's paid events.
+                  Leave this blank to keep the group on free events only.
+                </p>
+              </div>
+            </div>
+          </div>
+          {# End payments section -#}
+        {% endif -%}
+
+        {# Social links section -#}
+        <div class="border-b border-stone-900/10 pb-12">
+          {{ dashboard::form_title(title = "Social links", description = "Optional social media profiles and website links.") -}}
+
+          <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
+            {% let website_value -%}
+            {% if let Some(website_url) = &group.website_url %}value="{{ website_url }}"{% endif %}
+          {%- endlet %}
+          {% let bluesky_value -%}
+          {% if let Some(bluesky_url) = &group.bluesky_url %}value="{{ bluesky_url }}"{% endif %}
+        {%- endlet %}
+        {% let facebook_value -%}
+        {% if let Some(facebook_url) = &group.facebook_url %}value="{{ facebook_url }}"{% endif %}
       {%- endlet %}
-      {% let bluesky_value -%}
-      {% if let Some(bluesky_url) = &group.bluesky_url %}value="{{ bluesky_url }}"{% endif %}
+      {% let flickr_value -%}
+      {% if let Some(flickr_url) = &group.flickr_url %}value="{{ flickr_url }}"{% endif %}
     {%- endlet %}
-    {% let facebook_value -%}
-    {% if let Some(facebook_url) = &group.facebook_url %}value="{{ facebook_url }}"{% endif %}
+    {% let discord_value -%}
+    {% if let Some(discord_url) = &group.discord_url %}value="{{ discord_url }}"{% endif %}
   {%- endlet %}
-  {% let flickr_value -%}
-  {% if let Some(flickr_url) = &group.flickr_url %}value="{{ flickr_url }}"{% endif %}
-{%- endlet %}
-{% let discord_value -%}
-{% if let Some(discord_url) = &group.discord_url %}value="{{ discord_url }}"{% endif %}
-{%- endlet %}
-{% let google_photos_value -%}
-{% if let Some(google_photos_url) = &group.google_photos_url %}value="{{ google_photos_url }}"{% endif %}
+  {% let google_photos_value -%}
+  {% if let Some(google_photos_url) = &group.google_photos_url %}value="{{ google_photos_url }}"{% endif %}
 {%- endlet %}
 {% let github_value -%}
 {% if let Some(github_url) = &group.github_url %}value="{{ github_url }}"{% endif %}
