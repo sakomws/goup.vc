@@ -14,7 +14,7 @@
            alt=""
            class="h-full w-full object-cover" />
       <div class="absolute inset-0"
-           style="background: linear-gradient(180deg, rgba(12, 22, 32, 0.35) 0%, rgba(14, 26, 40, 0.31) 100%);">
+           style="background: linear-gradient(180deg, rgba(12, 22, 32, 0.35) 0%, rgba(14, 26, 40, 0.31) 100%)">
       </div>
     </div>
     {# End background photo + scrim -#}
@@ -61,23 +61,31 @@
            class="hidden h-[34px] w-44 items-center rounded-full border border-white/25 bg-white/20 px-3.5 text-sm text-white/50 sm:inline-flex">
           Search...
         </a>
-        <a href="/dashboard/user?tab=invitations"
-           hx-boost="true"
-           hx-target="body"
-           class="flex size-[34px] items-center justify-center rounded-full bg-white/15"
-           aria-label="Notifications">
-          <div class="svg-icon size-4 icon-pending-invitation bg-white/[.627]"></div>
-        </a>
-        <div class="flex size-[34px] items-center justify-center rounded-full bg-[#3D5A8A] text-[13px] font-semibold text-white">
-          A
-        </div>
+        {% if user.logged_in -%}
+          <a href="/dashboard/user?tab=invitations"
+             hx-boost="true"
+             hx-target="body"
+             class="flex size-[34px] items-center justify-center rounded-full bg-white/15"
+             aria-label="Notifications">
+            <div class="svg-icon size-4 icon-pending-invitation bg-white/[.627]"></div>
+          </a>
+          <div class="flex size-[34px] items-center justify-center rounded-full bg-[#3D5A8A] text-[13px] font-semibold text-white uppercase">
+            {{ self::user_initials(user.name.as_deref() , user.username.as_deref().unwrap_or("")) }}
+          </div>
+        {% else -%}
+          <a href="/log-in/oidc/linkedin"
+             hx-boost="false"
+             class="inline-flex h-[34px] items-center rounded-full bg-white px-4 text-sm font-semibold text-[#1A1510] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            Join GOUP
+          </a>
+        {% endif -%}
       </div>
     </nav>
     {# End frosted navbar -#}
 
     {# Hero content -#}
     <div class="relative z-10 mx-auto flex max-w-[760px] flex-col items-center gap-6 px-4 pt-16 pb-24 text-center sm:px-6 lg:pt-[132px] lg:pb-[196px]">
-      <h1 class="font-amethysta text-5xl font-bold leading-[1.1] text-white sm:text-6xl lg:text-[90px]">
+      <h1 class="font-amethysta text-6xl font-bold leading-[1.1] text-white sm:text-7xl lg:text-[90px]">
         Build with people who care
       </h1>
 
@@ -102,23 +110,23 @@
       </div>
 
       {# Stats -#}
-      <div class="mt-4 flex items-center justify-center">
-        <div class="flex flex-col items-center gap-0.5 px-9 py-4">
+      <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-6 sm:flex sm:items-center sm:justify-center sm:gap-0">
+        <div class="flex flex-col items-center gap-0.5 py-2 sm:px-9 sm:py-4">
           <div class="font-amethysta text-[30px] font-bold text-white">{{ stats.groups }}</div>
           <div class="text-[10px] tracking-[1.5px] text-white/80 uppercase">Groups</div>
         </div>
-        <div class="h-7 w-px bg-white/[.145]"></div>
-        <div class="flex flex-col items-center gap-0.5 px-9 py-4">
+        <div class="hidden h-7 w-px bg-white/[.145] sm:block"></div>
+        <div class="flex flex-col items-center gap-0.5 py-2 sm:px-9 sm:py-4">
           <div class="font-amethysta text-[30px] font-bold text-white">{{ stats.groups_members }}</div>
           <div class="text-[10px] tracking-[1.5px] text-white/80 uppercase">Members</div>
         </div>
-        <div class="h-7 w-px bg-white/[.145]"></div>
-        <div class="flex flex-col items-center gap-0.5 px-9 py-4">
+        <div class="hidden h-7 w-px bg-white/[.145] sm:block"></div>
+        <div class="flex flex-col items-center gap-0.5 py-2 sm:px-9 sm:py-4">
           <div class="font-amethysta text-[30px] font-bold text-white">{{ stats.events }}</div>
           <div class="text-[10px] tracking-[1.5px] text-white/80 uppercase">Events</div>
         </div>
-        <div class="h-7 w-px bg-white/[.145]"></div>
-        <div class="flex flex-col items-center gap-0.5 px-9 py-4">
+        <div class="hidden h-7 w-px bg-white/[.145] sm:block"></div>
+        <div class="flex flex-col items-center gap-0.5 py-2 sm:px-9 sm:py-4">
           <div class="font-amethysta text-[30px] font-bold text-white">{{ stats.events_attendees }}</div>
           <div class="text-[10px] tracking-[1.5px] text-white/80 uppercase">Attendees</div>
         </div>
