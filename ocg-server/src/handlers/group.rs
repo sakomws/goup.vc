@@ -4,7 +4,7 @@ use askama::Template;
 use axum::{
     Json,
     extract::{Path, RawQuery, State},
-    http::{HeaderMap, StatusCode, Uri},
+    http::{HeaderMap, HeaderValue, StatusCode, Uri, header::CACHE_CONTROL},
     response::{Html, IntoResponse, Redirect},
 };
 use serde_json::json;
@@ -22,8 +22,7 @@ use crate::{
         site::not_found,
         trim_public_gallery_images,
     },
-    router::PUBLIC_SHARED_CACHE_HEADERS,
-    router::serde_qs_config,
+    router::{CACHE_CONTROL_PRIVATE_NO_STORE, PUBLIC_SHARED_CACHE_HEADERS, serde_qs_config},
     services::notifications::{DynNotificationsManager, NewNotification, NotificationKind},
     templates::{
         PageId,
@@ -148,6 +147,8 @@ pub(crate) async fn accelerator_page(
     group.sponsors.clear();
     let accelerator = db.get_group_accelerator_dashboard(group.group_id).await?;
 
+    let user = User::from_session(auth_session).await?;
+    let headers = public_group_page_headers(&user);
     let template = AcceleratorPage {
         base_url: server_cfg.base_url,
         accelerator,
@@ -155,10 +156,10 @@ pub(crate) async fn accelerator_page(
         page_id: PageId::Group,
         path: uri.path().to_string(),
         site_settings,
-        user: User::from_session(auth_session).await?,
+        user,
     };
 
-    Ok((PUBLIC_SHARED_CACHE_HEADERS, Html(template.render()?)).into_response())
+    Ok((headers, Html(template.render()?)).into_response())
 }
 
 /// Submits an application to an accelerator cohort.
@@ -178,6 +179,12 @@ pub(crate) async fn apply_to_accelerator_cohort(
             "HX-Trigger",
             "accelerator-application-submitted, refresh-body",
         )],
+        Html(
+            r#"<div class="rounded-2xl border border-primary-200 bg-primary-50 px-4 py-5 text-sm/6 text-primary-900">
+  <div class="font-bold">Application submitted.</div>
+  <p class="mt-1">The accelerator team can now review your project from the group dashboard.</p>
+</div>"#,
+        ),
     ))
 }
 
@@ -558,6 +565,25 @@ pub(crate) async fn store_page(
 }
 
 // Helpers.
+
+/// Returns cache headers for public group pages, avoiding shared caches for personalized content.
+fn public_group_page_headers(user: &User) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+
+    if user.logged_in {
+        headers.insert(
+            CACHE_CONTROL,
+            HeaderValue::from_static(CACHE_CONTROL_PRIVATE_NO_STORE),
+        );
+        return headers;
+    }
+
+    for (key, value) in PUBLIC_SHARED_CACHE_HEADERS {
+        headers.insert(key, HeaderValue::from_static(value));
+    }
+
+    headers
+}
 
 /// Builds a public group URL with the original query string, if present.
 fn public_group_url(alliance_name: &str, group_slug: &str, uri: &Uri) -> String {
