@@ -44,6 +44,24 @@
       linear-gradient(180deg, #ffffff 0%, #f8fafc 42%, #f5f5f4 100%);
   }
 
+  .public-site-theme {
+    background:
+      radial-gradient(circle at top left, rgb(255 255 255 / 0.9), transparent 34rem),
+      radial-gradient(circle at top right, rgb(234 220 201 / 0.9), transparent 28rem),
+      linear-gradient(180deg, #fffaf5 0%, #f8f3ec 48%, #f5efe7 100%);
+    color: #1A1510;
+    font-family: var(--font-metrophobic);
+  }
+
+  .public-site-theme :where(h1, h2, .site-display) {
+    font-family: var(--font-amethysta);
+    letter-spacing: -0.025em;
+  }
+
+  .public-site-theme :where(p, a, button, input, select, textarea, label, span, li) {
+    font-family: var(--font-metrophobic);
+  }
+
   ::selection {
     background: rgb(14 165 233 / 0.22);
   }
