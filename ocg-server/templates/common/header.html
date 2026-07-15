@@ -56,8 +56,8 @@
           {{ self::user_initials(user.name.as_deref() , user.username.as_deref().unwrap_or("")) }}
         </div>
       {% else -%}
-        <a href="/log-in/oidc/linkedin"
-           hx-boost="false"
+        <a href="/log-in"
+           hx-boost="true"
            class="inline-flex h-[34px] items-center rounded-full bg-[#1A1510] px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#3a2f25] hover:shadow-md">
           Join GOUP
         </a>
