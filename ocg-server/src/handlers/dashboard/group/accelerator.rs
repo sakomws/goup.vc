@@ -77,8 +77,7 @@ pub(crate) async fn add_week(
     State(db): State<DynDB>,
     ValidatedForm(input): ValidatedForm<AcceleratorWeekInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
-    db.add_group_accelerator_week(user.user_id, group_id, &input)
-        .await?;
+    db.add_group_accelerator_week(user.user_id, group_id, &input).await?;
 
     Ok(refresh_created())
 }
