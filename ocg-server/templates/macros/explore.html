@@ -7,16 +7,16 @@
       <li class="w-full">
         {# Events button -#}
         <button id="events-button"
-                hx-get='/explore/events-section'
-                hx-trigger="click"
-                hx-target="#entity-section"
-                hx-indicator="#loading-filters, #loading-filters-mobile"
-                
+          hx-get='/explore/events-section'
+          hx-trigger="click"
+          hx-target="#entity-section"
+          hx-indicator="#loading-filters, #loading-filters-mobile"
+
           {# djlint:off #}
                 {# TODO: Hardcoded alliance until we add more #}
                 hx-vals='{"alliance[0]":"goup"{% if let Some(query) = &ts_query %},"ts_query":{{ query|json|safe }}{% endif %}}'
-                {# djlint:on #}
-                class="inline-flex items-center justify-between w-full p-3 bg-white border border-stone-200 rounded-l-2xl cursor-pointer text-stone-500 select-none hover:bg-stone-50 transition-colors">
+          {# djlint:on #}
+          class="inline-flex items-center justify-between w-full p-3 bg-white border border-stone-200 rounded-l-2xl cursor-pointer text-stone-500 select-none hover:bg-stone-50 transition-colors">
           {{ entity_content(kind = "events", title = "Events", icon_styles = Some("bg-stone-500") ) -}}
         </button>
         {# End events button -#}
@@ -40,16 +40,16 @@
       <li class="w-full">
         {# Groups button -#}
         <button id="groups-button"
-                hx-get='/explore/groups-section'
-                hx-trigger="click"
-                hx-target="#entity-section"
-                hx-indicator="#loading-filters, #loading-filters-mobile"
-                
+          hx-get='/explore/groups-section'
+          hx-trigger="click"
+          hx-target="#entity-section"
+          hx-indicator="#loading-filters, #loading-filters-mobile"
+
           {# djlint:off #}
           {# TODO: Hardcoded alliance until we add more #}
           hx-vals='{"alliance[0]":"goup"{% if let Some(query) = &ts_query %},"ts_query":{{ query|json|safe }}{% endif %}}'
-                {# djlint:on #}
-                class="inline-flex items-center justify-between w-full p-3 bg-white border border-stone-200 rounded-r-2xl cursor-pointer text-stone-500 select-none hover:bg-stone-50 transition-colors">
+          {# djlint:on #}
+          class="inline-flex items-center justify-between w-full p-3 bg-white border border-stone-200 rounded-r-2xl cursor-pointer text-stone-500 select-none hover:bg-stone-50 transition-colors">
           {{ entity_content(kind = "groups", title = "Groups", icon_styles = Some("bg-stone-500") ) -}}
         </button>
         {# End groups button -#}

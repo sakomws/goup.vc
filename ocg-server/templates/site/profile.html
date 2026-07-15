@@ -40,7 +40,11 @@
         <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div class="flex flex-col gap-5 sm:flex-row sm:items-end">
             <div class="rounded-3xl bg-white p-2 shadow-sm ring-1 ring-stone-200">
-              <logo-image {% if let Some(photo_url) = &profile.photo_url -%} image-url="{{ photo_url }}" {% endif -%} size="size-28" placeholder="{{ crate::templates::helpers::user_initials(profile.name.as_deref() , profile.username.as_str()) }}">
+              <logo-image
+              {% if let Some(photo_url) = &profile.photo_url -%}
+                image-url="{{ photo_url }}"
+              {% endif -%}
+              size="size-28" placeholder="{{ crate::templates::helpers::user_initials(profile.name.as_deref() , profile.username.as_str()) }}">
               </logo-image>
             </div>
             <div class="min-w-0 pb-1">

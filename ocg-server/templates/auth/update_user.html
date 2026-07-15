@@ -139,239 +139,239 @@
         {# Photo URL -#}
         <div class="col-span-full">
           <image-field label="Photo" name="photo_url" value="{%- if let Some(photo_url) = &user.photo_url -%}{{ photo_url }}{%- endif -%}" image-kind="logo" target="logo">
-          </image-field>
-        </div>
-        {# End photo URL -#}
-
-        {# Bio -#}
-        <div class="col-span-full">
-          <label for="bio" class="form-label">Bio</label>
-          <div class="mt-2">
-            <textarea id="bio"
-                      name="bio"
-                      rows="6"
-                      maxlength="{{ crate::validation::MAX_LEN_BIO }}"
-                      class="input-primary">{% if let Some(bio) = &user.bio -%}{{ bio }}{% endif %}</textarea>
-          </div>
-          <p class="form-legend">
-            A description about yourself and your background. Max {{ crate::validation::MAX_LEN_BIO }} characters.
-          </p>
-        </div>
-        {# End bio -#}
-
-        {# Interests -#}
-        <div class="col-span-full xl:col-span-3">
-          <label for="interests" class="form-label">Interests (topics and technologies you're interested in)</label>
-          <div class="mt-2">
-            <multiple-inputs field-name="interests" input-type="text" label="Interest" items="{%- if let Some(interests) = &user.interests -%}{{ interests|json }}{%- endif -%}">
-            </multiple-inputs>
-          </div>
-        </div>
-        {# End interests -#}
+        </image-field>
       </div>
-    </div>
-    {# End Personal Details section -#}
+      {# End photo URL -#}
 
-    {# Mentorship services section -#}
-    <div class="border-b border-stone-900/10 pb-12">
-      {{ dashboard::form_title(title = "Mentorship services", description = "Let members know if you offer mentoring for individuals or businesses.") -}}
-      <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
-        <div class="col-span-full">
-          <div class="grid gap-4 sm:grid-cols-2">
-            <label class="inline-flex items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-medium text-stone-700">
-              <input type="checkbox"
-                     name="mentorship_individuals"
-                     value="true"
-                     {% if user.mentorship_individuals %}checked{% endif %}
-                     class="rounded border-stone-300 text-primary-600 focus:ring-primary-500">
-              Available for individual mentorship
-            </label>
-            <label class="inline-flex items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-medium text-stone-700">
-              <input type="checkbox"
-                     name="mentorship_businesses"
-                     value="true"
-                     {% if user.mentorship_businesses %}checked{% endif %}
-                     class="rounded border-stone-300 text-primary-600 focus:ring-primary-500">
-              Available for business mentorship
-            </label>
-          </div>
-          <p class="form-legend">These options appear on your public member profile when enabled.</p>
+      {# Bio -#}
+      <div class="col-span-full">
+        <label for="bio" class="form-label">Bio</label>
+        <div class="mt-2">
+          <textarea id="bio"
+                    name="bio"
+                    rows="6"
+                    maxlength="{{ crate::validation::MAX_LEN_BIO }}"
+                    class="input-primary">{% if let Some(bio) = &user.bio -%}{{ bio }}{% endif %}</textarea>
         </div>
-        <div class="col-span-full">
-          <label for="mentorship_price" class="form-label">Mentorship price</label>
-          <div class="mt-2">
-            <input id="mentorship_price"
-                   name="mentorship_price"
-                   type="text"
-                   maxlength="{{ crate::validation::MAX_LEN_S }}"
-                   value="{{ user.mentorship_price.as_deref().unwrap_or("") }}"
-                   class="input-primary"
-                   placeholder="Free, $150/hour, or custom for teams">
-          </div>
-          <p class="form-legend">Optional. Shown on your public profile and member cards.</p>
-        </div>
-        <div class="col-span-full">
-          <label for="mentorship_note" class="form-label">Mentorship description</label>
-          <div class="mt-2">
-            <textarea id="mentorship_note"
-                      name="mentorship_note"
-                      rows="4"
-                      maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }}"
-                      class="input-primary"
-                      placeholder="Share topics, audience, format, or how people should approach you.">{% if let Some(mentorship_note) = &user.mentorship_note -%}{{ mentorship_note }}{% endif %}</textarea>
-          </div>
-          <p class="form-legend">Optional. Max {{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }} characters.</p>
-        </div>
-      </div>
-    </div>
-    {# End Mentorship services section -#}
-
-    {# CoffeeMeet section -#}
-    <div class="border-b border-stone-900/10 pb-12">
-      {{ dashboard::form_title(title = "CoffeeMeet", description = "Choose whether you participate in CoffeeMeet requests and member suggestions.") -}}
-      <div class="mt-10 max-w-5xl">
-        <label class="inline-flex items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-medium text-stone-700">
-          <input type="checkbox"
-                 name="coffee_meet_enabled"
-                 value="true"
-                 {% if user.coffee_meet_enabled %}checked{% endif %}
-                 class="rounded border-stone-300 text-primary-600 focus:ring-primary-500">
-          Enable CoffeeMeet
-        </label>
         <p class="form-legend">
-          When enabled, members can request coffee from your public profile and you can be included in recurring CoffeeMeet suggestions. Your group subscriptions are managed from the CoffeeMeet dashboard tab.
+          A description about yourself and your background. Max {{ crate::validation::MAX_LEN_BIO }} characters.
         </p>
       </div>
+      {# End bio -#}
+
+      {# Interests -#}
+      <div class="col-span-full xl:col-span-3">
+        <label for="interests" class="form-label">Interests (topics and technologies you're interested in)</label>
+        <div class="mt-2">
+          <multiple-inputs field-name="interests" input-type="text" label="Interest" items="{%- if let Some(interests) = &user.interests -%}{{ interests|json }}{%- endif -%}">
+          </multiple-inputs>
+        </div>
+      </div>
+      {# End interests -#}
     </div>
-    {# End CoffeeMeet section -#}
+  </div>
+  {# End Personal Details section -#}
 
-    {# Location section -#}
-    <div class="border-b border-stone-900/10 pb-12">
-      {{ dashboard::form_title(title = "Location", description = "Optional location information.") -}}
-      <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
-        {# City -#}
-        <div class="col-span-3">
-          <label for="city" class="form-label">City</label>
-          <div class="mt-2">
-            <input type="text"
-                   name="city"
-                   id="city"
-                   maxlength="{{ crate::validation::MAX_LEN_S }}"
-                   value="{%- if let Some(city) = &user.city -%}{{ city }}{%- endif -%}"
-                   class="input-primary"
-                   autocomplete="off"
-                   autocorrect="off"
-                   autocapitalize="off"
-                   spellcheck="false">
-          </div>
-          <p class="form-legend">The city where you're based. Max {{ crate::validation::MAX_LEN_S }} characters.</p>
+  {# Mentorship services section -#}
+  <div class="border-b border-stone-900/10 pb-12">
+    {{ dashboard::form_title(title = "Mentorship services", description = "Let members know if you offer mentoring for individuals or businesses.") -}}
+    <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
+      <div class="col-span-full">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="inline-flex items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-medium text-stone-700">
+            <input type="checkbox"
+                   name="mentorship_individuals"
+                   value="true"
+                   {% if user.mentorship_individuals %}checked{% endif %}
+                   class="rounded border-stone-300 text-primary-600 focus:ring-primary-500">
+            Available for individual mentorship
+          </label>
+          <label class="inline-flex items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-medium text-stone-700">
+            <input type="checkbox"
+                   name="mentorship_businesses"
+                   value="true"
+                   {% if user.mentorship_businesses %}checked{% endif %}
+                   class="rounded border-stone-300 text-primary-600 focus:ring-primary-500">
+            Available for business mentorship
+          </label>
         </div>
-        {# End city -#}
-
-        {# Country -#}
-        <div class="col-span-3">
-          <label for="country" class="form-label">Country</label>
-          <div class="mt-2">
-            <input type="text"
-                   name="country"
-                   id="country"
-                   maxlength="{{ crate::validation::MAX_LEN_S }}"
-                   value="{%- if let Some(country) = &user.country -%}{{ country }}{%- endif -%}"
-                   class="input-primary"
-                   autocomplete="off"
-                   autocorrect="off"
-                   autocapitalize="off"
-                   spellcheck="false">
-          </div>
-          <p class="form-legend">Your country of residence. Max {{ crate::validation::MAX_LEN_S }} characters.</p>
+        <p class="form-legend">These options appear on your public member profile when enabled.</p>
+      </div>
+      <div class="col-span-full">
+        <label for="mentorship_price" class="form-label">Mentorship price</label>
+        <div class="mt-2">
+          <input id="mentorship_price"
+                 name="mentorship_price"
+                 type="text"
+                 maxlength="{{ crate::validation::MAX_LEN_S }}"
+                 value="{{ user.mentorship_price.as_deref().unwrap_or("") }}"
+                 class="input-primary"
+                 placeholder="Free, $150/hour, or custom for teams">
         </div>
-        {# End country -#}
+        <p class="form-legend">Optional. Shown on your public profile and member cards.</p>
+      </div>
+      <div class="col-span-full">
+        <label for="mentorship_note" class="form-label">Mentorship description</label>
+        <div class="mt-2">
+          <textarea id="mentorship_note"
+                    name="mentorship_note"
+                    rows="4"
+                    maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }}"
+                    class="input-primary"
+                    placeholder="Share topics, audience, format, or how people should approach you.">{% if let Some(mentorship_note) = &user.mentorship_note -%}{{ mentorship_note }}{% endif %}</textarea>
+        </div>
+        <p class="form-legend">Optional. Max {{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }} characters.</p>
       </div>
     </div>
-    {# End Location section -#}
-
-    {# Social links section -#}
-    <div class="border-b border-stone-900/10 pb-12">
-      {{ dashboard::form_title(title = "Social links", description = "Optional social media profiles and website links.") -}}
-      <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
-        {% let website_value -%}value="{%- if let Some(website_url) = &user.website_url -%}{{ website_url }}{%- endif -%}"{%- endlet %}
-      {% let linkedin_value -%}value="{%- if let Some(linkedin_url) = &user.linkedin_url -%}{{ linkedin_url }}{%- endif -%}"{%- endlet %}
-    {% let bluesky_value -%}value="{%- if let Some(bluesky_url) = &user.bluesky_url -%}{{ bluesky_url }}{%- endif -%}"{%- endlet %}
-  {% let twitter_value -%}value="{%- if let Some(twitter_url) = &user.twitter_url -%}{{ twitter_url }}{%- endif -%}"{%- endlet %}
-{% let facebook_value -%}value="{%- if let Some(facebook_url) = &user.facebook_url -%}{{ facebook_url }}{%- endif -%}"{%- endlet %}
-{% let github_value -%}value="{%- if let Some(github_url) = &user.github_url -%}{{ github_url }}{%- endif -%}"{%- endlet %}
-{% let substack_value -%}value="{%- if let Some(substack_url) = &user.substack_url -%}{{ substack_url }}{%- endif -%}"{%- endlet %}
-{% let youtube_value -%}value="{%- if let Some(youtube_url) = &user.youtube_url -%}{{ youtube_url }}{%- endif -%}"{%- endlet %}
-
-{# Website URL -#}
-{{ form_fields::social_url_field(name = "website_url", label = "Website", icon = "icon-link", placeholder = "https://example.com", value_attr = website_value) -}}
-{# End Website URL -#}
-
-{# LinkedIn URL -#}
-{{ form_fields::social_url_field(name = "linkedin_url", label = "LinkedIn", icon = "icon-linkedin", placeholder = "https://linkedin.com/in/username", value_attr = linkedin_value) -}}
-{# End LinkedIn URL -#}
-
-{# Bluesky URL -#}
-{{ form_fields::social_url_field(name = "bluesky_url", label = "Bluesky", icon = "icon-bluesky", placeholder = "https://bsky.app/profile/username", value_attr = bluesky_value) -}}
-{# End Bluesky URL -#}
-
-{# Twitter URL -#}
-{{ form_fields::social_url_field(name = "twitter_url", label = "X (formerly Twitter)", icon = "icon-twitter", placeholder = "https://x.com/username", value_attr = twitter_value) -}}
-{# End Twitter URL -#}
-
-{# Facebook URL -#}
-{{ form_fields::social_url_field(name = "facebook_url", label = "Facebook", icon = "icon-facebook", placeholder = "https://facebook.com/username", value_attr = facebook_value) -}}
-{# End Facebook URL -#}
-
-{# GitHub URL -#}
-{{ form_fields::social_url_field(name = "github_url", label = "GitHub", icon = "icon-github", placeholder = "https://github.com/username", value_attr = github_value) -}}
-{# End GitHub URL -#}
-
-{# Substack URL -#}
-{{ form_fields::social_url_field(name = "substack_url", label = "Substack", icon = "icon-link", placeholder = "https://example.substack.com", value_attr = substack_value) -}}
-{# End Substack URL -#}
-
-{# YouTube URL -#}
-{{ form_fields::social_url_field(name = "youtube_url", label = "YouTube", icon = "icon-youtube", placeholder = "https://youtube.com/@username", value_attr = youtube_value) -}}
-{# End YouTube URL -#}
-</div>
-</div>
-{# End social links section -#}
-
-{# Notifications section -#}
-<div class="border-b border-stone-900/10 pb-12">
-  {{ dashboard::form_title(title = "Notifications", description = "Choose which email notifications you receive.") -}}
-  <div class="mt-10 max-w-5xl">
-    <input type="hidden"
-           id="optional_notifications_enabled"
-           name="optional_notifications_enabled"
-           value="{{ user.optional_notifications_enabled }}">
-    <label for="toggle_optional_notifications_enabled"
-           class="inline-flex items-center cursor-pointer">
-      <span class="relative inline-flex shrink-0 items-center">
-        <input id="toggle_optional_notifications_enabled"
-               type="checkbox"
-               class="sr-only peer"
-               {% if user.optional_notifications_enabled %}checked{% endif %}>
-        <span class="relative w-11 h-6 bg-stone-200 rounded-full peer peer-checked:bg-primary-500 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white">
-        </span>
-      </span>
-      <span class="ms-3 text-sm font-medium text-stone-900">Receive optional notifications</span>
-    </label>
-    <p class="form-legend">
-      Receive broader announcements such as new event announcements, event reminders, and custom messages from organizers.
-      You will still receive account, invitation, registration, speaker, refund, waitlist, cancellation, and reschedule updates.
-    </p>
   </div>
-</div>
-{# End Notifications section -#}
+  {# End Mentorship services section -#}
 
-<div class="mt-6">
-  <button type="submit" class="btn-primary relative">
-    {{ ui::btn_spinner(id = "user-details-spinner", spinner_type = "2") -}}
-    Save
-  </button>
-</div>
+  {# CoffeeMeet section -#}
+  <div class="border-b border-stone-900/10 pb-12">
+    {{ dashboard::form_title(title = "CoffeeMeet", description = "Choose whether you participate in CoffeeMeet requests and member suggestions.") -}}
+    <div class="mt-10 max-w-5xl">
+      <label class="inline-flex items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-medium text-stone-700">
+        <input type="checkbox"
+               name="coffee_meet_enabled"
+               value="true"
+               {% if user.coffee_meet_enabled %}checked{% endif %}
+               class="rounded border-stone-300 text-primary-600 focus:ring-primary-500">
+        Enable CoffeeMeet
+      </label>
+      <p class="form-legend">
+        When enabled, members can request coffee from your public profile and you can be included in recurring CoffeeMeet suggestions. Your group subscriptions are managed from the CoffeeMeet dashboard tab.
+      </p>
+    </div>
+  </div>
+  {# End CoffeeMeet section -#}
+
+  {# Location section -#}
+  <div class="border-b border-stone-900/10 pb-12">
+    {{ dashboard::form_title(title = "Location", description = "Optional location information.") -}}
+    <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
+      {# City -#}
+      <div class="col-span-3">
+        <label for="city" class="form-label">City</label>
+        <div class="mt-2">
+          <input type="text"
+                 name="city"
+                 id="city"
+                 maxlength="{{ crate::validation::MAX_LEN_S }}"
+                 value="{%- if let Some(city) = &user.city -%}{{ city }}{%- endif -%}"
+                 class="input-primary"
+                 autocomplete="off"
+                 autocorrect="off"
+                 autocapitalize="off"
+                 spellcheck="false">
+        </div>
+        <p class="form-legend">The city where you're based. Max {{ crate::validation::MAX_LEN_S }} characters.</p>
+      </div>
+      {# End city -#}
+
+      {# Country -#}
+      <div class="col-span-3">
+        <label for="country" class="form-label">Country</label>
+        <div class="mt-2">
+          <input type="text"
+                 name="country"
+                 id="country"
+                 maxlength="{{ crate::validation::MAX_LEN_S }}"
+                 value="{%- if let Some(country) = &user.country -%}{{ country }}{%- endif -%}"
+                 class="input-primary"
+                 autocomplete="off"
+                 autocorrect="off"
+                 autocapitalize="off"
+                 spellcheck="false">
+        </div>
+        <p class="form-legend">Your country of residence. Max {{ crate::validation::MAX_LEN_S }} characters.</p>
+      </div>
+      {# End country -#}
+    </div>
+  </div>
+  {# End Location section -#}
+
+  {# Social links section -#}
+  <div class="border-b border-stone-900/10 pb-12">
+    {{ dashboard::form_title(title = "Social links", description = "Optional social media profiles and website links.") -}}
+    <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
+      {% let website_value -%}value="{%- if let Some(website_url) = &user.website_url -%}{{ website_url }}{%- endif -%}"{%- endlet %}
+      {% let linkedin_value -%}value="{%- if let Some(linkedin_url) = &user.linkedin_url -%}{{ linkedin_url }}{%- endif -%}"{%- endlet %}
+      {% let bluesky_value -%}value="{%- if let Some(bluesky_url) = &user.bluesky_url -%}{{ bluesky_url }}{%- endif -%}"{%- endlet %}
+      {% let twitter_value -%}value="{%- if let Some(twitter_url) = &user.twitter_url -%}{{ twitter_url }}{%- endif -%}"{%- endlet %}
+      {% let facebook_value -%}value="{%- if let Some(facebook_url) = &user.facebook_url -%}{{ facebook_url }}{%- endif -%}"{%- endlet %}
+      {% let github_value -%}value="{%- if let Some(github_url) = &user.github_url -%}{{ github_url }}{%- endif -%}"{%- endlet %}
+      {% let substack_value -%}value="{%- if let Some(substack_url) = &user.substack_url -%}{{ substack_url }}{%- endif -%}"{%- endlet %}
+      {% let youtube_value -%}value="{%- if let Some(youtube_url) = &user.youtube_url -%}{{ youtube_url }}{%- endif -%}"{%- endlet %}
+
+      {# Website URL -#}
+      {{ form_fields::social_url_field(name = "website_url", label = "Website", icon = "icon-link", placeholder = "https://example.com", value_attr = website_value) -}}
+      {# End Website URL -#}
+
+      {# LinkedIn URL -#}
+      {{ form_fields::social_url_field(name = "linkedin_url", label = "LinkedIn", icon = "icon-linkedin", placeholder = "https://linkedin.com/in/username", value_attr = linkedin_value) -}}
+      {# End LinkedIn URL -#}
+
+      {# Bluesky URL -#}
+      {{ form_fields::social_url_field(name = "bluesky_url", label = "Bluesky", icon = "icon-bluesky", placeholder = "https://bsky.app/profile/username", value_attr = bluesky_value) -}}
+      {# End Bluesky URL -#}
+
+      {# Twitter URL -#}
+      {{ form_fields::social_url_field(name = "twitter_url", label = "X (formerly Twitter)", icon = "icon-twitter", placeholder = "https://x.com/username", value_attr = twitter_value) -}}
+      {# End Twitter URL -#}
+
+      {# Facebook URL -#}
+      {{ form_fields::social_url_field(name = "facebook_url", label = "Facebook", icon = "icon-facebook", placeholder = "https://facebook.com/username", value_attr = facebook_value) -}}
+      {# End Facebook URL -#}
+
+      {# GitHub URL -#}
+      {{ form_fields::social_url_field(name = "github_url", label = "GitHub", icon = "icon-github", placeholder = "https://github.com/username", value_attr = github_value) -}}
+      {# End GitHub URL -#}
+
+      {# Substack URL -#}
+      {{ form_fields::social_url_field(name = "substack_url", label = "Substack", icon = "icon-link", placeholder = "https://example.substack.com", value_attr = substack_value) -}}
+      {# End Substack URL -#}
+
+      {# YouTube URL -#}
+      {{ form_fields::social_url_field(name = "youtube_url", label = "YouTube", icon = "icon-youtube", placeholder = "https://youtube.com/@username", value_attr = youtube_value) -}}
+      {# End YouTube URL -#}
+    </div>
+  </div>
+  {# End social links section -#}
+
+  {# Notifications section -#}
+  <div class="border-b border-stone-900/10 pb-12">
+    {{ dashboard::form_title(title = "Notifications", description = "Choose which email notifications you receive.") -}}
+    <div class="mt-10 max-w-5xl">
+      <input type="hidden"
+             id="optional_notifications_enabled"
+             name="optional_notifications_enabled"
+             value="{{ user.optional_notifications_enabled }}">
+      <label for="toggle_optional_notifications_enabled"
+             class="inline-flex items-center cursor-pointer">
+        <span class="relative inline-flex shrink-0 items-center">
+          <input id="toggle_optional_notifications_enabled"
+                 type="checkbox"
+                 class="sr-only peer"
+                 {% if user.optional_notifications_enabled %}checked{% endif %}>
+          <span class="relative w-11 h-6 bg-stone-200 rounded-full peer peer-checked:bg-primary-500 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white">
+          </span>
+        </span>
+        <span class="ms-3 text-sm font-medium text-stone-900">Receive optional notifications</span>
+      </label>
+      <p class="form-legend">
+        Receive broader announcements such as new event announcements, event reminders, and custom messages from organizers.
+        You will still receive account, invitation, registration, speaker, refund, waitlist, cancellation, and reschedule updates.
+      </p>
+    </div>
+  </div>
+  {# End Notifications section -#}
+
+  <div class="mt-6">
+    <button type="submit" class="btn-primary relative">
+      {{ ui::btn_spinner(id = "user-details-spinner", spinner_type = "2") -}}
+      Save
+    </button>
+  </div>
 </div>
 </form>
 {# End update user details form -#}
