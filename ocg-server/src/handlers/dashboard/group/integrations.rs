@@ -41,18 +41,30 @@ pub(crate) async fn page(
 /// Starts an authorized discovery run for the selected group.
 #[instrument(skip_all, err)]
 pub(crate) async fn run(
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
     SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
     State(manual_event_discovery): State<Option<ManualEventDiscovery>>,
 ) -> Result<impl IntoResponse, HandlerError> {
     let Some(manual_event_discovery) = manual_event_discovery else {
-        return Ok(StatusCode::NOT_FOUND);
+        return Ok(StatusCode::NOT_FOUND.into_response());
     };
     if !manual_event_discovery.enabled() {
-        return Ok(StatusCode::NOT_FOUND);
+        return Ok(StatusCode::NOT_FOUND.into_response());
     }
 
     manual_event_discovery.spawn_group_run(group_id);
-    Ok(StatusCode::ACCEPTED)
+    Ok((
+        StatusCode::ACCEPTED,
+        [("HX-Trigger", "event-discovery-run-started")],
+        Html(
+            prepare_page(&db, alliance_id, group_id, user.user_id)
+                .await?
+                .render()?,
+        ),
+    )
+        .into_response())
 }
 
 /// Updates enabled state and location settings.
