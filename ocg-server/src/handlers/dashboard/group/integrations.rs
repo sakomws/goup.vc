@@ -2,12 +2,13 @@
 
 use askama::Template;
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
     response::{Html, IntoResponse},
 };
 use garde::Validate;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use uuid::Uuid;
 
@@ -41,10 +42,7 @@ pub(crate) async fn page(
 /// Starts an authorized discovery run for the selected group.
 #[instrument(skip_all, err)]
 pub(crate) async fn run(
-    CurrentUser(user): CurrentUser,
-    SelectedAllianceId(alliance_id): SelectedAllianceId,
     SelectedGroupId(group_id): SelectedGroupId,
-    State(db): State<DynDB>,
     State(manual_event_discovery): State<Option<ManualEventDiscovery>>,
 ) -> Result<impl IntoResponse, HandlerError> {
     let Some(manual_event_discovery) = manual_event_discovery else {
@@ -58,11 +56,10 @@ pub(crate) async fn run(
     Ok((
         StatusCode::ACCEPTED,
         [("HX-Trigger", "event-discovery-run-started")],
-        Html(
-            prepare_page(&db, alliance_id, group_id, user.user_id)
-                .await?
-                .render()?,
-        ),
+        Json(ManualRunResponse {
+            group_id,
+            status: "accepted",
+        }),
     )
         .into_response())
 }
@@ -162,6 +159,12 @@ pub(crate) struct SettingsInput {
 pub(crate) struct SourceInput {
     #[garde(skip)]
     url: String,
+}
+
+#[derive(Debug, Serialize)]
+struct ManualRunResponse {
+    group_id: Uuid,
+    status: &'static str,
 }
 
 fn validate_settings(input: &SettingsInput) -> Result<(), HandlerError> {
