@@ -1,5 +1,7 @@
 //! Templates for the group dashboard.
 
+use serde::{Deserialize, Serialize};
+
 pub(crate) mod accelerator;
 pub(crate) mod analytics;
 pub(crate) mod attendees;
