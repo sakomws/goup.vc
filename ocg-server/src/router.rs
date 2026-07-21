@@ -137,7 +137,8 @@ pub(crate) struct State {
 #[instrument(skip_all)]
 pub(crate) async fn setup(
     activity_tracker: DynActivityTracker,
-    db: std::sync::Arc<PgDB>,
+    db: DynDB,
+    manual_event_discovery_db: Option<std::sync::Arc<PgDB>>,
     image_storage: DynImageStorage,
     you_com_cfg: Option<YouComConfig>,
     meetings_cfg: Option<MeetingsConfig>,
@@ -160,7 +161,9 @@ pub(crate) async fn setup(
         db: db.clone(),
         activity_tracker,
         image_storage,
-        manual_event_discovery: you_com_cfg.map(|cfg| ManualEventDiscovery::new(cfg, db.clone())),
+        manual_event_discovery: you_com_cfg
+            .zip(manual_event_discovery_db)
+            .map(|(cfg, db)| ManualEventDiscovery::new(cfg, db)),
         meetings_cfg,
         notifications_manager,
         payments_cfg,

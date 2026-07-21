@@ -326,7 +326,8 @@ async fn run_server(
     // Build the router before binding the TCP listener
     let router = router::setup(
         activity_tracker,
-        db,
+        db.clone(),
+        Some(db),
         image_storage,
         you_com_cfg,
         meetings_cfg,
