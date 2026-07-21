@@ -52,11 +52,6 @@ impl YouComClient {
         })
     }
 
-    /// Searches You.com for current Baku community-event pages.
-    pub(crate) async fn search_baku_events(&self) -> Result<Vec<SearchResult>> {
-        self.search("upcoming community events in Baku Azerbaijan").await
-    }
-
     /// Searches You.com with a caller-provided, source-scoped query.
     pub(crate) async fn search(&self, query: &str) -> Result<Vec<SearchResult>> {
         let mut search_url =
