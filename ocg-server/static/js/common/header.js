@@ -255,10 +255,58 @@ const toggleDropdownVisibility = () => {
   setElementHidden(dropdown, !isElementHidden(dropdown));
 };
 
+/**
+ * Opens or closes the navbar search field, swapping the toggle button for the input.
+ * @param {boolean} open - Whether the search field should be visible.
+ */
+const setNavbarSearchOpen = (open) => {
+  const toggle = getElementById(document, "navbar-search-toggle");
+  const form = getElementById(document, "navbar-search-form");
+  const input = getElementById(document, "navbar-search-input");
+
+  if (!toggle || !form) {
+    return;
+  }
+
+  // Only one of {hidden, display} is present at a time so responsive classes never conflict.
+  toggle.classList.toggle("hidden", open);
+  toggle.classList.toggle("inline-flex", !open);
+  form.classList.toggle("hidden", !open);
+  form.classList.toggle("flex", open);
+  toggle.setAttribute("aria-expanded", open ? "true" : "false");
+
+  if (open && input) {
+    input.focus();
+  }
+};
+
+// Wires the navbar search toggle, close button, and Escape-to-close once per render.
+const initNavbarSearch = () => {
+  const toggle = getElementById(document, "navbar-search-toggle");
+  const closeButton = getElementById(document, "navbar-search-close");
+  const input = getElementById(document, "navbar-search-input");
+
+  if (!toggle || toggle.__ocgSearchInitialized) {
+    return;
+  }
+
+  toggle.addEventListener("click", () => setNavbarSearchOpen(true));
+  closeButton?.addEventListener("click", () => setNavbarSearchOpen(false));
+  input?.addEventListener("keydown", (event) => {
+    if (isEscapeEvent(event)) {
+      setNavbarSearchOpen(false);
+      toggle.focus();
+    }
+  });
+
+  toggle.__ocgSearchInitialized = true;
+};
+
 // Public initializer for the user dropdown interactions.
 export const initUserDropdown = () => {
   ensureDocumentHandlers();
   bindLifecycleListeners();
+  initNavbarSearch();
 
   const button = getElementById(document, "user-dropdown-button");
   const dropdown = getElementById(document, "user-dropdown");
