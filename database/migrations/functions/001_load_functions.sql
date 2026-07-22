@@ -11,6 +11,7 @@
 {{ template "auth/get_user_by_email_for_external_auth.sql" }}
 {{ template "auth/get_user_by_id_verified.sql" }}
 {{ template "auth/get_user_by_username.sql" }}
+{{ template "auth/get_public_user_provider.sql" }}
 {{ template "auth/is_linkedin_subject_blocked.sql" }}
 {{ template "auth/sign_up_user.sql" }}
 {{ template "auth/update_user_details.sql" }}
