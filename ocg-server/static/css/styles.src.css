@@ -1193,14 +1193,73 @@ input:placeholder-shown {
   vertical-align: top;
 }
 
-.docs-markdown table td:first-child {
+/* Two-column "label -> value" definition tables (e.g. Technology Stack, Start
+   Here): keep the muted, non-wrapping first column. Scoped to tables that have
+   no 3rd header cell so multi-column matrices are not affected. */
+.docs-markdown table:not(:has(th:nth-child(3))) td:first-child {
   color: #8A7A6E;
   white-space: nowrap;
   padding-right: 1.5rem;
 }
 
-.docs-markdown table td:not(:first-child) {
+.docs-markdown table:not(:has(th:nth-child(3))) td:not(:first-child) {
   color: #1A1510;
+}
+
+/* Multi-column "matrix" tables (3+ columns, detected via a 3rd header cell):
+   fixed, balanced widths so no single column blows out and every column wraps
+   comfortably. */
+.docs-markdown table:has(th:nth-child(3)) {
+  table-layout: fixed;
+}
+
+.docs-markdown table:has(th:nth-child(3)) th,
+.docs-markdown table:has(th:nth-child(3)) td {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.docs-markdown table:has(th:nth-child(3)) td {
+  color: #1A1510;
+}
+
+/* Subtle warm-palette header divider for matrix tables. */
+.docs-markdown table:has(th:nth-child(3)) th {
+  border-bottom-color: #D8D0C6;
+}
+
+/* Comfortable proportions for the common 4-column matrix. Fixed layout
+   normalizes these ratios for matrices with other column counts. */
+.docs-markdown table:has(th:nth-child(3)) th:nth-child(1) {
+  width: 30%;
+}
+
+.docs-markdown table:has(th:nth-child(3)) th:nth-child(2) {
+  width: 18%;
+}
+
+.docs-markdown table:has(th:nth-child(3)) th:nth-child(3) {
+  width: 18%;
+}
+
+.docs-markdown table:has(th:nth-child(3)) th:nth-child(4) {
+  width: 34%;
+}
+
+/* On narrow screens keep the matrix readable: let it scroll horizontally within
+   its own box instead of overflowing (and breaking) the page. */
+@media (max-width: 640px) {
+  .docs-markdown table:has(th:nth-child(3)) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .docs-markdown table:has(th:nth-child(3)) th,
+  .docs-markdown table:has(th:nth-child(3)) td {
+    min-width: 9rem;
+  }
 }
 
 .docs-markdown code {
