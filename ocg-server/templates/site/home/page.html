@@ -22,67 +22,78 @@
     <nav class="relative z-50 flex h-[68px] items-center justify-between border-b border-[#eadcc9]/70 bg-white/60 px-4 shadow-sm shadow-[#eadcc9]/40 backdrop-blur-xl sm:px-6 lg:px-11"
          role="navigation"
          aria-label="Main navigation">
-      <div class="hidden items-center gap-7 lg:flex">
-        <a href="/"
-           hx-boost="true"
-           hx-target="body"
-           class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Home</a>
-        <a href="{{ explore_events }}"
-           hx-boost="true"
-           hx-target="body"
-           class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Events &amp; Groups</a>
-        <div class="group relative flex h-[68px] items-center">
-          <a href="/jobs"
+      <a href="/"
+         hx-boost="true"
+         hx-target="body"
+         class="inline-flex shrink-0 items-center gap-2 text-[#1A1510]"
+         aria-label="GOUP home">
+        {% if let Some(logo_url) = &site_settings.favicon_url -%}
+          <img class="h-8 w-8 min-w-8 max-w-8 rounded-lg object-contain" src="{{ logo_url }}" alt="" aria-hidden="true">
+        {% endif -%}
+        <span class="font-metrophobic text-lg font-semibold tracking-[-0.04em]">GOUP</span>
+      </a>
+
+      {# Centered nav links -#}
+      <div class="pointer-events-none absolute inset-0 hidden items-center justify-center lg:flex">
+        <div class="pointer-events-auto flex items-center gap-7">
+          <a href="{{ explore_events }}"
              hx-boost="true"
              hx-target="body"
-             class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Jobs</a>
-          <div class="dropdown absolute left-1/2 top-full z-[1200] hidden w-52 -translate-x-1/2 rounded-2xl border border-[#eadcc9] bg-white p-2 text-sm shadow-2xl shadow-[#3a2f25]/10 group-hover:block group-focus-within:block">
+             class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Events &amp; Groups</a>
+          <div class="group relative flex h-[68px] items-center">
             <a href="/jobs"
                hx-boost="true"
                hx-target="body"
-               class="block rounded-xl px-3 py-2.5 font-semibold text-[#3a2f25] hover:bg-[#f8f3ec]">Browse roles</a>
-            <a href="/jobs?remote=true"
-               hx-boost="true"
-               hx-target="body"
-               class="block rounded-xl px-3 py-2.5 text-[#3a2f25] hover:bg-[#f8f3ec]">Remote roles</a>
-            <a href="{% if user.logged_in -%}/dashboard/jobs{%- else -%}/log-in?next_url=/dashboard/jobs{%- endif %}"
-               hx-boost="{% if user.logged_in -%}true{%- else -%}false{%- endif %}"
-               class="block rounded-xl px-3 py-2.5 text-[#3a2f25] hover:bg-[#f8f3ec]">Post a role</a>
+               class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Jobs</a>
+            <div class="dropdown absolute left-1/2 top-full z-[1200] hidden w-52 -translate-x-1/2 rounded-2xl border border-[#eadcc9] bg-white p-2 text-sm shadow-2xl shadow-[#3a2f25]/10 group-hover:block group-focus-within:block">
+              <a href="/jobs"
+                 hx-boost="true"
+                 hx-target="body"
+                 class="block rounded-xl px-3 py-2.5 font-semibold text-[#3a2f25] hover:bg-[#f8f3ec]">Browse roles</a>
+              <a href="/jobs?remote=true"
+                 hx-boost="true"
+                 hx-target="body"
+                 class="block rounded-xl px-3 py-2.5 text-[#3a2f25] hover:bg-[#f8f3ec]">Remote roles</a>
+              <a href="{% if user.logged_in -%}/dashboard/jobs{%- else -%}/log-in?next_url=/dashboard/jobs{%- endif %}"
+                 hx-boost="{% if user.logged_in -%}true{%- else -%}false{%- endif %}"
+                 class="block rounded-xl px-3 py-2.5 text-[#3a2f25] hover:bg-[#f8f3ec]">Post a role</a>
+            </div>
           </div>
-        </div>
-        <a href="/landscape"
-           hx-boost="true"
-           hx-target="body"
-           class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Landscape</a>
-        <div class="group relative flex h-[68px] items-center">
-          <a href="/wiki"
+          <a href="/landscape"
              hx-boost="true"
              hx-target="body"
-             class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Resources</a>
-          <div class="dropdown absolute left-1/2 top-full z-[1200] hidden w-52 -translate-x-1/2 rounded-2xl border border-[#eadcc9] bg-white p-2 text-sm shadow-2xl shadow-[#3a2f25]/10 group-hover:block group-focus-within:block">
+             class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Landscape</a>
+          <div class="group relative flex h-[68px] items-center">
             <a href="/wiki"
                hx-boost="true"
                hx-target="body"
-               class="block rounded-xl px-3 py-2.5 font-semibold text-[#3a2f25] hover:bg-[#f8f3ec]">Wiki</a>
-            <a href="/docs"
-               hx-boost="true"
-               hx-target="body"
-               class="block rounded-xl px-3 py-2.5 text-[#3a2f25] hover:bg-[#f8f3ec]">Docs</a>
-            <a href="/search"
-               hx-boost="true"
-               hx-target="body"
-               class="block rounded-xl px-3 py-2.5 text-[#3a2f25] hover:bg-[#f8f3ec]">Search GOUP</a>
+               class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Resources</a>
+            <div class="dropdown absolute left-1/2 top-full z-[1200] hidden w-52 -translate-x-1/2 rounded-2xl border border-[#eadcc9] bg-white p-2 text-sm shadow-2xl shadow-[#3a2f25]/10 group-hover:block group-focus-within:block">
+              <a href="/wiki"
+                 hx-boost="true"
+                 hx-target="body"
+                 class="block rounded-xl px-3 py-2.5 font-semibold text-[#3a2f25] hover:bg-[#f8f3ec]">Wiki</a>
+              <a href="/docs"
+                 hx-boost="true"
+                 hx-target="body"
+                 class="block rounded-xl px-3 py-2.5 text-[#3a2f25] hover:bg-[#f8f3ec]">Docs</a>
+              <a href="/search"
+                 hx-boost="true"
+                 hx-target="body"
+                 class="block rounded-xl px-3 py-2.5 text-[#3a2f25] hover:bg-[#f8f3ec]">Search GOUP</a>
+            </div>
           </div>
+          <a href="/stats"
+             hx-boost="true"
+             hx-target="body"
+             class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Stats</a>
+          <a href="/sponsor"
+             hx-boost="true"
+             hx-target="body"
+             class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Sponsor</a>
         </div>
-        <a href="/stats"
-           hx-boost="true"
-           hx-target="body"
-           class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Stats</a>
-        <a href="/sponsor"
-           hx-boost="true"
-           hx-target="body"
-           class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Sponsor</a>
       </div>
+      {# End centered nav links -#}
 
       <button id="user-dropdown-button"
               type="button"
@@ -166,12 +177,37 @@
       </div>
 
       <div class="ms-auto flex items-center gap-2.5">
-        <a href="/search"
-           hx-boost="true"
-           hx-target="body"
-           class="hidden h-[34px] w-44 items-center rounded-full border border-[#eadcc9] bg-white/70 px-3.5 text-sm text-[#9A9088] shadow-sm sm:inline-flex">
-          Search...
-        </a>
+        {# Search: secondary button that expands into an input -#}
+        <div class="hidden items-center sm:flex">
+          <button id="navbar-search-toggle"
+                  type="button"
+                  class="inline-flex size-[34px] items-center justify-center rounded-full border border-[#eadcc9] bg-white/70 shadow-sm transition hover:bg-white"
+                  aria-label="Open search"
+                  aria-expanded="false">
+            <div class="svg-icon size-4 icon-magnifying-glass bg-[#3a2f25]"></div>
+          </button>
+          <form id="navbar-search-form"
+                action="/search"
+                method="get"
+                role="search"
+                class="hidden items-center gap-1.5">
+            <div class="relative flex items-center">
+              <div class="svg-icon pointer-events-none absolute left-3 size-4 icon-magnifying-glass bg-[#9A9088]"></div>
+              <input id="navbar-search-input"
+                     name="query"
+                     type="search"
+                     autocomplete="off"
+                     placeholder="Search..."
+                     class="h-[34px] w-52 rounded-full border border-[#eadcc9] bg-white/70 pl-9 pr-3.5 text-sm text-[#1A1510] placeholder-[#9A9088] shadow-sm transition focus:border-[#b9a68e] focus:bg-white focus:outline-none">
+            </div>
+            <button id="navbar-search-close"
+                    type="button"
+                    class="inline-flex size-[34px] items-center justify-center rounded-full border border-[#eadcc9] bg-white/70 shadow-sm transition hover:bg-white"
+                    aria-label="Close search">
+              <div class="svg-icon size-3.5 icon-close bg-[#3a2f25]"></div>
+            </button>
+          </form>
+        </div>
         {% if user.logged_in -%}
           <a href="/dashboard/user?tab=invitations"
              hx-boost="true"

@@ -7552,6 +7552,2275 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "wb6Nc",
+      "x": 4760,
+      "y": 0,
+      "name": "Documentation",
+      "width": 1440,
+      "layout": "vertical",
+      "padding": [
+        0,
+        0,
+        80,
+        0
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "a4wPK",
+          "name": "heroSec",
+          "width": "fill_container",
+          "fill": "#1A1510",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "path",
+              "id": "aAswa",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "bgPath",
+              "opacity": 0.09,
+              "geometry": "M-120 552l552-552m-312 552l552-552m-312 552l552-552m-312 552l552-552m-312 552l552-552m-312 552l552-552m-312 552l552-552",
+              "viewBox": [
+                0,
+                0,
+                1440,
+                600
+              ],
+              "width": 1440,
+              "height": 600,
+              "stroke": {
+                "align": "center",
+                "thickness": 1,
+                "fill": "#FFFFFF"
+              }
+            },
+            {
+              "type": "frame",
+              "id": "o3AtSc",
+              "name": "nav",
+              "width": "fill_container",
+              "height": 56,
+              "padding": [
+                0,
+                120
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "AqOZh",
+                  "fill": "#FAF5EE",
+                  "content": "GOUP",
+                  "fontFamily": "Amethysta",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "Mtnal",
+                  "name": "navLinks",
+                  "gap": 24,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "zv9In",
+                      "fill": "#FFFFFF65",
+                      "content": "Home",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "PHbVK",
+                      "fill": "#FFFFFF65",
+                      "content": "Launch Groups",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "OR9s9",
+                      "fill": "#FFFFFF65",
+                      "content": "Q&A",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "egKq1",
+                      "fill": "#FFFFFF65",
+                      "content": "Alliance",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "UKlTE",
+                      "fill": "#FFFFFF65",
+                      "content": "Resources",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "D6tMUc",
+                      "fill": "#FAF5EE",
+                      "content": "Docs",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tKQNl",
+                  "name": "navRight",
+                  "gap": 16,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "RYHKa",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "search",
+                      "iconFontFamily": "lucide",
+                      "fill": "#FFFFFF65"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fnFgb",
+                      "name": "joinBtn",
+                      "fill": "#FAF5EE",
+                      "cornerRadius": 100,
+                      "padding": [
+                        8,
+                        18
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "gXGJN",
+                          "fill": "#1A1510",
+                          "content": "Join GOUP",
+                          "fontFamily": "Instrument Sans",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "U3gR6",
+              "name": "heroContent",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 28,
+              "padding": [
+                56,
+                120,
+                80,
+                120
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "RpIcc",
+                  "name": "docBadge",
+                  "cornerRadius": 100,
+                  "stroke": {
+                    "align": "outside",
+                    "thickness": 1,
+                    "fill": "#FFFFFF25"
+                  },
+                  "padding": [
+                    6,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "fTTP2",
+                      "fill": "#FFFFFF60",
+                      "content": "DOCS",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 10,
+                      "fontWeight": "700",
+                      "letterSpacing": 2.5
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "YmSUQ",
+                  "fill": "#FAF5EE",
+                  "textGrowth": "fixed-width",
+                  "width": 900,
+                  "content": "GOUP documentation",
+                  "lineHeight": 0.92,
+                  "fontFamily": "Amethysta",
+                  "fontSize": 80,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "wJayD",
+                  "fill": "#FFFFFF80",
+                  "textGrowth": "fixed-width",
+                  "width": 680,
+                  "content": "Guides and runbooks for members, group leads, alliance managers, and project contributors.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 18,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "sD0aX",
+                  "fill": "#FFFFFF50",
+                  "textGrowth": "fixed-width",
+                  "width": 640,
+                  "content": "GOUP is a community platform for builders, founders, operators, mentors, and open source contributors. It brings groups, events, member directories, jobs, landscape discovery, sponsorship, and operational tooling into one product. These docs are for people using GOUP, leading groups, managing alliances, sponsoring the community, or contributing to the codebase.",
+                  "lineHeight": 1.65,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "HTNZx",
+          "name": "cardsSec",
+          "width": "fill_container",
+          "fill": "#FAF5EE",
+          "gap": 80,
+          "padding": [
+            72,
+            120,
+            80,
+            120
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "ddFKr",
+              "name": "leftCol",
+              "width": 400,
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "bwSZv",
+                  "fill": "#1A1510",
+                  "content": "Start Here",
+                  "lineHeight": 0.95,
+                  "fontFamily": "Amethysta",
+                  "fontSize": 52,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "E0duzk",
+                  "fill": "#5A4A3E",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "GOUP is a community platform for builders, founders, operators, mentors, and open source contributors. It brings groups, events, member directories, jobs, landscape discovery, sponsorship, and operational tooling into one product.",
+                  "lineHeight": 1.65,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "hmrYx",
+                  "fill": "#5A4A3E",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "These docs are for people using GOUP, leading groups, managing alliances, sponsoring the community, or contributing to the codebase.",
+                  "lineHeight": 1.65,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "CgTqt",
+              "name": "rightCol",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E2DDD8"
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "pcjim",
+                  "name": "g1",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "e8TZZ",
+                      "fill": "#1A1510",
+                      "content": "Get productive quickly",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "tERNM",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n2v3O",
+                  "name": "g2",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "hJl8S",
+                      "fill": "#1A1510",
+                      "content": "Choose the right dashboard",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "fLsgT",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "V5z9V",
+                  "name": "g3",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "aBsMv",
+                      "fill": "#1A1510",
+                      "content": "Discover groups and events",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "iCfyi",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "h0IAL",
+                  "name": "g4",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SSaZS",
+                      "fill": "#1A1510",
+                      "content": "Participate as a member",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "H99aJ",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SwvHb",
+                  "name": "g5",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "c0ZIf",
+                      "fill": "#1A1510",
+                      "content": "Lead a group",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "AEjLa",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "b0DxlU",
+                  "name": "g6",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "jgO3b",
+                      "fill": "#1A1510",
+                      "content": "Run alliance operations",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "bC6Oq",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YAsBn",
+                  "name": "g7",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "MydoG",
+                      "fill": "#1A1510",
+                      "content": "Add or manage multiple alliances",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "j6cI4",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "E1NIQb",
+                  "name": "g8",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "T4t4D1",
+                      "fill": "#1A1510",
+                      "content": "Manage a group dashboard",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "cC9mZ",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "UqKte",
+                  "name": "g9",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "akm00",
+                      "fill": "#1A1510",
+                      "content": "Run event operations",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "Dj6ht",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zimaQ",
+                  "name": "g10",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "u787Po",
+                      "fill": "#1A1510",
+                      "content": "Contribute projects or code",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "ceHOj",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "gLmhE",
+                  "name": "g11",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "qmfxO",
+                      "fill": "#1A1510",
+                      "content": "Work on the application",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "O5x03n",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "w5mMNL",
+          "fill": "#E2DDD8",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "Tf8pC",
+          "name": "paSec",
+          "width": "fill_container",
+          "fill": "#FAF5EE",
+          "gap": 80,
+          "padding": [
+            72,
+            120,
+            80,
+            120
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "v0dYld",
+              "name": "leftPA",
+              "width": 400,
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "OEq7d",
+                  "fill": "#1A1510",
+                  "content": "Product Areas",
+                  "fontFamily": "Amethysta",
+                  "fontSize": 32,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "xQq6J",
+                  "fill": "#5A4A3E",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Where each part of GOUP lives, from the public site through to alliance-level administration.",
+                  "lineHeight": 1.65,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fvDOc",
+              "name": "rightPA",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E2DDD8"
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "brJn9",
+                  "name": "e1",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "zaKub",
+                      "fill": "#1A1510",
+                      "content": "Public Site",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "R8scYk",
+                      "fill": "#8A7A6E",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Where people learn what GOUP is, discover groups and events, browse the landscape, read docs, view platform stats, find jobs, and explore sponsorship. Key pages: Explore · Jobs · Landscape · Stats · Sponsor.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "t2m54",
+                  "name": "e2",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "hVHDT",
+                      "fill": "#1A1510",
+                      "content": "Member Experience",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Xj8PA",
+                      "fill": "#8A7A6E",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Members can manage their profile, join groups, RSVP to events, submit talks, respond to invitations, save job interest, and publish mentorship availability. Areas: User Dashboard · Profile settings · Alliance member directories · Public profile cards.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TTZJa",
+                  "name": "e3",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "jXz1H",
+                      "fill": "#1A1510",
+                      "content": "Group Operations",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "x0RIq",
+                      "fill": "#8A7A6E",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Group leads manage events, members, sponsors, store items, member spotlights, team permissions, and group-level communications. Dashboards include: Events and event series · Members and team access · Sponsors, store, and spotlights · Analytics and audit logs.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "wAolY",
+                  "name": "e4",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "EjTQa",
+                      "fill": "#1A1510",
+                      "content": "Alliance Operations",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "zTngb",
+                      "fill": "#8A7A6E",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Alliance admins manage brand identity, groups, taxonomy, regions, team access, landscape entries, analytics, and public brand assets. Features: Shared region and category taxonomy · Cross-group member directory · Public brand page · Landscape management · Alliance and group role permissions.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "c7Vrk",
+                  "name": "e5",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "bO7f5",
+                      "fill": "#1A1510",
+                      "content": "Jobs, Mentorship, and Sponsorship",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "f3mY58",
+                      "fill": "#8A7A6E",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Members can post public or member-only jobs, applicants can save interest for follow-up, members can offer individual or business mentorship from their profile, and sponsors can submit inquiries after logging in.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "m6aPlj",
+          "fill": "#E2DDD8",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "tQvLt",
+          "name": "archSec",
+          "width": "fill_container",
+          "fill": "#FAF5EE",
+          "gap": 80,
+          "padding": [
+            72,
+            120,
+            80,
+            120
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "iXNxO",
+              "name": "leftArch",
+              "width": 400,
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "QzOQt",
+                  "fill": "#1A1510",
+                  "content": "Architecture",
+                  "fontFamily": "Amethysta",
+                  "fontSize": 32,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "dHJB1",
+                  "fill": "#5A4A3E",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "How GOUP is put together, end to end.",
+                  "lineHeight": 1.65,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "oz9sF",
+              "name": "rightArch",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E2DDD8"
+              },
+              "layout": "vertical",
+              "gap": 32,
+              "padding": [
+                18,
+                0,
+                0,
+                0
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "C4FCQl",
+                  "fill": "#5A4A3E",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "GOUP is a server-rendered Rust application with progressive enhancement. The web app owns the public site, dashboards, member workflows, and background notifications, while PostgreSQL stores product data and exposes most business workflows through SQL functions.",
+                  "lineHeight": 1.65,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "y5eTNg",
+                  "name": "archImgPlaceholder",
+                  "width": "fill_container",
+                  "height": 400,
+                  "fill": "#EDE8E2",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "N7n4z",
+                      "fill": "#B0A090",
+                      "content": "[ architecture diagram ]",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "KH5rb",
+          "fill": "#E2DDD8",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "w8h8aV",
+          "name": "techSec",
+          "width": "fill_container",
+          "fill": "#FAF5EE",
+          "gap": 80,
+          "padding": [
+            72,
+            120,
+            80,
+            120
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "Mnbfb",
+              "name": "leftTech",
+              "width": 400,
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "g4ALq",
+                  "fill": "#1A1510",
+                  "content": "Technology Stack",
+                  "fontFamily": "Amethysta",
+                  "fontSize": 32,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "N3886j",
+                  "fill": "#5A4A3E",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "The tools and libraries behind GOUP.",
+                  "lineHeight": 1.65,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "u2p0yp",
+              "name": "rightTech",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E2DDD8"
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Nhekj",
+                  "name": "r1",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 24,
+                  "padding": [
+                    14,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "kzlhQ",
+                      "fill": "#8A7A6E",
+                      "content": "HTTP server",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "g2rctf",
+                      "fill": "#1A1510",
+                      "content": "Rust, Axum, Tower middleware",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "XOfjz",
+                  "name": "r2",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 24,
+                  "padding": [
+                    14,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "j3FWL",
+                      "fill": "#8A7A6E",
+                      "content": "Templates",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "MKdG2",
+                      "fill": "#1A1510",
+                      "content": "Askama HTML templates",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "I00sk",
+                  "name": "r3",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 24,
+                  "padding": [
+                    14,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VafmS",
+                      "fill": "#8A7A6E",
+                      "content": "Interactivity",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "oiibZ",
+                      "fill": "#1A1510",
+                      "content": "HTMX, custom elements, small JavaScript modules",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ak04d",
+                  "name": "r4",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 24,
+                  "padding": [
+                    14,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "GPeER",
+                      "fill": "#8A7A6E",
+                      "content": "Styling",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "RFrLG",
+                      "fill": "#1A1510",
+                      "content": "Tailwind CSS utilities and project CSS",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "znKEw",
+                  "name": "r5",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 24,
+                  "padding": [
+                    14,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "yMN3M",
+                      "fill": "#8A7A6E",
+                      "content": "Database",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "jsq0S",
+                      "fill": "#1A1510",
+                      "content": "PostgreSQL with PostGIS",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "kW0zl",
+                  "name": "r6",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 24,
+                  "padding": [
+                    14,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "typpb",
+                      "fill": "#8A7A6E",
+                      "content": "Migrations",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "piY7i",
+                      "fill": "#1A1510",
+                      "content": "Tern plus SQL schema/function files",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "OXz4F",
+                  "name": "r7",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 24,
+                  "padding": [
+                    14,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "p27RHd",
+                      "fill": "#8A7A6E",
+                      "content": "Auth",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "A4xxR",
+                      "fill": "#1A1510",
+                      "content": "Email/password, GitHub OAuth2, LinkedIn OIDC",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ij37P",
+                  "name": "r8",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 24,
+                  "padding": [
+                    14,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "z1ATS",
+                      "fill": "#8A7A6E",
+                      "content": "Background work",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "GxJvm",
+                      "fill": "#1A1510",
+                      "content": "Rust services for notifications, email, meetings, payments",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "qX4lh",
+                  "name": "r9",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 24,
+                  "padding": [
+                    14,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "QZy0J",
+                      "fill": "#8A7A6E",
+                      "content": "Testing",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "obhkp",
+                      "fill": "#1A1510",
+                      "content": "Rust tests, pgTAP, Playwright, frontend unit tests",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "p9f9Y",
+                  "name": "r10",
+                  "width": "fill_container",
+                  "gap": 24,
+                  "padding": [
+                    14,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "TL8Sw",
+                      "fill": "#8A7A6E",
+                      "content": "Operations",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "D1bGOz",
+                      "fill": "#1A1510",
+                      "content": "EC2/systemd deployment, optional MCP server",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "VjoEU",
+          "fill": "#E2DDD8",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "l5rRE",
+          "name": "rlSec",
+          "width": "fill_container",
+          "fill": "#FAF5EE",
+          "gap": 80,
+          "padding": [
+            72,
+            120,
+            80,
+            120
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "i6WGs",
+              "name": "leftRL",
+              "width": 400,
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "nqtGQ",
+                  "fill": "#1A1510",
+                  "content": "Run Locally",
+                  "fontFamily": "Amethysta",
+                  "fontSize": 32,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "DhLWv",
+                  "fill": "#5A4A3E",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Use the repository root for most commands.",
+                  "lineHeight": 1.65,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Bm3Xd",
+              "name": "rightRL",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E2DDD8"
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "w4cGZt",
+                  "name": "s1",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "e3lbdm",
+                      "fill": "#1A1510",
+                      "content": "1 — Install Tools",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "TmqDJ",
+                      "fill": "#8A7A6E",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Rust via rustup, PostgreSQL 15+ with PostGIS, tern for migrations, just for development commands, Node.js and npm for frontend and e2e tests, Tailwind CSS standalone CLI.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "JyJIM",
+                  "name": "s2",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "O6MmF",
+                      "fill": "#1A1510",
+                      "content": "2 — Create Local Config",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "UsEk0",
+                      "fill": "#8A7A6E",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "The justfile defaults to $HOME/.config/ocg. Create $HOME/.config/ocg/tern.conf and $HOME/.config/ocg/server.yml with matching database settings. See the Development Guide for the full configuration shape.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "oE4QB",
+                  "name": "s3",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "nKi6i",
+                      "fill": "#1A1510",
+                      "content": "3 — Create and Migrate the Database",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "uvxSq",
+                      "fill": "#8A7A6E",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Run just db-create then just db-migrate, or just db-recreate for a clean rebuild.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "mZ9RU",
+                  "name": "s4",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "DBjxH",
+                      "fill": "#1A1510",
+                      "content": "4 — Run the App",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SARBl",
+                      "fill": "#8A7A6E",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Start the server, then open http://localhost:9000. Use server-watch for automatic reloads while developing.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "HrQ4l",
+          "fill": "#E2DDD8",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "Dcwob",
+          "name": "ccSec",
+          "width": "fill_container",
+          "fill": "#FAF5EE",
+          "gap": 80,
+          "padding": [
+            72,
+            120,
+            80,
+            120
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "D6xxA",
+              "name": "leftCC",
+              "width": 400,
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "BWpoe",
+                  "fill": "#1A1510",
+                  "content": "Contributor Checks",
+                  "fontFamily": "Amethysta",
+                  "fontSize": 32,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "NJnr1",
+                  "fill": "#5A4A3E",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Use focused checks while developing, then broader checks before opening a PR.",
+                  "lineHeight": 1.65,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "XJ81Q",
+              "name": "rightCC",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E2DDD8"
+              },
+              "layout": "vertical",
+              "gap": 20,
+              "padding": [
+                20,
+                0,
+                0,
+                0
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "u6p5k",
+                  "fill": "#B0A090",
+                  "content": "FOCUSED CHECKS",
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "letterSpacing": 2.5
+                },
+                {
+                  "type": "frame",
+                  "id": "q0ksro",
+                  "name": "cb1",
+                  "width": "fill_container",
+                  "fill": "#EDE8E0",
+                  "cornerRadius": 6,
+                  "layout": "vertical",
+                  "padding": [
+                    16,
+                    20
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "n5Tk2q",
+                      "fill": "#2A1A10",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "just check-fmt\njust check-clippy\njust check",
+                      "lineHeight": 1.8,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "gofDL",
+                  "fill": "#B0A090",
+                  "content": "FULL TEST SUITE",
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "letterSpacing": 2.5
+                },
+                {
+                  "type": "frame",
+                  "id": "k1R4v",
+                  "name": "cb2",
+                  "width": "fill_container",
+                  "fill": "#EDE8E0",
+                  "cornerRadius": 6,
+                  "layout": "vertical",
+                  "padding": [
+                    16,
+                    20
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "GeAQQ",
+                      "fill": "#2A1A10",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "just test\njust test-e2e",
+                      "lineHeight": 1.8,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "a9rMf",
+          "fill": "#E2DDD8",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "TlLbB",
+          "name": "dnSec",
+          "width": "fill_container",
+          "fill": "#FAF5EE",
+          "gap": 80,
+          "padding": [
+            72,
+            120,
+            80,
+            120
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "HgKpi",
+              "name": "leftDN",
+              "width": 400,
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "MQBJW",
+                  "fill": "#1A1510",
+                  "content": "Deployment Notes",
+                  "fontFamily": "Amethysta",
+                  "fontSize": 32,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "Ez1Gk",
+                  "fill": "#5A4A3E",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Production is a pull, migrate, release-build, restart flow on EC2.",
+                  "lineHeight": 1.65,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f6E51k",
+              "name": "rightDN",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E2DDD8"
+              },
+              "layout": "vertical",
+              "gap": 20,
+              "padding": [
+                20,
+                0,
+                0,
+                0
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "tTTfA",
+                  "name": "dnCB",
+                  "width": "fill_container",
+                  "fill": "#EDE8E0",
+                  "cornerRadius": 6,
+                  "layout": "vertical",
+                  "padding": [
+                    16,
+                    20
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "WpjCA",
+                      "fill": "#2A1A10",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "git pull\njust db-migrate\njust release-build\njust restart",
+                      "lineHeight": 1.8,
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "kyx8b",
+                  "fill": "#8A7A6E",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Release builds can take a while on small EC2 instances. A clean optimized Rust build near 15–20 minutes is not unusual when dependencies are not cached.",
+                  "lineHeight": 1.6,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "r7WRG",
+          "fill": "#E2DDD8",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "GyLlo",
+          "name": "nhSec",
+          "width": "fill_container",
+          "fill": "#FAF5EE",
+          "gap": 80,
+          "padding": [
+            72,
+            120,
+            80,
+            120
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "liaiV",
+              "name": "leftNH",
+              "width": 400,
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "hlfLM",
+                  "fill": "#1A1510",
+                  "content": "Need Help?",
+                  "fontFamily": "Amethysta",
+                  "fontSize": 32,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "om7OJ",
+                  "fill": "#5A4A3E",
+                  "content": "Start with:",
+                  "lineHeight": 1.65,
+                  "fontFamily": "Instrument Sans",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "YWZKe",
+              "name": "rightNH",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E2DDD8"
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "v9vcA",
+                  "name": "l1",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "CpinI",
+                      "fill": "#1A1510",
+                      "content": "Troubleshooting",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "a2iOCP",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nQFqV",
+                  "name": "l2",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#E2DDD8"
+                  },
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ejxhC",
+                      "fill": "#1A1510",
+                      "content": "Frequently Asked Questions",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "ZaxvW",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "a7YLx",
+                  "name": "l3",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "padding": [
+                    18,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VAD1z",
+                      "fill": "#1A1510",
+                      "content": "Development Guide",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "Rx0Os",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "arrow-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "#B0A090"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

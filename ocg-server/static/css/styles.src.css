@@ -9,6 +9,7 @@
   --font-inter: Inter, sans-serif;
   --font-amethysta: "Amethysta", serif;
   --font-metrophobic: "Metrophobic", sans-serif;
+  --font-instrument: "Instrument Sans", sans-serif;
   --font-sans:
     "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
     Arial, sans-serif, Roboto, Ubuntu, "Apple Color Emoji", "Segoe UI Emoji",
@@ -904,6 +905,30 @@ input:placeholder-shown {
     U+2215, U+FEFF, U+FFFD;
 }
 
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/static/vendor/fonts/instrument-sans-latin-ext.woff2) format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/static/vendor/fonts/instrument-sans-latin.woff2) format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
 /* End font family */
 
 /* Markdown */
@@ -1012,9 +1037,28 @@ input:placeholder-shown {
 }
 
 .docs-markdown {
-  color: var(--color-stone-700);
-  font-size: 1rem;
-  line-height: 1.8;
+  color: #5A4A3E;
+  font-family: var(--font-instrument);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+/* Override the .public-site-theme base rule that forces Metrophobic on these tags. */
+.docs-markdown p,
+.docs-markdown li,
+.docs-markdown a,
+.docs-markdown span,
+.docs-markdown strong,
+.docs-markdown em,
+.docs-markdown td,
+.docs-markdown th,
+.docs-markdown blockquote {
+  font-family: var(--font-instrument);
+}
+
+.docs-markdown code,
+.docs-markdown pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 .docs-markdown > h1:first-child {
@@ -1022,29 +1066,45 @@ input:placeholder-shown {
 }
 
 .docs-markdown h2 {
-  margin-top: 2.5rem;
-  margin-bottom: 0.9rem;
-  color: var(--color-stone-950);
-  font-size: clamp(1.55rem, 2vw, 2rem);
-  font-weight: 900;
-  letter-spacing: -0.035em;
+  margin-top: 3rem;
+  margin-bottom: 1.1rem;
+  padding-top: 2rem;
+  border-top: 1px solid #E2DDD8;
+  color: #1A1510;
+  font-family: var(--font-amethysta);
+  font-size: clamp(1.75rem, 4vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* First visible section (the leading h1 is hidden) has no divider above it. */
+.docs-markdown > h1:first-child + h2 {
+  margin-top: 0.5rem;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .docs-markdown h3 {
   margin-top: 1.9rem;
-  margin-bottom: 0.7rem;
-  color: var(--color-stone-950);
-  font-size: 1.2rem;
-  font-weight: 900;
-  letter-spacing: -0.02em;
+  margin-bottom: 0.6rem;
+  color: #1A1510;
+  font-family: var(--font-instrument);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .docs-markdown h4,
 .docs-markdown h5,
 .docs-markdown h6 {
-  margin-top: 1.5rem;
-  color: var(--color-stone-900);
-  font-weight: 800;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: #B0A090;
+  font-family: var(--font-instrument);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .docs-markdown p {
@@ -1053,124 +1113,194 @@ input:placeholder-shown {
 
 .docs-markdown p,
 .docs-markdown li {
-  color: var(--color-stone-700);
+  color: #5A4A3E;
 }
 
 .docs-markdown ul,
 .docs-markdown ol {
-  margin-top: 0.75rem;
-  margin-bottom: 1.25rem;
-  border-radius: 1.5rem;
-  background: var(--color-stone-50);
-  padding: 1rem 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .docs-markdown ul li,
 .docs-markdown ol li {
-  margin-left: 1.2rem;
-  padding-left: 0.25rem;
+  list-style: none;
+  margin-left: 0;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid #E2DDD8;
 }
 
-.docs-markdown li + li {
-  margin-top: 0.45rem;
+.docs-markdown ol {
+  counter-reset: docs-ol;
+}
+
+.docs-markdown ol li {
+  counter-increment: docs-ol;
+}
+
+.docs-markdown ol li::before {
+  content: counter(docs-ol) " — ";
+  color: #B0A090;
+  font-weight: 700;
+}
+
+/* Link rows (e.g. Start Here, Need Help) get a trailing arrow. */
+.docs-markdown li:has(> a:only-child)::after {
+  content: "→";
+  float: right;
+  color: #B0A090;
 }
 
 .docs-markdown a {
-  color: var(--color-stone-950);
-  font-weight: 800;
+  color: #1A1510;
+  font-weight: 600;
   text-decoration: underline;
-  text-decoration-color: var(--color-stone-300);
-  text-decoration-thickness: 2px;
+  text-decoration-color: #B0A090;
+  text-decoration-thickness: 1.5px;
   text-underline-offset: 0.2em;
 }
 
+.docs-markdown li > a:only-child {
+  text-decoration: none;
+  font-weight: 600;
+}
+
 .docs-markdown a:hover {
-  color: var(--color-stone-700);
-  text-decoration-color: var(--color-stone-950);
+  color: #1A1510;
+  text-decoration-color: #1A1510;
 }
 
 .docs-markdown table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-  overflow: hidden;
-  border: 1px solid var(--color-stone-200);
-  border-radius: 1.5rem;
-  background: var(--color-white);
-  box-shadow: 0 18px 45px rgb(120 113 108 / 0.12);
-}
-
-.docs-markdown thead {
-  background: #f5efe7;
-  color: var(--color-stone-800);
+  border-collapse: collapse;
+  margin: 1rem 0 1.75rem;
 }
 
 .docs-markdown table th {
-  color: var(--color-stone-800);
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.14em;
+  color: #B0A090;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .docs-markdown table td,
 .docs-markdown table th {
   border: 0;
-  border-bottom: 1px solid var(--color-stone-200);
-  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #E2DDD8;
+  padding: 0.875rem 1rem 0.875rem 0;
   text-align: left;
   vertical-align: top;
 }
 
-.docs-markdown table tr:last-child td {
-  border-bottom: 0;
+/* Two-column "label -> value" definition tables (e.g. Technology Stack, Start
+   Here): keep the muted, non-wrapping first column. Scoped to tables that have
+   no 3rd header cell so multi-column matrices are not affected. */
+.docs-markdown table:not(:has(th:nth-child(3))) td:first-child {
+  color: #8A7A6E;
+  white-space: nowrap;
+  padding-right: 1.5rem;
 }
 
-.docs-markdown table tbody tr:nth-child(even) {
-  background: var(--color-stone-50);
+.docs-markdown table:not(:has(th:nth-child(3))) td:not(:first-child) {
+  color: #1A1510;
+}
+
+/* Multi-column "matrix" tables (3+ columns, detected via a 3rd header cell):
+   fixed, balanced widths so no single column blows out and every column wraps
+   comfortably. */
+.docs-markdown table:has(th:nth-child(3)) {
+  table-layout: fixed;
+}
+
+.docs-markdown table:has(th:nth-child(3)) th,
+.docs-markdown table:has(th:nth-child(3)) td {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.docs-markdown table:has(th:nth-child(3)) td {
+  color: #1A1510;
+}
+
+/* Subtle warm-palette header divider for matrix tables. */
+.docs-markdown table:has(th:nth-child(3)) th {
+  border-bottom-color: #D8D0C6;
+}
+
+/* Comfortable proportions for the common 4-column matrix. Fixed layout
+   normalizes these ratios for matrices with other column counts. */
+.docs-markdown table:has(th:nth-child(3)) th:nth-child(1) {
+  width: 30%;
+}
+
+.docs-markdown table:has(th:nth-child(3)) th:nth-child(2) {
+  width: 18%;
+}
+
+.docs-markdown table:has(th:nth-child(3)) th:nth-child(3) {
+  width: 18%;
+}
+
+.docs-markdown table:has(th:nth-child(3)) th:nth-child(4) {
+  width: 34%;
+}
+
+/* On narrow screens keep the matrix readable: let it scroll horizontally within
+   its own box instead of overflowing (and breaking) the page. */
+@media (max-width: 640px) {
+  .docs-markdown table:has(th:nth-child(3)) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .docs-markdown table:has(th:nth-child(3)) th,
+  .docs-markdown table:has(th:nth-child(3)) td {
+    min-width: 9rem;
+  }
 }
 
 .docs-markdown code {
-  border-radius: 0.65rem;
-  background: var(--color-stone-100);
+  border-radius: 0.25rem;
+  background: #EDE8E0;
   padding: 0.15rem 0.4rem;
-  color: var(--color-stone-950);
-  font-size: 0.92em;
-  font-weight: 700;
+  color: #2A1A10;
+  font-size: 0.9em;
 }
 
 .docs-markdown pre {
-  border-radius: 1.5rem;
-  border: 1px solid var(--color-stone-800);
-  background: var(--color-stone-950);
-  padding: 1rem;
-  color: var(--color-stone-100);
+  border-radius: 0.375rem;
+  background: #EDE8E0;
+  padding: 1rem 1.25rem;
+  color: #2A1A10;
+  font-size: 0.8125rem;
+  line-height: 1.8;
 }
 
 .docs-markdown pre code {
+  border-radius: 0;
   background: transparent;
   padding: 0;
   color: inherit;
+  font-size: inherit;
 }
 
 .docs-markdown blockquote {
-  border-left: 0;
-  border-radius: 1.5rem;
-  background: var(--color-stone-50);
-  padding: 1rem 1.25rem;
-  color: var(--color-stone-700);
+  margin: 1.25rem 0;
+  border-left: 2px solid #E2DDD8;
+  padding: 0.25rem 0 0.25rem 1rem;
+  color: #8A7A6E;
   font-style: normal;
 }
 
 .docs-markdown img {
   display: block;
   height: auto;
-  margin: 1.5rem auto;
-  border-radius: 1.5rem;
-  border: 1px solid var(--color-stone-200);
-  background: var(--color-white);
-  box-shadow: 0 18px 45px rgb(120 113 108 / 0.16);
+  margin: 1.5rem 0;
+  border-radius: 0.5rem;
+  border: 1px solid #E2DDD8;
 }
 
 /* End markdown */
