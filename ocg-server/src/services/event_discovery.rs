@@ -13,8 +13,11 @@ use uuid::Uuid;
 use crate::{
     config::YouComConfig,
     db::{PgDB, PgExecutor, dashboard::group::DBDashboardGroup},
-    integrations::you_com::{
-        DiscoveredEvent, SearchResult, YouComClient, source_search_domain, unique_baku_results,
+    integrations::{
+        event_page::{EventPageClient, validate_candidate_url},
+        you_com::{
+            DiscoveredEvent, SearchResult, YouComClient, source_search_domain, unique_baku_results,
+        },
     },
 };
 
@@ -169,6 +172,7 @@ async fn ingest_sources(
 
     let mut counts = std::collections::HashMap::<Uuid, (i32, i32)>::new();
     let result = async {
+    let event_pages = EventPageClient::new()?;
     for source in sources {
         let search_domain = source_search_domain(&source.url)?;
         let results = unique_baku_results(
@@ -177,9 +181,18 @@ async fn ingest_sources(
                 .await?,
         );
         for result in results {
-            let Some(event) = parse_discovered_event(&result, &source.url) else {
+            if let Err(err) = validate_candidate_url(&result.url, &source.url).await {
+                info!(%err, candidate_url = %result.url, source_url = %source.url, "skipped unsafe event discovery candidate");
                 continue;
+            }
+            let event = match event_pages.fetch(&result.url, &source.url).await {
+                Ok(event) => event.or_else(|| parse_discovered_event(&result, &result.url)),
+                Err(err) => {
+                    info!(%err, candidate_url = %result.url, "could not enrich event discovery candidate");
+                    parse_discovered_event(&result, &result.url)
+                }
             };
+            let Some(event) = event else { continue };
             let fingerprint = event.fingerprint();
             let inserted: Option<Uuid> = db
                 .fetch_scalar_opt(
