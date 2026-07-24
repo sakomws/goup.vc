@@ -3,8 +3,11 @@
 use askama::Template;
 use axum::{
     extract::State,
-    http::{Uri, header::CACHE_CONTROL},
-    response::{Html, IntoResponse},
+    http::{
+        HeaderMap, Uri,
+        header::{ACCEPT, CACHE_CONTROL, CONTENT_TYPE, VARY},
+    },
+    response::{Html, IntoResponse, Response},
 };
 use tracing::{instrument, warn};
 
@@ -29,8 +32,21 @@ mod tests;
 pub(crate) async fn page(
     auth_session: AuthSession,
     State(db): State<DynDB>,
+    headers: HeaderMap,
     uri: Uri,
-) -> Result<impl IntoResponse, HandlerError> {
+) -> Result<Response, HandlerError> {
+    if accepts_markdown(&headers) {
+        return Ok((
+            [
+                (CACHE_CONTROL, CACHE_CONTROL_PRIVATE_NO_STORE),
+                (CONTENT_TYPE, "text/markdown; charset=utf-8"),
+                (VARY, "Accept"),
+            ],
+            "# GOUP Alliance\n\nGOUP Alliance is a community platform for builders, founders, and open-source contributors.\n\n- [Explore groups and events](/explore)\n- [Browse jobs](/jobs)\n- [Browse the landscape](/landscape)\n- [Read the documentation](/docs)\n- [Public API documentation](/docs/api)\n",
+        )
+            .into_response());
+    }
+
     // Prepare template
     let (
         alliances,
@@ -74,7 +90,23 @@ pub(crate) async fn page(
     Ok((
         [(CACHE_CONTROL, CACHE_CONTROL_PRIVATE_NO_STORE)],
         Html(template.render()?),
-    ))
+    )
+        .into_response())
+}
+
+fn accepts_markdown(headers: &HeaderMap) -> bool {
+    headers
+        .get(ACCEPT)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| {
+            value.split(',').any(|media_type| {
+                media_type
+                    .trim()
+                    .split(';')
+                    .next()
+                    .is_some_and(|media_type| media_type.eq_ignore_ascii_case("text/markdown"))
+            })
+        })
 }
 
 async fn load_latest_feed(

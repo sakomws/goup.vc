@@ -6,7 +6,8 @@ use axum::{
 use tower::ServiceExt;
 
 use crate::{
-    db::mock::MockDB, handlers::tests::*, services::notifications::MockNotificationsManager,
+    config::HttpServerConfig, db::mock::MockDB, handlers::tests::*,
+    services::notifications::MockNotificationsManager,
 };
 
 use super::*;
@@ -196,6 +197,132 @@ async fn test_health_check_returns_ok() {
     // Check response matches expectations
     assert_eq!(parts.status, StatusCode::OK);
     assert!(to_bytes(body, usize::MAX).await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn test_agent_discovery_resources_are_machine_readable() {
+    let db = MockDB::new();
+    let nm = MockNotificationsManager::new();
+    let router = TestRouterBuilder::new(db, nm)
+        .with_server_cfg(HttpServerConfig {
+            base_url: "https://goup.vc".to_string(),
+            ..HttpServerConfig::default()
+        })
+        .build()
+        .await;
+
+    let robots = router
+        .clone()
+        .oneshot(Request::builder().uri("/robots.txt").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    let (parts, body) = robots.into_parts();
+    assert_eq!(parts.status, StatusCode::OK);
+    assert_eq!(
+        parts.headers.get(CONTENT_TYPE).unwrap(),
+        "text/plain; charset=utf-8"
+    );
+    let body = String::from_utf8(to_bytes(body, usize::MAX).await.unwrap().to_vec()).unwrap();
+    assert!(body.contains("User-agent: GPTBot"));
+    assert!(body.contains("Content-Signal: ai-train=no, search=yes, ai-input=no"));
+    assert!(body.contains("Sitemap: https://goup.vc/sitemap.xml"));
+
+    let sitemap = router
+        .clone()
+        .oneshot(Request::builder().uri("/sitemap.xml").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    let (parts, body) = sitemap.into_parts();
+    assert_eq!(parts.status, StatusCode::OK);
+    assert_eq!(
+        parts.headers.get(CONTENT_TYPE).unwrap(),
+        "application/xml; charset=utf-8"
+    );
+    let body = String::from_utf8(to_bytes(body, usize::MAX).await.unwrap().to_vec()).unwrap();
+    assert!(body.contains("<loc>https://goup.vc/docs</loc>"));
+
+    let catalog = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/.well-known/api-catalog")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let (parts, body) = catalog.into_parts();
+    assert_eq!(parts.status, StatusCode::OK);
+    assert_eq!(
+        parts.headers.get(CONTENT_TYPE).unwrap(),
+        "application/linkset+json; charset=utf-8"
+    );
+    let body = String::from_utf8(to_bytes(body, usize::MAX).await.unwrap().to_vec()).unwrap();
+    assert!(body.contains("https://goup.vc/openapi.yaml"));
+    assert!(body.contains("https://goup.vc/api/v1/health"));
+
+    let skills = router
+        .oneshot(
+            Request::builder()
+                .uri("/.well-known/agent-skills/index.json")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(skills.status(), StatusCode::OK);
+    assert_eq!(
+        skills.headers().get(CONTENT_TYPE).unwrap(),
+        "application/json; charset=utf-8"
+    );
+}
+
+#[tokio::test]
+async fn test_homepage_markdown_response_and_discovery_links() {
+    let db = MockDB::new();
+    let nm = MockNotificationsManager::new();
+    let router = TestRouterBuilder::new(db, nm).build().await;
+
+    let markdown = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/")
+                .header("Accept", "text/markdown")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let (parts, body) = markdown.into_parts();
+    assert_eq!(parts.status, StatusCode::OK);
+    assert_eq!(
+        parts.headers.get(CONTENT_TYPE).unwrap(),
+        "text/markdown; charset=utf-8"
+    );
+    assert_eq!(parts.headers.get("vary").unwrap(), "Accept");
+    let body = String::from_utf8(to_bytes(body, usize::MAX).await.unwrap().to_vec()).unwrap();
+    assert!(body.starts_with("# GOUP Alliance"));
+
+    let html_router = Router::new()
+        .route("/", get(|| async { axum::response::Html("homepage") }))
+        .layer(middleware::from_fn(add_agent_discovery_links));
+    let html = html_router
+        .oneshot(
+            Request::builder()
+                .uri("/")
+                .header("Accept", "text/html")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(html.status(), StatusCode::OK);
+    assert!(html.headers().get_all("link").iter().any(|value| {
+        value
+            .to_str()
+            .is_ok_and(|value| value.contains("/.well-known/api-catalog"))
+    }));
 }
 
 #[tokio::test]
