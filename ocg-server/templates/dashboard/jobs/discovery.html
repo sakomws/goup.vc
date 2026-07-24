@@ -35,7 +35,7 @@
       </ul>
     </section>
     <section class="mt-8 border-t pt-6">
-      <h2 class="font-semibold text-lg">Pending review</h2>
+      <h2 class="font-semibold text-lg">Discovery candidates awaiting review</h2>
       {% if discovery.pending_items.is_empty() %}
         <p class="mt-3 text-stone-600">No discovered jobs are awaiting review.</p>
       {% else %}
@@ -45,7 +45,11 @@
             <a class="font-semibold underline" href="{{ item.apply_url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
             <p class="text-sm text-stone-600">{{ item.company_name }}</p>
             <div class="mt-3 flex gap-2">
+              {% if item.job_id.is_some() %}
               <form action="/dashboard/jobs/discovery/items/{{ item.jobs_discovery_item_id }}/approve" method="post"><button class="button-primary">Publish</button></form>
+              {% else %}
+              <p class="text-sm text-amber-800">No job draft was created, so this candidate cannot be published. Review the source, then reject it to remove it from this queue.</p>
+              {% endif %}
               <form action="/dashboard/jobs/discovery/items/{{ item.jobs_discovery_item_id }}/reject" method="post"><button class="button-secondary">Reject</button></form>
             </div>
           </li>
@@ -55,7 +59,7 @@
     </section>
     <section class="mt-8 border-t pt-6">
       <form action="/dashboard/jobs/discovery/run" method="post"><button class="button-secondary" {% if !discovery.enabled %}disabled{% endif %}>Run discovery now</button></form>
-      {% if let Some(run) = discovery.latest_run %}<p class="mt-3">Latest run: {{ run.status }} · {{ run.discovered_count }} discovered · {{ run.created_count }} queued for review</p>{% endif %}
+      {% if let Some(run) = discovery.latest_run %}<p class="mt-3">Latest run: {{ run.status }} · {{ run.discovered_count }} candidates discovered · {{ run.created_count }} job drafts created</p>{% endif %}
     </section>
   {% endif %}
 </div>

@@ -39,6 +39,9 @@ use crate::{
     },
 };
 
+#[cfg(test)]
+mod tests;
+
 const DASHBOARD_JOBS_URL: &str = "/dashboard/jobs";
 const DASHBOARD_MOCK_INTERVIEWS_URL: &str = "/dashboard/jobs/mock-interviews";
 const DASHBOARD_DISCOVERY_URL: &str = "/dashboard/jobs/discovery";
@@ -274,14 +277,12 @@ pub(crate) async fn update(
 /// Delete a job.
 #[instrument(skip_all, err)]
 pub(crate) async fn delete(
-    messages: Messages,
     CurrentUser(user): CurrentUser,
     State(db): State<DynDB>,
     Path(job_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, HandlerError> {
     db.delete_job(user.user_id, job_id).await?;
-    messages.success("Job deleted.");
-    Ok((StatusCode::SEE_OTHER, [("Location", DASHBOARD_JOBS_URL)]))
+    Ok((StatusCode::NO_CONTENT, [("HX-Trigger", "refresh-body")]))
 }
 
 /// Publish a job.

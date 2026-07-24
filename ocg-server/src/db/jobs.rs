@@ -177,11 +177,16 @@ where
                     where r.user_id = $1 order by r.started_at desc limit 1),
                 'pending_items', coalesce((select jsonb_agg(jsonb_build_object(
                     'jobs_discovery_item_id', d.jobs_discovery_item_id,
-                    'job_id', j.job_id, 'title', j.title, 'company_name', j.company_name,
-                    'apply_url', j.apply_url
+                    'job_id', j.job_id,
+                    'title', coalesce(j.title, d.discovered_payload->>'title', 'Untitled discovered job'),
+                    'company_name', coalesce(j.company_name, d.discovered_payload->>'company_name', 'Unknown company'),
+                    'apply_url', coalesce(
+                        j.apply_url, d.discovered_payload->>'apply_url',
+                        nullif(d.candidate_url, ''), d.source_url
+                    )
                 ) order by d.created_at desc)
                     from jobs_discovery_item d
-                    join jobs_job j using (job_id)
+                    left join jobs_job j using (job_id)
                     where d.user_id = $1 and d.review_status = 'pending'
                 ), '[]'::jsonb)
             ) from (select 1) x left join jobs_discovery_integration i on i.user_id = $1",
@@ -235,16 +240,19 @@ where
     }
 
     async fn reject_job_discovery_item(&self, user_id: Uuid, item_id: Uuid) -> Result<()> {
-        let job_id: Uuid = self
+        let job_id: Option<Uuid> = self
             .fetch_scalar_one(
                 "update jobs_discovery_item
                  set review_status = 'rejected', reviewed_at = now(), reviewed_by = $1
                  where jobs_discovery_item_id = $2 and user_id = $1
-                   and review_status = 'pending' and job_id is not null
+                   and review_status = 'pending'
                  returning job_id",
                 &[&user_id, &item_id],
             )
             .await?;
-        self.delete_job(user_id, job_id).await
+        if let Some(job_id) = job_id {
+            self.delete_job(user_id, job_id).await?;
+        }
+        Ok(())
     }
 }

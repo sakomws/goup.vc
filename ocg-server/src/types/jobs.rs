@@ -163,7 +163,8 @@ pub(crate) struct JobDiscoveryRun {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct JobDiscoveryPendingItem {
     pub jobs_discovery_item_id: Uuid,
-    pub job_id: Uuid,
+    /// The draft created for this discovery, when creation completed.
+    pub job_id: Option<Uuid>,
     pub title: String,
     pub company_name: String,
     pub apply_url: String,
