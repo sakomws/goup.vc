@@ -158,7 +158,7 @@ async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Resul
                     let item: Option<Uuid> = db.fetch_scalar_opt(
                         "insert into jobs_discovery_item (
                             user_id, source_url, candidate_url, fingerprint, discovered_payload
-                         ) values ($1, $2, $3, $4, $5) on conflict (user_id, fingerprint) do nothing
+                         ) values ($1, $2, $3, $4, $5) on conflict do nothing
                          returning jobs_discovery_item_id",
                         &[
                             user_id,
