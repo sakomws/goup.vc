@@ -138,7 +138,7 @@ pub(crate) async fn approve_item(
     ))
 }
 
-/// Rejects a discovered event and keeps its fingerprint from being re-ingested.
+/// Rejects a discovered event and retains its source-scoped audit history.
 #[instrument(skip_all, err)]
 pub(crate) async fn reject_item(
     CurrentUser(user): CurrentUser,

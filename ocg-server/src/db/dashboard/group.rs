@@ -266,7 +266,7 @@ pub(crate) trait DBDashboardGroup {
         group_id: Uuid,
         item_id: Uuid,
     ) -> Result<()>;
-    /// Rejects a pending discovered event while retaining its fingerprint.
+    /// Rejects a pending discovered event while retaining source-scoped audit history.
     async fn reject_group_event_discovery_item(
         &self,
         actor_user_id: Uuid,

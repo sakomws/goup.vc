@@ -216,7 +216,7 @@ async fn ingest_sources(
                 .fetch_scalar_opt(
                     "insert into group_event_integration_item (
                         group_id, source_url, candidate_url, fingerprint, discovered_payload
-                     ) values ($1, $2, $3, $4, $5) on conflict (group_id, fingerprint) do nothing
+                     ) values ($1, $2, $3, $4, $5) on conflict do nothing
                      returning group_event_integration_item_id",
                     &[
                         &source.group_id,

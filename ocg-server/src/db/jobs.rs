@@ -65,7 +65,7 @@ pub(crate) trait DBJobs {
     async fn delete_job_discovery_source(&self, user_id: Uuid, source_id: Uuid) -> Result<()>;
     /// Publishes a pending discovered job.
     async fn approve_job_discovery_item(&self, user_id: Uuid, item_id: Uuid) -> Result<()>;
-    /// Rejects a pending discovered job while retaining its fingerprint.
+    /// Rejects a pending discovered job while retaining source-scoped audit history.
     async fn reject_job_discovery_item(&self, user_id: Uuid, item_id: Uuid) -> Result<()>;
 }
 

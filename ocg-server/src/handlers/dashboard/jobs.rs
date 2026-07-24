@@ -244,7 +244,7 @@ pub(crate) async fn approve_discovery_item(
     ))
 }
 
-/// Rejects a discovered job and keeps its fingerprint from being re-ingested.
+/// Rejects a discovered job and retains its source-scoped audit history.
 #[instrument(skip_all, err)]
 pub(crate) async fn reject_discovery_item(
     messages: Messages,
