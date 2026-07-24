@@ -33,6 +33,28 @@
     </ul>
   </section>
   <section class="border-t pt-6">
+    <h2 class="font-semibold text-lg">Pending review</h2>
+    {% if integration.pending_items.is_empty() %}
+      <p class="mt-2 text-stone-600">No discovered events are awaiting review.</p>
+    {% else %}
+      <ul class="mt-3 space-y-3">
+      {% for item in integration.pending_items %}
+        <li class="border rounded p-3">
+          <a class="font-semibold underline" href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
+          <div class="mt-3 flex gap-2">
+            <form hx-post="/dashboard/group/integrations/items/{{ item.group_event_integration_item_id }}/approve" hx-target="#dashboard-content">
+              <button class="button-primary" type="submit" {% if !integration.can_manage_events %}disabled{% endif %}>Publish</button>
+            </form>
+            <form hx-post="/dashboard/group/integrations/items/{{ item.group_event_integration_item_id }}/reject" hx-target="#dashboard-content">
+              <button class="button-secondary" type="submit" {% if !integration.can_manage_events %}disabled{% endif %}>Reject</button>
+            </form>
+          </div>
+        </li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+  </section>
+  <section class="border-t pt-6">
     <h2 class="font-semibold text-lg">Latest run</h2>
     <form class="mt-3"
           hx-post="/dashboard/group/integrations/run"
@@ -51,7 +73,7 @@
          hx-swap="innerHTML"
          hx-indicator="#dashboard-spinner"></div>
     {% if let Some(run) = integration.latest_run %}
-      <p class="mt-2">Status: {{ run.status }} · {{ run.discovered_count }} discovered · {{ run.created_count }} published</p>
+      <p class="mt-2">Status: {{ run.status }} · {{ run.discovered_count }} discovered · {{ run.created_count }} queued for review</p>
       {% if let Some(error) = run.error_message %}<p class="text-red-700 mt-2">{{ error }}</p>{% endif %}
       {% if run.status == "running" %}
         <div hx-get="/dashboard/group/integrations"

@@ -159,12 +159,23 @@ pub(crate) struct JobDiscoveryRun {
     pub error_message: Option<String>,
 }
 
+/// A discovered job awaiting the owner's publication decision.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct JobDiscoveryPendingItem {
+    pub jobs_discovery_item_id: Uuid,
+    pub job_id: Uuid,
+    pub title: String,
+    pub company_name: String,
+    pub apply_url: String,
+}
+
 /// Jobs discovery configuration and its owned source URLs.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub(crate) struct JobDiscoveryDashboard {
     pub enabled: bool,
     pub sources: Vec<JobDiscoverySource>,
     pub latest_run: Option<JobDiscoveryRun>,
+    pub pending_items: Vec<JobDiscoveryPendingItem>,
 }
 
 /// Applicant interest saved for a job.

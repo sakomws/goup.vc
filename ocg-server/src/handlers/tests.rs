@@ -563,6 +563,7 @@ pub(crate) fn sample_dashboard_user_profile(
 
         bio: None,
         bluesky_url: None,
+        coffee_meet_enabled: true,
         company: company.map(str::to_string),
         facebook_url: None,
         github_url: None,
@@ -570,9 +571,11 @@ pub(crate) fn sample_dashboard_user_profile(
         name: name.map(str::to_string),
         photo_url: photo_url.map(str::to_string),
         provider: None,
+        substack_url: None,
         title: title.map(str::to_string),
         twitter_url: None,
         website_url: None,
+        youtube_url: None,
     }
 }
 

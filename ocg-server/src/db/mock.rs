@@ -639,6 +639,18 @@ mock! {
             group_id: Uuid,
             source_id: Uuid,
         ) -> Result<()>;
+        async fn approve_group_event_discovery_item(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            item_id: Uuid,
+        ) -> Result<()>;
+        async fn reject_group_event_discovery_item(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            item_id: Uuid,
+        ) -> Result<()>;
         async fn get_group_sponsor(
             &self,
             group_id: Uuid,
@@ -1235,6 +1247,8 @@ mock! {
             user_id: Uuid,
             source_id: Uuid,
         ) -> Result<()>;
+        async fn approve_job_discovery_item(&self, user_id: Uuid, item_id: Uuid) -> Result<()>;
+        async fn reject_job_discovery_item(&self, user_id: Uuid, item_id: Uuid) -> Result<()>;
     }
 
     #[async_trait]

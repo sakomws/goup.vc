@@ -6,6 +6,7 @@ use chrono::{DateTime, Datelike, TimeZone, Timelike, Utc};
 use serde::Deserialize;
 use serde_json::Value;
 use tokio::time::sleep;
+use tokio_postgres::types::Json;
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 use tracing::{error, info};
 use uuid::Uuid;
@@ -16,7 +17,7 @@ use crate::{
     integrations::{
         event_page::{EventPageClient, validate_candidate_url},
         you_com::{
-            DiscoveredEvent, SearchResult, YouComClient, source_search_domain, unique_baku_results,
+            DiscoveredEvent, SearchResult, YouComClient, source_search_domain, unique_city_results,
         },
     },
 };
@@ -172,13 +173,18 @@ async fn ingest_sources(
 
     let mut counts = std::collections::HashMap::<Uuid, (i32, i32)>::new();
     let result = async {
+    anyhow::ensure!(
+        !sources.is_empty(),
+        "no enabled event discovery sources are configured"
+    );
     let event_pages = EventPageClient::new()?;
     for source in sources {
         let search_domain = source_search_domain(&source.url)?;
-        let results = unique_baku_results(
+        let results = unique_city_results(
             client
-                .search(&format!("Baku Azerbaijan events site:{search_domain}"))
+                .search(&format!("{} events site:{search_domain}", source.city))
                 .await?,
+            &source.city,
         );
         for result in results {
             if let Err(err) = validate_candidate_url(&result.url, &source.url).await {
@@ -196,10 +202,17 @@ async fn ingest_sources(
             let fingerprint = event.fingerprint();
             let inserted: Option<Uuid> = db
                 .fetch_scalar_opt(
-                    "insert into group_event_integration_item (group_id, source_url, fingerprint)
-                     values ($1, $2, $3) on conflict (group_id, fingerprint) do nothing
+                    "insert into group_event_integration_item (
+                        group_id, source_url, candidate_url, fingerprint, discovered_payload
+                     ) values ($1, $2, $3, $4, $5) on conflict (group_id, fingerprint) do nothing
                      returning group_event_integration_item_id",
-                    &[&source.group_id, &source.url, &fingerprint],
+                    &[
+                        &source.group_id,
+                        &source.url,
+                        &event.source_url,
+                        &fingerprint,
+                        &Json(&event),
+                    ],
                 )
                 .await?;
             if inserted.is_none() {
@@ -207,7 +220,7 @@ async fn ingest_sources(
             }
             let count = counts.entry(source.group_id).or_default();
             count.0 += 1;
-            if let Some(event_id) = create_and_publish_event(db, &source, &event).await? {
+            if let Some(event_id) = create_draft_event(db, &source, &event).await? {
                 db.execute(
                     "update group_event_integration_item set event_id = $1
                      where group_id = $2 and fingerprint = $3",
@@ -292,8 +305,8 @@ fn parse_discovered_event(result: &SearchResult, source_url: &str) -> Option<Dis
     })
 }
 
-/// Creates from an organizer-configured event-default payload, never guessed fields.
-async fn create_and_publish_event(
+/// Creates an organizer-owned event draft from configured defaults.
+async fn create_draft_event(
     db: &PgDB,
     source: &Source,
     discovered: &DiscoveredEvent,
@@ -338,8 +351,6 @@ async fn create_and_publish_event(
             &Default::default(),
         )
         .await?;
-    db.publish_event(source.created_by_user_id, None, source.group_id, event_id)
-        .await?;
     Ok(Some(event_id))
 }
 
@@ -375,6 +386,7 @@ mod tests {
             title: "Baku Rust meetup".into(),
             url: "https://example.test/event".into(),
             description: Some("Join us next Thursday in Baku".into()),
+            snippets: vec![],
         };
         assert!(parse_discovered_event(&result, "https://example.test").is_none());
     }
@@ -385,6 +397,7 @@ mod tests {
             title: "Baku Rust meetup".into(),
             url: "https://example.test/event".into(),
             description: Some("Starts 2099-07-21T12:00:00Z in Baku".into()),
+            snippets: vec![],
         };
         let event = parse_discovered_event(&result, "https://example.test").unwrap();
         assert_eq!(event.title, "Baku Rust meetup");

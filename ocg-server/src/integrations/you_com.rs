@@ -81,6 +81,8 @@ pub(crate) struct SearchResult {
     pub url: String,
     #[serde(default, alias = "snippet", alias = "description")]
     pub description: Option<String>,
+    #[serde(default)]
+    pub snippets: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -97,24 +99,29 @@ struct SearchResults {
     news: Vec<SearchResult>,
 }
 
-/// Rejects pages that do not identify Baku or Azerbaijan.
-pub(crate) fn is_baku_relevant(result: &SearchResult) -> bool {
+/// Rejects pages that do not identify the group's configured city.
+pub(crate) fn is_city_relevant(result: &SearchResult, city: &str) -> bool {
+    let city = city.trim().to_lowercase();
+    if city.is_empty() {
+        return false;
+    }
     let text = format!(
-        "{} {} {}",
+        "{} {} {} {}",
         result.title,
         result.description.as_deref().unwrap_or_default(),
+        result.snippets.join(" "),
         result.url
     )
     .to_lowercase();
-    text.contains("baku") || text.contains("azerbaijan") || text.contains("azərbaycan")
+    text.contains(&city)
 }
 
-/// Returns unique, relevant results while preserving discovery order.
-pub(crate) fn unique_baku_results(results: Vec<SearchResult>) -> Vec<SearchResult> {
+/// Returns unique results relevant to the configured city while preserving discovery order.
+pub(crate) fn unique_city_results(results: Vec<SearchResult>, city: &str) -> Vec<SearchResult> {
     let mut urls = HashSet::new();
     results
         .into_iter()
-        .filter(is_baku_relevant)
+        .filter(|result| is_city_relevant(result, city))
         .filter(|result| urls.insert(result.url.trim().to_lowercase()))
         .collect()
 }
@@ -149,16 +156,28 @@ mod tests {
             title: title.into(),
             url: url.into(),
             description: description.map(str::to_owned),
+            snippets: vec![],
         }
     }
 
     #[test]
-    fn retains_unique_baku_results() {
-        let results = unique_baku_results(vec![
-            result("Baku Rust meetup", "https://example.test/events/1", None),
-            result("Baku Rust meetup", "https://example.test/events/1", None),
-            result("Tbilisi meetup", "https://example.test/events/2", None),
-        ]);
+    fn retains_unique_results_for_configured_city() {
+        let results = unique_city_results(
+            vec![
+                result(
+                    "San Francisco Rust meetup",
+                    "https://example.test/events/1",
+                    None,
+                ),
+                result(
+                    "San Francisco Rust meetup",
+                    "https://example.test/events/1",
+                    None,
+                ),
+                result("Tbilisi meetup", "https://example.test/events/2", None),
+            ],
+            "San Francisco",
+        );
         assert_eq!(results.len(), 1);
     }
 

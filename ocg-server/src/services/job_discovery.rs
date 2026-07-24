@@ -6,6 +6,7 @@ use anyhow::Result;
 use chrono::{Datelike, TimeZone, Timelike, Utc};
 use garde::Validate;
 use tokio::time::sleep;
+use tokio_postgres::types::Json;
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 use tracing::{error, info};
 use uuid::Uuid;
@@ -13,7 +14,11 @@ use uuid::Uuid;
 use crate::{
     config::YouComConfig,
     db::{PgDB, PgExecutor, jobs::DBJobs},
-    integrations::you_com::{SearchResult, YouComClient, source_search_domain},
+    integrations::{
+        event_page::validate_candidate_url,
+        job_page::JobPageClient,
+        you_com::{SearchResult, YouComClient, source_search_domain},
+    },
     types::jobs::JobInput,
 };
 
@@ -103,11 +108,16 @@ async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Resul
         .await?;
     }
     let outcome = async {
+        let job_pages = JobPageClient::new()?;
         for user_id in users {
             let sources: Vec<String> = db.fetch_scalar_one(
                 "select coalesce(array_agg(url), '{}'::text[]) from jobs_discovery_source
                  where user_id = $1 and enabled", &[user_id],
             ).await?;
+            anyhow::ensure!(
+                !sources.is_empty(),
+                "no enabled job discovery sources are configured"
+            );
             let mut discovered = 0;
             let mut created = 0;
             for source_url in sources {
@@ -117,19 +127,39 @@ async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Resul
                     .search(&format!("jobs hiring careers site:{search_domain}"))
                     .await?
                 {
-                    let Some(input) = parse_discovered_job(&result) else { continue };
+                    if let Err(err) = validate_candidate_url(&result.url, &source_url).await {
+                        info!(
+                            %err,
+                            candidate_url = %result.url,
+                            source_url = %source_url,
+                            "skipped unsafe job discovery candidate"
+                        );
+                        continue;
+                    }
+                    let input = match job_pages.fetch(&result.url, &source_url).await {
+                        Ok(input) => input.or_else(|| parse_discovered_job(&result)),
+                        Err(_) => parse_discovered_job(&result),
+                    };
+                    let Some(input) = input else { continue };
                     if !seen.insert(result.url.trim().to_lowercase()) { continue; }
                     let fingerprint = fingerprint(&input, &result.url);
                     let item: Option<Uuid> = db.fetch_scalar_opt(
-                        "insert into jobs_discovery_item (user_id, source_url, fingerprint)
-                         values ($1, $2, $3) on conflict (user_id, fingerprint) do nothing
+                        "insert into jobs_discovery_item (
+                            user_id, source_url, candidate_url, fingerprint, discovered_payload
+                         ) values ($1, $2, $3, $4, $5) on conflict (user_id, fingerprint) do nothing
                          returning jobs_discovery_item_id",
-                        &[user_id, &source_url, &fingerprint],
+                        &[
+                            user_id,
+                            &source_url,
+                            &result.url,
+                            &fingerprint,
+                            &Json(&input),
+                        ],
                     ).await?;
                     let Some(_) = item else { continue };
                     discovered += 1;
                     let job_id = db.add_job(*user_id, &input).await?;
-                    db.update_job_published(*user_id, job_id, true).await?;
+                    db.update_job_published(*user_id, job_id, false).await?;
                     db.execute(
                         "update jobs_discovery_item set job_id = $1 where user_id = $2 and fingerprint = $3",
                         &[&job_id, user_id, &fingerprint],
@@ -164,7 +194,11 @@ async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Resul
 /// Accept only results with an explicit title, employer, description, and HTTPS application URL.
 fn parse_discovered_job(result: &SearchResult) -> Option<JobInput> {
     let title = result.title.trim();
-    let description = result.description.as_deref()?.trim();
+    let description = result
+        .description
+        .as_deref()
+        .or_else(|| result.snippets.first().map(String::as_str))?
+        .trim();
     let apply_url = reqwest::Url::parse(result.url.trim()).ok()?;
     if !matches!(apply_url.scheme(), "http" | "https") || title.is_empty() || description.is_empty()
     {
@@ -225,7 +259,8 @@ mod tests {
             parse_discovered_job(&SearchResult {
                 title: "Engineer".into(),
                 url: "https://x.test".into(),
-                description: None
+                description: None,
+                snippets: vec![],
             })
             .is_none()
         );
@@ -236,8 +271,21 @@ mod tests {
             title: "Rust Engineer at Acme".into(),
             url: "https://x.test/jobs/1".into(),
             description: Some("Build reliable systems.".into()),
+            snippets: vec![],
         })
         .unwrap();
         assert_eq!(job.company_name, "Acme");
+    }
+
+    #[test]
+    fn accepts_snippet_when_description_is_missing() {
+        let job = parse_discovered_job(&SearchResult {
+            title: "Rust Engineer at Acme".into(),
+            url: "https://x.test/jobs/1".into(),
+            description: None,
+            snippets: vec!["Build reliable systems.".into()],
+        })
+        .unwrap();
+        assert_eq!(job.summary, "Build reliable systems.");
     }
 }

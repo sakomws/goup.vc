@@ -354,6 +354,14 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             post(dashboard::group::integrations::run),
         )
         .route(
+            "/integrations/items/{item_id}/approve",
+            post(dashboard::group::integrations::approve_item),
+        )
+        .route(
+            "/integrations/items/{item_id}/reject",
+            post(dashboard::group::integrations::reject_item),
+        )
+        .route(
             "/integrations/sources",
             post(dashboard::group::integrations::add_source),
         )

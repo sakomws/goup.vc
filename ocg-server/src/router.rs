@@ -316,6 +316,14 @@ pub(crate) async fn setup(
             post(crate::handlers::dashboard::jobs::run_discovery),
         )
         .route(
+            "/dashboard/jobs/discovery/items/{item_id}/approve",
+            post(crate::handlers::dashboard::jobs::approve_discovery_item),
+        )
+        .route(
+            "/dashboard/jobs/discovery/items/{item_id}/reject",
+            post(crate::handlers::dashboard::jobs::reject_discovery_item),
+        )
+        .route(
             "/dashboard/jobs/mock-interviews/{request_id}/match",
             post(crate::handlers::dashboard::jobs::upsert_mock_interview_match),
         )
