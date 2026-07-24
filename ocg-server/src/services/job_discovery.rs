@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::{
     config::YouComConfig,
     db::{PgDB, PgExecutor, jobs::DBJobs},
-    integrations::you_com::{SearchResult, YouComClient},
+    integrations::you_com::{SearchResult, YouComClient, source_search_domain},
     types::jobs::JobInput,
 };
 
@@ -112,7 +112,11 @@ async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Resul
             let mut created = 0;
             for source_url in sources {
                 let mut seen = HashSet::new();
-                for result in client.search(&format!("jobs hiring careers site:{source_url}")).await? {
+                let search_domain = source_search_domain(&source_url)?;
+                for result in client
+                    .search(&format!("jobs hiring careers site:{search_domain}"))
+                    .await?
+                {
                     let Some(input) = parse_discovered_job(&result) else { continue };
                     if !seen.insert(result.url.trim().to_lowercase()) { continue; }
                     let fingerprint = fingerprint(&input, &result.url);

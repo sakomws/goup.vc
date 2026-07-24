@@ -13,7 +13,9 @@ use uuid::Uuid;
 use crate::{
     config::YouComConfig,
     db::{PgDB, PgExecutor, dashboard::group::DBDashboardGroup},
-    integrations::you_com::{DiscoveredEvent, SearchResult, YouComClient, unique_baku_results},
+    integrations::you_com::{
+        DiscoveredEvent, SearchResult, YouComClient, source_search_domain, unique_baku_results,
+    },
 };
 
 /// Executes authorized, on-demand discovery runs from the dashboard.
@@ -168,9 +170,10 @@ async fn ingest_sources(
     let mut counts = std::collections::HashMap::<Uuid, (i32, i32)>::new();
     let result = async {
     for source in sources {
+        let search_domain = source_search_domain(&source.url)?;
         let results = unique_baku_results(
             client
-                .search(&format!("Baku Azerbaijan events site:{}", source.url))
+                .search(&format!("Baku Azerbaijan events site:{search_domain}"))
                 .await?,
         );
         for result in results {
