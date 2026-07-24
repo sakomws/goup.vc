@@ -175,9 +175,6 @@ fn parse_discovered_job(result: &SearchResult) -> Option<JobInput> {
         .split_once(" at ")
         .or_else(|| title.split_once(" - "))
         .filter(|(role, company)| !role.trim().is_empty() && !company.trim().is_empty())?;
-    if is_generic_job_page(title) {
-        return None;
-    }
     let summary: String = description.chars().take(280).collect();
     let input = JobInput {
         title: title.trim().to_owned(),
@@ -192,28 +189,6 @@ fn parse_discovered_job(result: &SearchResult) -> Option<JobInput> {
     };
     input.validate().ok()?;
     Some(input)
-}
-
-/// Reject search, index, and landing-page titles that do not identify a role.
-fn is_generic_job_page(role: &str) -> bool {
-    const GENERIC_PREFIXES: &[&str] = &[
-        "career opportunities",
-        "job opportunities",
-        "search results",
-        "search result",
-        "search jobs",
-        "job search",
-        "find jobs",
-        "careers",
-        "jobs",
-    ];
-
-    let normalized = role.trim().to_ascii_lowercase();
-    GENERIC_PREFIXES.iter().any(|prefix| {
-        normalized == *prefix
-            || normalized.starts_with(&format!("{prefix} |"))
-            || normalized.starts_with(&format!("{prefix}:"))
-    })
 }
 
 fn fingerprint(input: &JobInput, apply_url: &str) -> String {
@@ -264,15 +239,5 @@ mod tests {
         })
         .unwrap();
         assert_eq!(job.company_name, "Acme");
-    }
-
-    #[test]
-    fn rejects_search_result_landing_pages() {
-        let job = parse_discovered_job(&SearchResult {
-            title: "Search Results | Find available job openings - BCG Careers".into(),
-            url: "https://careers.bcg.com/search-results".into(),
-            description: Some("Have questions about careers at BCG?".into()),
-        });
-        assert!(job.is_none());
     }
 }
