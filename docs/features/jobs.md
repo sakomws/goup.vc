@@ -52,7 +52,8 @@ Group organizers post jobs through the dashboard at `/dashboard/alliance/:allian
 1. Queries the database for user-approved job source configurations (`get_job_sources`).
 2. Calls the You.com search API for each source query.
 3. Validates each result against `JobInput` using `garde`.
-4. Stores new jobs in the database (deduplication is handled by the DB layer).
+4. Fetches approved candidate pages and prefers structured `JobPosting` data over search snippets.
+5. Stores valid jobs as drafts in a review queue; the owner publishes or rejects each candidate.
 
 A `ManualJobDiscovery` handle is injected into dashboard handlers so authorized users can trigger an immediate discovery run without waiting for the next scheduled cycle.
 

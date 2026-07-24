@@ -2,13 +2,12 @@
 
 use askama::Template;
 use axum::{
-    Json,
     extract::{Path, State},
     http::StatusCode,
     response::{Html, IntoResponse},
 };
 use garde::Validate;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use tracing::instrument;
 use uuid::Uuid;
 
@@ -56,10 +55,6 @@ pub(crate) async fn run(
     Ok((
         StatusCode::ACCEPTED,
         [("HX-Trigger", "event-discovery-run-started")],
-        Json(ManualRunResponse {
-            group_id,
-            status: "accepted",
-        }),
     )
         .into_response())
 }
@@ -125,6 +120,42 @@ pub(crate) async fn delete_source(
     ))
 }
 
+/// Publishes a reviewed discovered event.
+#[instrument(skip_all, err)]
+pub(crate) async fn approve_item(
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(item_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.approve_group_event_discovery_item(user.user_id, group_id, item_id)
+        .await?;
+    Ok(Html(
+        prepare_page(&db, alliance_id, group_id, user.user_id)
+            .await?
+            .render()?,
+    ))
+}
+
+/// Rejects a discovered event and keeps its fingerprint from being re-ingested.
+#[instrument(skip_all, err)]
+pub(crate) async fn reject_item(
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(item_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.reject_group_event_discovery_item(user.user_id, group_id, item_id)
+        .await?;
+    Ok(Html(
+        prepare_page(&db, alliance_id, group_id, user.user_id)
+            .await?
+            .render()?,
+    ))
+}
+
 pub(crate) async fn prepare_page(
     db: &DynDB,
     alliance_id: Uuid,
@@ -159,12 +190,6 @@ pub(crate) struct SettingsInput {
 pub(crate) struct SourceInput {
     #[garde(skip)]
     url: String,
-}
-
-#[derive(Debug, Serialize)]
-struct ManualRunResponse {
-    group_id: Uuid,
-    status: &'static str,
 }
 
 fn validate_settings(input: &SettingsInput) -> Result<(), HandlerError> {

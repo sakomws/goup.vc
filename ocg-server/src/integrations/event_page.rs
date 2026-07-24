@@ -38,6 +38,18 @@ impl EventPageClient {
         candidate_url: &str,
         approved_source_url: &str,
     ) -> Result<Option<DiscoveredEvent>> {
+        let Some(html) = self.fetch_html(candidate_url, approved_source_url).await? else {
+            return Ok(None);
+        };
+        Ok(extract_event_json_ld(&html, candidate_url))
+    }
+
+    /// Fetches an approved candidate page for a structured-data extractor.
+    pub(crate) async fn fetch_html(
+        &self,
+        candidate_url: &str,
+        approved_source_url: &str,
+    ) -> Result<Option<String>> {
         validate_candidate_url(candidate_url, approved_source_url).await?;
         let response = self
             .http
@@ -72,7 +84,7 @@ impl EventPageClient {
             body.extend_from_slice(&chunk);
         }
         let html = String::from_utf8(body).context("event candidate page was not UTF-8")?;
-        Ok(extract_event_json_ld(&html, candidate_url))
+        Ok(Some(html))
     }
 }
 
@@ -92,8 +104,7 @@ pub(crate) async fn validate_candidate_url(
         .context("event candidate URL must include a host")?
         .to_ascii_lowercase();
     let allowed_domain = allowed_domain.to_ascii_lowercase();
-    if candidate_host != allowed_domain && !candidate_host.ends_with(&format!(".{allowed_domain}"))
-    {
+    if !is_approved_host(&candidate_host, &allowed_domain) {
         bail!("event candidate URL is outside the approved source domain");
     }
 
@@ -107,6 +118,17 @@ pub(crate) async fn validate_candidate_url(
         bail!("event candidate URL resolves to a non-public address");
     }
     Ok(())
+}
+
+fn is_approved_host(candidate_host: &str, approved_host: &str) -> bool {
+    candidate_host == approved_host
+        || candidate_host.ends_with(&format!(".{approved_host}"))
+        || approved_host
+            .strip_prefix("www.")
+            .is_some_and(|apex| candidate_host == apex)
+        || candidate_host
+            .strip_prefix("www.")
+            .is_some_and(|apex| apex == approved_host)
 }
 
 fn is_public_address(address: IpAddr) -> bool {
@@ -149,7 +171,7 @@ pub(crate) fn extract_event_json_ld(html: &str, candidate_url: &str) -> Option<D
         .find_map(|value| event_from_json_ld(&value, candidate_url))
 }
 
-fn json_ld_scripts(html: &str) -> impl Iterator<Item = &str> {
+pub(crate) fn json_ld_scripts(html: &str) -> impl Iterator<Item = &str> {
     let mut remaining = html;
     std::iter::from_fn(move || {
         loop {
@@ -270,5 +292,13 @@ mod tests {
         assert!(!is_public_address(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))));
         assert!(!is_public_address(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1))));
         assert!(!is_public_address(IpAddr::V6(Ipv6Addr::LOCALHOST)));
+    }
+
+    #[test]
+    fn accepts_apex_and_www_equivalents() {
+        assert!(is_approved_host("example.com", "www.example.com"));
+        assert!(is_approved_host("www.example.com", "example.com"));
+        assert!(is_approved_host("events.example.com", "example.com"));
+        assert!(!is_approved_host("events.example.com", "www.example.com"));
     }
 }

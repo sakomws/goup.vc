@@ -63,6 +63,10 @@ pub(crate) trait DBJobs {
     async fn add_job_discovery_source(&self, user_id: Uuid, url: &str) -> Result<Uuid>;
     /// Delete a source URL owned by the current user.
     async fn delete_job_discovery_source(&self, user_id: Uuid, source_id: Uuid) -> Result<()>;
+    /// Publishes a pending discovered job.
+    async fn approve_job_discovery_item(&self, user_id: Uuid, item_id: Uuid) -> Result<()>;
+    /// Rejects a pending discovered job while retaining its fingerprint.
+    async fn reject_job_discovery_item(&self, user_id: Uuid, item_id: Uuid) -> Result<()>;
 }
 
 #[async_trait]
@@ -170,7 +174,16 @@ where
                 'latest_run', (select jsonb_build_object('status', r.status,
                     'discovered_count', r.discovered_count, 'created_count', r.created_count,
                     'error_message', r.error_message) from jobs_discovery_run r
-                    where r.user_id = $1 order by r.started_at desc limit 1)
+                    where r.user_id = $1 order by r.started_at desc limit 1),
+                'pending_items', coalesce((select jsonb_agg(jsonb_build_object(
+                    'jobs_discovery_item_id', d.jobs_discovery_item_id,
+                    'job_id', j.job_id, 'title', j.title, 'company_name', j.company_name,
+                    'apply_url', j.apply_url
+                ) order by d.created_at desc)
+                    from jobs_discovery_item d
+                    join jobs_job j using (job_id)
+                    where d.user_id = $1 and d.review_status = 'pending'
+                ), '[]'::jsonb)
             ) from (select 1) x left join jobs_discovery_integration i on i.user_id = $1",
             &[&user_id],
         )
@@ -205,5 +218,33 @@ where
         )
         .await?;
         Ok(())
+    }
+
+    async fn approve_job_discovery_item(&self, user_id: Uuid, item_id: Uuid) -> Result<()> {
+        let job_id: Uuid = self
+            .fetch_scalar_one(
+                "update jobs_discovery_item
+                 set review_status = 'published', reviewed_at = now(), reviewed_by = $1
+                 where jobs_discovery_item_id = $2 and user_id = $1
+                   and review_status = 'pending' and job_id is not null
+                 returning job_id",
+                &[&user_id, &item_id],
+            )
+            .await?;
+        self.update_job_published(user_id, job_id, true).await
+    }
+
+    async fn reject_job_discovery_item(&self, user_id: Uuid, item_id: Uuid) -> Result<()> {
+        let job_id: Uuid = self
+            .fetch_scalar_one(
+                "update jobs_discovery_item
+                 set review_status = 'rejected', reviewed_at = now(), reviewed_by = $1
+                 where jobs_discovery_item_id = $2 and user_id = $1
+                   and review_status = 'pending' and job_id is not null
+                 returning job_id",
+                &[&user_id, &item_id],
+            )
+            .await?;
+        self.delete_job(user_id, job_id).await
     }
 }

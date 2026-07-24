@@ -225,6 +225,38 @@ pub(crate) async fn run_discovery(
     ))
 }
 
+/// Publishes a reviewed discovered job.
+#[instrument(skip_all, err)]
+pub(crate) async fn approve_discovery_item(
+    messages: Messages,
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    Path(item_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.approve_job_discovery_item(user.user_id, item_id).await?;
+    messages.success("Discovered job published.");
+    Ok((
+        StatusCode::SEE_OTHER,
+        [("Location", DASHBOARD_DISCOVERY_URL)],
+    ))
+}
+
+/// Rejects a discovered job and keeps its fingerprint from being re-ingested.
+#[instrument(skip_all, err)]
+pub(crate) async fn reject_discovery_item(
+    messages: Messages,
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    Path(item_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.reject_job_discovery_item(user.user_id, item_id).await?;
+    messages.success("Discovered job rejected.");
+    Ok((
+        StatusCode::SEE_OTHER,
+        [("Location", DASHBOARD_DISCOVERY_URL)],
+    ))
+}
+
 /// Update a job.
 #[instrument(skip_all, err)]
 pub(crate) async fn update(

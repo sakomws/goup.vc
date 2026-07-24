@@ -73,7 +73,7 @@ graph TD
 
 ### Event discovery (You.com)
 
-`services/event_discovery.rs` runs a scheduled daily worker that queries the You.com search API for Baku community event pages and stores discovered events as drafts in the database. A `ManualEventDiscovery` handle is passed to dashboard handlers for on-demand group-specific runs.
+`services/event_discovery.rs` runs a scheduled daily worker that queries the You.com search API for Baku community event pages, validates structured Event data from approved candidate pages, and stores discovered events as drafts for organizer review. A `ManualEventDiscovery` handle is passed to dashboard handlers for on-demand group-specific runs.
 
 ### Recording publishing
 

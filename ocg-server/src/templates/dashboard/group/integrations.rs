@@ -11,6 +11,7 @@ pub(crate) struct IntegrationPage {
     pub city: String,
     pub enabled: bool,
     pub latest_run: Option<IntegrationRun>,
+    pub pending_items: Vec<IntegrationPendingItem>,
     pub sources: Vec<IntegrationSource>,
     pub timezone: String,
 }
@@ -32,6 +33,15 @@ pub(crate) struct IntegrationRun {
     pub error_message: Option<String>,
     pub started_at: i64,
     pub status: String,
+}
+
+/// A discovered event draft awaiting an organizer decision.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct IntegrationPendingItem {
+    pub event_id: Uuid,
+    pub group_event_integration_item_id: Uuid,
+    pub source_url: String,
+    pub title: String,
 }
 
 /// Partial template rendered inside the group dashboard.
