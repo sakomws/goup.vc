@@ -12,6 +12,10 @@ const ENABLE_MUTATIONS = process.env.MCP_ENABLE_MUTATIONS === "true";
 const PROTOCOL_VERSION = "2024-11-05";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LANDSCAPE_KINDS = ["startup", "github_project", "partner_community", "podcast_lead"];
+
+if (!BEARER_TOKEN) {
+  throw new Error("MCP_BEARER_TOKEN must be configured");
+}
 const WIKI_SECTIONS = [
   {
     id: "ai",
@@ -129,10 +133,6 @@ async function loadTools() {
 }
 
 function isAuthorized(req) {
-  if (!BEARER_TOKEN) {
-    return true;
-  }
-
   return req.headers.authorization === `Bearer ${BEARER_TOKEN}`;
 }
 

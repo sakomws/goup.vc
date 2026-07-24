@@ -382,6 +382,25 @@ pub(crate) async fn setup(
         .route("/explore/groups/search", get(site::explore::search_groups))
         .route("/favicon.ico", get(favicon))
         .route("/health-check", get(health_check))
+        .route("/robots.txt", get(site::agent_discovery::robots))
+        .route("/sitemap.xml", get(site::agent_discovery::sitemap))
+        .route("/openapi.yaml", get(site::agent_discovery::openapi))
+        .route(
+            "/.well-known/api-catalog",
+            get(site::agent_discovery::api_catalog),
+        )
+        .route(
+            "/.well-known/mcp/server-card.json",
+            get(site::agent_discovery::mcp_server_card),
+        )
+        .route(
+            "/.well-known/agent-skills/index.json",
+            get(site::agent_discovery::agent_skills_index),
+        )
+        .route(
+            "/.well-known/agent-skills/goup-mcp/SKILL.md",
+            get(site::agent_discovery::mcp_skill),
+        )
         .route("/images/og/{file_name}", get(images::serve_open_graph))
         .route("/images/{file_name}", get(images::serve))
         .route("/log-in", get(auth::log_in_page))
@@ -490,6 +509,7 @@ pub(crate) async fn setup(
             state.clone(),
             redirect_old_hosts,
         ))
+        .layer(middleware::from_fn(add_agent_discovery_links))
         .layer(middleware::from_fn(refresh_stale_clients));
 
     Ok(router.with_state(state))
@@ -601,6 +621,31 @@ async fn refresh_stale_clients(request: Request, next: Next) -> impl IntoRespons
     let mut response = next.run(request).await.into_response();
     insert_commit_sha_header(response.headers_mut());
 
+    response
+}
+
+/// Advertises public machine-readable resources on HTML responses.
+async fn add_agent_discovery_links(request: Request, next: Next) -> impl IntoResponse {
+    let mut response = next.run(request).await.into_response();
+    let is_html = response
+        .headers()
+        .get(CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| value.starts_with("text/html"));
+    if is_html {
+        let headers = response.headers_mut();
+        let link = HeaderName::from_static("link");
+        for value in [
+            "</.well-known/api-catalog>; rel=\"api-catalog\"",
+            "</openapi.yaml>; rel=\"service-desc\"; type=\"application/vnd.oai.openapi\"",
+            "</docs/api>; rel=\"service-doc\"",
+            "</sitemap.xml>; rel=\"sitemap\"; type=\"application/xml\"",
+            "</.well-known/mcp/server-card.json>; rel=\"mcp-server-card\"",
+            "</.well-known/agent-skills/index.json>; rel=\"agent-skills\"",
+        ] {
+            headers.append(link.clone(), HeaderValue::from_static(value));
+        }
+    }
     response
 }
 

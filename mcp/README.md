@@ -23,7 +23,7 @@ the default value is rendered.
 
 ```bash
 cd mcp
-npm start
+MCP_BEARER_TOKEN='replace-with-a-strong-token' npm start
 ```
 
 The server listens on `http://127.0.0.1:8787/mcp` by default.

@@ -446,9 +446,9 @@ cd mcp
 npm start
 ```
 
-For remote deployments, protect it with `MCP_BEARER_TOKEN` and expose it behind
-HTTPS. See [`mcp/README.md`](./mcp/README.md) for setup, client config, and how
-to add more tools.
+`MCP_BEARER_TOKEN` is required for remote and local deployments. Expose the
+service only behind HTTPS. See [`mcp/README.md`](./mcp/README.md) for setup,
+client config, and how to add more tools.
 
 To set up the remote MCP server on EC2 with a generated bearer token and a
 systemd service:
