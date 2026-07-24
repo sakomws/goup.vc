@@ -121,14 +121,21 @@ pub(crate) fn unique_baku_results(results: Vec<SearchResult>) -> Vec<SearchResul
 
 /// Validates a source URL entered in a group dashboard.
 pub(crate) fn validate_source_url(url: &str) -> Result<()> {
+    source_search_domain(url).map(|_| ())
+}
+
+/// Returns the hostname suitable for a You.com `site:` search operator.
+///
+/// Dashboard sources are full URLs, while `site:` accepts only a domain.
+pub(crate) fn source_search_domain(url: &str) -> Result<String> {
     let parsed = reqwest::Url::parse(url).context("source URL must be absolute")?;
     if !matches!(parsed.scheme(), "http" | "https") {
         bail!("source URL must use HTTP or HTTPS");
     }
-    if parsed.host_str().is_none() {
-        bail!("source URL must include a host");
-    }
-    Ok(())
+    parsed
+        .host_str()
+        .map(str::to_owned)
+        .ok_or_else(|| anyhow::anyhow!("source URL must include a host"))
 }
 
 #[cfg(test)]
@@ -153,6 +160,15 @@ mod tests {
             result("Tbilisi meetup", "https://example.test/events/2", None),
         ]);
         assert_eq!(results.len(), 1);
+    }
+
+    #[test]
+    fn extracts_search_domain_from_source_url() {
+        assert_eq!(
+            source_search_domain("https://careers.example.com/open-roles?team=engineering")
+                .unwrap(),
+            "careers.example.com"
+        );
     }
 
     #[test]
