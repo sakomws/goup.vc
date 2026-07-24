@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, TimeZone, Utc};
 use reqwest::{Client, Url, redirect};
 use serde_json::Value;
 
@@ -42,6 +42,21 @@ impl EventPageClient {
             return Ok(None);
         };
         Ok(extract_event_json_ld(&html, candidate_url))
+    }
+
+    /// Reads the public event cards from You.com's official events landing page.
+    pub(crate) async fn discover_source_events(
+        &self,
+        source_url: &str,
+        city: &str,
+    ) -> Result<Vec<DiscoveredEvent>> {
+        if !is_you_events_source(source_url) {
+            return Ok(vec![]);
+        }
+        let Some(html) = self.fetch_html(source_url, source_url).await? else {
+            return Ok(vec![]);
+        };
+        Ok(extract_you_com_events(&html, city))
     }
 
     /// Fetches an approved candidate page for a structured-data extractor.
@@ -86,6 +101,113 @@ impl EventPageClient {
         let html = String::from_utf8(body).context("event candidate page was not UTF-8")?;
         Ok(Some(html))
     }
+}
+
+fn is_you_events_source(source_url: &str) -> bool {
+    let Ok(url) = Url::parse(source_url) else {
+        return false;
+    };
+    matches!(url.host_str(), Some("you.com") | Some("www.you.com"))
+        && url.path().trim_end_matches('/') == "/events"
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct SourceEventCard {
+    title: String,
+    location: String,
+    starts_at: DateTime<Utc>,
+    source_url: String,
+}
+
+/// Extracts current cards from the public Webflow event listing.
+///
+/// These cards list a date but not a start time. We represent the date as noon Pacific
+/// so it remains on the advertised local day; organizers review the draft before publishing.
+pub(crate) fn extract_you_com_events(html: &str, city: &str) -> Vec<DiscoveredEvent> {
+    let mut remaining = html;
+    let mut events = Vec::new();
+    while let Some(start) = remaining.find("events3_item") {
+        let card = &remaining[start..];
+        let next = card["events3_item".len()..]
+            .find("events3_item")
+            .map(|offset| offset + "events3_item".len());
+        let block = &card[..next.unwrap_or(card.len())];
+        remaining = &card[block.len()..];
+
+        let Some(url) = html_attribute(block, "href") else {
+            continue;
+        };
+        let Some(title) = html_class_text(block, "events3_card_heading") else {
+            continue;
+        };
+        let labels = html_class_texts(block, "events2_card_label");
+        let (Some(date), Some(location)) = (labels.first(), labels.last()) else {
+            continue;
+        };
+        let Ok(date) = NaiveDate::parse_from_str(date, "%B %d, %Y") else {
+            continue;
+        };
+        let Some(starts_at) = chrono_tz::US::Pacific
+            .with_ymd_and_hms(date.year(), date.month(), date.day(), 12, 0, 0)
+            .single()
+            .map(|time| time.with_timezone(&Utc))
+        else {
+            continue;
+        };
+        let card = SourceEventCard {
+            title,
+            location: location.to_owned(),
+            starts_at,
+            source_url: url.to_owned(),
+        };
+        if city_matches_event(&card.location, city) && card.starts_at > Utc::now() {
+            events.push(DiscoveredEvent {
+                title: card.title,
+                description: Some(format!("Official You.com event · {}", card.location)),
+                starts_at: card.starts_at,
+                source_url: card.source_url,
+            });
+        }
+    }
+    events
+}
+
+fn city_matches_event(location: &str, city: &str) -> bool {
+    location.eq_ignore_ascii_case("remote")
+        || location
+            .to_ascii_lowercase()
+            .contains(&city.trim().to_ascii_lowercase())
+}
+
+fn html_attribute<'a>(html: &'a str, attribute: &str) -> Option<&'a str> {
+    let prefix = format!("{attribute}=\"");
+    let value = html.split_once(&prefix)?.1;
+    value.split_once('"').map(|(value, _)| value)
+}
+
+fn html_class_text(html: &str, class: &str) -> Option<String> {
+    html_class_texts(html, class).into_iter().next()
+}
+
+fn html_class_texts(html: &str, class: &str) -> Vec<String> {
+    let marker = format!("class=\"{class}");
+    let mut remaining = html;
+    let mut texts = Vec::new();
+    while let Some(before) = remaining.split_once(&marker) {
+        let after_class = before.1;
+        let Some((_, content)) = after_class.split_once('>') else {
+            break;
+        };
+        let Some((text, rest)) = content.split_once('<') else {
+            break;
+        };
+        let text = text.trim();
+        if !text.is_empty() {
+            texts.push(text.to_owned());
+        }
+        remaining = rest;
+    }
+    texts
 }
 
 /// Checks that a candidate remains within the organizer-approved public domain.
@@ -300,5 +422,29 @@ mod tests {
         assert!(is_approved_host("www.example.com", "example.com"));
         assert!(is_approved_host("events.example.com", "example.com"));
         assert!(!is_approved_host("events.example.com", "www.example.com"));
+    }
+
+    #[test]
+    fn extracts_you_com_event_cards_for_city_and_remote() {
+        let events = extract_you_com_events(
+            r#"
+            <div class="events3_item"><a href="https://luma.com/sf"></a>
+              <div class="events2_card_label">July 30, 2099</div>
+              <div class="events2_card_label">|</div>
+              <div class="events2_card_label">San Francisco</div>
+              <h2 class="events3_card_heading">SF Hackathon</h2>
+            </div>
+            <div class="events3_item"><a href="https://luma.com/remote"></a>
+              <div class="events2_card_label">July 31, 2099</div>
+              <div class="events2_card_label">|</div>
+              <div class="events2_card_label">Remote</div>
+              <h2 class="events3_card_heading">Virtual workshop</h2>
+            </div>
+            "#,
+            "Baku",
+        );
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].title, "Virtual workshop");
+        assert_eq!(events[0].source_url, "https://luma.com/remote");
     }
 }

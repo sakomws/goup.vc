@@ -180,6 +180,9 @@ async fn ingest_sources(
     let event_pages = EventPageClient::new()?;
     for source in sources {
         let search_domain = source_search_domain(&source.url)?;
+        let mut events = event_pages
+            .discover_source_events(&source.url, &source.city)
+            .await?;
         let results = unique_city_results(
             client
                 .search(&format!("{} events site:{search_domain}", source.city))
@@ -198,7 +201,15 @@ async fn ingest_sources(
                     parse_discovered_event(&result, &result.url)
                 }
             };
-            let Some(event) = event else { continue };
+            if let Some(event) = event {
+                events.push(event);
+            }
+        }
+        let mut seen = std::collections::HashSet::new();
+        for event in events {
+            if !seen.insert(event.source_url.trim().to_ascii_lowercase()) {
+                continue;
+            }
             let fingerprint = event.fingerprint();
             let inserted: Option<Uuid> = db
                 .fetch_scalar_opt(
