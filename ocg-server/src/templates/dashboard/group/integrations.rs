@@ -35,10 +35,11 @@ pub(crate) struct IntegrationRun {
     pub status: String,
 }
 
-/// A discovered event draft awaiting an organizer decision.
+/// A discovered event awaiting an organizer decision.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct IntegrationPendingItem {
-    pub event_id: Uuid,
+    /// The draft created for this discovery, if group defaults were configured.
+    pub event_id: Option<Uuid>,
     pub group_event_integration_item_id: Uuid,
     pub source_url: String,
     pub title: String,

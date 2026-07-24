@@ -1111,11 +1111,12 @@ where
                 'pending_items', coalesce((
                     select jsonb_agg(jsonb_build_object(
                         'group_event_integration_item_id', d.group_event_integration_item_id,
-                        'event_id', e.event_id, 'title', e.name,
-                        'source_url', d.candidate_url
+                        'event_id', e.event_id,
+                        'title', coalesce(e.name, d.discovered_payload->>'title', 'Untitled discovered event'),
+                        'source_url', coalesce(nullif(d.candidate_url, ''), d.source_url)
                     ) order by d.created_at desc)
                     from group_event_integration_item d
-                    join event e using (event_id)
+                    left join event e using (event_id)
                     where d.group_id = $1 and d.review_status = 'pending'
                 ), '[]'::jsonb)
             ) from (select 1) x left join group_event_integration i on i.group_id = $1",
@@ -1198,17 +1199,20 @@ where
         group_id: Uuid,
         item_id: Uuid,
     ) -> Result<()> {
-        let event_id: Uuid = self
+        let event_id: Option<Uuid> = self
             .fetch_scalar_one(
                 "update group_event_integration_item
                  set review_status = 'rejected', reviewed_at = now(), reviewed_by = $1
                  where group_event_integration_item_id = $2 and group_id = $3
-                   and review_status = 'pending' and event_id is not null
+                   and review_status = 'pending'
                  returning event_id",
                 &[&actor_user_id, &item_id, &group_id],
             )
             .await?;
-        self.delete_event(actor_user_id, group_id, event_id).await
+        if let Some(event_id) = event_id {
+            self.delete_event(actor_user_id, group_id, event_id).await?;
+        }
+        Ok(())
     }
 
     /// [`DBDashboardGroup::get_group_sponsor`]

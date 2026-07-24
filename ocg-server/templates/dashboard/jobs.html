@@ -276,7 +276,10 @@
                         type="button"
                         hx-delete="/dashboard/jobs/{{ job.job_id }}"
                         hx-confirm="Delete this job?"
-                        hx-target="body">Delete</button>
+                        hx-target="body"
+                        data-htmx-response
+                        data-success-message="Job deleted."
+                        data-error-message="Could not delete this job. Please try again.">Delete</button>
               </div>
             </form>
 
