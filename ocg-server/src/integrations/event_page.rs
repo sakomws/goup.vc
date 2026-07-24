@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, TimeZone, Utc};
 use reqwest::{Client, Url, redirect};
 use serde_json::Value;
 
@@ -42,6 +42,21 @@ impl EventPageClient {
             return Ok(None);
         };
         Ok(extract_event_json_ld(&html, candidate_url))
+    }
+
+    /// Reads dated public event cards from an approved source landing page.
+    pub(crate) async fn discover_source_events(
+        &self,
+        source_url: &str,
+        city: &str,
+        timezone: chrono_tz::Tz,
+    ) -> Result<Vec<DiscoveredEvent>> {
+        let Some(html) = self.fetch_html(source_url, source_url).await? else {
+            return Ok(vec![]);
+        };
+        Ok(extract_event_listing_cards(
+            &html, source_url, city, timezone,
+        ))
     }
 
     /// Fetches an approved candidate page for a structured-data extractor.
@@ -86,6 +101,139 @@ impl EventPageClient {
         let html = String::from_utf8(body).context("event candidate page was not UTF-8")?;
         Ok(Some(html))
     }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct SourceEventCard {
+    title: String,
+    location: String,
+    starts_at: DateTime<Utc>,
+    source_url: String,
+}
+
+/// Extracts dated cards from a public event listing.
+///
+/// Listings that omit a start time are represented as noon in the group's configured
+/// timezone so they remain on the advertised local day; organizers review before publishing.
+pub(crate) fn extract_event_listing_cards(
+    html: &str,
+    source_url: &str,
+    city: &str,
+    timezone: chrono_tz::Tz,
+) -> Vec<DiscoveredEvent> {
+    let mut remaining = html;
+    let mut events = Vec::new();
+    while let Some(start) = remaining.find("role=\"listitem\"") {
+        let card = &remaining[start..];
+        let next = card["role=\"listitem\"".len()..]
+            .find("role=\"listitem\"")
+            .map(|offset| offset + "role=\"listitem\"".len());
+        let block = &card[..next.unwrap_or(card.len())];
+        remaining = &card[block.len()..];
+
+        let Some(url) = html_attribute(block, "href")
+            .and_then(|url| Url::parse(source_url).ok()?.join(url).ok())
+            .filter(|url| matches!(url.scheme(), "http" | "https"))
+        else {
+            continue;
+        };
+        let Some(title) = html_tag_text(block, "h2").or_else(|| html_tag_text(block, "h3")) else {
+            continue;
+        };
+        let text = strip_html(block);
+        let Some(date) = event_date_in_text(&text) else {
+            continue;
+        };
+        let Some(starts_at) = timezone
+            .with_ymd_and_hms(date.year(), date.month(), date.day(), 12, 0, 0)
+            .single()
+            .map(|time| time.with_timezone(&Utc))
+        else {
+            continue;
+        };
+        let card = SourceEventCard {
+            title,
+            location: text,
+            starts_at,
+            source_url: url.into(),
+        };
+        if card_matches_city(&card.location, city) && card.starts_at > Utc::now() {
+            events.push(DiscoveredEvent {
+                title: card.title,
+                description: Some("Discovered from an approved event source".into()),
+                starts_at: card.starts_at,
+                source_url: card.source_url,
+            });
+        }
+    }
+    events
+}
+
+fn card_matches_city(card_text: &str, city: &str) -> bool {
+    let text = card_text.to_ascii_lowercase();
+    text.contains(&city.trim().to_ascii_lowercase())
+        || text.contains("remote")
+        || text.contains("virtual")
+}
+
+fn html_attribute<'a>(html: &'a str, attribute: &str) -> Option<&'a str> {
+    let prefix = format!("{attribute}=\"");
+    let value = html.split_once(&prefix)?.1;
+    value.split_once('"').map(|(value, _)| value)
+}
+
+fn html_tag_text(html: &str, tag: &str) -> Option<String> {
+    let start = html.find(&format!("<{tag}"))?;
+    let content = html[start..].split_once('>')?.1;
+    let text = content.split_once(&format!("</{tag}>"))?.0;
+    let text = strip_html(text);
+    (!text.is_empty()).then_some(text)
+}
+
+fn strip_html(html: &str) -> String {
+    let mut text = String::with_capacity(html.len());
+    let mut in_tag = false;
+    for character in html.chars() {
+        match character {
+            '<' => in_tag = true,
+            '>' => {
+                in_tag = false;
+                text.push(' ');
+            }
+            _ if !in_tag => text.push(character),
+            _ => {}
+        }
+    }
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn event_date_in_text(text: &str) -> Option<NaiveDate> {
+    const MONTHS: &[&str] = &[
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ];
+    MONTHS.iter().find_map(|month| {
+        let value = text.split_once(month)?.1;
+        let candidate = format!("{month}{}", value.chars().take(16).collect::<String>());
+        let end = candidate.find(", ")? + 6;
+        let date = candidate.get(..end)?;
+        date.chars()
+            .rev()
+            .take(4)
+            .all(|character| character.is_ascii_digit())
+            .then(|| NaiveDate::parse_from_str(date, "%B %d, %Y").ok())
+            .flatten()
+    })
 }
 
 /// Checks that a candidate remains within the organizer-approved public domain.
@@ -300,5 +448,31 @@ mod tests {
         assert!(is_approved_host("www.example.com", "example.com"));
         assert!(is_approved_host("events.example.com", "example.com"));
         assert!(!is_approved_host("events.example.com", "www.example.com"));
+    }
+
+    #[test]
+    fn extracts_generic_event_cards_for_city_and_remote() {
+        assert_eq!(
+            event_date_in_text("July 31, 2099 | Remote"),
+            NaiveDate::from_ymd_opt(2099, 7, 31)
+        );
+        let events = extract_event_listing_cards(
+            r#"
+            <div role="listitem"><a href="/events/sf"></a>
+              <div>July 30, 2099 | San Francisco</div>
+              <h2>SF Hackathon</h2>
+            </div>
+            <div role="listitem"><a href="https://events.example.com/remote"></a>
+              <div>July 31, 2099 | Remote</div>
+              <h2>Virtual workshop</h2>
+            </div>
+            "#,
+            "https://events.example.com/calendar",
+            "Baku",
+            chrono_tz::UTC,
+        );
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].title, "Virtual workshop");
+        assert_eq!(events[0].source_url, "https://events.example.com/remote");
     }
 }

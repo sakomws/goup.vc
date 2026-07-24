@@ -123,6 +123,12 @@ async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Resul
             for source_url in sources {
                 let mut seen = HashSet::new();
                 let search_domain = source_search_domain(&source_url)?;
+                let mut candidates: Vec<(String, JobInput)> = job_pages
+                    .discover_greenhouse_jobs(&source_url)
+                    .await?
+                    .into_iter()
+                    .map(|input| (input.apply_url.clone(), input))
+                    .collect();
                 for result in client
                     .search(&format!("jobs hiring careers site:{search_domain}"))
                     .await?
@@ -140,9 +146,15 @@ async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Resul
                         Ok(input) => input.or_else(|| parse_discovered_job(&result)),
                         Err(_) => parse_discovered_job(&result),
                     };
-                    let Some(input) = input else { continue };
-                    if !seen.insert(result.url.trim().to_lowercase()) { continue; }
-                    let fingerprint = fingerprint(&input, &result.url);
+                    if let Some(input) = input {
+                        candidates.push((result.url, input));
+                    }
+                }
+                for (candidate_url, input) in candidates {
+                    if !seen.insert(candidate_url.trim().to_lowercase()) {
+                        continue;
+                    }
+                    let fingerprint = fingerprint(&input, &candidate_url);
                     let item: Option<Uuid> = db.fetch_scalar_opt(
                         "insert into jobs_discovery_item (
                             user_id, source_url, candidate_url, fingerprint, discovered_payload
@@ -151,7 +163,7 @@ async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Resul
                         &[
                             user_id,
                             &source_url,
-                            &result.url,
+                            &candidate_url,
                             &fingerprint,
                             &Json(&input),
                         ],
