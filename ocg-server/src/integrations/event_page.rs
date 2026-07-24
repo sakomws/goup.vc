@@ -44,19 +44,19 @@ impl EventPageClient {
         Ok(extract_event_json_ld(&html, candidate_url))
     }
 
-    /// Reads the public event cards from You.com's official events landing page.
+    /// Reads dated public event cards from an approved source landing page.
     pub(crate) async fn discover_source_events(
         &self,
         source_url: &str,
         city: &str,
+        timezone: chrono_tz::Tz,
     ) -> Result<Vec<DiscoveredEvent>> {
-        if !is_you_events_source(source_url) {
-            return Ok(vec![]);
-        }
         let Some(html) = self.fetch_html(source_url, source_url).await? else {
             return Ok(vec![]);
         };
-        Ok(extract_you_com_events(&html, city))
+        Ok(extract_event_listing_cards(
+            &html, source_url, city, timezone,
+        ))
     }
 
     /// Fetches an approved candidate page for a structured-data extractor.
@@ -103,14 +103,6 @@ impl EventPageClient {
     }
 }
 
-fn is_you_events_source(source_url: &str) -> bool {
-    let Ok(url) = Url::parse(source_url) else {
-        return false;
-    };
-    matches!(url.host_str(), Some("you.com") | Some("www.you.com"))
-        && url.path().trim_end_matches('/') == "/events"
-}
-
 #[derive(Debug, PartialEq, Eq)]
 struct SourceEventCard {
     title: String,
@@ -119,35 +111,40 @@ struct SourceEventCard {
     source_url: String,
 }
 
-/// Extracts current cards from the public Webflow event listing.
+/// Extracts dated cards from a public event listing.
 ///
-/// These cards list a date but not a start time. We represent the date as noon Pacific
-/// so it remains on the advertised local day; organizers review the draft before publishing.
-pub(crate) fn extract_you_com_events(html: &str, city: &str) -> Vec<DiscoveredEvent> {
+/// Listings that omit a start time are represented as noon in the group's configured
+/// timezone so they remain on the advertised local day; organizers review before publishing.
+pub(crate) fn extract_event_listing_cards(
+    html: &str,
+    source_url: &str,
+    city: &str,
+    timezone: chrono_tz::Tz,
+) -> Vec<DiscoveredEvent> {
     let mut remaining = html;
     let mut events = Vec::new();
-    while let Some(start) = remaining.find("events3_item") {
+    while let Some(start) = remaining.find("role=\"listitem\"") {
         let card = &remaining[start..];
-        let next = card["events3_item".len()..]
-            .find("events3_item")
-            .map(|offset| offset + "events3_item".len());
+        let next = card["role=\"listitem\"".len()..]
+            .find("role=\"listitem\"")
+            .map(|offset| offset + "role=\"listitem\"".len());
         let block = &card[..next.unwrap_or(card.len())];
         remaining = &card[block.len()..];
 
-        let Some(url) = html_attribute(block, "href") else {
+        let Some(url) = html_attribute(block, "href")
+            .and_then(|url| Url::parse(source_url).ok()?.join(url).ok())
+            .filter(|url| matches!(url.scheme(), "http" | "https"))
+        else {
             continue;
         };
-        let Some(title) = html_class_text(block, "events3_card_heading") else {
+        let Some(title) = html_tag_text(block, "h2").or_else(|| html_tag_text(block, "h3")) else {
             continue;
         };
-        let labels = html_class_texts(block, "events2_card_label");
-        let (Some(date), Some(location)) = (labels.first(), labels.last()) else {
+        let text = strip_html(block);
+        let Some(date) = event_date_in_text(&text) else {
             continue;
         };
-        let Ok(date) = NaiveDate::parse_from_str(date, "%B %d, %Y") else {
-            continue;
-        };
-        let Some(starts_at) = chrono_tz::US::Pacific
+        let Some(starts_at) = timezone
             .with_ymd_and_hms(date.year(), date.month(), date.day(), 12, 0, 0)
             .single()
             .map(|time| time.with_timezone(&Utc))
@@ -156,14 +153,14 @@ pub(crate) fn extract_you_com_events(html: &str, city: &str) -> Vec<DiscoveredEv
         };
         let card = SourceEventCard {
             title,
-            location: location.to_owned(),
+            location: text,
             starts_at,
-            source_url: url.to_owned(),
+            source_url: url.into(),
         };
-        if city_matches_event(&card.location, city) && card.starts_at > Utc::now() {
+        if card_matches_city(&card.location, city) && card.starts_at > Utc::now() {
             events.push(DiscoveredEvent {
                 title: card.title,
-                description: Some(format!("Official You.com event · {}", card.location)),
+                description: Some("Discovered from an approved event source".into()),
                 starts_at: card.starts_at,
                 source_url: card.source_url,
             });
@@ -172,11 +169,11 @@ pub(crate) fn extract_you_com_events(html: &str, city: &str) -> Vec<DiscoveredEv
     events
 }
 
-fn city_matches_event(location: &str, city: &str) -> bool {
-    location.eq_ignore_ascii_case("remote")
-        || location
-            .to_ascii_lowercase()
-            .contains(&city.trim().to_ascii_lowercase())
+fn card_matches_city(card_text: &str, city: &str) -> bool {
+    let text = card_text.to_ascii_lowercase();
+    text.contains(&city.trim().to_ascii_lowercase())
+        || text.contains("remote")
+        || text.contains("virtual")
 }
 
 fn html_attribute<'a>(html: &'a str, attribute: &str) -> Option<&'a str> {
@@ -185,29 +182,58 @@ fn html_attribute<'a>(html: &'a str, attribute: &str) -> Option<&'a str> {
     value.split_once('"').map(|(value, _)| value)
 }
 
-fn html_class_text(html: &str, class: &str) -> Option<String> {
-    html_class_texts(html, class).into_iter().next()
+fn html_tag_text(html: &str, tag: &str) -> Option<String> {
+    let start = html.find(&format!("<{tag}"))?;
+    let content = html[start..].split_once('>')?.1;
+    let text = content.split_once(&format!("</{tag}>"))?.0;
+    let text = strip_html(text);
+    (!text.is_empty()).then_some(text)
 }
 
-fn html_class_texts(html: &str, class: &str) -> Vec<String> {
-    let marker = format!("class=\"{class}");
-    let mut remaining = html;
-    let mut texts = Vec::new();
-    while let Some(before) = remaining.split_once(&marker) {
-        let after_class = before.1;
-        let Some((_, content)) = after_class.split_once('>') else {
-            break;
-        };
-        let Some((text, rest)) = content.split_once('<') else {
-            break;
-        };
-        let text = text.trim();
-        if !text.is_empty() {
-            texts.push(text.to_owned());
+fn strip_html(html: &str) -> String {
+    let mut text = String::with_capacity(html.len());
+    let mut in_tag = false;
+    for character in html.chars() {
+        match character {
+            '<' => in_tag = true,
+            '>' => {
+                in_tag = false;
+                text.push(' ');
+            }
+            _ if !in_tag => text.push(character),
+            _ => {}
         }
-        remaining = rest;
     }
-    texts
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn event_date_in_text(text: &str) -> Option<NaiveDate> {
+    const MONTHS: &[&str] = &[
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ];
+    MONTHS.iter().find_map(|month| {
+        let value = text.split_once(month)?.1;
+        let candidate = format!("{month}{}", value.chars().take(16).collect::<String>());
+        let end = candidate.find(", ")? + 6;
+        let date = candidate.get(..end)?;
+        date.chars()
+            .rev()
+            .take(4)
+            .all(|character| character.is_ascii_digit())
+            .then(|| NaiveDate::parse_from_str(date, "%B %d, %Y").ok())
+            .flatten()
+    })
 }
 
 /// Checks that a candidate remains within the organizer-approved public domain.
@@ -425,26 +451,28 @@ mod tests {
     }
 
     #[test]
-    fn extracts_you_com_event_cards_for_city_and_remote() {
-        let events = extract_you_com_events(
+    fn extracts_generic_event_cards_for_city_and_remote() {
+        assert_eq!(
+            event_date_in_text("July 31, 2099 | Remote"),
+            NaiveDate::from_ymd_opt(2099, 7, 31)
+        );
+        let events = extract_event_listing_cards(
             r#"
-            <div class="events3_item"><a href="https://luma.com/sf"></a>
-              <div class="events2_card_label">July 30, 2099</div>
-              <div class="events2_card_label">|</div>
-              <div class="events2_card_label">San Francisco</div>
-              <h2 class="events3_card_heading">SF Hackathon</h2>
+            <div role="listitem"><a href="/events/sf"></a>
+              <div>July 30, 2099 | San Francisco</div>
+              <h2>SF Hackathon</h2>
             </div>
-            <div class="events3_item"><a href="https://luma.com/remote"></a>
-              <div class="events2_card_label">July 31, 2099</div>
-              <div class="events2_card_label">|</div>
-              <div class="events2_card_label">Remote</div>
-              <h2 class="events3_card_heading">Virtual workshop</h2>
+            <div role="listitem"><a href="https://events.example.com/remote"></a>
+              <div>July 31, 2099 | Remote</div>
+              <h2>Virtual workshop</h2>
             </div>
             "#,
+            "https://events.example.com/calendar",
             "Baku",
+            chrono_tz::UTC,
         );
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].title, "Virtual workshop");
-        assert_eq!(events[0].source_url, "https://luma.com/remote");
+        assert_eq!(events[0].source_url, "https://events.example.com/remote");
     }
 }

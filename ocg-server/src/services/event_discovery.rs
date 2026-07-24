@@ -180,8 +180,9 @@ async fn ingest_sources(
     let event_pages = EventPageClient::new()?;
     for source in sources {
         let search_domain = source_search_domain(&source.url)?;
+        let timezone = source.timezone.parse()?;
         let mut events = event_pages
-            .discover_source_events(&source.url, &source.city)
+            .discover_source_events(&source.url, &source.city, timezone)
             .await?;
         let results = unique_city_results(
             client
