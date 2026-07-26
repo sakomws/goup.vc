@@ -212,22 +212,45 @@ async fn ingest_sources(
                 continue;
             }
             let fingerprint = event.fingerprint();
-            let inserted: Option<Uuid> = db
+            let item: Option<Uuid> = db
                 .fetch_scalar_opt(
-                    "insert into group_event_integration_item (
-                        group_id, source_url, candidate_url, fingerprint, discovered_payload
-                     ) values ($1, $2, $3, $4, $5) on conflict do nothing
-                     returning group_event_integration_item_id",
+                    "with rejected as (
+                        select group_event_integration_item_id
+                        from group_event_integration_item
+                        where group_id = $1 and source_url = $2 and fingerprint = $3
+                          and review_status = 'rejected'
+                        order by created_at desc limit 1
+                     ), revived as (
+                     update group_event_integration_item d set
+                        review_status = 'pending', candidate_url = $4,
+                        discovered_payload = $5, reviewed_at = null, reviewed_by = null,
+                        event_id = null
+                     from rejected
+                     where d.group_event_integration_item_id =
+                        rejected.group_event_integration_item_id
+                     returning d.group_event_integration_item_id
+                     ), inserted as (
+                     insert into group_event_integration_item (
+                            group_id, source_url, candidate_url, fingerprint, discovered_payload
+                     )
+                     select $1, $2, $4, $3, $5
+                     where not exists (select 1 from revived)
+                     on conflict do nothing
+                     returning group_event_integration_item_id
+                     )
+                     select group_event_integration_item_id from revived
+                     union all
+                     select group_event_integration_item_id from inserted",
                     &[
                         &source.group_id,
                         &source.url,
-                        &event.source_url,
                         &fingerprint,
+                        &event.source_url,
                         &Json(&event),
                     ],
                 )
                 .await?;
-            if inserted.is_none() {
+            if item.is_none() {
                 continue;
             }
             let count = counts.entry(source.group_id).or_default();
@@ -235,8 +258,9 @@ async fn ingest_sources(
             if let Some(event_id) = create_draft_event(db, &source, &event).await? {
                 db.execute(
                     "update group_event_integration_item set event_id = $1
-                     where group_id = $2 and fingerprint = $3",
-                    &[&event_id, &source.group_id, &fingerprint],
+                     where group_id = $2 and source_url = $3 and fingerprint = $4
+                       and review_status = 'pending'",
+                    &[&event_id, &source.group_id, &source.url, &fingerprint],
                 )
                 .await?;
                 count.1 += 1;

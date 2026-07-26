@@ -155,26 +155,51 @@ async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Resul
                         continue;
                     }
                     let fingerprint = fingerprint(&input, &candidate_url);
-                    let item: Option<Uuid> = db.fetch_scalar_opt(
-                        "insert into jobs_discovery_item (
-                            user_id, source_url, candidate_url, fingerprint, discovered_payload
-                         ) values ($1, $2, $3, $4, $5) on conflict do nothing
-                         returning jobs_discovery_item_id",
-                        &[
-                            user_id,
-                            &source_url,
-                            &candidate_url,
-                            &fingerprint,
-                            &Json(&input),
-                        ],
-                    ).await?;
+                    let item: Option<Uuid> = db
+                        .fetch_scalar_opt(
+                            "with rejected as (
+                                select jobs_discovery_item_id from jobs_discovery_item
+                                where user_id = $1 and source_url = $2 and fingerprint = $3
+                                  and review_status = 'rejected'
+                                order by created_at desc limit 1
+                             ), revived as (
+                             update jobs_discovery_item d set
+                                review_status = 'pending', candidate_url = $4,
+                                discovered_payload = $5, reviewed_at = null, reviewed_by = null,
+                                job_id = null
+                             from rejected
+                             where d.jobs_discovery_item_id = rejected.jobs_discovery_item_id
+                             returning d.jobs_discovery_item_id
+                             ), inserted as (
+                             insert into jobs_discovery_item (
+                                    user_id, source_url, candidate_url, fingerprint, discovered_payload
+                             )
+                             select $1, $2, $4, $3, $5
+                             where not exists (select 1 from revived)
+                             on conflict do nothing
+                             returning jobs_discovery_item_id
+                             )
+                             select jobs_discovery_item_id from revived
+                             union all
+                             select jobs_discovery_item_id from inserted",
+                            &[
+                                user_id,
+                                &source_url,
+                                &fingerprint,
+                                &candidate_url,
+                                &Json(&input),
+                            ],
+                        )
+                        .await?;
                     let Some(_) = item else { continue };
                     discovered += 1;
                     let job_id = db.add_job(*user_id, &input).await?;
                     db.update_job_published(*user_id, job_id, false).await?;
                     db.execute(
-                        "update jobs_discovery_item set job_id = $1 where user_id = $2 and fingerprint = $3",
-                        &[&job_id, user_id, &fingerprint],
+                        "update jobs_discovery_item set job_id = $1
+                         where user_id = $2 and source_url = $3 and fingerprint = $4
+                           and review_status = 'pending'",
+                        &[&job_id, user_id, &source_url, &fingerprint],
                     ).await?;
                     created += 1;
                 }

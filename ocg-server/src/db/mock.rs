@@ -636,6 +636,7 @@ mock! {
         ) -> Result<Uuid>;
         async fn delete_group_event_integration_source(
             &self,
+            actor_user_id: Uuid,
             group_id: Uuid,
             source_id: Uuid,
         ) -> Result<()>;

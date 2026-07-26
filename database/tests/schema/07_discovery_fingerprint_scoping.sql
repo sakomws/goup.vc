@@ -1,5 +1,5 @@
 begin;
-select plan(8);
+select plan(12);
 
 insert into "user" (user_id, auth_hash, email, username)
 values (
@@ -47,12 +47,24 @@ select lives_ok(
       values ('10000000-0000-0000-0000-000000000001', 'https://replacement.example/jobs', 'job-rejected')$$,
     'a replacement job source can queue a previously rejected candidate'
 );
+select lives_ok(
+    $$update jobs_discovery_item set review_status = 'rejected'
+      where user_id = '10000000-0000-0000-0000-000000000001'
+        and source_url = 'https://replacement.example/jobs'
+        and fingerprint = 'job-rejected'$$,
+    'a job candidate can be rejected from its replacement source'
+);
+select lives_ok(
+    $$insert into jobs_discovery_item (user_id, source_url, fingerprint)
+      values ('10000000-0000-0000-0000-000000000001', 'https://replacement.example/jobs', 'job-rejected')$$,
+    'the same job source can queue a previously rejected candidate again'
+);
 select throws_ok(
     $$insert into jobs_discovery_item (user_id, source_url, fingerprint)
       values ('10000000-0000-0000-0000-000000000001', 'https://replacement.example/jobs', 'job-rejected')$$,
     '23505',
     null,
-    'the same job source cannot queue a candidate twice'
+    'an active job candidate cannot be queued twice from the same source'
 );
 select throws_ok(
     $$insert into jobs_discovery_item (user_id, source_url, fingerprint)
@@ -72,12 +84,24 @@ select lives_ok(
       values ('20000000-0000-0000-0000-000000000001', 'https://replacement.example/events', 'event-rejected')$$,
     'a replacement event source can queue a previously rejected candidate'
 );
+select lives_ok(
+    $$update group_event_integration_item set review_status = 'rejected'
+      where group_id = '20000000-0000-0000-0000-000000000001'
+        and source_url = 'https://replacement.example/events'
+        and fingerprint = 'event-rejected'$$,
+    'an event candidate can be rejected from its replacement source'
+);
+select lives_ok(
+    $$insert into group_event_integration_item (group_id, source_url, fingerprint)
+      values ('20000000-0000-0000-0000-000000000001', 'https://replacement.example/events', 'event-rejected')$$,
+    'the same event source can queue a previously rejected candidate again'
+);
 select throws_ok(
     $$insert into group_event_integration_item (group_id, source_url, fingerprint)
       values ('20000000-0000-0000-0000-000000000001', 'https://replacement.example/events', 'event-rejected')$$,
     '23505',
     null,
-    'the same event source cannot queue a candidate twice'
+    'an active event candidate cannot be queued twice from the same source'
 );
 select throws_ok(
     $$insert into group_event_integration_item (group_id, source_url, fingerprint)
