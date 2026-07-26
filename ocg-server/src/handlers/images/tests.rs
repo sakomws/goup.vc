@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{io::Cursor, sync::Arc};
 
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE, COOKIE, HOST, REFERER};
 use axum::{
@@ -8,7 +8,7 @@ use axum::{
     routing::get,
 };
 use axum_login::tower_sessions::session;
-use image::{ImageFormat, RgbaImage};
+use image::{GenericImageView, ImageFormat, RgbaImage};
 use serde_json::Value;
 use tower::ServiceExt;
 use uuid::Uuid;
@@ -34,6 +34,27 @@ const PNG_BYTES: &[u8] = &[
     0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
     0x42, 0x60, 0x82,
 ];
+
+#[test]
+fn test_normalize_logo_centers_non_square_raster_image() {
+    // Encode a wide opaque source image to exercise the server normalization path.
+    let source = RgbaImage::from_pixel(720, 360, image::Rgba([12, 34, 56, 255]));
+    let mut source_bytes = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(source)
+        .write_to(&mut source_bytes, ImageFormat::Png)
+        .unwrap();
+
+    // Normalize the logo, then inspect its dimensions and transparent padding.
+    let normalized = normalize_logo(&source_bytes.into_inner()).unwrap();
+    let image = image::load_from_memory_with_format(&normalized, ImageFormat::Png).unwrap();
+
+    assert_eq!(image.dimensions(), (LOGO_SIZE, LOGO_SIZE));
+    assert_eq!(image.get_pixel(0, 0), image::Rgba([0, 0, 0, 0]));
+    assert_eq!(
+        image.get_pixel(LOGO_SIZE / 2, LOGO_SIZE / 2),
+        image::Rgba([12, 34, 56, 255])
+    );
+}
 
 #[test]
 fn test_is_svg_accepts_valid_svg() {

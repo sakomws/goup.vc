@@ -109,6 +109,22 @@ describe("image-field", () => {
     expect(fileInput.accept).to.equal(".svg,.png,.jpg,.jpeg,.gif,.webp,.tif,.tiff");
   });
 
+  it("explains that logos are automatically fitted into a square", async () => {
+    // Mount a logo image field with the server-side normalization target.
+    const element = await mountLitComponent("image-field", {
+      label: "Logo",
+      name: "logo_url",
+      imageKind: "logo",
+      target: "logo",
+    });
+
+    // Confirm the guidance permits flexible source dimensions without cropping.
+    const helpText = element.querySelector(".form-legend").textContent.trim();
+    expect(helpText).to.include("Images can be any size.");
+    expect(helpText).to.include("360 x 360 px square without cropping.");
+    expect(helpText).to.include("Maximum source size: 10MB.");
+  });
+
   it("shows escaped server messages when image uploads fail", async () => {
     // Mock the upload endpoint with a server validation message.
     fetchMock.setImpl(async () => ({
