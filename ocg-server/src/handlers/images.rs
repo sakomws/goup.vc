@@ -13,7 +13,7 @@ use axum::{
     },
     response::IntoResponse,
 };
-use image::{ImageFormat, ImageReader};
+use image::{DynamicImage, ImageFormat, ImageReader, RgbaImage, imageops::FilterType};
 use quick_xml::{Reader, events::Event};
 use serde_json::json;
 use tracing::instrument;
@@ -31,8 +31,14 @@ use crate::{
 #[cfg(test)]
 mod tests;
 
-/// Maximum payload size allowed for image uploads (1 MiB).
+/// Maximum payload size allowed for non-logo image uploads (1 MiB).
 const MAX_IMAGE_SIZE_BYTES: usize = 1024 * 1024;
+/// Maximum source payload size allowed for logo image uploads (10 MiB).
+const MAX_LOGO_IMAGE_SIZE_BYTES: usize = 10 * 1024 * 1024;
+/// Maximum decoded source image size allowed for logo normalization.
+const MAX_LOGO_SOURCE_PIXELS: u64 = 16_000_000;
+/// Normalized logo dimensions.
+const LOGO_SIZE: u32 = 360;
 
 /// Cache-Control header for long-lived responses.
 const CACHE_CONTROL_IMMUTABLE: &str = "public, max-age=31536000, immutable";
@@ -113,9 +119,23 @@ pub(crate) async fn upload(
         return Ok((StatusCode::BAD_REQUEST, "missing file in upload payload").into_response());
     };
 
-    // Enforce maximum file size
-    if data.len() > MAX_IMAGE_SIZE_BYTES {
-        return Ok((StatusCode::PAYLOAD_TOO_LARGE, "image exceeds 1MB limit").into_response());
+    // Allow larger logo source files because they are normalized before storage.
+    let max_upload_size = if matches!(target, Some(ImageTarget::Logo)) {
+        MAX_LOGO_IMAGE_SIZE_BYTES
+    } else {
+        MAX_IMAGE_SIZE_BYTES
+    };
+    if data.len() > max_upload_size {
+        let limit_label = if matches!(target, Some(ImageTarget::Logo)) {
+            "10MB"
+        } else {
+            "1MB"
+        };
+        return Ok((
+            StatusCode::PAYLOAD_TOO_LARGE,
+            format!("image exceeds {limit_label} limit"),
+        )
+            .into_response());
     }
 
     // Detect image format and check extension matches
@@ -129,33 +149,51 @@ pub(crate) async fn upload(
             .into_response());
     }
 
-    // Validate target-specific image requirements
-    if let Some(target) = target {
-        // Validate Open Graph image format
-        if matches!(target, ImageTarget::OpenGraph) && !format.is_open_graph_supported() {
-            return Ok((
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "Open Graph images must be PNG, JPEG, or WebP",
-            )
-                .into_response());
+    // Validate target-specific image requirements and normalize flexible raster
+    // logo uploads to a centered transparent 360x360 PNG.
+    let (stored_data, stored_format, stored_extension) = if matches!(
+        target,
+        Some(ImageTarget::Logo)
+    ) && !matches!(
+        format,
+        SupportedImageFormat::Svg
+    ) {
+        (
+            normalize_logo(data.as_ref())?,
+            SupportedImageFormat::Png,
+            Cow::Borrowed("png"),
+        )
+    } else {
+        // Validate target-specific image requirements
+        if let Some(target) = target {
+            // Validate Open Graph image format
+            if matches!(target, ImageTarget::OpenGraph) && !format.is_open_graph_supported() {
+                return Ok((
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "Open Graph images must be PNG, JPEG, or WebP",
+                )
+                    .into_response());
+            }
+
+            // SVG logos remain vectors; all other unchanged targets require exact dimensions.
+            if !matches!(format, SupportedImageFormat::Svg)
+                && let Err(e) = validate_image_dimensions(data.as_ref(), target)
+            {
+                return Ok((StatusCode::UNPROCESSABLE_ENTITY, e.to_string()).into_response());
+            }
         }
 
-        // Validate target dimensions when the format supports dimension checks
-        if !matches!(format, SupportedImageFormat::Svg)
-            && let Err(e) = validate_image_dimensions(data.as_ref(), target)
-        {
-            return Ok((StatusCode::UNPROCESSABLE_ENTITY, e.to_string()).into_response());
-        }
-    }
+        (data.to_vec(), format, extension)
+    };
 
     // Compute file hash
-    let hash = compute_hash(data.as_ref());
+    let hash = compute_hash(&stored_data);
 
     // Store image using the configured storage provider
     let new_image = NewImage {
-        bytes: data.as_ref(),
-        content_type: mime_type(&format),
-        file_name: &format!("{hash}.{extension}"),
+        bytes: &stored_data,
+        content_type: mime_type(&stored_format),
+        file_name: &format!("{hash}.{stored_extension}"),
         user_id: user.user_id,
     };
     image_storage.save(&new_image).await?;
@@ -166,52 +204,39 @@ pub(crate) async fn upload(
     Ok((StatusCode::CREATED, body).into_response())
 }
 
+/// Normalizes a raster logo to a centered 360x360 transparent PNG without cropping.
+fn normalize_logo(bytes: &[u8]) -> Result<Vec<u8>> {
+    let reader = ImageReader::new(Cursor::new(bytes))
+        .with_guessed_format()
+        .context("failed to detect image format")?;
+    let (width, height) = reader.into_dimensions().context("failed to read dimensions")?;
+    let pixel_count = u64::from(width) * u64::from(height);
+    if pixel_count > MAX_LOGO_SOURCE_PIXELS {
+        return Err(anyhow!(
+            "logo dimensions {width}x{height} exceed the {MAX_LOGO_SOURCE_PIXELS}-pixel limit"
+        ));
+    }
+
+    let source = ImageReader::new(Cursor::new(bytes))
+        .with_guessed_format()
+        .context("failed to detect image format")?
+        .decode()
+        .context("failed to decode logo image")?;
+    let resized = source.resize(LOGO_SIZE, LOGO_SIZE, FilterType::Lanczos3);
+    let resized = resized.to_rgba8();
+    let mut canvas = RgbaImage::new(LOGO_SIZE, LOGO_SIZE);
+    let x = i64::from((LOGO_SIZE - resized.width()) / 2);
+    let y = i64::from((LOGO_SIZE - resized.height()) / 2);
+    image::imageops::overlay(&mut canvas, &resized, x, y);
+
+    let mut output = Cursor::new(Vec::new());
+    DynamicImage::ImageRgba8(canvas)
+        .write_to(&mut output, ImageFormat::Png)
+        .context("failed to encode normalized logo")?;
+    Ok(output.into_inner())
+}
+
 // Helpers
-
-/// Detects the image format using the `image` crate with a fallback for SVGs.
-fn detect_image_format(bytes: &[u8], extension: &str) -> Result<SupportedImageFormat> {
-    match image::guess_format(bytes) {
-        Ok(ImageFormat::Gif) => Ok(SupportedImageFormat::Gif),
-        Ok(ImageFormat::Jpeg) => Ok(SupportedImageFormat::Jpeg),
-        Ok(ImageFormat::Png) => Ok(SupportedImageFormat::Png),
-        Ok(ImageFormat::Tiff) => Ok(SupportedImageFormat::Tiff),
-        Ok(ImageFormat::WebP) => Ok(SupportedImageFormat::Webp),
-        Ok(other) => Err(anyhow!("unsupported image format: {other:?}")),
-        Err(_) if is_svg(bytes, extension) => Ok(SupportedImageFormat::Svg),
-        Err(_) => Err(anyhow!("unsupported image format")),
-    }
-}
-
-/// Returns the accepted extensions for the provided format.
-fn expected_extensions(format: &SupportedImageFormat) -> &'static [&'static str] {
-    match format {
-        SupportedImageFormat::Gif => &["gif"],
-        SupportedImageFormat::Jpeg => &["jpg", "jpeg"],
-        SupportedImageFormat::Png => &["png"],
-        SupportedImageFormat::Svg => &["svg"],
-        SupportedImageFormat::Tiff => &["tif", "tiff"],
-        SupportedImageFormat::Webp => &["webp"],
-    }
-}
-
-/// Validates that the extension matches the detected image format.
-fn extension_matches(format: &SupportedImageFormat, extension: &str) -> bool {
-    expected_extensions(format)
-        .iter()
-        .any(|candidate| candidate == &extension)
-}
-
-/// Extracts the lowercase file extension from a file name.
-fn image_extension(file_name: &str) -> Result<Cow<'_, str>> {
-    let extension = file_name
-        .rsplit('.')
-        .next()
-        .ok_or_else(|| anyhow!("missing file extension"))?;
-    if extension.is_empty() {
-        return Err(anyhow!("missing file extension"));
-    }
-    Ok(Cow::from(extension.to_ascii_lowercase()))
-}
 
 /// Determines whether the provided bytes and extension represent a valid SVG asset.
 ///
@@ -351,7 +376,6 @@ async fn serve_image(
 
     // Build the image response body
     let body = Body::from(image.bytes);
-
     Ok((StatusCode::OK, response_headers, body).into_response())
 }
 
@@ -389,7 +413,7 @@ impl ImageTarget {
         match self {
             ImageTarget::Banner => (2428, 192),
             ImageTarget::BannerMobile => (1220, 192),
-            ImageTarget::Logo => (360, 360),
+            ImageTarget::Logo => (LOGO_SIZE, LOGO_SIZE),
             ImageTarget::OpenGraph => (OPEN_GRAPH_IMAGE_WIDTH, OPEN_GRAPH_IMAGE_HEIGHT),
         }
     }
@@ -410,6 +434,7 @@ impl FromStr for ImageTarget {
 }
 
 /// Supported image formats accepted by the upload endpoint.
+#[derive(Clone, Copy)]
 enum SupportedImageFormat {
     Gif,
     Jpeg,
@@ -424,4 +449,49 @@ impl SupportedImageFormat {
     fn is_open_graph_supported(&self) -> bool {
         matches!(self, Self::Jpeg | Self::Png | Self::Webp)
     }
+}
+
+/// Detects the image format using the `image` crate with a fallback for SVGs.
+fn detect_image_format(bytes: &[u8], extension: &str) -> Result<SupportedImageFormat> {
+    match image::guess_format(bytes) {
+        Ok(ImageFormat::Gif) => Ok(SupportedImageFormat::Gif),
+        Ok(ImageFormat::Jpeg) => Ok(SupportedImageFormat::Jpeg),
+        Ok(ImageFormat::Png) => Ok(SupportedImageFormat::Png),
+        Ok(ImageFormat::Tiff) => Ok(SupportedImageFormat::Tiff),
+        Ok(ImageFormat::WebP) => Ok(SupportedImageFormat::Webp),
+        Ok(other) => Err(anyhow!("unsupported image format: {other:?}")),
+        Err(_) if is_svg(bytes, extension) => Ok(SupportedImageFormat::Svg),
+        Err(_) => Err(anyhow!("unsupported image format")),
+    }
+}
+
+/// Returns the accepted extensions for the provided format.
+fn expected_extensions(format: &SupportedImageFormat) -> &'static [&'static str] {
+    match format {
+        SupportedImageFormat::Gif => &["gif"],
+        SupportedImageFormat::Jpeg => &["jpg", "jpeg"],
+        SupportedImageFormat::Png => &["png"],
+        SupportedImageFormat::Svg => &["svg"],
+        SupportedImageFormat::Tiff => &["tif", "tiff"],
+        SupportedImageFormat::Webp => &["webp"],
+    }
+}
+
+/// Validates that the extension matches the detected image format.
+fn extension_matches(format: &SupportedImageFormat, extension: &str) -> bool {
+    expected_extensions(format)
+        .iter()
+        .any(|candidate| candidate == &extension)
+}
+
+/// Extracts the lowercase file extension from a file name.
+fn image_extension(file_name: &str) -> Result<Cow<'_, str>> {
+    let extension = file_name
+        .rsplit('.')
+        .next()
+        .ok_or_else(|| anyhow!("missing file extension"))?;
+    if extension.is_empty() {
+        return Err(anyhow!("missing file extension"));
+    }
+    Ok(Cow::from(extension.to_ascii_lowercase()))
 }

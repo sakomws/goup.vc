@@ -235,7 +235,7 @@
           {% let og_image_value -%}value="{%- if let Some(og_image_url) = &alliance.og_image_url -%}{{ og_image_url }}{%- endif -%}"{%- endlet %}
 
           {# Logo URL -#}
-          {{ form_fields::image_field(label = "Logo", name = "logo_url", image_kind = "logo", target = "logo", help_prefix_text = "Size required 360 x 360 px.", value_attr = logo_value, extra_attrs = "required") -}}
+          {{ form_fields::image_field(label = "Logo", name = "logo_url", image_kind = "logo", target = "logo", value_attr = logo_value, extra_attrs = "required") -}}
           {# End logo URL -#}
 
           {# Banner URL -#}

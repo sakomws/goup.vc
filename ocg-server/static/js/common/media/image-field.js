@@ -7,6 +7,7 @@ import {
   getImageUploadErrorMessage,
   IMAGE_UPLOAD_MAX_SIZE_TEXT,
   IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT,
+  LOGO_IMAGE_UPLOAD_MAX_SIZE_TEXT,
   OPEN_GRAPH_IMAGE_ACCEPTED_FORMATS,
   uploadImageFile,
 } from "/static/js/common/media/image-upload.js";
@@ -209,7 +210,7 @@ export class ImageField extends LitWrapper {
       const imageUrl = await uploadImageFile(file, { target: this.target });
       this.setValue(imageUrl);
     } catch (error) {
-      showErrorAlert(getImageUploadErrorMessage("image", error.message), true);
+      showErrorAlert(getImageUploadErrorMessage("image", error.message, this.target), true);
     } finally {
       this._isUploading = false;
       if (typeof resetCallback === "function") {
@@ -256,13 +257,16 @@ export class ImageField extends LitWrapper {
     const bannerLikeKinds = [IMAGE_KIND.BANNER];
     const isWide = bannerLikeKinds.includes(this.imageKind);
     const isOpenGraphTarget = this.target === IMAGE_TARGET.OPEN_GRAPH;
+    const isLogoTarget = this.target === IMAGE_KIND.LOGO;
     const removeDisabled = !this._hasImage || this._isUploading;
     const helpPrefixText = (this.helpPrefixText || "").trim();
     const helpText = isOpenGraphTarget
       ? IMAGE_UPLOAD_MAX_SIZE_TEXT
+      : isLogoTarget
+        ? `Images can be any size. Raster logos are fitted inside a 360 x 360 px square without cropping. ${LOGO_IMAGE_UPLOAD_MAX_SIZE_TEXT} ${IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT}`
       : isWide
         ? `${IMAGE_UPLOAD_MAX_SIZE_TEXT} ${IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT}`
-        : `Images must be 360 x 360 px (square). ${IMAGE_UPLOAD_MAX_SIZE_TEXT} ${IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT}`;
+        : `${IMAGE_UPLOAD_MAX_SIZE_TEXT} ${IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT}`;
     const combinedHelpText = helpPrefixText.length > 0 ? `${helpPrefixText} ${helpText}` : helpText;
     const acceptedFormats = isOpenGraphTarget
       ? OPEN_GRAPH_IMAGE_ACCEPTED_FORMATS

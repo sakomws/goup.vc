@@ -73,7 +73,7 @@
       {{ dashboard::form_title(title = "Branding", description = "Provide initial public images. You can update these later in settings.") -}}
 
       <div class="mt-10 grid max-w-5xl grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6">
-        {{ form_fields::image_field(label = "Logo", name = "logo_url", image_kind = "logo", target = "logo", help_prefix_text = "Size required 360 x 360 px.", extra_attrs = "required") -}}
+        {{ form_fields::image_field(label = "Logo", name = "logo_url", image_kind = "logo", target = "logo", extra_attrs = "required") -}}
         {{ form_fields::image_field(label = "Banner", name = "banner_url", image_kind = "banner", target = "banner", help_prefix_text = "Size required 2428 x 192 px.", extra_attrs = "required") -}}
         {{ form_fields::image_field(label = "Banner Mobile", name = "banner_mobile_url", image_kind = "banner", target = "banner_mobile", help_prefix_text = "Size required 1220 x 192 px.", extra_attrs = "required") -}}
       </div>
