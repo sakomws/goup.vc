@@ -61,7 +61,7 @@ pub(crate) trait DBJobs {
     async fn update_job_discovery(&self, user_id: Uuid, enabled: bool) -> Result<()>;
     /// Add a source URL owned by the current user.
     async fn add_job_discovery_source(&self, user_id: Uuid, url: &str) -> Result<Uuid>;
-    /// Delete a source URL owned by the current user.
+    /// Delete a source URL and every job discovered from it.
     async fn delete_job_discovery_source(&self, user_id: Uuid, source_id: Uuid) -> Result<()>;
     /// Publishes a pending discovered job.
     async fn approve_job_discovery_item(&self, user_id: Uuid, item_id: Uuid) -> Result<()>;
@@ -217,8 +217,18 @@ where
 
     async fn delete_job_discovery_source(&self, user_id: Uuid, source_id: Uuid) -> Result<()> {
         self.execute(
-            "delete from jobs_discovery_source
-             where user_id = $1 and jobs_discovery_source_id = $2",
+            "with removed_source as (
+                delete from jobs_discovery_source
+                where user_id = $1 and jobs_discovery_source_id = $2
+                returning url
+             ), removed_items as (
+                delete from jobs_discovery_item d
+                using removed_source s
+                where d.user_id = $1 and d.source_url = s.url
+                returning d.job_id
+             )
+             select delete_job($1::uuid, job_id)
+             from removed_items where job_id is not null",
             &[&user_id, &source_id],
         )
         .await?;

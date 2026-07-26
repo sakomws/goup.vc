@@ -112,7 +112,8 @@ pub(crate) async fn delete_source(
     State(db): State<DynDB>,
     Path(source_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, HandlerError> {
-    db.delete_group_event_integration_source(group_id, source_id).await?;
+    db.delete_group_event_integration_source(user.user_id, group_id, source_id)
+        .await?;
     Ok(Html(
         prepare_page(&db, alliance_id, group_id, user.user_id)
             .await?

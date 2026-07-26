@@ -253,9 +253,10 @@ pub(crate) trait DBDashboardGroup {
     /// Adds a source URL to group event discovery.
     async fn add_group_event_integration_source(&self, group_id: Uuid, url: &str) -> Result<Uuid>;
 
-    /// Removes a source URL from group event discovery.
+    /// Removes a source URL and every event discovered from it.
     async fn delete_group_event_integration_source(
         &self,
+        actor_user_id: Uuid,
         group_id: Uuid,
         source_id: Uuid,
     ) -> Result<()>;
@@ -1163,13 +1164,24 @@ where
     #[instrument(skip(self), err)]
     async fn delete_group_event_integration_source(
         &self,
+        actor_user_id: Uuid,
         group_id: Uuid,
         source_id: Uuid,
     ) -> Result<()> {
         self.execute(
-            "delete from group_event_integration_source
-             where group_id = $1 and group_event_integration_source_id = $2",
-            &[&group_id, &source_id],
+            "with removed_source as (
+                delete from group_event_integration_source
+                where group_id = $1 and group_event_integration_source_id = $3
+                returning url
+             ), removed_items as (
+                delete from group_event_integration_item d
+                using removed_source s
+                where d.group_id = $1 and d.source_url = s.url
+                returning d.event_id
+             )
+             select delete_event($2::uuid, $1::uuid, event_id)
+             from removed_items where event_id is not null",
+            &[&group_id, &actor_user_id, &source_id],
         )
         .await
     }
