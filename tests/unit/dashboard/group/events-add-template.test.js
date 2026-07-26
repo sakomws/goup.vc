@@ -131,4 +131,15 @@ describe("dashboard group event add template", () => {
       '<div class="min-w-0"> <div class="space-y-12">',
     );
   });
+
+  it("keeps top event tabs at their content width", async () => {
+    // Load the event add template before checking tab sizing constraints.
+    const template = normalizeWhitespace(await loadTemplate());
+
+    // Prevent horizontal tabs from inheriting the full-width sidebar tab layout.
+    expect(template).to.include(
+      '[&>li]:w-auto [&>li]:shrink-0 [&>li>div>button]:w-auto [&>li>div>button]:whitespace-nowrap',
+    );
+    expect(template).to.include('class="min-w-0 overflow-x-auto"');
+  });
 });

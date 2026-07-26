@@ -36,8 +36,8 @@
   </div>
 
   <div class="mb-10 grid min-w-0 grid-cols-1 items-stretch gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:gap-x-8">
-    <div class="min-w-0 overflow-x-auto overflow-y-hidden">
-      <ul class="inline-flex min-w-max flex-nowrap gap-1 border-b border-stone-900/10 text-center font-medium lg:gap-2">
+    <div class="min-w-0 overflow-x-auto">
+      <ul class="inline-flex min-w-max flex-nowrap gap-1 border-b border-stone-900/10 text-center font-medium [&>li]:w-auto [&>li]:shrink-0 [&>li>div>button]:w-auto [&>li>div>button]:whitespace-nowrap lg:gap-2">
         {{ event_form::tab_button(section = "details", icon = "event", label = "Details", active = true) -}}
         {{ event_form::tab_button(section = "date-venue", icon = "calendar", label = "Date & Venue") -}}
         {{ event_form::tab_button(section = "hosts-sponsors", icon = "user-plus", label = "Hosts & Speakers") -}}
