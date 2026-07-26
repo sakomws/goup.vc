@@ -31,16 +31,16 @@ pub(crate) type DynImageStorage = Arc<dyn ImageStorage + Send + Sync>;
 
 ## Image targets
 
-The upload handler recognises a `target` form field that controls the accepted dimensions:
+The upload handler recognises a `target` form field that controls image handling:
 
 | Target | Dimensions (px) |
 |---|---|
 | `banner` | 2428 × 192 |
 | `banner_mobile` | 1220 × 192 |
-| `logo` | 360 × 360 |
+| `logo` | Any source size; raster uploads are normalized into a 360 × 360 PNG |
 | `open_graph` | 1200 × 630 |
 
-Dimension validation is performed after decoding the upload using the `image` crate; uploads with incorrect dimensions are rejected with a descriptive error before any storage write.
+Banner and Open Graph dimensions are validated after decoding using the `image` crate. Raster logos are proportionally resized, centered on a transparent 360 × 360 canvas, and stored as PNG without cropping.
 
 ## Supported formats
 
@@ -48,11 +48,11 @@ GIF, JPEG, PNG, SVG, TIFF, WebP. SVG files bypass raster-dimension validation be
 
 ## Upload flow
 
-1. The client sends a `multipart/form-data` POST to `/images/upload` with fields `target` and `file`.
-2. `ocg-server/src/handlers/images.rs` — `upload` handler — extracts and validates the fields; total payload limit is **1 MiB** (`MAX_IMAGE_UPLOAD_BYTES`).
+1. The client sends a `multipart/form-data` POST to `/images` with fields `target` and `file`.
+2. `ocg-server/src/handlers/images.rs` — `upload` handler — extracts and validates the fields. Non-logo uploads are limited to **1 MiB**; logo sources are limited to **10 MiB** and a decoded-pixel guard before normalization.
 3. The referer header is checked against the configured hostname via `request_matches_site`; mismatches return `403 Forbidden`.
 4. The handler computes a content hash of the bytes (via `util::compute_hash`) to produce a deterministic file name, avoiding duplicate storage.
-5. For raster targets the handler decodes the image header to verify dimensions.
+5. The handler verifies banner/Open Graph dimensions and normalizes raster logos before storage.
 6. The `NewImage` struct is handed to `DynImageStorage::save`.
 7. A JSON body containing the resulting file name and public URL is returned to the client.
 
