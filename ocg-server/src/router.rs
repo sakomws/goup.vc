@@ -308,6 +308,10 @@ pub(crate) async fn setup(
             post(crate::handlers::dashboard::jobs::add_discovery_source),
         )
         .route(
+            "/dashboard/jobs/discovery/sources/import",
+            post(crate::handlers::dashboard::jobs::add_discovery_sources),
+        )
+        .route(
             "/dashboard/jobs/discovery/sources/{source_id}",
             delete(crate::handlers::dashboard::jobs::delete_discovery_source),
         )

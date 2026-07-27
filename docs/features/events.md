@@ -75,6 +75,14 @@ graph TD
 
 `services/event_discovery.rs` runs a scheduled daily worker that queries the You.com search API for Baku community event pages, validates structured Event data from approved candidate pages, and stores discovered events as drafts for organizer review. A `ManualEventDiscovery` handle is passed to dashboard handlers for on-demand group-specific runs.
 
+Organizers can import up to 1,000 approved sources in the Event discovery dashboard
+by pasting newline- or comma-separated URLs. Scheme-less values are normalized to
+`https://`; duplicate and invalid entries are ignored.
+
+The curated source catalog and its provenance are in
+[`database/data/discovery/`](../../database/data/discovery/). Inclusion means a
+source is suitable to search, not that every discovery run produces an event.
+
 ### Recording publishing
 
 `RecordingPublishingManager` polls for events that have a recorded session and uploads the recording to YouTube using configured credentials. The YouTube video URL is saved back to the event record.

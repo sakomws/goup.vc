@@ -23,7 +23,7 @@ aws-sdk-s3 = { version = "1.137.0", default-features = false, features = [
     "rt-tokio",
     "sigv4a",
 ] }
-axum = { version = "0.8.9", features = ["macros", "multipart"] }
+axum = { version = "0.8.9", features = ["macros", "multipart", "ws"] }
 axum-login = "0.18.0"
 axum-messages = "0.8.0"
 bytes = "1.12.0"
@@ -35,6 +35,7 @@ csv = "1.4.0"
 deadpool-postgres = { version = "0.14.1", features = ["serde"] }
 emojis = "0.9.0"
 figment = { version = "0.10.19", features = ["yaml", "env"] }
+futures-util = "0.3.33"
 garde = { version = "0.23.0", features = ["derive", "url", "email"] }
 hex = "0.4"
 hmac = "0.13.0"
@@ -55,6 +56,7 @@ postgres-openssl = "0.5.3"
 quick-xml = "0.41.0"
 qrcode = { version = "0.14.1", features = ["svg"] }
 reqwest = { version = "0.13.4", features = ["json"] }
+redis = { version = "1.4.1", features = ["tokio-comp"] }
 # Keep this exact pin so the workspace resolves to patched rkyv 0.7.46.
 # parcel_sourcemap otherwise pulls vulnerable rkyv 0.7.45 (RUSTSEC-2026-0001).
 rkyv = "=0.7.46"

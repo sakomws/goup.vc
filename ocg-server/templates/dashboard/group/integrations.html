@@ -21,6 +21,11 @@
       <input class="input-primary flex-1" type="url" name="url" placeholder="https://events.example.com" required {% if !integration.can_manage_events %}disabled{% endif %}>
       <button class="button-primary" type="submit" {% if !integration.can_manage_events %}disabled{% endif %}>Add source</button>
     </form>
+    <form class="mt-3 space-y-2" hx-post="/dashboard/group/integrations/sources/import" hx-target="#dashboard-content">
+      <label class="text-sm text-stone-600" for="event-discovery-source-import">Import up to 1,000 URLs (one per line or comma-separated)</label>
+      <textarea class="input-primary w-full" id="event-discovery-source-import" name="urls" rows="5" placeholder="events.example.com&#10;https://calendar.example.com" {% if !integration.can_manage_events %}disabled{% endif %}></textarea>
+      <button class="button-secondary" type="submit" {% if !integration.can_manage_events %}disabled{% endif %}>Import sources</button>
+    </form>
     <ul class="mt-4 space-y-2">
     {% for source in integration.sources %}
       <li class="flex items-center justify-between gap-3 border rounded p-3">

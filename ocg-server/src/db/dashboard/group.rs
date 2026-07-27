@@ -252,6 +252,12 @@ pub(crate) trait DBDashboardGroup {
 
     /// Adds a source URL to group event discovery.
     async fn add_group_event_integration_source(&self, group_id: Uuid, url: &str) -> Result<Uuid>;
+    /// Adds source URLs to group event discovery.
+    async fn add_group_event_integration_sources(
+        &self,
+        group_id: Uuid,
+        urls: &[String],
+    ) -> Result<usize>;
 
     /// Removes a source URL and every event discovered from it.
     async fn delete_group_event_integration_source(
@@ -1158,6 +1164,29 @@ where
             &[&group_id, &url],
         )
         .await
+    }
+
+    async fn add_group_event_integration_sources(
+        &self,
+        group_id: Uuid,
+        urls: &[String],
+    ) -> Result<usize> {
+        if urls.is_empty() {
+            return Ok(0);
+        }
+        let added: i64 = self
+            .fetch_scalar_one(
+                "with inserted as (
+                    insert into group_event_integration_source (group_id, url)
+                    select $1, unnest($2::text[])
+                    on conflict (group_id, url) do update set enabled = true, updated_at = now()
+                    where not group_event_integration_source.enabled
+                    returning 1
+                 ) select count(*) from inserted",
+                &[&group_id, &urls],
+            )
+            .await?;
+        Ok(added as usize)
     }
 
     /// [`DBDashboardGroup::delete_group_event_integration_source`]

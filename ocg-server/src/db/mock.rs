@@ -634,6 +634,11 @@ mock! {
             group_id: Uuid,
             url: &str,
         ) -> Result<Uuid>;
+        async fn add_group_event_integration_sources(
+            &self,
+            group_id: Uuid,
+            urls: &[String],
+        ) -> Result<usize>;
         async fn delete_group_event_integration_source(
             &self,
             actor_user_id: Uuid,
@@ -1243,6 +1248,11 @@ mock! {
         ) -> Result<crate::types::jobs::JobDiscoveryDashboard>;
         async fn update_job_discovery(&self, user_id: Uuid, enabled: bool) -> Result<()>;
         async fn add_job_discovery_source(&self, user_id: Uuid, url: &str) -> Result<Uuid>;
+        async fn add_job_discovery_sources(
+            &self,
+            user_id: Uuid,
+            urls: &[String],
+        ) -> Result<usize>;
         async fn delete_job_discovery_source(
             &self,
             user_id: Uuid,

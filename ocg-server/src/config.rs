@@ -45,6 +45,8 @@ pub(crate) struct Config {
     pub recording_publishing: Option<RecordingPublishingConfig>,
     /// External partner integrations.
     pub integrations: Option<IntegrationsConfig>,
+    /// Optional Redis-backed realtime delivery.
+    pub redis: Option<RedisConfig>,
 }
 
 impl Config {
@@ -111,6 +113,15 @@ impl Config {
 pub(crate) struct IntegrationsConfig {
     /// You.com event discovery configuration.
     pub you_com: Option<YouComConfig>,
+}
+
+/// Redis connection configuration for optional realtime delivery.
+///
+/// Set `OCG_REDIS__URL` to enable Redis Pub/Sub-backed WebSocket notifications.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub(crate) struct RedisConfig {
+    /// Redis connection URL.
+    pub url: String,
 }
 
 impl IntegrationsConfig {

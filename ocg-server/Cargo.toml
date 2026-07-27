@@ -25,6 +25,7 @@ csv = { workspace = true }
 deadpool-postgres = { workspace = true }
 emojis = { workspace = true }
 figment = { workspace = true }
+futures-util = { workspace = true }
 garde = { workspace = true }
 hex = { workspace = true }
 hmac = { workspace = true }
@@ -44,6 +45,7 @@ postgres-openssl = { workspace = true }
 quick-xml = { workspace = true }
 qrcode = { workspace = true }
 reqwest = { workspace = true }
+redis = { workspace = true }
 rkyv = { workspace = true }
 rust-embed = { workspace = true }
 serde = { workspace = true }

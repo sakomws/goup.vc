@@ -15,3 +15,5 @@ ocg-server/static/css/styles.css
 .config/ocg/server.yml
 .config/ocg/tern.conf
 .gstack/
+/database/data/discovery/jobs-sources.csv
+/database/data/discovery/events-sources.csv

@@ -31,3 +31,64 @@ window.addEventListener("pageshow", (event) => {
     resetRestoredModalState(document);
   }
 });
+
+function websocketUrl(path) {
+  const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${scheme}//${window.location.host}${path}`;
+}
+
+function refreshDiscoveryDashboard(scope) {
+  if (scope === "user" && window.location.pathname === "/dashboard/jobs/discovery") {
+    window.location.reload();
+    return;
+  }
+
+  if (
+    scope === "group" &&
+    document.querySelector('form[hx-put="/dashboard/group/integrations"]')
+  ) {
+    window.htmx.ajax("GET", "/dashboard/group/integrations", {
+      target: "#dashboard-content",
+      swap: "innerHTML",
+    });
+  }
+}
+
+function subscribeToDiscoveryUpdates(path, expectedScope) {
+  let retried = false;
+
+  function connect() {
+    const socket = new WebSocket(websocketUrl(path));
+    let opened = false;
+
+    socket.addEventListener("open", () => {
+      opened = true;
+    });
+    socket.addEventListener("message", (event) => {
+      try {
+        const notification = JSON.parse(event.data);
+        if (notification.scope === expectedScope) {
+          refreshDiscoveryDashboard(expectedScope);
+        }
+      } catch {
+        // Ignore malformed messages; polling remains available as a fallback.
+      }
+    });
+    socket.addEventListener("close", () => {
+      // A failed initial handshake means realtime is not enabled. Do not retry it.
+      if (opened && !retried) {
+        retried = true;
+        window.setTimeout(connect, 3_000);
+      }
+    });
+  }
+
+  connect();
+}
+
+if (window.location.pathname === "/dashboard/jobs/discovery") {
+  subscribeToDiscoveryUpdates("/ws/discovery/user", "user");
+}
+if (window.location.pathname.startsWith("/dashboard/group")) {
+  subscribeToDiscoveryUpdates("/ws/discovery/group", "group");
+}

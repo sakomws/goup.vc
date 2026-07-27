@@ -366,6 +366,10 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             post(dashboard::group::integrations::add_source),
         )
         .route(
+            "/integrations/sources/import",
+            post(dashboard::group::integrations::add_sources),
+        )
+        .route(
             "/integrations/sources/{source_id}",
             delete(dashboard::group::integrations::delete_source),
         )

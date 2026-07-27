@@ -6,6 +6,7 @@ use axum::{
     http::StatusCode,
     response::{Html, IntoResponse},
 };
+use axum_messages::Messages;
 use garde::Validate;
 use serde::Deserialize;
 use tracing::instrument;
@@ -17,11 +18,13 @@ use crate::{
         error::HandlerError,
         extractors::{CurrentUser, SelectedAllianceId, SelectedGroupId, ValidatedForm},
     },
-    integrations::you_com::validate_source_url,
+    integrations::you_com::{parse_source_urls, validate_source_url},
     services::event_discovery::ManualEventDiscovery,
     templates::dashboard::group::integrations::Page,
     types::permissions::GroupPermission,
 };
+
+const MAX_DISCOVERY_SOURCE_IMPORT: usize = 1_000;
 
 /// Displays source URLs, settings, and the latest ingestion result.
 #[instrument(skip_all, err)]
@@ -96,6 +99,38 @@ pub(crate) async fn add_source(
     validate_source_url(input.url.trim()).map_err(HandlerError::from)?;
     db.add_group_event_integration_source(group_id, input.url.trim())
         .await?;
+    Ok(Html(
+        prepare_page(&db, alliance_id, group_id, user.user_id)
+            .await?
+            .render()?,
+    ))
+}
+
+/// Adds multiple validated source URLs to the selected group.
+#[instrument(skip_all, err)]
+pub(crate) async fn add_sources(
+    messages: Messages,
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    ValidatedForm(input): ValidatedForm<SourceBatchInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let parsed = parse_source_urls(&input.urls, MAX_DISCOVERY_SOURCE_IMPORT);
+    let submitted_count = parsed.urls.len();
+    let urls: Vec<String> = parsed
+        .urls
+        .into_iter()
+        .filter(|url| validate_source_url(url).is_ok())
+        .collect();
+    let invalid_count = submitted_count - urls.len();
+    let added = db.add_group_event_integration_sources(group_id, &urls).await?;
+    let duplicate_count = parsed.duplicate_count + urls.len().saturating_sub(added);
+    messages.success(format!(
+        "Imported {added} source URL(s); skipped {duplicate_count} duplicate(s), \
+         {invalid_count} invalid URL(s), and {} above the 1,000 URL limit.",
+        parsed.over_limit_count
+    ));
     Ok(Html(
         prepare_page(&db, alliance_id, group_id, user.user_id)
             .await?
@@ -191,6 +226,12 @@ pub(crate) struct SettingsInput {
 pub(crate) struct SourceInput {
     #[garde(skip)]
     url: String,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub(crate) struct SourceBatchInput {
+    #[garde(skip)]
+    urls: String,
 }
 
 fn validate_settings(input: &SettingsInput) -> Result<(), HandlerError> {
