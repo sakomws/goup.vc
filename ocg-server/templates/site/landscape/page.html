@@ -2,21 +2,25 @@
 {% import "macros/pagination.html" as pagination -%}
 
 {% block jumbotron -%}
-  <section class="container mx-auto max-w-7xl px-4 pt-10 pb-6 sm:px-6 lg:px-8 lg:pt-16 lg:pb-8">
-    <div class="relative overflow-hidden rounded-[2.25rem] border border-stone-200 bg-white/95 p-6 shadow-xl shadow-stone-200/60 backdrop-blur sm:p-8 lg:p-10">
-      <div class="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-linear-to-l from-stone-50 to-transparent">
-      </div>
-      <div class="relative max-w-4xl">
-        <p class="mb-4 inline-flex rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-stone-700">
-          Landscape
-        </p>
-        <h1 class="mb-4 text-balance text-4xl font-black tracking-[-0.045em] text-stone-950 sm:text-5xl lg:text-6xl">
-          Ecosystem landscape
-        </h1>
-        <p class="max-w-2xl text-base/7 font-medium text-stone-600">
-          Browse alliance startups, accelerators, GitHub projects, partner communities, investors, podcast leads, tools, and community-built products.
-        </p>
-      </div>
+  <section class="relative isolate overflow-hidden bg-[#1A1510]">
+    {# Background hairlines -#}
+    <div class="pointer-events-none absolute inset-0 opacity-[0.06]"
+         style="background-image: repeating-linear-gradient(115deg, transparent 0, transparent 78px, #ffffff 78px, #ffffff 79px);">
+    </div>
+    {# End background hairlines -#}
+
+    <div class="relative mx-auto max-w-7xl px-4 pt-10 pb-10 sm:px-6 lg:px-8 lg:pt-12 lg:pb-12">
+      <p class="mb-4 inline-flex rounded-full border border-white/20 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.28em] text-white/60">
+        Landscape
+      </p>
+
+      <h1 class="font-amethysta max-w-3xl text-balance text-4xl font-bold leading-[0.98] text-[#FAF5EE] sm:text-5xl lg:text-6xl">
+        Ecosystem landscape
+      </h1>
+
+      <p class="font-metrophobic mt-4 max-w-xl text-balance text-base leading-[1.65] text-white/65 lg:text-lg">
+        Browse alliance startups, accelerators, GitHub projects, partner communities, investors, podcast leads, tools, and community-built products.
+      </p>
     </div>
   </section>
 {% endblock jumbotron -%}

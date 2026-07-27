@@ -1,0 +1,36 @@
+{# Logo media: the logo image, or a warm initials avatar when no logo exists. -#}
+{% macro logo_media(entry) -%}
+  <div class="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ring-1 ring-inset ring-[#eadcc9]">
+    {% if let Some(logo_url) = &entry.logo_url -%}
+      <img src="{{ logo_url }}"
+           alt="{{ entry.name }} logo"
+           class="h-full w-full object-contain"
+           loading="lazy" />
+    {% else -%}
+      <span class="flex size-full items-center justify-center rounded-2xl bg-[#c07a4b] text-sm font-semibold uppercase tracking-wide text-white">{{ entry.name|initials }}</span>
+    {% endif -%}
+  </div>
+  <span class="line-clamp-1 w-full text-xs font-semibold text-[#3a2f25]">{{ entry.name }}</span>
+{%- endmacro %}
+
+{# Logo tile: rounded square, warm cream, soft border, no shadow. Links out when a URL exists. -#}
+{% macro logo_tile(entry) -%}
+  {% let tile_class = "logo-tile group flex h-28 w-40 shrink-0 flex-col items-center justify-center gap-3 rounded-2xl border border-[#eadcc9] bg-[#fffaf5] p-3 text-center transition hover:-translate-y-0.5 hover:border-[#c9b291] hover:bg-white" -%}
+  {% if let Some(url) = &entry.website_url -%}
+    <a class="{{ tile_class }}"
+       href="{{ url }}"
+       target="_blank"
+       rel="noopener noreferrer"
+       title="{{ entry.name }}"
+       hx-boost="false">{% call logo_media(entry) %}{% endcall %}</a>
+  {% else if let Some(url) = &entry.github_url -%}
+    <a class="{{ tile_class }}"
+       href="{{ url }}"
+       target="_blank"
+       rel="noopener noreferrer"
+       title="{{ entry.name }}"
+       hx-boost="false">{% call logo_media(entry) %}{% endcall %}</a>
+  {% else -%}
+    <div class="{{ tile_class }}" title="{{ entry.name }}">{% call logo_media(entry) %}{% endcall %}</div>
+  {% endif -%}
+{%- endmacro %}
