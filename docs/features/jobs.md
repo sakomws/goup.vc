@@ -57,6 +57,18 @@ Group organizers post jobs through the dashboard at `/dashboard/alliance/:allian
 
 A `ManualJobDiscovery` handle is injected into dashboard handlers so authorized users can trigger an immediate discovery run without waiting for the next scheduled cycle.
 
+### Importing discovery sources
+
+The discovery dashboard accepts up to 1,000 source URLs at a time. Paste one URL per
+line or a comma-separated list; entries without a scheme are normalized to
+`https://`. Duplicate URLs in an import are ignored and only HTTP(S) sources
+accepted by the existing source validation are stored.
+
+The editable enterprise-careers reference catalog and its provenance are in
+[`database/data/discovery/`](../../database/data/discovery/). Catalog coverage
+only identifies domains to search; it does not guarantee that a run finds or
+creates a job draft.
+
 ### Public jobs board
 
 The `/jobs` page is handled by `ocg-server/src/handlers/site/jobs.rs`. It queries `DBJobs::get_jobs` and renders a paginated list of active listings.

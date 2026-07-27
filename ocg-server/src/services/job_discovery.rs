@@ -19,6 +19,7 @@ use crate::{
         job_page::JobPageClient,
         you_com::{SearchResult, YouComClient, source_search_domain},
     },
+    services::realtime::{DiscoveryCompletion, DiscoveryRealtime, DiscoveryStatus, configured},
     types::jobs::JobInput,
 };
 
@@ -39,8 +40,9 @@ impl ManualJobDiscovery {
     pub(crate) fn spawn_user_run(&self, user_id: Uuid) {
         let cfg = self.cfg.clone();
         let db = self.db.clone();
+        let realtime = configured();
         tokio::spawn(async move {
-            if let Err(err) = run_user(cfg, db, user_id).await {
+            if let Err(err) = run_user(cfg, db, user_id, realtime).await {
                 error!(%err, %user_id, "manual You.com job discovery failed");
             }
         });
@@ -51,6 +53,7 @@ impl ManualJobDiscovery {
 pub(crate) fn start(
     cfg: YouComConfig,
     db: Arc<PgDB>,
+    realtime: Option<DiscoveryRealtime>,
     tasks: &TaskTracker,
     cancel: &CancellationToken,
 ) {
@@ -73,7 +76,7 @@ pub(crate) fn start(
                     () = sleep(delay_until_next_run(timezone, cfg.schedule_hour)) => {},
                     () = cancel.cancelled() => break,
                 }
-                if let Err(err) = ingest_enabled(&db, &client).await {
+                if let Err(err) = ingest_enabled(&db, &client, realtime.clone()).await {
                     error!(%err, "scheduled You.com job discovery failed");
                 }
             }
@@ -81,25 +84,39 @@ pub(crate) fn start(
     });
 }
 
-pub(crate) async fn run_user(cfg: YouComConfig, db: Arc<PgDB>, user_id: Uuid) -> Result<()> {
+pub(crate) async fn run_user(
+    cfg: YouComConfig,
+    db: Arc<PgDB>,
+    user_id: Uuid,
+    realtime: Option<DiscoveryRealtime>,
+) -> Result<()> {
     anyhow::ensure!(cfg.enabled, "You.com job discovery is disabled");
     let enabled: bool = db.fetch_scalar_one(
         "select exists(select 1 from jobs_discovery_integration where user_id = $1 and enabled)",
         &[&user_id],
     ).await?;
     anyhow::ensure!(enabled, "job discovery is not enabled");
-    ingest_users(&db, &YouComClient::new(&cfg)?, &[user_id]).await
+    ingest_users(&db, &YouComClient::new(&cfg)?, &[user_id], realtime).await
 }
 
-async fn ingest_enabled(db: &PgDB, client: &YouComClient) -> Result<()> {
+async fn ingest_enabled(
+    db: &PgDB,
+    client: &YouComClient,
+    realtime: Option<DiscoveryRealtime>,
+) -> Result<()> {
     let users: Vec<Uuid> = db.fetch_scalar_one(
         "select coalesce(array_agg(user_id), '{}'::uuid[]) from jobs_discovery_integration where enabled",
         &[],
     ).await?;
-    ingest_users(db, client, &users).await
+    ingest_users(db, client, &users, realtime).await
 }
 
-async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Result<()> {
+async fn ingest_users(
+    db: &PgDB,
+    client: &YouComClient,
+    users: &[Uuid],
+    realtime: Option<DiscoveryRealtime>,
+) -> Result<()> {
     for user_id in users {
         db.execute(
             "insert into jobs_discovery_run (user_id, status) values ($1, 'running')",
@@ -211,6 +228,16 @@ async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Resul
                  where user_id = $1 and status = 'running' order by started_at desc limit 1)",
                 &[user_id, &discovered, &created],
             ).await?;
+            if let Some(realtime) = &realtime {
+                realtime
+                    .publish(DiscoveryCompletion::User {
+                        user_id: *user_id,
+                        status: DiscoveryStatus::Succeeded,
+                        discovered_count: discovered,
+                        created_count: created,
+                    })
+                    .await;
+            }
             info!(%user_id, discovered, created, "published discovered jobs");
         }
         Result::<()>::Ok(())
@@ -223,6 +250,16 @@ async fn ingest_users(db: &PgDB, client: &YouComClient, users: &[Uuid]) -> Resul
                  where user_id = $1 and status = 'running' order by started_at desc limit 1)",
                 &[user_id, &err.to_string()],
             ).await?;
+            if let Some(realtime) = &realtime {
+                realtime
+                    .publish(DiscoveryCompletion::User {
+                        user_id: *user_id,
+                        status: DiscoveryStatus::Failed,
+                        discovered_count: 0,
+                        created_count: 0,
+                    })
+                    .await;
+            }
         }
     }
     outcome

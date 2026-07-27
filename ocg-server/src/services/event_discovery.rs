@@ -20,6 +20,7 @@ use crate::{
             DiscoveredEvent, SearchResult, YouComClient, source_search_domain, unique_city_results,
         },
     },
+    services::realtime::{DiscoveryCompletion, DiscoveryRealtime, DiscoveryStatus, configured},
 };
 
 const MAX_LIVECRAWL_HTML_BYTES: usize = 1_000_000;
@@ -41,8 +42,9 @@ impl ManualEventDiscovery {
     pub(crate) fn spawn_group_run(&self, group_id: Uuid) {
         let cfg = self.cfg.clone();
         let db = self.db.clone();
+        let realtime = configured();
         tokio::spawn(async move {
-            if let Err(err) = run_group(cfg, db, group_id).await {
+            if let Err(err) = run_group(cfg, db, group_id, realtime).await {
                 error!(%err, %group_id, "manual You.com event discovery failed");
             }
         });
@@ -58,6 +60,7 @@ impl ManualEventDiscovery {
 pub(crate) fn start(
     cfg: YouComConfig,
     db: std::sync::Arc<PgDB>,
+    realtime: Option<DiscoveryRealtime>,
     task_tracker: &TaskTracker,
     cancellation_token: &CancellationToken,
 ) {
@@ -90,7 +93,7 @@ pub(crate) fn start(
                     () = cancellation_token.cancelled() => break,
                 }
 
-                if let Err(err) = ingest_configured_sources(&db, &client).await {
+                if let Err(err) = ingest_configured_sources(&db, &client, realtime.clone()).await {
                     error!(%err, "You.com Baku event discovery failed");
                 }
             }
@@ -103,6 +106,7 @@ pub(crate) async fn run_group(
     cfg: YouComConfig,
     db: std::sync::Arc<PgDB>,
     group_id: Uuid,
+    realtime: Option<DiscoveryRealtime>,
 ) -> anyhow::Result<()> {
     anyhow::ensure!(cfg.enabled, "You.com event discovery is disabled");
     let integration_enabled: bool = db
@@ -119,7 +123,7 @@ pub(crate) async fn run_group(
         "event discovery is not enabled for this group"
     );
     let client = YouComClient::new(&cfg)?;
-    ingest_sources(&db, &client, &[group_id]).await
+    ingest_sources(&db, &client, &[group_id], realtime).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -131,7 +135,11 @@ struct Source {
     url: String,
 }
 
-async fn ingest_configured_sources(db: &PgDB, client: &YouComClient) -> anyhow::Result<()> {
+async fn ingest_configured_sources(
+    db: &PgDB,
+    client: &YouComClient,
+    realtime: Option<DiscoveryRealtime>,
+) -> anyhow::Result<()> {
     let run_group_ids: Vec<Uuid> = db
         .fetch_scalar_one(
             "select coalesce(array_agg(group_id), '{}'::uuid[])
@@ -139,7 +147,7 @@ async fn ingest_configured_sources(db: &PgDB, client: &YouComClient) -> anyhow::
             &[],
         )
         .await?;
-    ingest_sources(db, client, &run_group_ids).await
+    ingest_sources(db, client, &run_group_ids, realtime).await
 }
 
 /// Ingests sources and records runs for the supplied enabled groups.
@@ -147,6 +155,7 @@ async fn ingest_sources(
     db: &PgDB,
     client: &YouComClient,
     run_group_ids: &[Uuid],
+    realtime: Option<DiscoveryRealtime>,
 ) -> anyhow::Result<()> {
     for group_id in run_group_ids {
         db.execute(
@@ -307,6 +316,20 @@ async fn ingest_sources(
                 .await?
             }
         };
+        if let Some(realtime) = &realtime {
+            let (status, discovered_count, created_count) = match &result {
+                Ok(()) => (DiscoveryStatus::Succeeded, discovered_count, created_count),
+                Err(_) => (DiscoveryStatus::Failed, 0, 0),
+            };
+            realtime
+                .publish(DiscoveryCompletion::Group {
+                    group_id: *group_id,
+                    status,
+                    discovered_count,
+                    created_count,
+                })
+                .await;
+        }
     }
     result?;
     Ok(())

@@ -19,7 +19,7 @@ use crate::{
         error::HandlerError,
         extractors::{CurrentUser, ValidatedForm},
     },
-    integrations::you_com::validate_source_url,
+    integrations::you_com::{parse_source_urls, validate_source_url},
     router::serde_qs_config,
     services::job_discovery::ManualJobDiscovery,
     services::notifications::{DynNotificationsManager, NewNotification, NotificationKind},
@@ -45,6 +45,7 @@ mod tests;
 const DASHBOARD_JOBS_URL: &str = "/dashboard/jobs";
 const DASHBOARD_MOCK_INTERVIEWS_URL: &str = "/dashboard/jobs/mock-interviews";
 const DASHBOARD_DISCOVERY_URL: &str = "/dashboard/jobs/discovery";
+const MAX_DISCOVERY_SOURCE_IMPORT: usize = 1_000;
 
 #[derive(Debug, Deserialize, Validate)]
 pub(crate) struct DiscoverySettingsInput {
@@ -57,6 +58,12 @@ pub(crate) struct DiscoverySettingsInput {
 pub(crate) struct DiscoverySourceInput {
     #[garde(skip)]
     url: String,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub(crate) struct DiscoverySourceBatchInput {
+    #[garde(skip)]
+    urls: String,
 }
 
 /// Render the jobs dashboard.
@@ -188,6 +195,35 @@ pub(crate) async fn add_discovery_source(
     validate_source_url(input.url.trim()).map_err(HandlerError::from)?;
     db.add_job_discovery_source(user.user_id, input.url.trim()).await?;
     messages.success("Discovery source added.");
+    Ok((
+        StatusCode::SEE_OTHER,
+        [("Location", DASHBOARD_DISCOVERY_URL)],
+    ))
+}
+
+/// Add multiple source URLs, retaining valid entries when an import has invalid rows.
+#[instrument(skip_all, err)]
+pub(crate) async fn add_discovery_sources(
+    messages: Messages,
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    ValidatedForm(input): ValidatedForm<DiscoverySourceBatchInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let parsed = parse_source_urls(&input.urls, MAX_DISCOVERY_SOURCE_IMPORT);
+    let submitted_count = parsed.urls.len();
+    let valid_urls: Vec<String> = parsed
+        .urls
+        .into_iter()
+        .filter(|url| validate_source_url(url).is_ok())
+        .collect();
+    let invalid_count = submitted_count - valid_urls.len();
+    let added = db.add_job_discovery_sources(user.user_id, &valid_urls).await?;
+    let duplicate_count = parsed.duplicate_count + valid_urls.len().saturating_sub(added);
+    messages.success(format!(
+        "Imported {added} source URL(s); skipped {duplicate_count} duplicate(s), \
+         {invalid_count} invalid URL(s), and {} above the 1,000 URL limit.",
+        parsed.over_limit_count
+    ));
     Ok((
         StatusCode::SEE_OTHER,
         [("Location", DASHBOARD_DISCOVERY_URL)],

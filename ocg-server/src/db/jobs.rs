@@ -61,6 +61,8 @@ pub(crate) trait DBJobs {
     async fn update_job_discovery(&self, user_id: Uuid, enabled: bool) -> Result<()>;
     /// Add a source URL owned by the current user.
     async fn add_job_discovery_source(&self, user_id: Uuid, url: &str) -> Result<Uuid>;
+    /// Add source URLs owned by the current user.
+    async fn add_job_discovery_sources(&self, user_id: Uuid, urls: &[String]) -> Result<usize>;
     /// Delete a source URL and every job discovered from it.
     async fn delete_job_discovery_source(&self, user_id: Uuid, source_id: Uuid) -> Result<()>;
     /// Publishes a pending discovered job.
@@ -213,6 +215,25 @@ where
             &[&user_id, &url],
         )
         .await
+    }
+
+    async fn add_job_discovery_sources(&self, user_id: Uuid, urls: &[String]) -> Result<usize> {
+        if urls.is_empty() {
+            return Ok(0);
+        }
+        let added: i64 = self
+            .fetch_scalar_one(
+                "with inserted as (
+                    insert into jobs_discovery_source (user_id, url)
+                    select $1, unnest($2::text[])
+                    on conflict (user_id, url) do update set enabled = true, updated_at = now()
+                    where not jobs_discovery_source.enabled
+                    returning 1
+                 ) select count(*) from inserted",
+                &[&user_id, &urls],
+            )
+            .await?;
+        Ok(added as usize)
     }
 
     async fn delete_job_discovery_source(&self, user_id: Uuid, source_id: Uuid) -> Result<()> {

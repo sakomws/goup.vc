@@ -32,6 +32,8 @@ pub(crate) mod images;
 pub(crate) mod meetings;
 /// Payments handlers.
 pub(crate) mod payments;
+/// Realtime WebSocket handlers.
+pub(crate) mod realtime;
 /// Global site handlers.
 pub(crate) mod site;
 /// Shared tests helpers for handlers modules.

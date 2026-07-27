@@ -157,6 +157,47 @@ pub(crate) fn validate_source_url(url: &str) -> Result<()> {
     source_search_domain(url).map(|_| ())
 }
 
+/// URLs and omitted entries from a dashboard source import.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct SourceUrlImport {
+    pub urls: Vec<String>,
+    pub duplicate_count: usize,
+    pub over_limit_count: usize,
+}
+
+/// Parses newline- or comma-delimited source URLs for dashboard imports.
+pub(crate) fn parse_source_urls(input: &str, limit: usize) -> SourceUrlImport {
+    let mut urls = Vec::new();
+    let mut seen = HashSet::new();
+    let mut duplicate_count = 0;
+    let mut over_limit_count = 0;
+    for raw_url in input.split(['\n', ',']) {
+        let url = raw_url.trim();
+        if url.is_empty() {
+            continue;
+        }
+        let url = if url.contains("://") {
+            url.to_owned()
+        } else {
+            format!("https://{url}")
+        };
+        if !seen.insert(url.to_ascii_lowercase()) {
+            duplicate_count += 1;
+            continue;
+        }
+        if urls.len() == limit {
+            over_limit_count += 1;
+            continue;
+        }
+        urls.push(url);
+    }
+    SourceUrlImport {
+        urls,
+        duplicate_count,
+        over_limit_count,
+    }
+}
+
 /// Returns the hostname suitable for a You.com `site:` search operator.
 ///
 /// Dashboard sources are full URLs, while `site:` accepts only a domain.
@@ -215,6 +256,35 @@ mod tests {
                 .unwrap(),
             "careers.example.com"
         );
+    }
+
+    #[test]
+    fn parses_and_normalizes_batch_source_urls() {
+        assert_eq!(
+            parse_source_urls(
+                "careers.example.com\nhttps://jobs.example.com, careers.example.com",
+                10
+            ),
+            SourceUrlImport {
+                urls: vec![
+                    "https://careers.example.com".into(),
+                    "https://jobs.example.com".into()
+                ],
+                duplicate_count: 1,
+                over_limit_count: 0,
+            }
+        );
+    }
+
+    #[test]
+    fn tracks_urls_excluded_by_the_import_limit() {
+        let input = (0..1_001)
+            .map(|index| format!("source-{index}.example"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let import = parse_source_urls(&input, 1_000);
+        assert_eq!(import.urls.len(), 1_000);
+        assert_eq!(import.over_limit_count, 1);
     }
 
     #[test]

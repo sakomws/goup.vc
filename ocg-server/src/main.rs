@@ -10,6 +10,8 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use activity_tracker::ActivityTrackerDB;
 use anyhow::{Context, Result};
+use axum::{Extension, Router, middleware, routing::get};
+use axum_login::login_required;
 use clap::Parser;
 use deadpool_postgres::Runtime;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
@@ -34,8 +36,10 @@ use crate::{
         payments::{
             DynPaymentsManager, DynPaymentsProvider, PgPaymentsManager, build_payments_provider,
         },
+        realtime::{DiscoveryRealtime, configure as configure_discovery_realtime},
         recording_publishing::RecordingPublishingManager,
     },
+    types::permissions::GroupPermission,
 };
 
 /// Activity tracking.
@@ -106,12 +110,24 @@ async fn main() -> Result<()> {
     let background_tasks = BackgroundTasks::new();
     let db = setup_db(&cfg)?;
     let image_storage = setup_image_storage(&cfg, db.clone());
+    let discovery_realtime = DiscoveryRealtime::from_config(cfg.redis.as_ref());
+    configure_discovery_realtime(discovery_realtime.clone());
 
     // Configure background services that depend on the database
     start_meetings_workers(&cfg, db.clone(), &background_tasks);
     start_recording_publishing_workers(&cfg, &db, &background_tasks);
-    start_event_discovery_worker(&cfg, db.clone(), &background_tasks);
-    start_job_discovery_worker(&cfg, db.clone(), &background_tasks);
+    start_event_discovery_worker(
+        &cfg,
+        db.clone(),
+        discovery_realtime.clone(),
+        &background_tasks,
+    );
+    start_job_discovery_worker(
+        &cfg,
+        db.clone(),
+        discovery_realtime.clone(),
+        &background_tasks,
+    );
     let activity_tracker = setup_activity_tracker(db.clone(), &background_tasks);
     let notifications_manager = setup_notifications_manager(&cfg, db.clone(), &background_tasks)?;
     let payments_manager = setup_payments_manager(
@@ -133,6 +149,7 @@ async fn main() -> Result<()> {
         cfg.payments.clone(),
         payments_manager,
         notifications_manager,
+        discovery_realtime,
         &cfg.server,
     )
     .await?;
@@ -191,7 +208,12 @@ fn setup_image_storage(cfg: &Config, db: Arc<PgDB>) -> DynImageStorage {
 }
 
 /// Starts You.com discovery when its integration is configured and enabled.
-fn start_event_discovery_worker(cfg: &Config, db: Arc<PgDB>, background_tasks: &BackgroundTasks) {
+fn start_event_discovery_worker(
+    cfg: &Config,
+    db: Arc<PgDB>,
+    realtime: Option<DiscoveryRealtime>,
+    background_tasks: &BackgroundTasks,
+) {
     if let Some(you_com_cfg) = cfg
         .integrations
         .as_ref()
@@ -200,6 +222,7 @@ fn start_event_discovery_worker(cfg: &Config, db: Arc<PgDB>, background_tasks: &
         services::event_discovery::start(
             you_com_cfg,
             db,
+            realtime,
             &background_tasks.task_tracker,
             &background_tasks.cancellation_token,
         );
@@ -207,7 +230,12 @@ fn start_event_discovery_worker(cfg: &Config, db: Arc<PgDB>, background_tasks: &
 }
 
 /// Starts global job discovery with the same configured You.com account.
-fn start_job_discovery_worker(cfg: &Config, db: Arc<PgDB>, background_tasks: &BackgroundTasks) {
+fn start_job_discovery_worker(
+    cfg: &Config,
+    db: Arc<PgDB>,
+    realtime: Option<DiscoveryRealtime>,
+    background_tasks: &BackgroundTasks,
+) {
     if let Some(you_com_cfg) = cfg
         .integrations
         .as_ref()
@@ -216,6 +244,7 @@ fn start_job_discovery_worker(cfg: &Config, db: Arc<PgDB>, background_tasks: &Ba
         services::job_discovery::start(
             you_com_cfg,
             db,
+            realtime,
             &background_tasks.task_tracker,
             &background_tasks.cancellation_token,
         );
@@ -338,13 +367,14 @@ async fn run_server(
     payments_cfg: Option<PaymentsConfig>,
     payments_manager: DynPaymentsManager,
     notifications_manager: Arc<PgNotificationsManager>,
+    discovery_realtime: Option<DiscoveryRealtime>,
     server_cfg: &HttpServerConfig,
 ) -> Result<()> {
     // Build the router before binding the TCP listener
     let router = router::setup(
         activity_tracker,
         db.clone(),
-        Some(db),
+        Some(db.clone()),
         image_storage,
         you_com_cfg,
         meetings_cfg,
@@ -354,6 +384,7 @@ async fn run_server(
         server_cfg,
     )
     .await?;
+    let router = with_realtime_routes(router, db, server_cfg, discovery_realtime)?;
     let listener = TcpListener::bind(&server_cfg.addr).await?;
 
     // Serve requests until a graceful shutdown signal arrives
@@ -371,6 +402,48 @@ async fn run_server(
     info!("server stopped");
 
     Ok(())
+}
+
+/// Adds optional, separately authenticated WebSocket endpoints for discovery updates.
+fn with_realtime_routes(
+    router: Router,
+    db: Arc<PgDB>,
+    server_cfg: &HttpServerConfig,
+    realtime: Option<DiscoveryRealtime>,
+) -> Result<Router> {
+    let Some(realtime) = realtime else {
+        return Ok(router);
+    };
+    let db: DynDB = db;
+    let auth_layer = auth::setup_layer(server_cfg, db.clone())?;
+    let login_required = login_required!(
+        auth::AuthnBackend,
+        login_url = crate::handlers::auth::LOG_IN_URL,
+        redirect_field = "next_url"
+    );
+
+    let user_realtime_router = Router::new()
+        .route(
+            "/ws/discovery/user",
+            get(crate::handlers::realtime::user_discovery),
+        )
+        .route_layer(login_required.clone())
+        .layer(Extension(realtime.clone()))
+        .layer(auth_layer.clone());
+    let group_realtime_router = Router::new()
+        .route(
+            "/ws/discovery/group",
+            get(crate::handlers::realtime::group_discovery),
+        )
+        .route_layer(middleware::from_fn_with_state(
+            (db, GroupPermission::Read),
+            crate::handlers::auth::user_has_selected_group_permission,
+        ))
+        .route_layer(login_required)
+        .layer(Extension(realtime))
+        .layer(auth_layer);
+
+    Ok(user_realtime_router.merge(group_realtime_router).merge(router))
 }
 
 /// Returns a future that completes when the program receives a shutdown signal.

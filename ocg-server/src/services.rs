@@ -16,5 +16,7 @@ pub(crate) mod notifications;
 /// Payments service module.
 pub(crate) mod payments;
 
+/// Redis Pub/Sub-backed realtime delivery.
+pub(crate) mod realtime;
 /// Recording publishing service module.
 pub(crate) mod recording_publishing;

@@ -27,6 +27,11 @@
         <input class="input-primary flex-1" type="url" name="url" placeholder="https://careers.example.com" required>
         <button class="button-primary">Add source</button>
       </form>
+      <form class="mt-3 space-y-2" action="/dashboard/jobs/discovery/sources/import" method="post">
+        <label class="text-sm text-stone-600" for="job-discovery-source-import">Import up to 1,000 URLs (one per line or comma-separated)</label>
+        <textarea class="input-primary w-full" id="job-discovery-source-import" name="urls" rows="5" placeholder="careers.example.com&#10;https://jobs.example.com"></textarea>
+        <button class="button-secondary">Import sources</button>
+      </form>
       <ul class="mt-4 space-y-2">{% for source in discovery.sources %}
         <li class="flex items-center justify-between gap-3 border rounded p-3">
           <a class="truncate underline" href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.url }}</a>
