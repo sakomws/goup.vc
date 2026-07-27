@@ -323,6 +323,7 @@ mod tests {
                 url: "https://x.test".into(),
                 description: None,
                 snippets: vec![],
+                contents: None,
             })
             .is_none()
         );
@@ -334,6 +335,7 @@ mod tests {
             url: "https://x.test/jobs/1".into(),
             description: Some("Build reliable systems.".into()),
             snippets: vec![],
+            contents: None,
         })
         .unwrap();
         assert_eq!(job.company_name, "Acme");
@@ -346,6 +348,7 @@ mod tests {
             url: "https://x.test/jobs/1".into(),
             description: None,
             snippets: vec!["Build reliable systems.".into()],
+            contents: None,
         })
         .unwrap();
         assert_eq!(job.summary, "Build reliable systems.");
@@ -358,6 +361,7 @@ mod tests {
             url: "https://careers.bcg.com/search-results".into(),
             description: Some("Have questions about careers at BCG?".into()),
             snippets: vec![],
+            contents: None,
         });
         assert!(job.is_none());
     }

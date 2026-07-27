@@ -84,6 +84,23 @@ Keyed by provider name (`google`). Each entry has:
 | `redirect_uri` | Callback URL |
 | `scopes` | Requested scopes |
 
+## You.com event discovery (`integrations.you_com`)
+
+| Key | Env var | Default | Description |
+|-----|---------|---------|-------------|
+| `enabled` | `OCG_INTEGRATIONS__YOU_COM__ENABLED` | `false` | Enable scheduled event discovery |
+| `api_key` | `OCG_INTEGRATIONS__YOU_COM__API_KEY` | — | You.com Search API key |
+| `search_url` | `OCG_INTEGRATIONS__YOU_COM__SEARCH_URL` | `https://api.you.com/v1/search` | You.com Search API endpoint |
+| `livecrawl` | `OCG_INTEGRATIONS__YOU_COM__LIVECRAWL` | `true` | Request crawled HTML from You.com for web results |
+| `livecrawl_count` | `OCG_INTEGRATIONS__YOU_COM__LIVECRAWL_COUNT` | `10` | Maximum web results crawled per discovery query (1–10) |
+| `livecrawl_timeout_secs` | `OCG_INTEGRATIONS__YOU_COM__LIVECRAWL_TIMEOUT_SECS` | `10` | Per-result crawl timeout in seconds (1–60) |
+| `schedule_timezone` | `OCG_INTEGRATIONS__YOU_COM__SCHEDULE_TIMEZONE` | `Asia/Baku` | IANA timezone for the daily discovery run |
+| `schedule_hour` | `OCG_INTEGRATIONS__YOU_COM__SCHEDULE_HOUR` | `9` | Hour of the daily discovery run (0–23) |
+
+Livecrawl is billed per crawled result and can add latency. It is used only for
+web results; when no crawled HTML is available, event discovery falls back to
+the source page fetch and then to strict RFC3339 dates from search snippets.
+
 ## Meetings (`meetings`) — optional
 
 | Key | Description |

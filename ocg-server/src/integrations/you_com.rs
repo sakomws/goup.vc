@@ -39,6 +39,9 @@ impl DiscoveredEvent {
 pub(crate) struct YouComClient {
     api_key: String,
     http: Client,
+    livecrawl: bool,
+    livecrawl_count: u8,
+    livecrawl_timeout_secs: u8,
     search_url: String,
 }
 
@@ -48,6 +51,9 @@ impl YouComClient {
         Ok(Self {
             api_key: cfg.api_key.clone(),
             http,
+            livecrawl: cfg.livecrawl,
+            livecrawl_count: cfg.livecrawl_count,
+            livecrawl_timeout_secs: cfg.livecrawl_timeout_secs,
             search_url: cfg.search_url.clone(),
         })
     }
@@ -56,7 +62,18 @@ impl YouComClient {
     pub(crate) async fn search(&self, query: &str) -> Result<Vec<SearchResult>> {
         let mut search_url =
             reqwest::Url::parse(&self.search_url).context("invalid You.com search URL")?;
-        search_url.query_pairs_mut().append_pair("query", query);
+        {
+            let mut query_pairs = search_url.query_pairs_mut();
+            query_pairs
+                .append_pair("query", query)
+                .append_pair("count", &self.livecrawl_count.to_string());
+            if self.livecrawl {
+                query_pairs
+                    .append_pair("livecrawl", "web")
+                    .append_pair("livecrawl_formats", "html")
+                    .append_pair("crawl_timeout", &self.livecrawl_timeout_secs.to_string());
+            }
+        }
         let response = self
             .http
             .get(search_url)
@@ -83,6 +100,15 @@ pub(crate) struct SearchResult {
     pub description: Option<String>,
     #[serde(default)]
     pub snippets: Vec<String>,
+    #[serde(default)]
+    pub contents: Option<SearchResultContents>,
+}
+
+/// Content returned for a result when You.com livecrawl is enabled.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct SearchResultContents {
+    #[serde(default)]
+    pub html: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -157,6 +183,7 @@ mod tests {
             url: url.into(),
             description: description.map(str::to_owned),
             snippets: vec![],
+            contents: None,
         }
     }
 
@@ -208,7 +235,11 @@ mod tests {
         let payload: SearchResponse = serde_json::from_str(
             r#"{
                 "results": {
-                    "web": [{"title": "Baku meetup", "url": "https://example.test/web"}],
+                    "web": [{
+                        "title": "Baku meetup",
+                        "url": "https://example.test/web",
+                        "contents": {"html": "<script type=\"application/ld+json\">{}</script>"}
+                    }],
                     "news": [{"title": "Baku news", "url": "https://example.test/news"}]
                 }
             }"#,
@@ -217,5 +248,12 @@ mod tests {
 
         assert_eq!(payload.results.web.len(), 1);
         assert_eq!(payload.results.news.len(), 1);
+        assert_eq!(
+            payload.results.web[0]
+                .contents
+                .as_ref()
+                .and_then(|contents| contents.html.as_deref()),
+            Some(r#"<script type="application/ld+json">{}</script>"#)
+        );
     }
 }

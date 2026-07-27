@@ -15,12 +15,14 @@ use crate::{
     config::YouComConfig,
     db::{PgDB, PgExecutor, dashboard::group::DBDashboardGroup},
     integrations::{
-        event_page::{EventPageClient, validate_candidate_url},
+        event_page::{EventPageClient, extract_event_json_ld, validate_candidate_url},
         you_com::{
             DiscoveredEvent, SearchResult, YouComClient, source_search_domain, unique_city_results,
         },
     },
 };
+
+const MAX_LIVECRAWL_HTML_BYTES: usize = 1_000_000;
 
 /// Executes authorized, on-demand discovery runs from the dashboard.
 #[derive(Clone)]
@@ -195,12 +197,15 @@ async fn ingest_sources(
                 info!(%err, candidate_url = %result.url, source_url = %source.url, "skipped unsafe event discovery candidate");
                 continue;
             }
-            let event = match event_pages.fetch(&result.url, &source.url).await {
-                Ok(event) => event.or_else(|| parse_discovered_event(&result, &result.url)),
-                Err(err) => {
-                    info!(%err, candidate_url = %result.url, "could not enrich event discovery candidate");
-                    parse_discovered_event(&result, &result.url)
-                }
+            let event = match event_from_livecrawl(&result) {
+                Some(event) => Some(event),
+                None => match event_pages.fetch(&result.url, &source.url).await {
+                    Ok(event) => event.or_else(|| parse_discovered_event(&result, &result.url)),
+                    Err(err) => {
+                        info!(%err, candidate_url = %result.url, "could not enrich event discovery candidate");
+                        parse_discovered_event(&result, &result.url)
+                    }
+                },
             };
             if let Some(event) = event {
                 events.push(event);
@@ -305,6 +310,17 @@ async fn ingest_sources(
     }
     result?;
     Ok(())
+}
+
+/// Extract an event from bounded HTML returned by You.com livecrawl.
+fn event_from_livecrawl(result: &SearchResult) -> Option<DiscoveredEvent> {
+    result
+        .contents
+        .as_ref()?
+        .html
+        .as_deref()
+        .filter(|html| html.len() <= MAX_LIVECRAWL_HTML_BYTES)
+        .and_then(|html| extract_event_json_ld(html, &result.url))
 }
 
 /// Extract only events with an explicit RFC3339 date from the search response.
@@ -423,6 +439,7 @@ mod tests {
             url: "https://example.test/event".into(),
             description: Some("Join us next Thursday in Baku".into()),
             snippets: vec![],
+            contents: None,
         };
         assert!(parse_discovered_event(&result, "https://example.test").is_none());
     }
@@ -434,8 +451,46 @@ mod tests {
             url: "https://example.test/event".into(),
             description: Some("Starts 2099-07-21T12:00:00Z in Baku".into()),
             snippets: vec![],
+            contents: None,
         };
         let event = parse_discovered_event(&result, "https://example.test").unwrap();
         assert_eq!(event.title, "Baku Rust meetup");
+    }
+
+    #[test]
+    fn prefers_event_json_ld_from_livecrawl_content() {
+        let result = SearchResult {
+            title: "Search result title".into(),
+            url: "https://example.test/event".into(),
+            description: None,
+            snippets: vec![],
+            contents: Some(crate::integrations::you_com::SearchResultContents {
+                html: Some(
+                    r#"<script type="application/ld+json">
+                        {"@type":"Event","name":"Baku Rust meetup","startDate":"2099-07-21T12:00:00Z"}
+                    </script>"#
+                        .into(),
+                ),
+            }),
+        };
+
+        let event = event_from_livecrawl(&result).unwrap();
+        assert_eq!(event.title, "Baku Rust meetup");
+        assert_eq!(event.source_url, "https://example.test/event");
+    }
+
+    #[test]
+    fn rejects_oversized_livecrawl_content() {
+        let result = SearchResult {
+            title: "Search result title".into(),
+            url: "https://example.test/event".into(),
+            description: None,
+            snippets: vec![],
+            contents: Some(crate::integrations::you_com::SearchResultContents {
+                html: Some("x".repeat(MAX_LIVECRAWL_HTML_BYTES + 1)),
+            }),
+        };
+
+        assert!(event_from_livecrawl(&result).is_none());
     }
 }

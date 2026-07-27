@@ -133,6 +133,15 @@ pub(crate) struct YouComConfig {
     /// Search endpoint, allowing API-version changes without source changes.
     #[serde(default = "default_you_com_search_url")]
     pub search_url: String,
+    /// Request crawled HTML for web search results.
+    #[serde(default = "default_you_com_livecrawl")]
+    pub livecrawl: bool,
+    /// Maximum web results to crawl for each discovery query.
+    #[serde(default = "default_you_com_livecrawl_count")]
+    pub livecrawl_count: u8,
+    /// Maximum seconds You.com may spend crawling each result.
+    #[serde(default = "default_you_com_livecrawl_timeout_secs")]
+    pub livecrawl_timeout_secs: u8,
     /// IANA timezone used to schedule the daily discovery run.
     #[serde(default = "default_baku_timezone")]
     pub schedule_timezone: String,
@@ -152,6 +161,12 @@ impl YouComConfig {
         self.search_url
             .parse::<reqwest::Url>()
             .map_err(|err| anyhow::anyhow!("invalid integrations.you_com.search_url: {err}"))?;
+        if self.livecrawl_count == 0 || self.livecrawl_count > 10 {
+            bail!("integrations.you_com.livecrawl_count must be between 1 and 10");
+        }
+        if self.livecrawl_timeout_secs == 0 || self.livecrawl_timeout_secs > 60 {
+            bail!("integrations.you_com.livecrawl_timeout_secs must be between 1 and 60");
+        }
         self.schedule_timezone.parse::<chrono_tz::Tz>().map_err(|err| {
             anyhow::anyhow!("invalid integrations.you_com.schedule_timezone: {err}")
         })?;
@@ -161,6 +176,18 @@ impl YouComConfig {
 
 fn default_you_com_search_url() -> String {
     "https://api.you.com/v1/search".into()
+}
+
+const fn default_you_com_livecrawl() -> bool {
+    true
+}
+
+const fn default_you_com_livecrawl_count() -> u8 {
+    10
+}
+
+const fn default_you_com_livecrawl_timeout_secs() -> u8 {
+    10
 }
 
 fn default_baku_timezone() -> String {
