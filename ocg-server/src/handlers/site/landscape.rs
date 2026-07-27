@@ -54,10 +54,43 @@ pub(crate) async fn page(
         db.search_landscape_entries(&github_filters),
         db.get_site_settings()
     )?;
+    // In local development the landscape table is usually empty, which leaves
+    // the whole page blank. Fall back to mock data so the marquee, leaderboard,
+    // and directory are all reviewable while developing. Mocks only ever engage
+    // in debug builds, so production is unaffected regardless of what the
+    // database returns.
+    #[cfg(debug_assertions)]
+    let use_mocks = output.entries.is_empty() && logo_output.entries.is_empty();
+    #[cfg(not(debug_assertions))]
+    let use_mocks = false;
+
+    #[cfg(debug_assertions)]
+    let (logo_entries, entries, total) = if use_mocks {
+        let matching = dev_mocks::mock_entries(&filters);
+        let total = matching.len();
+        // Paginate like the database would, so the pager stays testable.
+        let entries = matching
+            .into_iter()
+            .skip(filters.offset.unwrap_or(0))
+            .take(filters.limit.unwrap_or(MAX_PAGINATION_LIMIT))
+            .collect();
+        // The marquee always shows the unfiltered set.
+        (dev_mocks::mock_entries(&LandscapeFilters::default()), entries, total)
+    } else {
+        (logo_output.entries, output.entries, output.total)
+    };
+    #[cfg(not(debug_assertions))]
+    let (logo_entries, entries, total) = (logo_output.entries, output.entries, output.total);
+
     let navigation_links =
-        NavigationLinks::from_filters(&filters, output.total, LANDSCAPE_URL, LANDSCAPE_URL)?;
+        NavigationLinks::from_filters(&filters, total, LANDSCAPE_URL, LANDSCAPE_URL)?;
+
     let github_leaderboard = if should_show_github_leaderboard(&filters) {
-        load_github_leaderboard(&github_output.entries, github_leaderboard_sort(&filters)).await
+        let sort = github_leaderboard_sort(&filters);
+        match mock_github_leaderboard(use_mocks, sort) {
+            Some(leaderboard) => leaderboard,
+            None => load_github_leaderboard(&github_output.entries, sort).await,
+        }
     } else {
         GitHubLeaderboard::default()
     };
@@ -69,9 +102,9 @@ pub(crate) async fn page(
         user: User::from_session(auth_session).await?,
         filters,
         github_leaderboard,
-        logo_entries: logo_output.entries,
-        entries: output.entries,
-        total: output.total,
+        logo_entries,
+        entries,
+        total,
         navigation_links,
     };
 
@@ -79,6 +112,21 @@ pub(crate) async fn page(
         extend_public_shared_cache_headers(&[])?,
         Html(template.render()?),
     ))
+}
+
+/// Returns a mock leaderboard when local development is running on mock data.
+/// Mocked runs must not call the live GitHub API: the mock repositories either
+/// do not exist upstream or would burn rate limit, and a failed lookup would
+/// hide the section entirely.
+#[cfg(debug_assertions)]
+fn mock_github_leaderboard(use_mocks: bool, sort: &'static str) -> Option<GitHubLeaderboard> {
+    use_mocks.then(|| dev_mocks::mock_github_leaderboard(sort))
+}
+
+/// Release builds never substitute mock leaderboard data.
+#[cfg(not(debug_assertions))]
+fn mock_github_leaderboard(_use_mocks: bool, _sort: &'static str) -> Option<GitHubLeaderboard> {
+    None
 }
 
 fn parse_filters(raw_query: &str) -> Result<LandscapeFilters, HandlerError> {
@@ -146,17 +194,36 @@ async fn load_github_leaderboard(
             entry: entry.clone(),
             repository: format!("{owner}/{repo}"),
             score: leaderboard_score(&metrics, sort),
+            share_pct: 0,
             metrics,
         });
     }
 
     sort_github_leaderboard(&mut leaderboard, sort);
     leaderboard.truncate(GITHUB_LEADERBOARD_DISPLAY_LIMIT);
+    apply_share_percentages(&mut leaderboard);
     GitHubLeaderboard {
         entries: leaderboard,
         attempted_count,
         unavailable_count,
         sort: sort.to_string(),
+    }
+}
+
+/// Scores each entry as a percentage of the highest score in the leaderboard,
+/// used to size the grading bar shown next to every project. Entries always
+/// keep a small visible minimum so low-scoring projects still render a bar.
+fn apply_share_percentages(leaderboard: &mut [GitHubProjectLeaderboardEntry]) {
+    const MIN_SHARE_PCT: u8 = 6;
+
+    let top_score = leaderboard.iter().map(|project| project.score).max().unwrap_or(0);
+    for project in &mut *leaderboard {
+        project.share_pct = if top_score > 0 {
+            let pct = project.score.saturating_mul(100) / top_score;
+            u8::try_from(pct).unwrap_or(100).clamp(MIN_SHARE_PCT, 100)
+        } else {
+            MIN_SHARE_PCT
+        };
     }
 }
 
@@ -262,6 +329,337 @@ impl From<GitHubRepositoryResponse> for GitHubRepositoryMetrics {
     }
 }
 
+/// Mock landscape data used only in local development, when the database has
+/// no landscape entries to show. Compiled out of release builds.
+#[cfg(debug_assertions)]
+mod dev_mocks {
+    use chrono::{Duration, Utc};
+    use uuid::Uuid;
+
+    use crate::{
+        templates::site::landscape::{
+            GitHubLeaderboard, GitHubProjectLeaderboardEntry, GitHubRepositoryMetrics,
+        },
+        types::landscape::{LandscapeAcceleratorProfile, LandscapeEntry, LandscapeFilters},
+    };
+
+    /// A mock landscape record, carrying the same fields production data does.
+    struct MockEntry {
+        name: &'static str,
+        kind: &'static str,
+        category: &'static str,
+        summary: &'static str,
+        tags: &'static [&'static str],
+        /// Repository path, for entries backed by a GitHub repository.
+        repository: Option<&'static str>,
+        /// Mock repository metrics as (stars, forks, open issues, watchers).
+        metrics: Option<(i64, i64, i64, i64)>,
+    }
+
+    /// Local-only landscape records covering every entry kind, so the marquee,
+    /// GitHub leaderboard, and directory cards all have realistic data.
+    const MOCK_ENTRIES: &[MockEntry] = &[
+        MockEntry {
+            name: "Zapcast",
+            kind: "startup",
+            category: "AutoTech",
+            summary: "An automotive parts marketplace connecting drivers with spare parts sellers through instant quote requests.",
+            tags: &["Marketplace", "Logistics"],
+            repository: None,
+            metrics: None,
+        },
+        MockEntry {
+            name: "CanYouHack",
+            kind: "startup",
+            category: "Cybersecurity",
+            summary: "Hosts capture-the-flag challenges that let users practice real offensive and defensive security skills in a safe environment.",
+            tags: &["Security", "Education"],
+            repository: None,
+            metrics: None,
+        },
+        MockEntry {
+            name: "Hands_on_ML_Azerbaijani",
+            kind: "github_project",
+            category: "ML",
+            summary: "Azerbaijani notes, summaries, and learning materials based on the book Hands-on Machine Learning.",
+            tags: &["Machine Learning", "Localization"],
+            repository: Some("Lala2398/Hands_on_ML_Azerbaijani"),
+            metrics: Some((62, 9, 0, 4)),
+        },
+        MockEntry {
+            name: "OzunOyren",
+            kind: "startup",
+            category: "EdTech",
+            summary: "An online learning platform focused on practical, competency-based education in technology, business, and professional skills.",
+            tags: &["Education", "Careers"],
+            repository: None,
+            metrics: None,
+        },
+        MockEntry {
+            name: "Bebras",
+            kind: "partner_community",
+            category: "EdTech",
+            summary: "An international challenge on informatics and computational thinking that introduces school students to problem solving through short, engaging tasks.",
+            tags: &["Community", "Students"],
+            repository: None,
+            metrics: None,
+        },
+        MockEntry {
+            name: "CheckOwners",
+            kind: "github_project",
+            category: "AI",
+            summary: "Derives CODEOWNERS from git history with confidence scoring, expertise decay detection, and bus factor analysis. Pure git, no LLMs.",
+            tags: &["Developer Tools", "CI"],
+            repository: Some("Turall/CheckOwners"),
+            metrics: Some((31, 4, 2, 3)),
+        },
+        MockEntry {
+            name: "Cuprice",
+            kind: "startup",
+            category: "AI",
+            summary: "AI native pricing infrastructure for founders and digital service providers, helping teams build and continuously improve pricing strategies.",
+            tags: &["Pricing", "SaaS"],
+            repository: None,
+            metrics: None,
+        },
+        MockEntry {
+            name: "FlatWhite",
+            kind: "startup",
+            category: "FoodTech",
+            summary: "Community-built coffee logging app for people who take their coffee seriously. Log and rate individual drinks and build a visual Coffee Passport.",
+            tags: &["Consumer", "Mobile"],
+            repository: None,
+            metrics: None,
+        },
+        MockEntry {
+            name: "Rastock AI",
+            kind: "startup",
+            category: "AI",
+            summary: "Automatically generates SEO-optimized titles, keywords, and descriptions for content and uploads them in bulk to stock platforms.",
+            tags: &["Automation", "SEO"],
+            repository: None,
+            metrics: None,
+        },
+        MockEntry {
+            name: "Opa-python-client",
+            kind: "github_project",
+            category: "Developer Tools",
+            summary: "A Python client for the Open Policy Agent REST API, covering policy management and document evaluation.",
+            tags: &["Python", "Policy"],
+            repository: Some("Turall/OPA-python-client"),
+            metrics: Some((65, 14, 0, 3)),
+        },
+        MockEntry {
+            name: "Roda Ledger",
+            kind: "github_project",
+            category: "FinTech",
+            summary: "A double-entry ledger service with a typed API for building accounting and balance tracking into products.",
+            tags: &["Ledger", "Accounting"],
+            repository: Some("tislib/roda-ledger"),
+            metrics: Some((16, 2, 1, 1)),
+        },
+        MockEntry {
+            name: "cache-house",
+            kind: "github_project",
+            category: "Developer Tools",
+            summary: "A caching layer with pluggable backends and a small, predictable API surface for Python services.",
+            tags: &["Caching", "Python"],
+            repository: Some("Turall/cache-house"),
+            metrics: Some((16, 1, 0, 2)),
+        },
+        MockEntry {
+            name: "fastapi-ldap",
+            kind: "github_project",
+            category: "Developer Tools",
+            summary: "LDAP authentication integration for FastAPI applications, with session handling and role mapping.",
+            tags: &["FastAPI", "Auth"],
+            repository: Some("Turall/fastapi-ldap"),
+            metrics: Some((15, 1, 0, 1)),
+        },
+        MockEntry {
+            name: "goup.vc",
+            kind: "github_project",
+            category: "Community",
+            summary: "The platform behind the GOUP alliance: events, groups, jobs, and this ecosystem landscape.",
+            tags: &["Rust", "Community"],
+            repository: Some("sakomws/goup.vc"),
+            metrics: Some((13, 3, 1, 1)),
+        },
+        MockEntry {
+            name: "DS Roadmap",
+            kind: "github_project",
+            category: "ML",
+            summary: "A structured data science learning roadmap with curated resources for each stage of the path.",
+            tags: &["Data Science", "Learning"],
+            repository: Some("AzizNadirov/ds-roadmap"),
+            metrics: Some((11, 1, 0, 1)),
+        },
+        MockEntry {
+            name: "ParVu - Parquet Viewer",
+            kind: "github_project",
+            category: "Data",
+            summary: "A desktop viewer for Parquet files with schema inspection and quick querying.",
+            tags: &["Parquet", "Desktop"],
+            repository: Some("AzizNadirov/ParVu"),
+            metrics: Some((10, 2, 2, 1)),
+        },
+        MockEntry {
+            name: "kubechronicle",
+            kind: "github_project",
+            category: "Infrastructure",
+            summary: "Tracks and narrates Kubernetes cluster change history so teams can see what shifted and when.",
+            tags: &["Kubernetes", "Observability"],
+            repository: Some("Turall/kubechronicle"),
+            metrics: Some((8, 1, 0, 0)),
+        },
+        MockEntry {
+            name: "GOUP Accelerator",
+            kind: "accelerator",
+            category: "Program",
+            summary: "A cohort-based program for alliance founders, pairing weekly build sessions with distribution and fundraising support.",
+            tags: &["Cohort", "Founders"],
+            repository: None,
+            metrics: None,
+        },
+        MockEntry {
+            name: "Open Technology",
+            kind: "partner_community",
+            category: "Community",
+            summary: "A partner community running open source meetups, workshops, and contribution drives across the region.",
+            tags: &["Open Source", "Meetups"],
+            repository: None,
+            metrics: None,
+        },
+        MockEntry {
+            name: "Alliance Ventures",
+            kind: "investor",
+            category: "Pre-seed",
+            summary: "An early-stage fund backing alliance founders at pre-seed, with a focus on developer tools and applied AI.",
+            tags: &["Pre-seed", "Fund"],
+            repository: None,
+            metrics: None,
+        },
+        MockEntry {
+            name: "Builders Podcast",
+            kind: "podcast_lead",
+            category: "Media",
+            summary: "A podcast lead covering founder stories from the alliance, recorded live at community events.",
+            tags: &["Podcast", "Stories"],
+            repository: None,
+            metrics: None,
+        },
+    ];
+
+    /// Builds mock landscape entries, honouring the kind and free-text filters
+    /// so the search controls remain testable against mock data.
+    pub(super) fn mock_entries(filters: &LandscapeFilters) -> Vec<LandscapeEntry> {
+        let now = Utc::now();
+        let query = filters.query.as_deref().map(str::to_lowercase);
+        let category = filters.category.as_deref().map(str::to_lowercase);
+
+        MOCK_ENTRIES
+            .iter()
+            .filter(|mock| filters.kind.as_deref().is_none_or(|kind| kind == mock.kind))
+            .filter(|mock| {
+                category.as_deref().is_none_or(|category| {
+                    mock.category.to_lowercase().contains(category)
+                })
+            })
+            .filter(|mock| {
+                query.as_deref().is_none_or(|query| {
+                    mock.name.to_lowercase().contains(query)
+                        || mock.summary.to_lowercase().contains(query)
+                        || mock.category.to_lowercase().contains(query)
+                        || mock.tags.iter().any(|tag| tag.to_lowercase().contains(query))
+                })
+            })
+            .map(|mock| to_landscape_entry(mock, now))
+            .collect()
+    }
+
+    /// Builds a mock GitHub leaderboard from the mock repositories, reusing the
+    /// production ranking so sorting behaves identically to a live run.
+    pub(super) fn mock_github_leaderboard(sort: &'static str) -> GitHubLeaderboard {
+        let now = Utc::now();
+        let mut leaderboard: Vec<GitHubProjectLeaderboardEntry> = MOCK_ENTRIES
+            .iter()
+            .enumerate()
+            .filter_map(|(index, mock)| {
+                let repository = mock.repository?;
+                let (stargazers_count, forks_count, open_issues_count, watchers_count) =
+                    mock.metrics?;
+                // Stagger update times so the "recently updated" sort is
+                // visibly different from the star and fork rankings.
+                let age = Duration::days(i64::try_from(index).unwrap_or(0));
+                let metrics = GitHubRepositoryMetrics {
+                    stargazers_count,
+                    forks_count,
+                    open_issues_count,
+                    watchers_count,
+                    updated_at: Some(now - age),
+                    pushed_at: Some(now - age),
+                };
+
+                Some(GitHubProjectLeaderboardEntry {
+                    entry: to_landscape_entry(mock, now),
+                    repository: repository.to_string(),
+                    score: super::leaderboard_score(&metrics, sort),
+                    share_pct: 0,
+                    metrics,
+                })
+            })
+            .collect();
+
+        let attempted_count = leaderboard.len();
+        super::sort_github_leaderboard(&mut leaderboard, sort);
+        leaderboard.truncate(super::GITHUB_LEADERBOARD_DISPLAY_LIMIT);
+        super::apply_share_percentages(&mut leaderboard);
+
+        GitHubLeaderboard {
+            entries: leaderboard,
+            attempted_count,
+            unavailable_count: 0,
+            sort: sort.to_string(),
+        }
+    }
+
+    /// Converts a mock record into the landscape entry the templates consume.
+    fn to_landscape_entry(mock: &MockEntry, now: chrono::DateTime<Utc>) -> LandscapeEntry {
+        let accelerator = (mock.kind == "accelerator").then(|| LandscapeAcceleratorProfile {
+            application_url: Some("#".to_string()),
+            curriculum_url: Some("#".to_string()),
+            cohort_status: Some("open".to_string()),
+            starts_on: Some("2026-09-01".to_string()),
+            ends_on: Some("2026-12-04".to_string()),
+            tracks: vec!["AI".to_string(), "Open Source".to_string(), "Revenue".to_string()],
+            weekly_agenda: None,
+            updated_at: now,
+        });
+
+        LandscapeEntry {
+            landscape_entry_id: Uuid::new_v4(),
+            alliance_id: Uuid::nil(),
+            added_by_user_id: Uuid::nil(),
+            name: mock.name.to_string(),
+            slug: mock.name.to_lowercase().replace(' ', "-"),
+            kind: mock.kind.to_string(),
+            summary: mock.summary.to_string(),
+            description: None,
+            website_url: mock.repository.is_none().then(|| "#".to_string()),
+            github_url: mock
+                .repository
+                .map(|repository| format!("https://github.com/{repository}")),
+            logo_url: None,
+            category: Some(mock.category.to_string()),
+            tags: mock.tags.iter().map(|tag| (*tag).to_string()).collect(),
+            published: true,
+            accelerator,
+            created_at: now,
+            updated_at: None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -284,6 +682,57 @@ mod tests {
             parse_github_repository_url("https://gitlab.com/owner/repo"),
             None
         );
+    }
+
+    #[test]
+    fn computes_leaderboard_share_percentages() {
+        fn project(score: i64) -> GitHubProjectLeaderboardEntry {
+            GitHubProjectLeaderboardEntry {
+                entry: crate::types::landscape::LandscapeEntry {
+                    landscape_entry_id: uuid::Uuid::nil(),
+                    alliance_id: uuid::Uuid::nil(),
+                    added_by_user_id: uuid::Uuid::nil(),
+                    name: "Repo".to_string(),
+                    slug: "repo".to_string(),
+                    kind: GITHUB_PROJECT_KIND.to_string(),
+                    summary: "Summary".to_string(),
+                    description: None,
+                    website_url: None,
+                    github_url: None,
+                    logo_url: None,
+                    category: None,
+                    tags: Vec::new(),
+                    published: true,
+                    accelerator: None,
+                    created_at: Utc::now(),
+                    updated_at: None,
+                },
+                repository: "owner/repo".to_string(),
+                score,
+                share_pct: 0,
+                metrics: GitHubRepositoryMetrics {
+                    stargazers_count: score,
+                    forks_count: 0,
+                    open_issues_count: 0,
+                    watchers_count: 0,
+                    updated_at: None,
+                    pushed_at: None,
+                },
+            }
+        }
+
+        let mut leaderboard = vec![project(100), project(50), project(1), project(0)];
+        apply_share_percentages(&mut leaderboard);
+        assert_eq!(leaderboard[0].share_pct, 100);
+        assert_eq!(leaderboard[1].share_pct, 50);
+        // Low and zero scores are floored so their bars stay visible.
+        assert_eq!(leaderboard[2].share_pct, 6);
+        assert_eq!(leaderboard[3].share_pct, 6);
+
+        // An all-zero leaderboard must not divide by zero.
+        let mut zeroed = vec![project(0), project(0)];
+        apply_share_percentages(&mut zeroed);
+        assert!(zeroed.iter().all(|project| project.share_pct == 6));
     }
 
     #[test]
