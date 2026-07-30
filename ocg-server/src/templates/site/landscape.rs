@@ -61,6 +61,8 @@ pub(crate) struct GitHubProjectLeaderboardEntry {
     pub repository: String,
     /// Primary leaderboard score.
     pub score: i64,
+    /// Score as a percentage of the top-ranked entry, used for the grading bar.
+    pub share_pct: u8,
     /// Live repository metrics.
     pub metrics: GitHubRepositoryMetrics,
 }

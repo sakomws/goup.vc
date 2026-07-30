@@ -475,6 +475,140 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 /* End hero dot waves */
 
+/* Landscape logo marquee */
+.marquee-row {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right,
+      transparent,
+      black 8%,
+      black 92%,
+      transparent);
+  mask-image: linear-gradient(to right,
+      transparent,
+      black 8%,
+      black 92%,
+      transparent);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 0.875rem;
+  animation: marquee-scroll 42s linear infinite;
+}
+
+.marquee-track--ltr {
+  animation-direction: reverse;
+}
+
+.marquee-row:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+/* End landscape logo marquee */
+
+/* Section divider: hairline that fades out at both ends */
+.section-divider {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(to right,
+      transparent,
+      #e0d3c0 12%,
+      #e0d3c0 88%,
+      transparent);
+}
+/* End section divider */
+
+/* Landscape entry kind badges */
+.kind-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.2rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.kind-badge--accelerator {
+  background-color: #dfe7f5;
+  color: #2f4a7a;
+}
+
+.kind-badge--community {
+  background-color: #e0ebe1;
+  color: #385a3b;
+}
+
+.kind-badge--github {
+  background-color: #e6e1da;
+  color: #3a2f25;
+}
+
+.kind-badge--investor {
+  background-color: #ece5f1;
+  color: #5b3f6b;
+}
+
+.kind-badge--neutral {
+  background-color: #efe7dc;
+  color: #3a2f25;
+}
+
+.kind-badge--podcast {
+  background-color: #f7e4df;
+  color: #8b4232;
+}
+
+.kind-badge--startup {
+  background-color: #f5e3d1;
+  color: #8a5029;
+}
+/* End landscape entry kind badges */
+
+/* GitHub leaderboard grading bar */
+.grade-bar {
+  height: 4px;
+  border-radius: 9999px;
+  background-color: #ece3d6;
+  overflow: hidden;
+}
+
+.grade-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #c07a4b, #8a5029);
+}
+
+.grade-row--1 .grade-bar__fill {
+  background: linear-gradient(to right, #3d7eff, #2461d1);
+}
+
+.grade-row--2 .grade-bar__fill {
+  background: linear-gradient(to right, #6f8fb8, #3d5a8a);
+}
+
+.grade-row--3 .grade-bar__fill {
+  background: linear-gradient(to right, #d09b6a, #a86a3c);
+}
+/* End GitHub leaderboard grading bar */
+
 /* Input */
 input:placeholder-shown {
   text-overflow: ellipsis;

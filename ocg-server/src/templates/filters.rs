@@ -103,6 +103,20 @@ pub(crate) fn num_fmt(n: &i64, _: &dyn askama::Values) -> askama::Result<String>
     Ok(n.to_formatted_string(&Locale::en))
 }
 
+/// Returns up to two uppercase initials extracted from a name, used as a
+/// fallback avatar when no logo image is available.
+#[askama::filter_fn]
+pub(crate) fn initials<S: AsRef<str>>(name: S, _: &dyn askama::Values) -> askama::Result<String> {
+    let initials: String = name
+        .as_ref()
+        .split_whitespace()
+        .filter_map(|word| word.chars().next())
+        .take(2)
+        .flat_map(char::to_uppercase)
+        .collect();
+    Ok(initials)
+}
+
 /// Displays the public label for a landscape entry kind.
 #[askama::filter_fn]
 pub(crate) fn landscape_kind_label<S: AsRef<str>>(
@@ -119,6 +133,27 @@ pub(crate) fn landscape_kind_label<S: AsRef<str>>(
         other => other,
     };
     Ok(label.to_string())
+}
+
+/// Returns the badge modifier class for a landscape entry kind, so each kind
+/// reads distinctly while staying inside the warm site palette. The colours
+/// themselves live in `styles.src.css` (`.kind-badge--*`), since Tailwind only
+/// scans templates and would not generate utilities named here.
+#[askama::filter_fn]
+pub(crate) fn landscape_kind_accent<S: AsRef<str>>(
+    kind: S,
+    _: &dyn askama::Values,
+) -> askama::Result<String> {
+    let modifier = match kind.as_ref() {
+        "accelerator" => "kind-badge--accelerator",
+        "github_project" => "kind-badge--github",
+        "investor" => "kind-badge--investor",
+        "partner_community" => "kind-badge--community",
+        "podcast_lead" => "kind-badge--podcast",
+        "startup" => "kind-badge--startup",
+        _ => "kind-badge--neutral",
+    };
+    Ok(modifier.to_string())
 }
 
 // Tests.
@@ -254,6 +289,40 @@ mod tests {
         assert_eq!(
             num_fmt::default().execute(&1_234_567_890, values).unwrap(),
             "1,234,567,890"
+        );
+    }
+
+    #[test]
+    fn test_initials() {
+        let values = askama::NO_VALUES;
+
+        assert_eq!(initials::default().execute("FlatWhite", values).unwrap(), "F");
+        assert_eq!(initials::default().execute("Open Crop", values).unwrap(), "OC");
+        assert_eq!(
+            initials::default().execute("  Mira   AI  ", values).unwrap(),
+            "MA"
+        );
+        assert_eq!(initials::default().execute("", values).unwrap(), "");
+    }
+
+    #[test]
+    fn test_landscape_kind_accent() {
+        let values = askama::NO_VALUES;
+
+        assert_eq!(
+            landscape_kind_accent::default().execute("startup", values).unwrap(),
+            "kind-badge--startup"
+        );
+        assert_eq!(
+            landscape_kind_accent::default()
+                .execute("accelerator", values)
+                .unwrap(),
+            "kind-badge--accelerator"
+        );
+        // Unknown kinds still get a usable neutral badge.
+        assert_eq!(
+            landscape_kind_accent::default().execute("unknown", values).unwrap(),
+            "kind-badge--neutral"
         );
     }
 

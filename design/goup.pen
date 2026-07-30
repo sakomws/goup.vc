@@ -9821,6 +9821,162 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "XNxwX",
+      "x": 6518,
+      "y": 0,
+      "name": "Landscape",
+      "width": 1440,
+      "height": 499,
+      "layout": "vertical",
+      "padding": [
+        0,
+        0,
+        80,
+        0
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "LKbmd",
+          "name": "heroSec",
+          "width": "fill_container",
+          "fill": "#1A1510",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ziyyV",
+              "name": "nav",
+              "width": "fill_container",
+              "height": 56,
+              "padding": [
+                0,
+                120
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "SpbsU",
+                  "fill": "#FAF5EE",
+                  "content": "GOUP",
+                  "fontFamily": "Amethysta",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "qWc79",
+                  "name": "navLinks",
+                  "gap": 24,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "h223Tk",
+                      "fill": "#FFFFFF65",
+                      "content": "Home",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "U57nn",
+                      "fill": "#FFFFFF65",
+                      "content": "Launch Groups",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "HtdLn",
+                      "fill": "#FFFFFF65",
+                      "content": "Q&A",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "HI3KY",
+                      "fill": "#FFFFFF65",
+                      "content": "Alliance",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "s15Ma",
+                      "fill": "#FFFFFF65",
+                      "content": "Resources",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "nlgYi",
+                      "fill": "#FAF5EE",
+                      "content": "Docs",
+                      "fontFamily": "Instrument Sans",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dLJjh",
+                  "name": "navRight",
+                  "gap": 16,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "iimbv",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "search",
+                      "iconFontFamily": "lucide",
+                      "fill": "#FFFFFF65"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "aaFsF",
+                      "name": "joinBtn",
+                      "fill": "#FAF5EE",
+                      "cornerRadius": 100,
+                      "padding": [
+                        8,
+                        18
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "bchRm",
+                          "fill": "#1A1510",
+                          "content": "Join GOUP",
+                          "fontFamily": "Instrument Sans",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
