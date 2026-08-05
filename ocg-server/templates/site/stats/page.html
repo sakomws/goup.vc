@@ -3,173 +3,147 @@
 {% import "macros/stats.html" as stats_macro -%}
 {% import "macros/ui.html" as ui -%}
 
-{% block content -%}
-  <div class="relative overflow-hidden">
-    <div class="absolute inset-x-0 top-0 h-72 bg-linear-to-b from-primary-50/80 to-transparent"></div>
-    <div class="absolute -top-24 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-primary-300/20 blur-3xl">
+{% block jumbotron -%}
+  {# Hero #}
+  <section class="relative isolate overflow-hidden bg-[#1A1510]">
+    {# Background hairlines -#}
+    <div class="pointer-events-none absolute inset-0 opacity-[0.06]"
+         style="background-image: repeating-linear-gradient(115deg, transparent 0, transparent 78px, #ffffff 78px, #ffffff 79px)">
     </div>
-    <div class="absolute top-24 right-0 hidden h-72 w-72 rounded-full bg-sky-300/20 blur-3xl lg:block"></div>
+    {# End background hairlines -#}
 
-    <div class="relative container mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
-      <div class="grid items-center gap-8 lg:grid-cols-[1fr_0.85fr] lg:gap-12">
-        <div>
-          <div class="mb-5 inline-flex rounded-full border border-primary-200 bg-white/80 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-primary-700 shadow-sm backdrop-blur">
-            GOUP intelligence
-          </div>
-          <h1 class="text-balance text-4xl font-black tracking-tight text-stone-950 sm:text-5xl lg:text-6xl">
-            GOUP momentum at a glance
-          </h1>
-          <p class="mt-5 max-w-2xl text-lg/8 text-stone-600">
-            A live-feeling view of community growth, alliance groups, event activity, and ecosystem signals
-            as they come online.
-          </p>
-          <div class="mt-7 flex flex-wrap gap-3">
-            <a href="#alliance"
-               class="inline-flex items-center justify-center rounded-full border border-[#d8c7b2] bg-[#f5efe7] px-5 py-2.5 text-sm font-bold text-stone-950 shadow-lg shadow-[#d8c7b2]/25 transition hover:bg-[#eadcc9]">Explore metrics</a>
-            <a href="/explore?alliance[0]=goup&entity=groups&view_mode=map"
-               hx-boost="true"
-               hx-target="body"
-               class="inline-flex items-center justify-center rounded-full border border-stone-200 bg-white px-5 py-2.5 text-sm font-bold text-stone-700 shadow-sm transition hover:border-[#d8c7b2] hover:bg-[#f5efe7] hover:text-stone-950">Open alliance map</a>
-          </div>
-        </div>
+    <div class="relative mx-auto max-w-7xl px-4 pt-10 pb-10 sm:px-6 lg:px-8 lg:pt-12 lg:pb-12">
+      <div>
+        <p class="mb-4 inline-flex rounded-full border border-white/20 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.28em] text-white/60">
+          GOUP intelligence
+        </p>
 
-        <div class="relative overflow-hidden rounded-[2rem] border border-[#d8c7b2] bg-[#f5efe7] p-5 text-stone-950 shadow-2xl shadow-[#d8c7b2]/30">
-          <div class="absolute -right-16 -top-16 size-44 rounded-full bg-white/70 blur-3xl"></div>
-          <div class="absolute -bottom-20 left-4 size-52 rounded-full bg-[#eadcc9]/70 blur-3xl"></div>
-          <div class="relative">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <div class="text-xs font-bold uppercase tracking-[0.22em] text-stone-600">Live signals</div>
-                <div class="mt-1 text-2xl font-black tracking-tight">Community pulse</div>
-              </div>
-              <div class="flex items-center gap-2 rounded-full border border-[#d8c7b2] bg-white/60 px-3 py-1.5 text-xs font-bold text-stone-700 backdrop-blur">
-                <span class="relative flex size-2">
-                  <span class="absolute inline-flex size-full animate-ping rounded-full bg-[#b9a68e] opacity-75"></span>
-                  <span class="relative inline-flex size-2 rounded-full bg-[#b9a68e]"></span>
-                </span>
-                Updating
-              </div>
-            </div>
+        <h1 class="font-amethysta max-w-3xl text-balance text-4xl font-bold leading-[0.98] text-[#FAF5EE] sm:text-5xl lg:text-6xl">
+          GOUP momentum at a glance
+        </h1>
 
-            <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div class="rounded-2xl border border-[#d8c7b2] bg-white/60 p-4 backdrop-blur">
-                <div class="text-xs font-bold uppercase tracking-[0.16em] text-stone-600">Active members</div>
-                <div class="mt-2 text-3xl font-black">{{ stats.summary.active_members|num_fmt }}</div>
-              </div>
-              <div class="rounded-2xl border border-[#d8c7b2] bg-white/60 p-4 backdrop-blur">
-                <div class="text-xs font-bold uppercase tracking-[0.16em] text-stone-600">Upcoming events</div>
-                <div class="mt-2 text-3xl font-black">{{ stats.summary.upcoming_events|num_fmt }}</div>
-              </div>
-              <div class="rounded-2xl border border-[#d8c7b2] bg-white/60 p-4 backdrop-blur">
-                <div class="text-xs font-bold uppercase tracking-[0.16em] text-stone-600">Active roles</div>
-                <div class="mt-2 text-3xl font-black">{{ stats.summary.active_jobs|num_fmt }}</div>
-              </div>
-              <div class="rounded-2xl border border-[#d8c7b2] bg-white/60 p-4 backdrop-blur">
-                <div class="text-xs font-bold uppercase tracking-[0.16em] text-stone-600">Ecosystem entries</div>
-                <div class="mt-2 text-3xl font-black">{{ stats.summary.landscape_entries|num_fmt }}</div>
-              </div>
-            </div>
+        <p class="font-metrophobic mt-4 max-w-xl text-balance text-base leading-[1.65] text-white/65 lg:text-lg">
+          A live-feeling view of community growth, alliance groups, event activity, and ecosystem signals
+          as they come online.
+        </p>
 
-            <div class="mt-4 rounded-2xl border border-[#d8c7b2] bg-white/60 p-4">
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div class="text-xs font-bold uppercase tracking-[0.16em] text-stone-600">Opportunity signal</div>
-                  <div class="mt-1 text-sm text-stone-600">Saved job interest from the member network</div>
-                </div>
-                <div class="text-3xl font-black">{{ stats.summary.job_interests|num_fmt }}</div>
-              </div>
-            </div>
-          </div>
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a href="#alliance"
+             class="inline-flex items-center justify-center rounded-full bg-[#f5efe7] px-5 py-2.5 text-sm font-bold text-[#1A1510] transition hover:bg-white">Explore metrics</a>
+          <a href="/explore?alliance[0]=goup&entity=groups&view_mode=map"
+             hx-boost="true"
+             hx-target="body"
+             class="inline-flex items-center justify-center rounded-full border border-white/25 px-5 py-2.5 text-sm font-bold text-[#FAF5EE] transition hover:border-white/50 hover:bg-white/10">Open alliance map</a>
         </div>
       </div>
+    </div>
+  </section>
+  {# End hero #}
+{% endblock jumbotron -%}
 
-      {# Summary cards #}
-      <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="group rounded-3xl border border-white/70 bg-white/85 p-5 shadow-xl shadow-stone-200/60 backdrop-blur transition hover:-translate-y-1 hover:border-primary-200 hover:shadow-2xl hover:shadow-primary-100/70">
-          <div class="flex items-center justify-between gap-3">
-            <div class="text-xs font-bold uppercase tracking-[0.18em] text-stone-500">Groups</div>
-            <div class="flex size-10 items-center justify-center rounded-2xl bg-primary-50 transition group-hover:scale-110">
-              <div class="svg-icon size-5 icon-groups bg-primary-600"></div>
-            </div>
-          </div>
-          <div class="mt-4 text-3xl font-black tracking-tight text-stone-950">{{ stats.groups.total|num_fmt }}</div>
-          <p class="mt-1 text-sm text-stone-500">Active communities</p>
-        </div>
+{% block content -%}
+  <div class="relative">
+    <div class="relative container mx-auto max-w-7xl px-4 pt-10 sm:px-6 lg:px-8 lg:pt-16">
+      {# Community growth #}
+      <section>
+        <p class="text-[10px] font-bold uppercase tracking-[0.28em] text-stone-500">Community growth</p>
+        <p class="font-amethysta mt-6 max-w-4xl text-balance text-3xl leading-[1.3] text-stone-600 sm:text-4xl lg:text-5xl">
+          Built by a network that has formed
+          <span class="font-bold tabular-nums text-primary-700">{{ stats.groups.total|num_fmt }}</span> groups, drawn
+          in <span class="font-bold tabular-nums text-primary-700">{{ stats.members.total|num_fmt }}</span> members,
+          and run <span class="font-bold tabular-nums text-primary-700">{{ stats.events.total|num_fmt }}</span>
+          events with
+          <span class="font-bold tabular-nums text-primary-700">{{ stats.attendees.total|num_fmt }}</span> seats
+          filled.
+        </p>
+      </section>
+      {# End community growth #}
 
-        <div class="group rounded-3xl border border-white/70 bg-white/85 p-5 shadow-xl shadow-stone-200/60 backdrop-blur transition hover:-translate-y-1 hover:border-primary-200 hover:shadow-2xl hover:shadow-primary-100/70">
-          <div class="flex items-center justify-between gap-3">
-            <div class="text-xs font-bold uppercase tracking-[0.18em] text-stone-500">Members</div>
-            <div class="flex size-10 items-center justify-center rounded-2xl bg-primary-50 transition group-hover:scale-110">
-              <div class="svg-icon size-5 icon-members bg-primary-600"></div>
-            </div>
-          </div>
-          <div class="mt-4 text-3xl font-black tracking-tight text-stone-950">{{ stats.members.total|num_fmt }}</div>
-          <p class="mt-1 text-sm text-stone-500">People in network</p>
-        </div>
+      <div class="mt-12 border-0 border-t border-solid border-[#e0d3c0] lg:mt-16"></div>
+    </div>
 
-        <div class="group rounded-3xl border border-white/70 bg-white/85 p-5 shadow-xl shadow-stone-200/60 backdrop-blur transition hover:-translate-y-1 hover:border-primary-200 hover:shadow-2xl hover:shadow-primary-100/70">
-          <div class="flex items-center justify-between gap-3">
-            <div class="text-xs font-bold uppercase tracking-[0.18em] text-stone-500">Events</div>
-            <div class="flex size-10 items-center justify-center rounded-2xl bg-primary-50 transition group-hover:scale-110">
-              <div class="svg-icon size-5 icon-events bg-primary-600"></div>
-            </div>
-          </div>
-          <div class="mt-4 text-3xl font-black tracking-tight text-stone-950">{{ stats.events.total|num_fmt }}</div>
-          <p class="mt-1 text-sm text-stone-500">Published gatherings</p>
-        </div>
+    {# Live signals #}
+    <section class="bg-white py-10 lg:py-14">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-black tracking-tight text-stone-950 sm:text-4xl lg:text-5xl">We are always live</h2>
+        <p class="mt-2 max-w-2xl text-sm/6 text-stone-500">
+          A real-time pulse on the GOUP community — members, events, roles, and ecosystem entries as they happen.
+        </p>
 
-        <div class="group rounded-3xl border border-white/70 bg-white/85 p-5 shadow-xl shadow-stone-200/60 backdrop-blur transition hover:-translate-y-1 hover:border-primary-200 hover:shadow-2xl hover:shadow-primary-100/70">
-          <div class="flex items-center justify-between gap-3">
-            <div class="text-xs font-bold uppercase tracking-[0.18em] text-stone-500">Attendees</div>
-            <div class="flex size-10 items-center justify-center rounded-2xl bg-primary-50 transition group-hover:scale-110">
-              <div class="svg-icon size-5 icon-attendees bg-primary-600"></div>
-            </div>
+        <dl class="mt-8 grid grid-cols-2 gap-y-8 border-0 border-t border-solid border-stone-200 pt-8 sm:grid-cols-4 sm:gap-y-0">
+          <div class="text-center">
+            <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+              {{ stats.summary.active_members|num_fmt }}
+            </dd>
+            <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Active members</dt>
           </div>
-          <div class="mt-4 text-3xl font-black tracking-tight text-stone-950">{{ stats.attendees.total|num_fmt }}</div>
-          <p class="mt-1 text-sm text-stone-500">Confirmed attendance</p>
-        </div>
+          <div class="border-0 border-solid border-stone-200 text-center sm:border-s sm:px-4">
+            <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+              {{ stats.summary.upcoming_events|num_fmt }}
+            </dd>
+            <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Upcoming events</dt>
+          </div>
+          <div class="border-0 border-solid border-stone-200 text-center sm:border-s sm:px-4">
+            <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+              {{ stats.summary.active_jobs|num_fmt }}
+            </dd>
+            <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Active roles</dt>
+          </div>
+          <div class="border-0 border-solid border-stone-200 text-center sm:border-s sm:px-4">
+            <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+              {{ stats.summary.landscape_entries|num_fmt }}
+            </dd>
+            <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Ecosystem entries</dt>
+          </div>
+        </dl>
       </div>
-      {# End summary cards #}
+    </section>
+    {# End live signals #}
 
-      {# Alliance map callout #}
-      <div class="mt-4 overflow-hidden rounded-[2rem] border border-primary-100 bg-white/85 shadow-xl shadow-stone-200/60 backdrop-blur">
-        <div class="grid gap-0 lg:grid-cols-[0.85fr_1.15fr] xl:grid-cols-[0.7fr_1.3fr]">
-          <div class="p-5 lg:p-6">
-            <div class="flex items-center gap-3">
-              <div class="flex size-11 items-center justify-center rounded-2xl bg-primary-50">
-                <div class="svg-icon size-5 icon-map bg-primary-600"></div>
+    {# Alliance map #}
+    <section class="bg-white pb-10 lg:pb-14">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="border-0 border-t border-solid border-stone-200 pt-10 lg:pt-14">
+          <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-16">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-[0.28em] text-stone-500">Alliance map</p>
+              <h2 class="font-amethysta mt-3 max-w-2xl text-balance text-3xl font-bold leading-[1.05] text-stone-950 sm:text-4xl lg:text-5xl">
+                Groups across the network
+              </h2>
+              <p class="mt-4 max-w-xl text-balance text-base leading-[1.65] text-stone-600">
+                See where GOUP groups are active, then jump into the map view to explore local communities,
+                events, and member momentum by geography.
+              </p>
+              <div class="mt-6 flex flex-wrap gap-3">
+                <a href="/explore?alliance[0]=goup&entity=groups&view_mode=map"
+                   hx-boost="true"
+                   hx-target="body"
+                   class="inline-flex items-center justify-center rounded-full border border-[#d8c7b2] bg-[#f5efe7] px-5 py-2.5 text-sm font-bold text-stone-950 shadow-lg shadow-[#d8c7b2]/25 transition hover:bg-[#eadcc9]">Open groups map</a>
+                <a href="/explore?alliance[0]=goup&entity=groups"
+                   hx-boost="true"
+                   hx-target="body"
+                   class="inline-flex items-center justify-center rounded-full border border-stone-200 bg-white px-5 py-2.5 text-sm font-bold text-stone-700 shadow-sm transition hover:border-[#d8c7b2] hover:bg-[#f5efe7] hover:text-stone-950">Browse group cards</a>
               </div>
+            </div>
+
+            <dl class="flex items-stretch gap-8 sm:gap-12 lg:shrink-0">
               <div>
-                <div class="text-xs font-bold uppercase tracking-[0.22em] text-primary-700">Alliance map</div>
-                <h2 class="mt-1 text-2xl font-black tracking-tight text-stone-950">Groups across the network</h2>
+                <dd class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                  {{ group_map_groups.len() }}
+                </dd>
+                <dt class="mt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Pinned groups</dt>
               </div>
-            </div>
-            <p class="mt-4 max-w-2xl text-sm/6 text-stone-600">
-              See where GOUP groups are active, then jump into the map view to explore local communities,
-              events, and member momentum by geography.
-            </p>
-            <div class="mt-5 flex flex-wrap gap-3">
-              <a href="/explore?alliance[0]=goup&entity=groups&view_mode=map"
-                 hx-boost="true"
-                 hx-target="body"
-                 class="inline-flex items-center justify-center rounded-full border border-[#d8c7b2] bg-[#f5efe7] px-5 py-2.5 text-sm font-bold text-stone-950 shadow-lg shadow-[#d8c7b2]/25 transition hover:bg-[#eadcc9]">Open groups map</a>
-              <a href="/explore?alliance[0]=goup&entity=groups"
-                 hx-boost="true"
-                 hx-target="body"
-                 class="inline-flex items-center justify-center rounded-full border border-stone-200 bg-white px-5 py-2.5 text-sm font-bold text-stone-700 shadow-sm transition hover:border-[#d8c7b2] hover:bg-[#f5efe7] hover:text-stone-950">Browse group cards</a>
-            </div>
-            <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              <div class="rounded-2xl border border-[#d8c7b2] bg-[#f8f3ec] p-4">
-                <div class="text-xs font-bold uppercase tracking-[0.18em] text-stone-600">Pinned groups</div>
-                <div class="mt-2 text-3xl font-black">{{ group_map_groups.len() }}</div>
+              <div class="w-px self-stretch bg-stone-200" aria-hidden="true"></div>
+              <div>
+                <dd class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                  {{ stats.members.total|num_fmt }}
+                </dd>
+                <dt class="mt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Members connected</dt>
               </div>
-              <div class="rounded-2xl border border-[#d8c7b2] bg-[#f8f3ec] p-4">
-                <div class="text-xs font-bold uppercase tracking-[0.18em] text-stone-600">Members connected</div>
-                <div class="mt-2 text-3xl font-black">{{ stats.members.total|num_fmt }}</div>
-              </div>
-            </div>
+            </dl>
           </div>
-          <div class="relative min-h-[30rem] overflow-hidden bg-[#f5efe7] text-stone-950 lg:min-h-[34rem] xl:min-h-[38rem]">
+
+          <div class="relative mt-10 h-[24rem] w-full overflow-hidden bg-[#f5efe7] text-stone-950 lg:h-[30rem]">
             <div class="absolute inset-0">
               <div class="relative h-full w-full">
                 <div id="loading-map" class="absolute left-4 top-4 z-[450] w-6 group">{{ ui::spinner(htmx = false) -}}</div>
@@ -192,410 +166,451 @@
           </div>
         </div>
       </div>
-      {# End alliance map callout #}
+    </section>
+    {# End alliance map #}
 
-      {# Engagement cards #}
-      <div id="engagement"
-           class="mt-4 rounded-[2rem] border border-stone-200 bg-white/85 p-5 shadow-sm backdrop-blur lg:p-6">
-        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div class="text-xs font-bold uppercase tracking-[0.22em] text-primary-700">Signals</div>
-            <h2 class="mt-2 text-2xl font-black tracking-tight text-stone-950">Quality metrics coming online</h2>
-            <p class="mt-2 max-w-2xl text-sm/6 text-stone-500">
-              Engagement, jobs, and ecosystem signals become more useful as members interact with the platform.
-            </p>
-          </div>
-          <div class="grid gap-3 sm:grid-cols-2 lg:min-w-[28rem]">
-            <div class="rounded-2xl bg-stone-50 px-4 py-3">
-              <div class="text-sm font-bold text-stone-500">Repeat attendees</div>
-              {% if stats.engagement.repeat_attendees > 0 -%}
-                <div class="mt-1 text-2xl font-black text-stone-950">{{ stats.engagement.repeat_attendees|num_fmt }}</div>
-              {% else -%}
-                <div class="mt-1 text-sm font-bold text-stone-500">Building</div>
-              {% endif -%}
-            </div>
-            <div class="rounded-2xl bg-stone-50 px-4 py-3">
-              <div class="text-sm font-bold text-stone-500">Avg turnout</div>
-              {% if stats.summary.avg_attendees_per_event > 0.0 -%}
-                <div class="mt-1 text-2xl font-black text-stone-950">{{ stats.summary.avg_attendees_per_event }}</div>
-              {% else -%}
-                <div class="mt-1 text-sm font-bold text-stone-500">Building</div>
-              {% endif -%}
-            </div>
-            <div class="rounded-2xl bg-stone-50 px-4 py-3">
-              <div class="text-sm font-bold text-stone-500">Mentorship requests</div>
-              {% if stats.mentorship_overview.requests > 0 -%}
-                <div class="mt-1 text-2xl font-black text-stone-950">{{ stats.mentorship_overview.requests|num_fmt }}</div>
-              {% else -%}
-                <div class="mt-1 text-sm font-bold text-stone-500">Building</div>
-              {% endif -%}
-            </div>
-            <div class="rounded-2xl bg-stone-50 px-4 py-3">
-              <div class="text-sm font-bold text-stone-500">Requests / group</div>
-              {% if stats.mentorship_overview.requests_per_group_avg > 0.0 -%}
-                <div class="mt-1 text-2xl font-black text-stone-950">
-                  {{ stats.mentorship_overview.requests_per_group_avg }}
-                </div>
-              {% else -%}
-                <div class="mt-1 text-sm font-bold text-stone-500">Building</div>
-              {% endif -%}
-            </div>
-          </div>
+    {# Section index #}
+    <nav class="bg-white" aria-label="Stats sections">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-wrap items-center gap-x-8 gap-y-3 border-0 border-t border-solid border-stone-200 py-5">
+          <span class="text-[10px] font-bold uppercase tracking-[0.28em] text-stone-400">Jump to</span>
+          <a href="#engagement"
+             class="text-[11px] font-bold uppercase tracking-[0.22em] text-stone-600 transition hover:text-stone-950">Engagement</a>
+          <a href="#alliance"
+             class="text-[11px] font-bold uppercase tracking-[0.22em] text-stone-600 transition hover:text-stone-950">Alliance</a>
+          <a href="#jobs"
+             class="text-[11px] font-bold uppercase tracking-[0.22em] text-stone-600 transition hover:text-stone-950">Jobs</a>
+          <a href="#landscape"
+             class="text-[11px] font-bold uppercase tracking-[0.22em] text-stone-600 transition hover:text-stone-950">Landscape</a>
         </div>
+      </div>
+    </nav>
+    {# End section index #}
+
+    {# Engagement #}
+    <section id="engagement" class="py-14 lg:py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <p class="text-[10px] font-bold uppercase tracking-[0.28em] text-stone-500">Signals</p>
+        <h2 class="font-amethysta mt-3 max-w-2xl text-balance text-3xl font-bold leading-[1.05] text-stone-950 sm:text-4xl lg:text-5xl">
+          Quality metrics coming online
+        </h2>
+        <p class="mt-4 max-w-xl text-balance text-base leading-[1.65] text-stone-600">
+          Engagement, jobs, and ecosystem signals become more useful as members interact with the platform.
+        </p>
+
+        <dl class="mt-10 grid grid-cols-2 gap-y-8 border-0 border-t border-solid border-[#e0d3c0] pt-8 sm:grid-cols-4 sm:gap-y-0">
+          <div class="text-center">
+            {% if stats.engagement.repeat_attendees > 0 -%}
+              <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+                {{ stats.engagement.repeat_attendees|num_fmt }}
+              </dd>
+            {% else -%}
+              <dd class="font-amethysta text-4xl font-bold text-stone-300 sm:text-5xl">
+                &mdash;
+              </dd>
+            {% endif -%}
+            <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Repeat attendees</dt>
+          </div>
+          <div class="border-0 border-solid border-[#e0d3c0] text-center sm:border-s sm:px-4">
+            {% if stats.summary.avg_attendees_per_event > 0.0 -%}
+              <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+                {{ stats.summary.avg_attendees_per_event }}
+              </dd>
+            {% else -%}
+              <dd class="font-amethysta text-4xl font-bold text-stone-300 sm:text-5xl">
+                &mdash;
+              </dd>
+            {% endif -%}
+            <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Avg turnout</dt>
+          </div>
+          <div class="border-0 border-solid border-[#e0d3c0] text-center sm:border-s sm:px-4">
+            {% if stats.mentorship_overview.requests > 0 -%}
+              <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+                {{ stats.mentorship_overview.requests|num_fmt }}
+              </dd>
+            {% else -%}
+              <dd class="font-amethysta text-4xl font-bold text-stone-300 sm:text-5xl">
+                &mdash;
+              </dd>
+            {% endif -%}
+            <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Mentorship requests</dt>
+          </div>
+          <div class="border-0 border-solid border-[#e0d3c0] text-center sm:border-s sm:px-4">
+            {% if stats.mentorship_overview.requests_per_group_avg > 0.0 -%}
+              <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+                {{ stats.mentorship_overview.requests_per_group_avg }}
+              </dd>
+            {% else -%}
+              <dd class="font-amethysta text-4xl font-bold text-stone-300 sm:text-5xl">
+                &mdash;
+              </dd>
+            {% endif -%}
+            <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Requests / group</dt>
+          </div>
+        </dl>
+
         {% if stats.mentorship_overview.by_group.len() > 0 -%}
-          <div class="mt-5 rounded-2xl border border-stone-200 bg-white p-5">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="mt-14 border-0 border-t border-solid border-[#e0d3c0] pt-8">
+            <div class="flex flex-wrap items-end justify-between gap-6">
               <div>
-                <h3 class="text-lg font-black text-stone-950">Mentorship requests by group</h3>
-                <p class="mt-1 text-sm/6 text-stone-500">
+                <h3 class="font-amethysta text-2xl font-bold text-stone-950 sm:text-3xl">Mentorship requests by group</h3>
+                <p class="mt-2 max-w-xl text-sm/6 text-stone-600">
                   Requests are attributed to active groups where the mentor is a member.
                 </p>
               </div>
-              <div class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-500">
-                Total <span class="ms-2 font-black text-stone-950">{{ stats.mentorship_overview.requests|num_fmt }}</span>
+              <div class="shrink-0 text-end">
+                <div class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                  {{ stats.mentorship_overview.requests|num_fmt }}
+                </div>
+                <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Total requests</div>
               </div>
             </div>
-            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="mt-6 grid gap-x-12 sm:grid-cols-2 lg:grid-cols-3">
               {% for (label, count) in stats.mentorship_overview.by_group -%}
-                <div class="flex items-center justify-between gap-4 rounded-xl bg-stone-50 px-4 py-3">
-                  <span class="truncate text-sm font-semibold text-stone-700">{{ label }}</span>
-                  <span class="text-sm font-black text-stone-950">{{ count|num_fmt }}</span>
+                <div class="flex items-baseline justify-between gap-4 border-0 border-b border-solid border-[#e0d3c0] py-3">
+                  <span class="min-w-0 truncate text-sm text-stone-700">{{ label }}</span>
+                  <span class="font-amethysta text-base font-bold tabular-nums text-stone-950">{{ count|num_fmt }}</span>
                 </div>
               {% endfor -%}
             </div>
           </div>
         {% endif -%}
       </div>
-      {# End engagement cards #}
+    </section>
+    {# End engagement #}
 
-      <div class="mt-12 flex flex-wrap justify-center gap-2">
-        <a href="#alliance"
-           class="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-stone-700 shadow-sm transition hover:border-[#d8c7b2] hover:bg-[#f5efe7] hover:text-stone-950">Alliance</a>
-        <a href="#engagement"
-           class="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-stone-700 shadow-sm transition hover:border-[#d8c7b2] hover:bg-[#f5efe7] hover:text-stone-950">Engagement</a>
-        <a href="#jobs"
-           class="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-stone-700 shadow-sm transition hover:border-[#d8c7b2] hover:bg-[#f5efe7] hover:text-stone-950">Jobs</a>
-        <a href="#landscape"
-           class="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-stone-700 shadow-sm transition hover:border-[#d8c7b2] hover:bg-[#f5efe7] hover:text-stone-950">Landscape</a>
-      </div>
+    {# Alliance section #}
+    <section id="alliance" class="bg-white py-14 lg:py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <p class="text-[10px] font-bold uppercase tracking-[0.28em] text-stone-500">Alliance</p>
+        <h2 class="font-amethysta mt-3 max-w-2xl text-balance text-3xl font-bold leading-[1.05] text-stone-950 sm:text-4xl lg:text-5xl">
+          Growth over time
+        </h2>
+        <p class="mt-4 max-w-xl text-balance text-base leading-[1.65] text-stone-600">
+          Groups, members, events, and attendee growth across active GOUP alliances.
+        </p>
 
-      <div class="mt-12 space-y-12">
-        {# Alliance section #}
-        <section id="alliance"
-                 class="overflow-hidden rounded-[2rem] border border-stone-200 bg-white/80 shadow-xl shadow-stone-200/50">
-          <div class="border-0 border-b border-solid border-[#d8c7b2] bg-linear-to-r from-[#f5efe7] to-[#eadcc9] p-6 text-stone-950 lg:p-8">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <div class="text-xs font-bold uppercase tracking-[0.22em] text-stone-600">Alliance</div>
-                <h2 class="mt-2 text-2xl font-black tracking-tight lg:text-4xl">Community growth</h2>
-                <p class="mt-2 max-w-2xl text-sm/6 text-stone-600">
-                  Groups, members, events, and attendee growth across active GOUP alliances.
-                </p>
+        {# Groups section #}
+        <div class="mt-12 border-0 border-t border-solid border-stone-200 pt-8 lg:mt-16">
+          <div class="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <h3 class="font-amethysta text-2xl font-bold text-stone-950 sm:text-3xl">Groups</h3>
+              <p class="mt-2 max-w-xl text-sm/6 text-stone-600">Chapter and interest group creation over time.</p>
+            </div>
+            <div class="shrink-0 text-end">
+              <div class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                {{ stats.groups.total|num_fmt }}
               </div>
-              <div class="grid grid-cols-1 gap-2 text-sm sm:grid-cols-4">
-                <div class="rounded-2xl border border-[#d8c7b2] bg-white/60 px-4 py-3 backdrop-blur">
-                  <div class="text-stone-600">Groups</div>
-                  <div class="text-xl font-black">{{ stats.groups.total|num_fmt }}</div>
-                </div>
-                <div class="rounded-2xl border border-[#d8c7b2] bg-white/60 px-4 py-3 backdrop-blur">
-                  <div class="text-stone-600">Members</div>
-                  <div class="text-xl font-black">{{ stats.members.total|num_fmt }}</div>
-                </div>
-                <div class="rounded-2xl border border-[#d8c7b2] bg-white/60 px-4 py-3 backdrop-blur">
-                  <div class="text-stone-600">Events</div>
-                  <div class="text-xl font-black">{{ stats.events.total|num_fmt }}</div>
-                </div>
-                <div class="rounded-2xl border border-[#d8c7b2] bg-white/60 px-4 py-3 backdrop-blur">
-                  <div class="text-stone-600">Attendees</div>
-                  <div class="text-xl font-black">{{ stats.attendees.total|num_fmt }}</div>
-                </div>
-              </div>
+              <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Total groups</div>
             </div>
           </div>
+          <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+            {{ stats_macro::analytics_chart(chart_id = "groups-running-chart", data = stats.groups.running_total, class = "h-[320px]", min_points = 1, href = "/explore?alliance[0]=goup&entity=groups") -}}
+            {{ stats_macro::analytics_chart(chart_id = "groups-monthly-chart", data = stats.groups.per_month, class = "h-[320px]", href = "/explore?alliance[0]=goup&entity=groups") -}}
+          </div>
+        </div>
+        {# End groups section #}
 
-          <div class="space-y-10 p-5 lg:p-8">
-            {# Groups section #}
-            <div class="space-y-5">
-              <div class="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 class="text-xl font-black text-stone-950">Groups</h3>
-                  <p class="mt-1 text-sm/6 text-stone-500">Chapter and interest group creation over time.</p>
-                </div>
-                <div class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-500">
-                  <div class="svg-icon me-2 size-4 icon-groups bg-primary-600"></div>
-                  Total <span class="ms-2 font-black text-stone-950">{{ stats.groups.total|num_fmt }}</span>
-                </div>
-              </div>
-              <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                {{ stats_macro::analytics_chart(chart_id = "groups-running-chart", data = stats.groups.running_total, class = "h-[320px]", min_points = 1, wrapper_class = "rounded-2xl shadow-sm", href = "/explore?alliance[0]=goup&entity=groups") -}}
-                {{ stats_macro::analytics_chart(chart_id = "groups-monthly-chart", data = stats.groups.per_month, class = "h-[320px]", wrapper_class = "rounded-2xl shadow-sm", href = "/explore?alliance[0]=goup&entity=groups") -}}
-              </div>
+        {# Members section #}
+        <div class="mt-12 border-0 border-t border-solid border-stone-200 pt-8 lg:mt-16">
+          <div class="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <h3 class="font-amethysta text-2xl font-bold text-stone-950 sm:text-3xl">Members</h3>
+              <p class="mt-2 max-w-xl text-sm/6 text-stone-600">People joining groups and building inside GOUP.</p>
             </div>
-            {# End groups section #}
-
-            {# Members section #}
-            <div class="space-y-5">
-              <div class="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 class="text-xl font-black text-stone-950">Members</h3>
-                  <p class="mt-1 text-sm/6 text-stone-500">People joining groups and building inside GOUP.</p>
-                </div>
-                <div class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-500">
-                  <div class="svg-icon me-2 size-4 icon-members bg-primary-600"></div>
-                  Total <span class="ms-2 font-black text-stone-950">{{ stats.members.total|num_fmt }}</span>
-                </div>
+            <div class="shrink-0 text-end">
+              <div class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                {{ stats.members.total|num_fmt }}
               </div>
-              <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                {{ stats_macro::analytics_chart(chart_id = "members-running-chart", data = stats.members.running_total, class = "h-[320px]", min_points = 1, wrapper_class = "rounded-2xl shadow-sm", href = "/explore?alliance[0]=goup&entity=groups") -}}
-                {{ stats_macro::analytics_chart(chart_id = "members-monthly-chart", data = stats.members.per_month, class = "h-[320px]", wrapper_class = "rounded-2xl shadow-sm", href = "/explore?alliance[0]=goup&entity=groups") -}}
-              </div>
+              <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Total members</div>
             </div>
-            {# End members section #}
+          </div>
+          <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+            {{ stats_macro::analytics_chart(chart_id = "members-running-chart", data = stats.members.running_total, class = "h-[320px]", min_points = 1, href = "/explore?alliance[0]=goup&entity=groups") -}}
+            {{ stats_macro::analytics_chart(chart_id = "members-monthly-chart", data = stats.members.per_month, class = "h-[320px]", href = "/explore?alliance[0]=goup&entity=groups") -}}
+          </div>
+        </div>
+        {# End members section #}
 
-            {# Events section #}
-            <div class="space-y-5">
-              <div class="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 class="text-xl font-black text-stone-950">Events</h3>
-                  <p class="mt-1 text-sm/6 text-stone-500">Published meetups, workshops, and alliance gatherings.</p>
-                </div>
-                <div class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-500">
-                  <div class="svg-icon me-2 size-4 icon-events bg-primary-600"></div>
-                  Total <span class="ms-2 font-black text-stone-950">{{ stats.events.total|num_fmt }}</span>
-                </div>
-              </div>
-              <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                {{ stats_macro::analytics_chart(chart_id = "events-running-chart", data = stats.events.running_total, class = "h-[320px]", min_points = 1, wrapper_class = "rounded-2xl shadow-sm", href = "/explore?alliance[0]=goup&entity=events") -}}
-                {{ stats_macro::analytics_chart(chart_id = "events-monthly-chart", data = stats.events.per_month, class = "h-[320px]", wrapper_class = "rounded-2xl shadow-sm", href = "/explore?alliance[0]=goup&entity=events") -}}
-              </div>
+        {# Events section #}
+        <div class="mt-12 border-0 border-t border-solid border-stone-200 pt-8 lg:mt-16">
+          <div class="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <h3 class="font-amethysta text-2xl font-bold text-stone-950 sm:text-3xl">Events</h3>
+              <p class="mt-2 max-w-xl text-sm/6 text-stone-600">Published meetups, workshops, and alliance gatherings.</p>
             </div>
-            {# End events section #}
+            <div class="shrink-0 text-end">
+              <div class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                {{ stats.events.total|num_fmt }}
+              </div>
+              <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Total events</div>
+            </div>
+          </div>
+          <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+            {{ stats_macro::analytics_chart(chart_id = "events-running-chart", data = stats.events.running_total, class = "h-[320px]", min_points = 1, href = "/explore?alliance[0]=goup&entity=events") -}}
+            {{ stats_macro::analytics_chart(chart_id = "events-monthly-chart", data = stats.events.per_month, class = "h-[320px]", href = "/explore?alliance[0]=goup&entity=events") -}}
+          </div>
 
-            {# Event breakdowns #}
-            {% if stats.event_breakdown.by_kind.len() > 0 || stats.event_breakdown.by_category.len() > 0 -%}
-              <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                {% if stats.event_breakdown.by_kind.len() > 0 -%}
-                  <a href="/explore?alliance[0]=goup&entity=events"
-                     class="block rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-xl hover:shadow-stone-200/60">
-                    <div class="flex items-center justify-between gap-3">
-                      <h3 class="text-lg font-black text-stone-950">Events by type</h3>
-                      <span class="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-500">View source</span>
-                    </div>
-                    <div class="mt-4 space-y-3">
-                      {% for (label, count) in stats.event_breakdown.by_kind -%}
-                        <div class="flex items-center justify-between gap-4 rounded-xl bg-stone-50 px-4 py-3">
-                          <span class="text-sm font-semibold text-stone-700">{{ label }}</span>
-                          <span class="text-sm font-black text-stone-950">{{ count|num_fmt }}</span>
-                        </div>
-                      {% endfor -%}
-                    </div>
-                  </a>
-                {% endif -%}
+          {# Event breakdowns #}
+          {% if stats.event_breakdown.by_kind.len() > 0 || stats.event_breakdown.by_category.len() > 0 -%}
+            <div class="mt-10 grid grid-cols-1 gap-x-12 gap-y-10 lg:grid-cols-2">
+              {% if stats.event_breakdown.by_kind.len() > 0 -%}
+                <div>
+                  <div class="flex items-baseline justify-between gap-4">
+                    <h4 class="text-sm font-bold uppercase tracking-[0.18em] text-stone-950">By type</h4>
+                    <a href="/explore?alliance[0]=goup&entity=events"
+                       class="text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500 transition hover:text-stone-950">View source</a>
+                  </div>
+                  <div class="mt-4">
+                    {% for (label, count) in stats.event_breakdown.by_kind -%}
+                      <div class="flex items-baseline justify-between gap-4 border-0 border-b border-solid border-stone-200 py-3">
+                        <span class="min-w-0 truncate text-sm text-stone-700">{{ label }}</span>
+                        <span class="font-amethysta text-base font-bold tabular-nums text-stone-950">{{ count|num_fmt }}</span>
+                      </div>
+                    {% endfor -%}
+                  </div>
+                </div>
+              {% endif -%}
 
-                {% if stats.event_breakdown.by_category.len() > 0 -%}
-                  <a href="/explore?alliance[0]=goup&entity=events"
-                     class="block rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-xl hover:shadow-stone-200/60">
-                    <div class="flex items-center justify-between gap-3">
-                      <h3 class="text-lg font-black text-stone-950">Events by category</h3>
-                      <span class="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-500">View source</span>
-                    </div>
-                    <div class="mt-4 space-y-3">
-                      {% for (label, count) in stats.event_breakdown.by_category -%}
-                        <div class="flex items-center justify-between gap-4 rounded-xl bg-stone-50 px-4 py-3">
-                          <span class="text-sm font-semibold text-stone-700">{{ label }}</span>
-                          <span class="text-sm font-black text-stone-950">{{ count|num_fmt }}</span>
-                        </div>
-                      {% endfor -%}
-                    </div>
-                  </a>
-                {% endif -%}
+              {% if stats.event_breakdown.by_category.len() > 0 -%}
+                <div>
+                  <div class="flex items-baseline justify-between gap-4">
+                    <h4 class="text-sm font-bold uppercase tracking-[0.18em] text-stone-950">By category</h4>
+                    <a href="/explore?alliance[0]=goup&entity=events"
+                       class="text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500 transition hover:text-stone-950">View source</a>
+                  </div>
+                  <div class="mt-4">
+                    {% for (label, count) in stats.event_breakdown.by_category -%}
+                      <div class="flex items-baseline justify-between gap-4 border-0 border-b border-solid border-stone-200 py-3">
+                        <span class="min-w-0 truncate text-sm text-stone-700">{{ label }}</span>
+                        <span class="font-amethysta text-base font-bold tabular-nums text-stone-950">{{ count|num_fmt }}</span>
+                      </div>
+                    {% endfor -%}
+                  </div>
+                </div>
+              {% endif -%}
+            </div>
+          {% endif -%}
+          {# End event breakdowns #}
+        </div>
+        {# End events section #}
+
+        {# Attendees section #}
+        <div class="mt-12 border-0 border-t border-solid border-stone-200 pt-8 lg:mt-16">
+          <div class="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <h3 class="font-amethysta text-2xl font-bold text-stone-950 sm:text-3xl">Attendees</h3>
+              <p class="mt-2 max-w-xl text-sm/6 text-stone-600">Confirmed attendees across all published events.</p>
+            </div>
+            <div class="shrink-0 text-end">
+              <div class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                {{ stats.attendees.total|num_fmt }}
+              </div>
+              <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Total attendees</div>
+            </div>
+          </div>
+          <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+            {{ stats_macro::analytics_chart(chart_id = "attendees-running-chart", data = stats.attendees.running_total, class = "h-[320px]", min_points = 1, href = "/explore?alliance[0]=goup&entity=events") -}}
+            {{ stats_macro::analytics_chart(chart_id = "attendees-monthly-chart", data = stats.attendees.per_month, class = "h-[320px]", href = "/explore?alliance[0]=goup&entity=events") -}}
+          </div>
+        </div>
+        {# End attendees section #}
+      </div>
+    </section>
+    {# End alliance section #}
+
+    {# Jobs section #}
+    <section id="jobs" class="py-14 lg:py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-16">
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-[0.28em] text-stone-500">Jobs</p>
+            <h2 class="font-amethysta mt-3 max-w-2xl text-balance text-3xl font-bold leading-[1.05] text-stone-950 sm:text-4xl lg:text-5xl">
+              Opportunity flow
+            </h2>
+            <p class="mt-4 max-w-xl text-balance text-base leading-[1.65] text-stone-600">
+              Roles shared by GOUP members and alliance companies.
+            </p>
+          </div>
+          <div class="lg:shrink-0 lg:text-end">
+            <div class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+              {{ stats.jobs.total|num_fmt }}
+            </div>
+            <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Total roles</div>
+          </div>
+        </div>
+
+        {% if stats.jobs.total > 0 -%}
+          <dl class="mt-10 grid grid-cols-2 gap-y-8 border-0 border-t border-solid border-[#e0d3c0] pt-8 sm:grid-cols-4 sm:gap-y-0">
+            <div class="text-center">
+              <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+                {{ stats.jobs_overview.active|num_fmt }}
+              </dd>
+              <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Active</dt>
+            </div>
+            {% if stats.jobs_overview.expired > 0 -%}
+              <div class="border-0 border-solid border-[#e0d3c0] text-center sm:border-s sm:px-4">
+                <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+                  {{ stats.jobs_overview.expired|num_fmt }}
+                </dd>
+                <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Expired</dt>
               </div>
             {% endif -%}
-            {# End event breakdowns #}
-
-            {# Attendees section #}
-            <div class="space-y-5">
-              <div class="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 class="text-xl font-black text-stone-950">Attendees</h3>
-                  <p class="mt-1 text-sm/6 text-stone-500">Confirmed attendees across all published events.</p>
-                </div>
-                <div class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-500">
-                  <div class="svg-icon me-2 size-4 icon-attendees bg-primary-600"></div>
-                  Total <span class="ms-2 font-black text-stone-950">{{ stats.attendees.total|num_fmt }}</span>
-                </div>
+            {% if stats.jobs_overview.interests > 0 -%}
+              <div class="border-0 border-solid border-[#e0d3c0] text-center sm:border-s sm:px-4">
+                <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+                  {{ stats.jobs_overview.interests|num_fmt }}
+                </dd>
+                <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Saved interest</dt>
               </div>
-              <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                {{ stats_macro::analytics_chart(chart_id = "attendees-running-chart", data = stats.attendees.running_total, class = "h-[320px]", min_points = 1, wrapper_class = "rounded-2xl shadow-sm", href = "/explore?alliance[0]=goup&entity=events") -}}
-                {{ stats_macro::analytics_chart(chart_id = "attendees-monthly-chart", data = stats.attendees.per_month, class = "h-[320px]", wrapper_class = "rounded-2xl shadow-sm", href = "/explore?alliance[0]=goup&entity=events") -}}
+            {% endif -%}
+            {% if stats.jobs_overview.avg_interests_per_job > 0.0 -%}
+              <div class="border-0 border-solid border-[#e0d3c0] text-center sm:border-s sm:px-4">
+                <dd class="font-amethysta text-4xl font-bold tabular-nums text-stone-950 sm:text-5xl">
+                  {{ stats.jobs_overview.avg_interests_per_job }}
+                </dd>
+                <dt class="mt-3 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Interest / job</dt>
               </div>
-            </div>
-            {# End attendees section #}
+            {% endif -%}
+          </dl>
+          <div class="mt-10 grid grid-cols-1 gap-6 xl:grid-cols-2">
+            {{ stats_macro::analytics_chart(chart_id = "jobs-running-chart", data = stats.jobs.running_total, class = "h-[320px]", min_points = 1, href = "/jobs") -}}
+            {{ stats_macro::analytics_chart(chart_id = "jobs-monthly-chart", data = stats.jobs.per_month, class = "h-[320px]", href = "/jobs") -}}
           </div>
-        </section>
-        {# End alliance section #}
-
-        {# Jobs section #}
-        <section id="jobs"
-                 class="space-y-6 rounded-[2rem] border border-stone-200 bg-white/85 p-5 shadow-xl shadow-stone-200/50 lg:p-8">
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div class="text-xs font-bold uppercase tracking-[0.22em] text-primary-700">Jobs</div>
-              <h2 class="mt-2 text-2xl font-black tracking-tight text-stone-950 lg:text-4xl">Opportunity flow</h2>
-              <p class="mt-2 max-w-2xl text-sm/6 text-stone-500">Roles shared by GOUP members and alliance companies.</p>
-            </div>
-            <div class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-500">
-              <div class="svg-icon me-2 size-4 icon-search bg-primary-600"></div>
-              Total <span class="ms-2 font-black text-stone-950">{{ stats.jobs.total|num_fmt }}</span>
-            </div>
+        {% else -%}
+          <div class="mt-10 border-0 border-t border-solid border-[#e0d3c0] pt-8">
+            <h3 class="font-amethysta text-2xl font-bold text-stone-950 sm:text-3xl">Job signals will appear here</h3>
+            <p class="mt-2 max-w-xl text-sm/6 text-stone-600">
+              Once roles are posted, this section will show active opportunities and saved interest.
+            </p>
+            <a href="/jobs"
+               class="mt-6 inline-flex rounded-full border border-[#d8c7b2] bg-[#f5efe7] px-5 py-2.5 text-sm font-bold text-stone-950 transition hover:bg-[#eadcc9]">
+              View jobs
+            </a>
           </div>
-          {% if stats.jobs.total > 0 -%}
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
-                <div class="text-sm text-stone-500">Active</div>
-                <div class="text-2xl font-black text-stone-950">{{ stats.jobs_overview.active|num_fmt }}</div>
-              </div>
-              {% if stats.jobs_overview.expired > 0 -%}
-                <div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
-                  <div class="text-sm text-stone-500">Expired</div>
-                  <div class="text-2xl font-black text-stone-950">{{ stats.jobs_overview.expired|num_fmt }}</div>
-                </div>
-              {% endif -%}
-              {% if stats.jobs_overview.interests > 0 -%}
-                <div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
-                  <div class="text-sm text-stone-500">Saved interest</div>
-                  <div class="text-2xl font-black text-stone-950">{{ stats.jobs_overview.interests|num_fmt }}</div>
-                </div>
-              {% endif -%}
-              {% if stats.jobs_overview.avg_interests_per_job > 0.0 -%}
-                <div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
-                  <div class="text-sm text-stone-500">Interest / job</div>
-                  <div class="text-2xl font-black text-stone-950">{{ stats.jobs_overview.avg_interests_per_job }}</div>
-                </div>
-              {% endif -%}
-            </div>
-            <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              {{ stats_macro::analytics_chart(chart_id = "jobs-running-chart", data = stats.jobs.running_total, class = "h-[320px]", min_points = 1, wrapper_class = "rounded-2xl shadow-sm", href = "/jobs") -}}
-              {{ stats_macro::analytics_chart(chart_id = "jobs-monthly-chart", data = stats.jobs.per_month, class = "h-[320px]", wrapper_class = "rounded-2xl shadow-sm", href = "/jobs") -}}
-            </div>
-          {% else -%}
-            <div class="rounded-3xl border border-dashed border-stone-300 bg-stone-50/80 p-8 text-center">
-              <div class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                <div class="svg-icon size-5 icon-search bg-primary-600"></div>
-              </div>
-              <h3 class="mt-4 text-xl font-black text-stone-950">Job signals will appear here</h3>
-              <p class="mx-auto mt-2 max-w-md text-sm/6 text-stone-500">
-                Once roles are posted, this section will show active opportunities and saved interest.
-              </p>
-              <a href="/jobs"
-                 class="mt-5 inline-flex rounded-full border border-[#d8c7b2] bg-[#f5efe7] px-5 py-2.5 text-sm font-bold text-stone-950 transition hover:bg-[#eadcc9]">
-                View jobs
-              </a>
-            </div>
-          {% endif -%}
-        </section>
-        {# End jobs section #}
-
-        {# Landscape section #}
-        <section id="landscape"
-                 class="space-y-8 rounded-[2rem] border border-stone-200 bg-white/85 p-5 shadow-xl shadow-stone-200/50 lg:p-8">
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div class="text-xs font-bold uppercase tracking-[0.22em] text-primary-700">Landscape</div>
-              <h2 class="mt-2 text-2xl font-black tracking-tight text-stone-950 lg:text-4xl">Ecosystem map</h2>
-              <p class="mt-2 max-w-2xl text-sm/6 text-stone-500">
-                Startups and open-source projects added by alliance admins.
-              </p>
-            </div>
-            <div class="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-              <div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
-                <div class="text-stone-500">Startups</div>
-                <div class="text-xl font-black text-stone-950">{{ stats.landscape_startups.total|num_fmt }}</div>
-              </div>
-              <div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
-                <div class="text-stone-500">Open source</div>
-                <div class="text-xl font-black text-stone-950">{{ stats.landscape_open_source.total|num_fmt }}</div>
-              </div>
-            </div>
-          </div>
-
-          {% if stats.landscape_overview.entries > 0 -%}
-            <div class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-              <div class="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 class="text-lg font-black text-stone-950">Entries by category</h3>
-                  <p class="mt-1 text-sm/6 text-stone-500">Published startups and open-source projects grouped by category.</p>
-                </div>
-                <div class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-500">
-                  Total <span class="ms-2 font-black text-stone-950">{{ stats.landscape_overview.entries|num_fmt }}</span>
-                </div>
-              </div>
-              <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {% if stats.landscape_overview.by_category.len() > 0 -%}
-                  {% for (label, count) in stats.landscape_overview.by_category -%}
-                    <div class="flex items-center justify-between gap-4 rounded-xl bg-stone-50 px-4 py-3">
-                      <span class="text-sm font-semibold text-stone-700">{{ label }}</span>
-                      <span class="text-sm font-black text-stone-950">{{ count|num_fmt }}</span>
-                    </div>
-                  {% endfor -%}
-                {% endif -%}
-              </div>
-            </div>
-
-            <div class="space-y-8">
-              <div class="space-y-5">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <h3 class="text-xl font-black text-stone-950">Startups</h3>
-                    <p class="mt-1 text-sm/6 text-stone-500">Founder-led companies in the GOUP ecosystem.</p>
-                  </div>
-                  <div class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-500">
-                    <div class="svg-icon me-2 size-4 icon-buildings bg-primary-600"></div>
-                    Total <span class="ms-2 font-black text-stone-950">{{ stats.landscape_startups.total|num_fmt }}</span>
-                  </div>
-                </div>
-                <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                  {{ stats_macro::analytics_chart(chart_id = "landscape_startups-running-chart", data = stats.landscape_startups.running_total, class = "h-[320px]", min_points = 1, wrapper_class = "rounded-2xl shadow-sm", href = "/landscape?kind=startup") -}}
-                  {{ stats_macro::analytics_chart(chart_id = "landscape_startups-monthly-chart", data = stats.landscape_startups.per_month, class = "h-[320px]", wrapper_class = "rounded-2xl shadow-sm", href = "/landscape?kind=startup") -}}
-                </div>
-              </div>
-
-              <div class="space-y-5">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <h3 class="text-xl font-black text-stone-950">Open Source</h3>
-                    <p class="mt-1 text-sm/6 text-stone-500">Community projects and GitHub repositories.</p>
-                  </div>
-                  <div class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-500">
-                    <div class="svg-icon me-2 size-4 icon-github bg-primary-600"></div>
-                    Total <span class="ms-2 font-black text-stone-950">{{ stats.landscape_open_source.total|num_fmt }}</span>
-                  </div>
-                </div>
-                <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                  {{ stats_macro::analytics_chart(chart_id = "landscape_open_source-running-chart", data = stats.landscape_open_source.running_total, class = "h-[320px]", min_points = 1, wrapper_class = "rounded-2xl shadow-sm", href = "/landscape?kind=github_project") -}}
-                  {{ stats_macro::analytics_chart(chart_id = "landscape_open_source-monthly-chart", data = stats.landscape_open_source.per_month, class = "h-[320px]", wrapper_class = "rounded-2xl shadow-sm", href = "/landscape?kind=github_project") -}}
-                </div>
-              </div>
-            </div>
-          {% else -%}
-            <div class="rounded-3xl border border-dashed border-stone-300 bg-stone-50/80 p-8 text-center">
-              <div class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                <div class="svg-icon size-5 icon-buildings bg-primary-600"></div>
-              </div>
-              <h3 class="mt-4 text-xl font-black text-stone-950">Ecosystem metrics will appear here</h3>
-              <p class="mx-auto mt-2 max-w-md text-sm/6 text-stone-500">
-                Once startups and open-source projects are published, this page will show category and growth trends.
-              </p>
-              <a href="/landscape"
-                 class="mt-5 inline-flex rounded-full border border-[#d8c7b2] bg-[#f5efe7] px-5 py-2.5 text-sm font-bold text-stone-950 transition hover:bg-[#eadcc9]">
-                View ecosystem
-              </a>
-            </div>
-          {% endif -%}
-        </section>
-        {# End landscape section #}
+        {% endif -%}
       </div>
-    </div>
+    </section>
+    {# End jobs section #}
+
+    {# Landscape section #}
+    <section id="landscape" class="bg-white py-14 lg:py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-16">
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-[0.28em] text-stone-500">Landscape</p>
+            <h2 class="font-amethysta mt-3 max-w-2xl text-balance text-3xl font-bold leading-[1.05] text-stone-950 sm:text-4xl lg:text-5xl">
+              Ecosystem map
+            </h2>
+            <p class="mt-4 max-w-xl text-balance text-base leading-[1.65] text-stone-600">
+              Startups and open-source projects added by alliance admins.
+            </p>
+          </div>
+          <dl class="flex items-stretch gap-8 sm:gap-12 lg:shrink-0">
+            <div>
+              <dd class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                {{ stats.landscape_startups.total|num_fmt }}
+              </dd>
+              <dt class="mt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Startups</dt>
+            </div>
+            <div class="w-px self-stretch bg-stone-200" aria-hidden="true"></div>
+            <div>
+              <dd class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                {{ stats.landscape_open_source.total|num_fmt }}
+              </dd>
+              <dt class="mt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Open source</dt>
+            </div>
+          </dl>
+        </div>
+
+        {% if stats.landscape_overview.entries > 0 -%}
+          {# Entries by category #}
+          <div class="mt-12 border-0 border-t border-solid border-stone-200 pt-8 lg:mt-16">
+            <div class="flex flex-wrap items-end justify-between gap-6">
+              <div>
+                <h3 class="font-amethysta text-2xl font-bold text-stone-950 sm:text-3xl">Entries by category</h3>
+                <p class="mt-2 max-w-xl text-sm/6 text-stone-600">
+                  Published startups and open-source projects grouped by category.
+                </p>
+              </div>
+              <div class="shrink-0 text-end">
+                <div class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                  {{ stats.landscape_overview.entries|num_fmt }}
+                </div>
+                <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Total entries</div>
+              </div>
+            </div>
+            {% if stats.landscape_overview.by_category.len() > 0 -%}
+              <div class="mt-6 grid gap-x-12 sm:grid-cols-2 lg:grid-cols-3">
+                {% for (label, count) in stats.landscape_overview.by_category -%}
+                  <div class="flex items-baseline justify-between gap-4 border-0 border-b border-solid border-stone-200 py-3">
+                    <span class="min-w-0 truncate text-sm text-stone-700">{{ label }}</span>
+                    <span class="font-amethysta text-base font-bold tabular-nums text-stone-950">{{ count|num_fmt }}</span>
+                  </div>
+                {% endfor -%}
+              </div>
+            {% endif -%}
+          </div>
+          {# End entries by category #}
+
+          {# Startups section #}
+          <div class="mt-12 border-0 border-t border-solid border-stone-200 pt-8 lg:mt-16">
+            <div class="flex flex-wrap items-end justify-between gap-6">
+              <div>
+                <h3 class="font-amethysta text-2xl font-bold text-stone-950 sm:text-3xl">Startups</h3>
+                <p class="mt-2 max-w-xl text-sm/6 text-stone-600">Founder-led companies in the GOUP ecosystem.</p>
+              </div>
+              <div class="shrink-0 text-end">
+                <div class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                  {{ stats.landscape_startups.total|num_fmt }}
+                </div>
+                <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Total startups</div>
+              </div>
+            </div>
+            <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+              {{ stats_macro::analytics_chart(chart_id = "landscape_startups-running-chart", data = stats.landscape_startups.running_total, class = "h-[320px]", min_points = 1, href = "/landscape?kind=startup") -}}
+              {{ stats_macro::analytics_chart(chart_id = "landscape_startups-monthly-chart", data = stats.landscape_startups.per_month, class = "h-[320px]", href = "/landscape?kind=startup") -}}
+            </div>
+          </div>
+          {# End startups section #}
+
+          {# Open source section #}
+          <div class="mt-12 border-0 border-t border-solid border-stone-200 pt-8 lg:mt-16">
+            <div class="flex flex-wrap items-end justify-between gap-6">
+              <div>
+                <h3 class="font-amethysta text-2xl font-bold text-stone-950 sm:text-3xl">Open source</h3>
+                <p class="mt-2 max-w-xl text-sm/6 text-stone-600">Community projects and GitHub repositories.</p>
+              </div>
+              <div class="shrink-0 text-end">
+                <div class="font-amethysta text-3xl font-bold tabular-nums text-stone-950 sm:text-4xl">
+                  {{ stats.landscape_open_source.total|num_fmt }}
+                </div>
+                <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-500">Total projects</div>
+              </div>
+            </div>
+            <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+              {{ stats_macro::analytics_chart(chart_id = "landscape_open_source-running-chart", data = stats.landscape_open_source.running_total, class = "h-[320px]", min_points = 1, href = "/landscape?kind=github_project") -}}
+              {{ stats_macro::analytics_chart(chart_id = "landscape_open_source-monthly-chart", data = stats.landscape_open_source.per_month, class = "h-[320px]", href = "/landscape?kind=github_project") -}}
+            </div>
+          </div>
+          {# End open source section #}
+        {% else -%}
+          <div class="mt-12 border-0 border-t border-solid border-stone-200 pt-8 lg:mt-16">
+            <h3 class="font-amethysta text-2xl font-bold text-stone-950 sm:text-3xl">
+              Ecosystem metrics will appear here
+            </h3>
+            <p class="mt-2 max-w-xl text-sm/6 text-stone-600">
+              Once startups and open-source projects are published, this page will show category and growth trends.
+            </p>
+            <a href="/landscape"
+               class="mt-6 inline-flex rounded-full border border-[#d8c7b2] bg-[#f5efe7] px-5 py-2.5 text-sm font-bold text-stone-950 transition hover:bg-[#eadcc9]">
+              View ecosystem
+            </a>
+          </div>
+        {% endif -%}
+      </div>
+    </section>
+    {# End landscape section #}
   </div>
 {% endblock content -%}
 
