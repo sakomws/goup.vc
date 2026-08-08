@@ -12,8 +12,8 @@ use axum_messages::Messages;
 use tracing::instrument;
 
 use super::{
-    coffee_meet, events, invitations, logs, mentorship, mock_interviews, session_proposals,
-    submissions,
+    affiliations, coffee_meet, events, invitations, logs, mentorship, mock_interviews,
+    session_proposals, submissions,
 };
 
 use crate::{
@@ -64,6 +64,9 @@ pub(crate) async fn page(
                 timezones,
                 user: UserDetails::from(user),
             }))
+        }
+        Tab::Affiliations => {
+            Content::Affiliations(affiliations::prepare_list_page(&db, user_id).await?)
         }
         Tab::Events => {
             let (_, template) = events::prepare_list_page(&db, user_id, raw_query).await?;

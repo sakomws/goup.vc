@@ -1,5 +1,6 @@
 //! Templates for the user dashboard.
 
+pub(crate) mod affiliations;
 pub(crate) mod coffee_meet;
 pub(crate) mod events;
 pub(crate) mod home;

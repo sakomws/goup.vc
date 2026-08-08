@@ -296,8 +296,14 @@ mod tests {
     fn test_initials() {
         let values = askama::NO_VALUES;
 
-        assert_eq!(initials::default().execute("FlatWhite", values).unwrap(), "F");
-        assert_eq!(initials::default().execute("Open Crop", values).unwrap(), "OC");
+        assert_eq!(
+            initials::default().execute("FlatWhite", values).unwrap(),
+            "F"
+        );
+        assert_eq!(
+            initials::default().execute("Open Crop", values).unwrap(),
+            "OC"
+        );
         assert_eq!(
             initials::default().execute("  Mira   AI  ", values).unwrap(),
             "MA"

@@ -2,6 +2,10 @@
 {% import "macros/pagination.html" as pagination -%}
 {% import "macros/landscape.html" as landscape -%}
 
+{% block scripts -%}
+  <script type="module" src="/static/js/site/landscape.js"></script>
+{% endblock scripts -%}
+
 {% block jumbotron -%}
   <section class="relative isolate overflow-hidden bg-[#1A1510]">
     {# Background hairlines -#}
@@ -268,9 +272,9 @@
         <p class="font-metrophobic mt-2 text-sm text-[#6B6058]">Try a broader search or clear the filters.</p>
       </div>
     {% else -%}
-      <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <div class="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
         {% for entry in entries -%}
-          <article class="flex h-full flex-col rounded-[1.5rem] border border-[#eadcc9] bg-white p-6 transition hover:border-[#c9b291] hover:shadow-lg hover:shadow-[#d8c7b2]/25">
+          <article class="flex flex-col rounded-[1.5rem] border border-[#eadcc9] bg-white p-6 transition hover:border-[#c9b291] hover:shadow-lg hover:shadow-[#d8c7b2]/25">
             {# Header: logo, name, classification -#}
             <div class="flex items-center gap-4">
               <div class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#fffaf5] ring-1 ring-inset ring-[#eadcc9]">
@@ -305,6 +309,30 @@
               </div>
             {% endif -%}
 
+            {% if !entry.affiliations.is_empty() -%}
+              <div class="mt-5 flex flex-wrap items-center gap-1.5" data-affiliations>
+                {% for affiliation in entry.affiliations -%}
+                  <button type="button"
+                          data-user-profile-modal
+                          data-user-profile='{{ affiliation|json }}'
+                          {% if loop.index > 2 %}hidden data-affiliation-extra{% endif %}
+                          class="font-metrophobic inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#eadcc9] bg-[#faf6ee] px-3 py-1 text-xs text-[#9A9088] transition hover:border-[#2461D1]/40 hover:bg-white"
+                          aria-label="View profile for {{ affiliation.display_name() }}">
+                    <span class="svg-icon size-3 icon-user-small bg-[#c07a4b]"></span>
+                    <span class="font-semibold text-[#3a2f25]">{{ affiliation.display_name() }}</span>
+                    <span>{{ affiliation.role_label() }}</span>
+                  </button>
+                {% endfor -%}
+                {% if entry.affiliations.len() > 2 -%}
+                  <button type="button"
+                          data-affiliations-more
+                          class="font-metrophobic cursor-pointer rounded-full px-2 py-1 text-xs font-semibold text-[#2461D1] transition hover:text-[#1A1510]">
+                    +{{ entry.affiliations.len() - 2 }} more
+                  </button>
+                {% endif -%}
+              </div>
+            {% endif -%}
+
             {% if let Some(accelerator) = &entry.accelerator -%}
               <div class="mt-5 rounded-2xl bg-[#f4f7fc] p-4">
                 <div class="flex flex-wrap gap-1.5">
@@ -329,7 +357,7 @@
             {% endif -%}
 
             {# Actions pinned to the bottom so cards align across the row -#}
-            <div class="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#f0e8dc] pt-4">
+            <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#f0e8dc] pt-4">
               {% if let Some(accelerator) = &entry.accelerator -%}
                 {% if let Some(application_url) = &accelerator.application_url -%}
                   <a class="inline-flex items-center gap-1.5 text-sm font-semibold text-[#2461D1] transition hover:text-[#1A1510]"

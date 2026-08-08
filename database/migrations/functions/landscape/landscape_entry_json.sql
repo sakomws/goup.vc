@@ -17,6 +17,26 @@ returns jsonb language sql stable as $$
         'published', p_entry.published,
         'created_at', extract(epoch from p_entry.created_at)::bigint,
         'updated_at', extract(epoch from p_entry.updated_at)::bigint,
+        'affiliations', (
+            select coalesce(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
+                'name', u.name,
+                'username', u.username,
+                'role', ua.role,
+                'bio', u.bio,
+                'company', u.company,
+                'photo_url', u.photo_url,
+                'title', u.title,
+                'bluesky_url', u.bluesky_url,
+                'facebook_url', u.facebook_url,
+                'github_url', u.github_url,
+                'linkedin_url', u.linkedin_url,
+                'twitter_url', u.twitter_url,
+                'website_url', u.website_url
+            )) order by lower(coalesce(u.name, u.username))), '[]'::jsonb)
+            from user_affiliation ua
+            join "user" u using (user_id)
+            where ua.landscape_entry_id = p_entry.landscape_entry_id
+        ),
         'accelerator', (
             select case
                 when lap.landscape_entry_id is null then null
