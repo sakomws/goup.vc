@@ -1,0 +1,103 @@
+{% import "macros/dashboard.html" as dashboard -%}
+
+{{ dashboard::page_title(title = "Affiliations", description = "Share the startups, projects, and other landscape entries you are part of, so members know who to reach out to.") -}}
+
+{# Add affiliation -#}
+{% if entry_options.is_empty() -%}
+  <p class="mt-10 text-sm text-stone-600">There are no published landscape entries yet.</p>
+{% else -%}
+  <form hx-post="/dashboard/user/affiliations"
+        hx-swap="none"
+        hx-indicator="#dashboard-spinner"
+        hx-disabled-elt="button[type=submit]">
+    <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
+      {# Landscape entry -#}
+      <div class="col-span-3">
+        <label for="affiliation-entry" class="form-label">
+          Landscape entry <span class="asterisk">*</span>
+        </label>
+        <div class="mt-2">
+          <select id="affiliation-entry"
+                  name="landscape_entry_id"
+                  class="input-primary"
+                  required>
+            {% for (kind, options) in self.entry_options_by_kind() -%}
+              <optgroup label="{{ kind|landscape_kind_label }}">
+                {% for option in options -%}
+                  <option value="{{ option.landscape_entry_id }}">{{ option.name }}</option>
+                {% endfor -%}
+              </optgroup>
+            {% endfor -%}
+          </select>
+        </div>
+        <p class="form-legend">The startup, project, or organization you are part of.</p>
+      </div>
+      {# End landscape entry -#}
+
+      {# Role -#}
+      <div class="col-span-3">
+        <label for="affiliation-role" class="form-label">
+          Role <span class="asterisk">*</span>
+        </label>
+        <div class="mt-2">
+          <select id="affiliation-role" name="role" class="input-primary" required>
+            {% for (value, label) in crate::templates::dashboard::user::affiliations::AFFILIATION_ROLES -%}
+              <option value="{{ value }}">{{ label }}</option>
+            {% endfor -%}
+          </select>
+        </div>
+        <p class="form-legend">Adding an entry you already have updates your role.</p>
+      </div>
+      {# End role -#}
+    </div>
+
+    <div class="mt-6">
+      <button type="submit" class="btn-primary">Add affiliation</button>
+    </div>
+  </form>
+{% endif -%}
+{# End add affiliation -#}
+
+{# Affiliations list -#}
+{% if affiliations.is_empty() -%}
+  <div class="mt-8 rounded-[2rem] border border-dashed border-stone-300 bg-white px-6 py-12 text-center shadow-sm">
+    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-stone-100">
+      <div class="svg-icon size-5 icon-buildings bg-stone-700"></div>
+    </div>
+    <h2 class="mt-4 text-xl font-black tracking-tight text-stone-950">No affiliations yet</h2>
+    <p class="mx-auto mt-2 max-w-xl text-sm/6 text-stone-600">
+      Declare yourself as the founder of a startup, the maintainer of a GitHub project, or the representative of any other landscape entry.
+    </p>
+  </div>
+{% else -%}
+  <div class="mt-8 grid gap-4">
+    {% for affiliation in affiliations -%}
+      <article class="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="truncate text-lg font-black text-stone-950">{{ affiliation.entry_name }}</h2>
+              <span class="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-700">{{ affiliation.entry_kind|landscape_kind_label }}</span>
+              <span class="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-bold text-primary-700 ring-1 ring-inset ring-primary-100">{{ affiliation.role_label() }}</span>
+            </div>
+            {% if let Some(entry_url) = affiliation.entry_url() -%}
+              <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-600">
+                <a href="{{ entry_url }}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="font-semibold text-primary-700 hover:text-primary-800">Visit site</a>
+              </div>
+            {% endif -%}
+          </div>
+
+          <form hx-delete="/dashboard/user/affiliations/{{ affiliation.user_affiliation_id }}"
+                hx-swap="none"
+                hx-indicator="#dashboard-spinner">
+            <button type="submit" class="btn-secondary whitespace-nowrap">Remove</button>
+          </form>
+        </div>
+      </article>
+    {% endfor -%}
+  </div>
+{% endif -%}
+{# End affiliations list -#}

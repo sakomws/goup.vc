@@ -11,6 +11,7 @@ use crate::{
     templates::dashboard::{
         audit::{AuditLogFilters, AuditLogsOutput},
         user::{
+            affiliations::{LandscapeEntryOption, UserAffiliation, UserAffiliationForm},
             coffee_meet::{CoffeeMeetSubscription, CoffeeMeetSubscriptionForm},
             events::{UserEventsFilters, UserEventsOutput},
             invitations::{AllianceTeamInvitation, EventInvitation, GroupTeamInvitation},
@@ -63,11 +64,26 @@ pub(crate) trait DBDashboardUser {
         session_proposal: &SessionProposalInput,
     ) -> Result<Uuid>;
 
+    /// Adds an affiliation for the user, updating the role if the affiliation
+    /// already exists.
+    async fn add_user_affiliation(
+        &self,
+        actor_user_id: Uuid,
+        affiliation: &UserAffiliationForm,
+    ) -> Result<()>;
+
     /// Deletes a session proposal for the user.
     async fn delete_session_proposal(
         &self,
         actor_user_id: Uuid,
         session_proposal_id: Uuid,
+    ) -> Result<()>;
+
+    /// Deletes one of the user's affiliations.
+    async fn delete_user_affiliation(
+        &self,
+        actor_user_id: Uuid,
+        user_affiliation_id: Uuid,
     ) -> Result<()>;
 
     /// Gets the co-speaker user id for one of the user's session proposals.
@@ -76,6 +92,9 @@ pub(crate) trait DBDashboardUser {
         user_id: Uuid,
         session_proposal_id: Uuid,
     ) -> Result<Option<SessionProposalCoSpeakerUser>>;
+
+    /// Lists published landscape entries available for affiliation selection.
+    async fn list_landscape_entry_options(&self) -> Result<Vec<LandscapeEntryOption>>;
 
     /// Lists all available session proposal levels.
     async fn list_session_proposal_levels(&self) -> Result<Vec<SessionProposalLevel>>;
@@ -93,6 +112,9 @@ pub(crate) trait DBDashboardUser {
         user_id: Uuid,
         filters: &CfsSubmissionsFilters,
     ) -> Result<CfsSubmissionsOutput>;
+
+    /// Lists the user's affiliations.
+    async fn list_user_affiliations(&self, user_id: Uuid) -> Result<Vec<UserAffiliation>>;
 
     /// Lists all pending alliance team invitations for the user.
     async fn list_user_alliance_team_invitations(
@@ -293,6 +315,24 @@ where
         .await
     }
 
+    /// [`DBDashboardUser::add_user_affiliation`]
+    #[instrument(skip(self), err)]
+    async fn add_user_affiliation(
+        &self,
+        actor_user_id: Uuid,
+        affiliation: &UserAffiliationForm,
+    ) -> Result<()> {
+        self.execute(
+            "select add_user_affiliation($1::uuid, $2::uuid, $3::text)",
+            &[
+                &actor_user_id,
+                &affiliation.landscape_entry_id,
+                &affiliation.role,
+            ],
+        )
+        .await
+    }
+
     /// [`DBDashboardUser::delete_session_proposal`]
     #[instrument(skip(self), err)]
     async fn delete_session_proposal(
@@ -303,6 +343,20 @@ where
         self.execute(
             "select delete_session_proposal($1::uuid, $2::uuid)",
             &[&actor_user_id, &session_proposal_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::delete_user_affiliation`]
+    #[instrument(skip(self), err)]
+    async fn delete_user_affiliation(
+        &self,
+        actor_user_id: Uuid,
+        user_affiliation_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select delete_user_affiliation($1::uuid, $2::uuid)",
+            &[&actor_user_id, &user_affiliation_id],
         )
         .await
     }
@@ -330,6 +384,13 @@ where
         Ok(row.map(|row| SessionProposalCoSpeakerUser {
             co_speaker_user_id: row.get("co_speaker_user_id"),
         }))
+    }
+
+    /// [`DBDashboardUser::list_landscape_entry_options`]
+    #[instrument(skip(self), err)]
+    async fn list_landscape_entry_options(&self) -> Result<Vec<LandscapeEntryOption>> {
+        self.fetch_json_one("select list_landscape_entry_options()", &[])
+            .await
     }
 
     /// [`DBDashboardUser::list_session_proposal_levels`]
@@ -365,6 +426,13 @@ where
             &[&user_id, &Json(filters)],
         )
         .await
+    }
+
+    /// [`DBDashboardUser::list_user_affiliations`]
+    #[instrument(skip(self), err)]
+    async fn list_user_affiliations(&self, user_id: Uuid) -> Result<Vec<UserAffiliation>> {
+        self.fetch_json_one("select list_user_affiliations($1::uuid)", &[&user_id])
+            .await
     }
 
     /// [`DBDashboardUser::list_user_alliance_team_invitations`]

@@ -14,7 +14,9 @@ use crate::{
     templates::dashboard::{
         DASHBOARD_PAGINATION_LIMIT,
         user::{
-            coffee_meet::CoffeeMeetSubscription, events::UserEventsOutput,
+            affiliations::{LandscapeEntryOption, UserAffiliation},
+            coffee_meet::CoffeeMeetSubscription,
+            events::UserEventsOutput,
             session_proposals::SessionProposalsOutput,
         },
     },
@@ -69,6 +71,78 @@ async fn test_page_account_tab_success() {
     let body = std::str::from_utf8(&bytes).unwrap();
     assert!(body.contains("You have 3 pending invitations"));
     assert!(body.contains("Review invitations"));
+}
+
+#[tokio::test]
+async fn test_page_affiliations_tab_success() {
+    // Setup identifiers and data structures
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let entry_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(session_id, user_id, &auth_hash, None, None);
+    let affiliations = vec![UserAffiliation {
+        user_affiliation_id: Uuid::new_v4(),
+        landscape_entry_id: entry_id,
+        entry_name: "Acme Robotics".to_string(),
+        entry_kind: "startup".to_string(),
+        entry_logo_url: None,
+        entry_website_url: Some("https://acme.example.com".to_string()),
+        entry_github_url: None,
+        role: "founder".to_string(),
+    }];
+    let entry_options = vec![LandscapeEntryOption {
+        landscape_entry_id: entry_id,
+        name: "Acme Robotics".to_string(),
+        kind: "startup".to_string(),
+    }];
+
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+    db.expect_get_site_settings()
+        .times(1)
+        .returning(|| Ok(sample_site_settings()));
+    db.expect_count_user_pending_invitations()
+        .times(1)
+        .withf(move |uid| *uid == user_id)
+        .returning(|_| Ok(0));
+    db.expect_list_user_affiliations()
+        .times(1)
+        .withf(move |uid| *uid == user_id)
+        .returning(move |_| Ok(affiliations.clone()));
+    db.expect_list_landscape_entry_options()
+        .times(1)
+        .returning(move || Ok(entry_options.clone()));
+
+    // Setup notifications manager mock
+    let nm = MockNotificationsManager::new();
+
+    // Setup router and send request
+    let router = TestRouterBuilder::new(db, nm).build().await;
+    let request = Request::builder()
+        .method("GET")
+        .uri("/dashboard/user?tab=affiliations")
+        .header(COOKIE, format!("id={session_id}"))
+        .body(Body::empty())
+        .unwrap();
+    let response = router.oneshot(request).await.unwrap();
+    let (parts, body) = response.into_parts();
+    let bytes = to_bytes(body, usize::MAX).await.unwrap();
+
+    // Check response matches expectations
+    assert_html_response(&parts, &bytes, StatusCode::OK);
+    let body = std::str::from_utf8(&bytes).unwrap();
+    assert!(body.contains("Acme Robotics"));
+    assert!(body.contains("Founder"));
+    assert!(body.contains("Add affiliation"));
 }
 
 #[tokio::test]

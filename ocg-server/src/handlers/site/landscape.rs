@@ -75,7 +75,11 @@ pub(crate) async fn page(
             .take(filters.limit.unwrap_or(MAX_PAGINATION_LIMIT))
             .collect();
         // The marquee always shows the unfiltered set.
-        (dev_mocks::mock_entries(&LandscapeFilters::default()), entries, total)
+        (
+            dev_mocks::mock_entries(&LandscapeFilters::default()),
+            entries,
+            total,
+        )
     } else {
         (logo_output.entries, output.entries, output.total)
     };
@@ -561,9 +565,9 @@ mod dev_mocks {
             .iter()
             .filter(|mock| filters.kind.as_deref().is_none_or(|kind| kind == mock.kind))
             .filter(|mock| {
-                category.as_deref().is_none_or(|category| {
-                    mock.category.to_lowercase().contains(category)
-                })
+                category
+                    .as_deref()
+                    .is_none_or(|category| mock.category.to_lowercase().contains(category))
             })
             .filter(|mock| {
                 query.as_deref().is_none_or(|query| {
@@ -631,7 +635,11 @@ mod dev_mocks {
             cohort_status: Some("open".to_string()),
             starts_on: Some("2026-09-01".to_string()),
             ends_on: Some("2026-12-04".to_string()),
-            tracks: vec!["AI".to_string(), "Open Source".to_string(), "Revenue".to_string()],
+            tracks: vec![
+                "AI".to_string(),
+                "Open Source".to_string(),
+                "Revenue".to_string(),
+            ],
             weekly_agenda: None,
             updated_at: now,
         });
@@ -653,6 +661,7 @@ mod dev_mocks {
             category: Some(mock.category.to_string()),
             tags: mock.tags.iter().map(|tag| (*tag).to_string()).collect(),
             published: true,
+            affiliations: Vec::new(),
             accelerator,
             created_at: now,
             updated_at: None,
@@ -703,6 +712,7 @@ mod tests {
                     category: None,
                     tags: Vec::new(),
                     published: true,
+                    affiliations: Vec::new(),
                     accelerator: None,
                     created_at: Utc::now(),
                     updated_at: None,

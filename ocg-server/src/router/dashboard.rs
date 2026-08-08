@@ -589,6 +589,14 @@ pub(super) fn setup_user_dashboard_router() -> Router<State> {
     Router::new()
         .route("/", get(dashboard::user::home::page))
         .route(
+            "/affiliations",
+            get(dashboard::user::affiliations::list_page).post(dashboard::user::affiliations::add),
+        )
+        .route(
+            "/affiliations/{user_affiliation_id}",
+            delete(dashboard::user::affiliations::delete),
+        )
+        .route(
             "/coffee-meet",
             get(dashboard::user::coffee_meet::list_page)
                 .put(dashboard::user::coffee_meet::subscribe)

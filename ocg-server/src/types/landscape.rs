@@ -211,6 +211,9 @@ pub(crate) struct LandscapeEntry {
     pub tags: Vec<String>,
     /// Whether the entry is public.
     pub published: bool,
+    /// Users affiliated with the entry.
+    #[serde(default)]
+    pub affiliations: Vec<LandscapeEntryAffiliation>,
     /// Accelerator-specific profile.
     pub accelerator: Option<LandscapeAcceleratorProfile>,
     /// Creation time.
@@ -219,6 +222,50 @@ pub(crate) struct LandscapeEntry {
     /// Last update time.
     #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub updated_at: Option<DateTime<Utc>>,
+}
+
+/// User affiliated with a landscape entry.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct LandscapeEntryAffiliation {
+    /// User display name.
+    pub name: Option<String>,
+    /// User public username.
+    pub username: String,
+    /// Role the user holds in the entry.
+    pub role: String,
+    /// User bio.
+    pub bio: Option<String>,
+    /// User company.
+    pub company: Option<String>,
+    /// User photo URL.
+    pub photo_url: Option<String>,
+    /// User job title.
+    pub title: Option<String>,
+    /// User Bluesky URL.
+    pub bluesky_url: Option<String>,
+    /// User Facebook URL.
+    pub facebook_url: Option<String>,
+    /// User GitHub URL.
+    pub github_url: Option<String>,
+    /// User LinkedIn URL.
+    pub linkedin_url: Option<String>,
+    /// User Twitter URL.
+    pub twitter_url: Option<String>,
+    /// User website URL.
+    pub website_url: Option<String>,
+}
+
+impl LandscapeEntryAffiliation {
+    /// Returns the user's display name, falling back to the username.
+    pub(crate) fn display_name(&self) -> &str {
+        self.name.as_deref().unwrap_or(&self.username)
+    }
+
+    /// Returns the display label for the affiliation role.
+    pub(crate) fn role_label(&self) -> &str {
+        crate::templates::dashboard::user::affiliations::role_label(&self.role)
+    }
 }
 
 /// Accelerator-specific metadata for a landscape entry.

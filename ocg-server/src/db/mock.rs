@@ -935,11 +935,28 @@ mock! {
             actor_user_id: Uuid,
             session_proposal: &crate::templates::dashboard::user::session_proposals::SessionProposalInput,
         ) -> Result<Uuid>;
+        async fn add_user_affiliation(
+            &self,
+            actor_user_id: Uuid,
+            affiliation: &crate::templates::dashboard::user::affiliations::UserAffiliationForm,
+        ) -> Result<()>;
         async fn delete_session_proposal(
             &self,
             actor_user_id: Uuid,
             session_proposal_id: Uuid,
         ) -> Result<()>;
+        async fn delete_user_affiliation(
+            &self,
+            actor_user_id: Uuid,
+            user_affiliation_id: Uuid,
+        ) -> Result<()>;
+        async fn list_landscape_entry_options(
+            &self,
+        ) -> Result<Vec<crate::templates::dashboard::user::affiliations::LandscapeEntryOption>>;
+        async fn list_user_affiliations(
+            &self,
+            user_id: Uuid,
+        ) -> Result<Vec<crate::templates::dashboard::user::affiliations::UserAffiliation>>;
         async fn reject_alliance_team_invitation(
             &self,
             actor_user_id: Uuid,
