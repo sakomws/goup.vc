@@ -679,6 +679,103 @@
     "action": "create_github_project"
   },
   {
+    "name": "goup_create_startups_bulk",
+    "title": "GOUP Bulk Create Startup Landscape Entries",
+    "description": "Add many startups to the GOUP landscape in one call through the database add_landscape_entry function. Each entry is created independently, so one failure does not abort the rest. Requires MCP_ENABLE_MUTATIONS=true and database access through DATABASE_URL or TERN_CONF.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "actor_user_id": {
+          "type": "string",
+          "description": "User ID recorded as the creator for every entry. Can be overridden per entry."
+        },
+        "alliance_id": {
+          "type": "string",
+          "description": "Alliance ID where the entries will be created. Can be overridden per entry."
+        },
+        "published": {
+          "type": "boolean",
+          "description": "Default publish state applied to every entry unless the entry sets its own. Defaults to true."
+        },
+        "entries": {
+          "type": "array",
+          "description": "Startups to create. Each item accepts the same fields as goup_create_startup.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Startup name."
+              },
+              "summary": {
+                "type": "string",
+                "description": "Short summary for cards and search results."
+              },
+              "description": {
+                "type": "string",
+                "description": "Optional full description."
+              },
+              "website_url": {
+                "type": "string",
+                "description": "Optional startup website URL."
+              },
+              "github_url": {
+                "type": "string",
+                "description": "Optional GitHub URL."
+              },
+              "logo_url": {
+                "type": "string",
+                "description": "Optional logo image URL."
+              },
+              "category": {
+                "type": "string",
+                "description": "Optional category label, for example AI, DevTools, Fintech, or Infrastructure."
+              },
+              "tags": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "Optional tags as an array or comma-separated string."
+              },
+              "published": {
+                "type": "boolean",
+                "description": "Optional per-entry publish state that overrides the shared default."
+              },
+              "actor_user_id": {
+                "type": "string",
+                "description": "Optional per-entry creator that overrides the shared actor_user_id."
+              },
+              "alliance_id": {
+                "type": "string",
+                "description": "Optional per-entry alliance that overrides the shared alliance_id."
+              }
+            },
+            "required": [
+              "name",
+              "summary"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "actor_user_id",
+        "alliance_id",
+        "entries"
+      ],
+      "additionalProperties": false
+    },
+    "action": "create_startups_bulk"
+  },
+  {
     "name": "goup_search_wiki",
     "title": "GOUP Search Wiki",
     "description": "List or search GOUP wiki sections and feed sources.",

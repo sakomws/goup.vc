@@ -163,6 +163,9 @@ through the standard `tools/list` method.
 - `goup_service_status`: inspect systemd logs and local HTTP status.
 - `goup_create_event`: create an unpublished draft event through `add_event`.
 - `goup_update_event`: update an existing event through `update_event`.
+- `goup_create_startup`: add a startup to the landscape through `add_landscape_entry`; published by default.
+- `goup_create_github_project`: add a GitHub project to the landscape through `add_landscape_entry`; requires `github_url`.
+- `goup_create_startups_bulk`: add many startups to the landscape in one call, sharing `actor_user_id`, `alliance_id`, and a default `published`; each entry is created independently so one failure does not abort the rest, and the result reports per-entry status.
 - `goup_search`: search public events, groups, jobs, ecosystem entries, and wiki sources in one call.
 - `goup_search_groups`: list or search groups.
 - `goup_search_events`: list or search events.
