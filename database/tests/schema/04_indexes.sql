@@ -139,6 +139,7 @@ select indexes_are('event', array[
     'event_location_idx',
     'event_meeting_sync_claim_idx',
     'event_meeting_sync_idx',
+    'event_og_image_url_idx',
     'event_published_by_idx',
     'event_search_idx',
     'event_starts_at_idx',

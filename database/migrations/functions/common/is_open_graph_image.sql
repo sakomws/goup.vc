@@ -15,5 +15,17 @@ returns boolean as $$
         and g.active = true
         and g.deleted = false
         and c.active = true
+    )
+    or exists (
+        select 1
+        from event e
+        join "group" g using (group_id)
+        join alliance c using (alliance_id)
+        where e.og_image_url = p_image_url
+        and e.deleted = false
+        and (e.published = true or e.canceled = true)
+        and g.active = true
+        and g.deleted = false
+        and c.active = true
     );
 $$ language sql;

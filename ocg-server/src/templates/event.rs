@@ -72,9 +72,9 @@ impl Page {
     /// Returns the Open Graph image URL for the event page.
     pub(crate) fn open_graph_image_url(&self) -> Option<String> {
         self.event
-            .group
             .og_image_url
             .as_deref()
+            .or(self.event.group.og_image_url.as_deref())
             .or(self.event.alliance.og_image_url.as_deref())
             .map(|image_url| helpers::open_graph_image_url(&self.base_url, image_url))
     }
