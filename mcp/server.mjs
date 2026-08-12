@@ -258,6 +258,8 @@ async function runAction(action, args) {
       return createLandscapeEntry(args, "startup");
     case "create_github_project":
       return createLandscapeEntry(args, "github_project");
+    case "create_startups_bulk":
+      return createLandscapeEntriesBulk(args, "startup");
     case "search_wiki":
       return searchWiki(args);
     case "submit_talk":
@@ -439,6 +441,62 @@ from created${resultJoin};
 `;
 
   return (await runPsql(sql)).trim();
+}
+
+async function createLandscapeEntriesBulk(args, kind) {
+  if (!ENABLE_MUTATIONS) {
+    throw new Error("Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow landscape entry creation.");
+  }
+
+  const actorUserId = requireUuid(args.actor_user_id, "actor_user_id");
+  const allianceId = requireUuid(args.alliance_id, "alliance_id");
+
+  if (!Array.isArray(args.entries) || args.entries.length === 0) {
+    throw new Error("entries must be a non-empty array of landscape entries");
+  }
+
+  const sharedPublished = args.published;
+  const results = [];
+  let created = 0;
+  let failed = 0;
+
+  for (let index = 0; index < args.entries.length; index += 1) {
+    const raw = args.entries[index] || {};
+    const entryArgs = {
+      ...raw,
+      actor_user_id: raw.actor_user_id || actorUserId,
+      alliance_id: raw.alliance_id || allianceId,
+      published: raw.published !== undefined ? raw.published : sharedPublished,
+    };
+
+    try {
+      const output = await createLandscapeEntry(entryArgs, kind);
+      let parsed;
+      try {
+        parsed = JSON.parse(output);
+      } catch {
+        parsed = { message: output };
+      }
+      results.push({ index, name: raw.name || null, status: "ok", ...parsed });
+      created += 1;
+    } catch (error) {
+      results.push({
+        index,
+        name: raw.name || null,
+        status: "error",
+        error: String(error && error.message ? error.message : error),
+      });
+      failed += 1;
+    }
+  }
+
+  return JSON.stringify({
+    kind,
+    total: args.entries.length,
+    created,
+    failed,
+    results,
+  });
 }
 
 async function searchWiki(args) {
