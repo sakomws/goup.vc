@@ -225,6 +225,7 @@
               {% let logo_value -%}value="{{ event.logo_url }}"{%- endlet %}
               {% let banner_value -%}value="{%- if let Some(banner_url) = &event.banner_url -%}{{ banner_url }}{%- endif -%}"{%- endlet %}
               {% let banner_mobile_value -%}value="{%- if let Some(banner_mobile_url) = &event.banner_mobile_url -%}{{ banner_mobile_url }}{%- endif -%}"{%- endlet %}
+              {% let og_image_value -%}value="{%- if let Some(og_image_url) = &event.og_image_url -%}{{ og_image_url }}{%- endif -%}"{%- endlet %}
 
               {# Logo URL -#}
               {{ form_fields::image_field(label = "Logo", name = "logo_url", image_kind = "logo", target = "logo", legend = "If this logo isn't provided, we'll fall back to the group logo, then the alliance logo if needed.", value_attr = logo_value, field_class = "col-span-full lg:col-span-4", input_class = "w-full block") -}}
@@ -237,6 +238,10 @@
               {# Banner Mobile URL -#}
               {{ form_fields::image_field(label = "Banner Mobile", name = "banner_mobile_url", image_kind = "banner", target = "banner_mobile", help_prefix_text = "Size required 1220 x 192 px.", legend = "If this banner isn't provided, we'll fall back to the group banner, then the alliance banner if needed.", value_attr = banner_mobile_value, input_class = "w-full block") -}}
               {# End Banner Mobile URL -#}
+
+              {# Open Graph Image URL -#}
+              {{ form_fields::image_field(label = "Open Graph Image", name = "og_image_url", image_kind = "banner", target = "open_graph", help_prefix_text = "Size required 1200 x 630 px. Format must be PNG, JPEG, or WebP.", legend = "Shown when this event's link is shared. If not provided, we'll use the group or alliance Open Graph image.", value_attr = og_image_value, input_class = "w-full block") -}}
+              {# End Open Graph Image URL -#}
 
               {# Short Description -#}
               <div class="col-span-full">

@@ -308,6 +308,7 @@ async fn test_page_success() {
     event.alliance.display_name = "Test Alliance".to_string();
     event.group.name = "Test Group".to_string();
     event.group.og_image_url = Some("/images/group-og.png".to_string());
+    event.og_image_url = Some("/images/event-og.png".to_string());
     event.group.slug_pretty = Some("pretty-group".to_string());
     event.name = "Test Event".to_string();
     event.slug = "test-event".to_string();
@@ -373,14 +374,14 @@ async fn test_page_success() {
         r#"<meta property="og:description" content="Test Group in Test Alliance alliance. Open Alliance Groups, where Open Source alliances thrive.">"#
     ));
     assert!(body.contains(
-        r#"<meta property="og:image" content="https://example.test/images/og/group-og.png">"#
+        r#"<meta property="og:image" content="https://example.test/images/og/event-og.png">"#
     ));
     assert!(body.contains(r#"<meta name="twitter:title" content="Test Event - March 5">"#));
     assert!(body.contains(
         r#"<meta name="twitter:description" content="Test Group in Test Alliance alliance. Open Alliance Groups, where Open Source alliances thrive.">"#
     ));
     assert!(body.contains(
-        r#"<meta name="twitter:image" content="https://example.test/images/og/group-og.png">"#
+        r#"<meta name="twitter:image" content="https://example.test/images/og/event-og.png">"#
     ));
 }
 

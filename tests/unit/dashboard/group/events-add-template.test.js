@@ -30,20 +30,31 @@ describe("dashboard group event add template", () => {
     expect(template).to.include('class="form-legend mt-3 break-words"');
   });
 
-  it("places the copy event selector inside details before the event name", async () => {
-    // Load the event add template before checking copy selector placement.
+  it("keeps each event editor section unique and relevant", async () => {
+    // Load the event add template before checking section content.
     const template = normalizeWhitespace(await loadTemplate());
 
-    // Assert copying is part of details and appears before the event name field.
+    // Assert each tab has exactly one matching content panel.
+    const count = (value) => template.split(value).length - 1;
+    expect(count('data-content="details"')).to.equal(1);
+    expect(count('data-content="date-venue"')).to.equal(1);
+    expect(count('data-content="questions"')).to.equal(1);
+    expect(count('data-content="cfs"')).to.equal(1);
+    expect(count('data-content="sessions"')).to.equal(1);
+    expect(count('data-content="hosts-sponsors"')).to.equal(1);
+
+    // Assert the core event identity fields are in Details.
     const detailsFormIndex = template.indexOf('<form id="details-form">');
-    const copySelectorIndex = template.indexOf(
-      'button-id="copy-event-selector"',
-    );
     const eventNameIndex = template.indexOf('name="name"');
+    const dateVenueFormIndex = template.indexOf('<form id="date-venue-form">');
+    const startsAtIndex = template.indexOf('name="starts_at"');
 
     expect(detailsFormIndex).to.be.greaterThan(-1);
-    expect(copySelectorIndex).to.be.greaterThan(detailsFormIndex);
-    expect(eventNameIndex).to.be.greaterThan(copySelectorIndex);
+    expect(eventNameIndex).to.be.greaterThan(detailsFormIndex);
+    expect(eventNameIndex).to.be.lessThan(dateVenueFormIndex);
+
+    // Assert scheduling fields belong to Date & Venue.
+    expect(startsAtIndex).to.be.greaterThan(dateVenueFormIndex);
   });
 
   it("shows a draft event title header above add tabs and content", async () => {

@@ -292,6 +292,9 @@ pub(crate) struct Event {
     /// URL to the event logo.
     #[garde(custom(image_url_opt))]
     pub logo_url: Option<String>,
+    /// Open Graph image URL used in event link previews.
+    #[garde(custom(image_url_opt))]
+    pub og_image_url: Option<String>,
     /// Luma URL.
     #[garde(url, length(max = MAX_LEN_L))]
     pub luma_url: Option<String>,

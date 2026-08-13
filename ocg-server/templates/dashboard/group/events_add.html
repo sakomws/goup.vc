@@ -12,29 +12,6 @@
        class="hidden rounded-md border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-900">
     Group event defaults have been applied. You can still edit any field before saving.
   </div>
-  <div class="space-y-3 w-full">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <label for="copy-event-selector" class="form-label m-0">
-        Choose an event to copy <span class="font-semibold">from</span> (optional)
-      </label>
-      <div data-copy-indicator
-           id="copy-event-feedback"
-           class="hidden items-center gap-2 text-sm text-primary-600"
-           aria-live="polite">
-        <svg-spinner size="size-4" label="Copying event">
-        </svg-spinner>
-        <span>Copying event...</span>
-      </div>
-    </div>
-    <event-selector button-id="copy-event-selector" group-id="{{ group_id }}"></event-selector>
-    <p class="form-legend mt-3">
-      Start and end dates are left blank, and sessions are not copied so you can set a
-      new schedule. Meeting links are not carried over. When copying from events imported from the previous alliance platform,
-      some fields like event's hosts and speakers won't be copied. Note that this only
-      applies to events that have not been created from Open Alliance Groups.
-    </p>
-  </div>
-
   <div class="mb-10 grid min-w-0 grid-cols-1 items-stretch gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:gap-x-8">
     <div class="min-w-0 overflow-x-auto">
       <ul class="inline-flex min-w-max flex-nowrap gap-1 border-b border-stone-900/10 text-center font-medium [&>li]:w-auto [&>li]:shrink-0 [&>li>div>button]:w-auto [&>li>div>button]:whitespace-nowrap lg:gap-2">
@@ -130,6 +107,53 @@
             <div class="pb-12">
               {{ dashboard::form_title(title = "Event details", description = "Please add as many details about this event as possible.") -}}
 
+              <div class="col-span-full min-w-0 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <label for="copy-event-selector" class="form-label m-0">
+                    Choose an event to copy <span class="font-semibold">from</span> (optional)
+                  </label>
+                  <div data-copy-indicator
+                       id="copy-event-feedback"
+                       class="hidden items-center gap-2 text-sm text-primary-600"
+                       aria-live="polite">
+                    <svg-spinner size="size-4" label="Copying event">
+                    </svg-spinner>
+                    <span>Copying event...</span>
+                  </div>
+                </div>
+                <event-selector class="block min-w-0 max-w-full" button-id="copy-event-selector" group-id="{{ group_id }}"></event-selector>
+                <p class="form-legend mt-3 break-words">
+                  Start and end dates are left blank, and sessions are not copied so you can set a
+                  new schedule. Meeting links are not carried over. When copying from events imported from the previous alliance platform,
+                  some fields like event's hosts and speakers won't be copied. Note that this only
+                  applies to events that have not been created from Open Alliance Groups.
+                </p>
+              </div>
+
+              <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-6xl">
+              {# Event name -#}
+              <div class="col-span-full">
+                <label for="name" class="form-label">
+                  Name <span class="asterisk">*</span>
+                </label>
+                <div class="mt-2">
+                  <input type="text"
+                         name="name"
+                         id="name"
+                         maxlength="{{ crate::validation::MAX_LEN_ENTITY_NAME }}"
+                         class="input-primary"
+                         autocomplete="off"
+                         autocorrect="off"
+                         autocapitalize="off"
+                         spellcheck="false"
+                         required>
+                </div>
+                <p class="form-legend">
+                  Display name of the event (e.g. Kubernetes Amsterdam Meetup). Max {{ crate::validation::MAX_LEN_ENTITY_NAME }} characters.
+                </p>
+              </div>
+              {# End Event name -#}
+
               <div class="hidden lg:flex col-span-3"></div>
 
               {# Event kind -#}
@@ -178,6 +202,10 @@
               {{ form_fields::image_field(label = "Banner Mobile", name = "banner_mobile_url", image_kind = "banner", target = "banner_mobile", help_prefix_text = "Size required 1220 x 192 px.", legend = "If this banner isn't provided, we'll fall back to the group banner, then the alliance banner if needed.", input_class = "w-full block") -}}
               {# End Banner Mobile URL -#}
 
+              {# Open Graph Image URL -#}
+              {{ form_fields::image_field(label = "Open Graph Image", name = "og_image_url", image_kind = "banner", target = "open_graph", help_prefix_text = "Size required 1200 x 630 px. Format must be PNG, JPEG, or WebP.", legend = "Shown when this event's link is shared. If not provided, we'll use the group or alliance Open Graph image.", input_class = "w-full block") -}}
+              {# End Open Graph Image URL -#}
+
               {# Short Description -#}
               <div class="col-span-full">
                 <label for="description_short" class="form-label">Short Description</label>
@@ -207,6 +235,7 @@
                 </p>
               </div>
               {# End Event Description -#}
+              </div>
             </div>
           </div>
 
@@ -485,414 +514,6 @@
       {# End CFS Tab -#}
 
       {# Date & Venue Tab -#}
-      <div data-content="date-venue" class="hidden">
-        <form id="date-venue-form">
-          <div class="space-y-12">
-            {# Date and Time section -#}
-            <div>
-              <p class="mt-1 text-sm/6 text-stone-500">When will this event take place?</p>
-              <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
-                <div class="col-span-full min-w-0 space-y-3">
-                  <div class="flex flex-wrap items-center justify-between gap-3">
-                    <label for="copy-event-selector" class="form-label m-0">
-                      Choose an event to copy <span class="font-semibold">from</span> (optional)
-                    </label>
-                    <div data-copy-indicator
-                         id="copy-event-feedback"
-                         class="hidden items-center gap-2 text-sm text-primary-600"
-                         aria-live="polite">
-                      <svg-spinner size="size-4" label="Copying event">
-                      </svg-spinner>
-                      <span>Copying event...</span>
-                    </div>
-                  </div>
-                  <event-selector class="block min-w-0 max-w-full" button-id="copy-event-selector" group-id="{{ group_id }}"></event-selector>
-                  <p class="form-legend mt-3 break-words">
-                    Start and end dates are left blank, and sessions are not copied so you can set a
-                    new schedule. Meeting links are not carried over. When copying from events imported from the previous community platform,
-                    some fields like event's hosts and speakers won't be copied. Note that this only
-                    applies to events that have not been created from Open Community Groups.
-                  </p>
-                </div>
-
-                {# Event name -#}
-                <div class="col-span-full min-w-0 xl:col-span-3">
-                  <label for="name" class="form-label">
-                    Name <span class="asterisk">*</span>
-                  </label>
-                  <div class="mt-2">
-                    <input type="text"
-                           name="name"
-                           id="name"
-                           maxlength="{{ crate::validation::MAX_LEN_ENTITY_NAME }}"
-                           class="input-primary"
-                           autocomplete="off"
-                           autocorrect="off"
-                           autocapitalize="off"
-                           spellcheck="false"
-                           required>
-                  </div>
-                  <p class="form-legend">
-                    Display name of the event (e.g. Kubernetes Amsterdam Meetup). Max {{ crate::validation::MAX_LEN_ENTITY_NAME }} characters.
-                  </p>
-                </div>
-                {# End Event name -#}
-
-                <div class="hidden xl:flex col-span-3"></div>
-
-                {# Event kind -#}
-                <div class="col-span-full xl:col-span-3">
-                  <label for="kind_id" class="form-label">
-                    Event Type <span class="asterisk">*</span>
-                  </label>
-                  <div class="mt-2 grid grid-cols-1">
-                    <select id="kind_id" name="kind_id" class="select-primary" required>
-                      <option value="">Select an event type</option>
-                      {% for kind in event_kinds %}
-                        <option value="{{ kind.event_kind_id }}">{{ kind.display_name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                  <p class="form-legend">Whether this is an in-person, virtual, or hybrid event.</p>
-                </div>
-                {# End Event kind -#}
-
-                {# Event category -#}
-                <div class="col-span-full xl:col-span-3">
-                  <label for="category_id" class="form-label">
-                    Category <span class="asterisk">*</span>
-                  </label>
-                  <div class="mt-2 grid grid-cols-1">
-                    <select id="category_id" name="category_id" class="select-primary" required>
-                      <option value="">Select a category</option>
-                      {% for category in categories %}
-                        <option value="{{ category.event_category_id }}">{{ category.name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                  <p class="form-legend">Type of event or meetup.</p>
-                </div>
-                {# End Event category -#}
-
-                {# Logo URL -#}
-                {{ form_fields::image_field(label = "Logo", name = "logo_url", image_kind = "logo", target = "logo", legend = "If this logo isn't provided, we'll fall back to the group logo, then the community logo if needed.", field_class = "col-span-full lg:col-span-4", input_class = "w-full block") -}}
-                {# End Logo URL -#}
-
-                {# Banner URL -#}
-                {{ form_fields::image_field(label = "Banner", name = "banner_url", image_kind = "banner", target = "banner", help_prefix_text = "Size required 2428 x 192 px.", legend = "If this banner isn't provided, we'll fall back to the group banner, then the community banner if needed.", input_class = "w-full block") -}}
-                {# End Banner URL -#}
-
-                {# Banner Mobile URL -#}
-                {{ form_fields::image_field(label = "Banner Mobile", name = "banner_mobile_url", image_kind = "banner", target = "banner_mobile", help_prefix_text = "Size required 1220 x 192 px.", legend = "If this banner isn't provided, we'll fall back to the group banner, then the community banner if needed.", input_class = "w-full block") -}}
-                {# End Banner Mobile URL -#}
-
-                {# Short Description -#}
-                <div class="col-span-full">
-                  <label for="description_short" class="form-label">Short Description</label>
-                  <div class="mt-2">
-                    <input type="text"
-                           id="description_short"
-                           name="description_short"
-                           class="input-primary"
-                           maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }}" />
-                  </div>
-                  <p class="form-legend">
-                    Brief description used in event listings and previews. Max {{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }} characters.
-                  </p>
-                </div>
-                {# End Short Description -#}
-
-                {# Event Description -#}
-                <div class="col-span-full">
-                  <label for="description" class="form-label">
-                    Description <span class="asterisk">*</span>
-                  </label>
-                  <div class="mt-2">
-                    <markdown-editor id="description" name="description" maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION }}" required></markdown-editor>
-                  </div>
-                  <p class="form-legend">
-                    Full description of the event and its purpose. Max {{ crate::validation::MAX_LEN_DESCRIPTION }} characters.
-                  </p>
-                </div>
-                {# End Event Description -#}
-              </div>
-            </div>
-
-            {# Additional Information section -#}
-            <div class="border-t border-stone-900/10 pt-12">
-              {{ dashboard::form_title(title = "Additional Information", description = "Optional event settings and external links.") -}}
-
-              <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-6xl">
-                {# Capacity -#}
-                <div class="col-span-full lg:col-span-4">
-                  <label for="capacity" class="form-label">
-                    Capacity
-                    {%- if meetings_enabled %}
-                      <span class="asterisk">* <sup class="text-xs font-normal">(required when requesting automatic meeting creation)</sup></span>
-                    {%- endif -%}
-                  </label>
-                  <div class="mt-2">
-                    <input type="number"
-                           name="capacity"
-                           id="capacity"
-                           min="1"
-                           class="input-primary"
-                           placeholder="100">
-                  </div>
-                  <p class="form-legend">
-                    Maximum number of attendees.
-                    <br />
-                    When ticketing is configured, total capacity is derived from ticket seat counts and
-                    this field is filled automatically and disabled.
-                    {%- if meetings_enabled %}
-                      <br />
-                      Note: Meeting providers have participant limits. If capacity exceeds your provider
-                      limit, attendees may be unable to join the meeting.
-                    {%- endif -%}
-                  </p>
-                </div>
-                {# End Capacity -#}
-
-                {# Registration required -#}
-                <div class="col-span-full lg:col-span-3">
-                  <label class="inline-flex items-center cursor-pointer">
-                    <input id="toggle_registration_required"
-                           name="toggle_registration_required"
-                           value="required"
-                           type="checkbox"
-                           class="sr-only peer">
-                    <input type="hidden"
-                           id="registration_required"
-                           name="registration_required"
-                           value="false">
-                    <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
-                    </div>
-                    <span class="ms-3 text-sm font-medium text-stone-900">Registration Required</span>
-                  </label>
-                  <p class="form-legend">Whether attendees must register in advance.</p>
-                </div>
-                {# End Registration required -#}
-
-                {# Test event -#}
-                <div class="col-span-full lg:col-span-3">
-                  <label class="inline-flex items-center cursor-pointer">
-                    <input id="toggle_test_event"
-                           name="toggle_test_event"
-                           value="enabled"
-                           type="checkbox"
-                           class="sr-only peer">
-                    <input type="hidden" id="test_event" name="test_event" value="false">
-                    <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
-                    </div>
-                    <span class="ms-3 text-sm font-medium text-stone-900">Test Event</span>
-                  </label>
-                  <p class="form-legend">Exclude this event from discovery, stats, and broadcast notifications.</p>
-                </div>
-                {# End Test event -#}
-
-                {# Attendee approval required -#}
-                <div class="col-span-full lg:col-span-3">
-                  <label data-enrollment-toggle-label="attendee-approval"
-                         class="inline-flex items-center cursor-pointer transition-opacity">
-                    <input id="toggle_attendee_approval_required"
-                           name="toggle_attendee_approval_required"
-                           value="required"
-                           type="checkbox"
-                           class="sr-only peer">
-                    <input type="hidden"
-                           id="attendee_approval_required"
-                           name="attendee_approval_required"
-                           value="false">
-                    <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white peer-disabled:opacity-70 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
-                    </div>
-                    <span class="ms-3 text-sm font-medium text-stone-900">Require Invitation Approval</span>
-                  </label>
-                  <p class="form-legend">
-                    Let people request an invitation for organizer review. This cannot be combined with
-                    waitlist or paid tickets.
-                  </p>
-                </div>
-                {# End Attendee approval required -#}
-
-                {# Waitlist enabled -#}
-                <div class="col-span-full lg:col-span-3">
-                  <label data-enrollment-toggle-label="waitlist"
-                         class="inline-flex items-center cursor-pointer transition-opacity">
-                    <input id="toggle_waitlist_enabled"
-                           name="toggle_waitlist_enabled"
-                           value="enabled"
-                           type="checkbox"
-                           class="sr-only peer">
-                    <input type="hidden"
-                           id="waitlist_enabled"
-                           name="waitlist_enabled"
-                           value="false">
-                    <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white peer-disabled:opacity-70 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
-                    </div>
-                    <span class="ms-3 text-sm font-medium text-stone-900">Enable Waitlist</span>
-                  </label>
-                  <p class="form-legend">
-                    Allow full events to add people to a waiting list instead of rejecting them.
-                    Set a capacity first to enable waitlist safely.
-                    {% if payments_enabled -%}
-                      Paid events disable waitlist automatically.
-                    {% endif -%}
-                  </p>
-                </div>
-                {# End Waitlist enabled -#}
-
-                <div class="col-span-full grid grid-cols-1 gap-x-6 gap-y-8 lg:grid-cols-2">
-                  {# Meetup URL -#}
-                  <div>
-                    <label for="meetup_url" class="form-label">Meetup.com URL</label>
-                    <div class="mt-2">
-                      <input type="url"
-                             name="meetup_url"
-                             id="meetup_url"
-                             class="input-primary"
-                             placeholder="https://meetup.com/group/events/123456">
-                    </div>
-                    <p class="form-legend">Link to the Meetup.com event page.</p>
-                  </div>
-                  {# End Meetup URL -#}
-
-                  {# Luma URL -#}
-                  <div>
-                    <label for="luma_url" class="form-label">Luma URL</label>
-                    <div class="mt-2">
-                      <input type="url"
-                             name="luma_url"
-                             id="luma_url"
-                             class="input-primary"
-                             placeholder="https://luma.com/event">
-                    </div>
-                    <p class="form-legend">Link to the Luma event page.</p>
-                  </div>
-                  {# End Luma URL -#}
-                </div>
-
-                {# Photos -#}
-                {{ form_fields::gallery_field(legend = "Optional photos related to the event.") -}}
-                {# End Photos -#}
-
-                {# Tags -#}
-                {% let tag_legend -%}Optional tags to help categorize and find the event. Max {{ crate::validation::MAX_LEN_TAG }} characters per tag.{%- endlet %}
-                {{ form_fields::tags_field(legend = tag_legend, field_class = "col-span-3", label_text = "Tags") -}}
-                {# End Tags -#}
-              </div>
-            </div>
-            {# End additional information section -#}
-          </form>
-        </div>
-        {# End Event Details Tab -#}
-
-        {# Questions Tab -#}
-        <div data-content="questions" class="hidden">
-          <form id="questions-form">
-            <div class="pb-12">
-              {{ dashboard::form_title(title = "Registration questions", description = "Ask attendees for extra information before their registration is complete.") -}}
-              <div class="mt-10">
-                <questions-editor name="registration_questions" questions="[]"></questions-editor>
-              </div>
-            </div>
-          </form>
-        </div>
-        {# End Questions Tab -#}
-
-        {# CFS Tab -#}
-        <div data-content="cfs" class="hidden">
-          <form id="cfs-form">
-            <div class="pb-12">
-              {{ dashboard::form_title(title = "Call for Speakers", description = "Collect session proposals ahead of the event.") -}}
-
-              <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
-                {# Enable CFS toggle -#}
-                <div class="col-span-full lg:col-span-3">
-                  <label class="inline-flex items-center cursor-pointer">
-                    <input id="toggle_cfs_enabled"
-                           name="toggle_cfs_enabled"
-                           value="enabled"
-                           type="checkbox"
-                           class="sr-only peer">
-                    <input type="hidden" id="cfs_enabled" name="cfs_enabled" value="false">
-                    <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
-                    </div>
-                    <span class="ms-3 text-sm font-medium text-stone-900">Enable Call for Speakers</span>
-                  </label>
-                  <p class="form-legend">Allow speakers to submit session proposals.</p>
-                </div>
-                {# End Enable CFS toggle -#}
-
-                <div class="hidden lg:flex col-span-3"></div>
-
-                {# Opens at -#}
-                <div class="col-span-full lg:col-span-3">
-                  <label for="cfs_starts_at" class="form-label">
-                    Opens at
-                    <span class="asterisk">* <sup class="text-xs font-normal">(required when CFS is enabled)</sup></span>
-                  </label>
-                  <div class="mt-2">
-                    <input type="datetime-local"
-                           name="cfs_starts_at"
-                           id="cfs_starts_at"
-                           class="input-primary">
-                  </div>
-                  <p class="form-legend">When submissions open.</p>
-                </div>
-                {# End Opens at -#}
-
-                {# Closes at -#}
-                <div class="col-span-full lg:col-span-3">
-                  <label for="cfs_ends_at" class="form-label">
-                    Closes at
-                    <span class="asterisk">* <sup class="text-xs font-normal">(required when CFS is enabled)</sup></span>
-                  </label>
-                  <div class="mt-2">
-                    <input type="datetime-local"
-                           name="cfs_ends_at"
-                           id="cfs_ends_at"
-                           class="input-primary">
-                  </div>
-                  <p class="form-legend">When submissions close.</p>
-                </div>
-                {# End Closes at -#}
-
-                {# CFS description -#}
-                <div class="col-span-full">
-                  <label for="cfs_description" class="form-label">
-                    CFS description
-                    <span class="asterisk">* <sup class="text-xs font-normal">(required when CFS is enabled)</sup></span>
-                  </label>
-                  <div class="mt-2">
-                    <markdown-editor id="cfs_description" name="cfs_description" maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION }}"></markdown-editor>
-                  </div>
-                  <p class="form-legend">Shown on the event page to invite speakers.</p>
-                </div>
-                {# End CFS description -#}
-
-                {# CFS labels -#}
-                <div class="col-span-full">
-                  <label for="cfs-labels-editor" class="form-label">Labels</label>
-                  <p class="form-legend mt-1">
-                    Labels help categorize submitted session proposals. For example, you can use them to organize sessions by track, topic, or theme. Submitters can select one or more labels when submitting their proposals. Organizers can review and update the labels on submissions during the review process, if needed.
-                  </p>
-                  <div class="mt-3">
-                    <cfs-labels-editor id="cfs-labels-editor" field-name="cfs_labels" max-items="{{ crate::validation::MAX_LEN_EVENT_LABELS_PER_EVENT }}" colors="{{ crate::validation::CFS_LABEL_COLORS|json }}">
-                    <p slot="legend" class="form-legend">
-                      Use prefixes like <span class="font-semibold">track / ai + ml</span> and keep
-                      <span class="font-semibold">/</span> as the separator for consistency.
-                    </p>
-                    </cfs-labels-editor>
-                  </div>
-                </div>
-                {# End CFS labels -#}
-              </div>
-            </div>
-          </form>
-        </div>
-        {# End CFS Tab -#}
-
-        {# Date & Venue Tab -#}
         <div data-content="date-venue" class="hidden">
           <form id="date-venue-form">
             <div class="space-y-12">

@@ -79,6 +79,7 @@ begin
                 location,
                 logo_url,
                 luma_url,
+                og_image_url,
                 meeting_hosts,
                 meeting_in_sync,
                 meeting_join_instructions,
@@ -130,6 +131,7 @@ begin
                 jsonb_geography_point(p_event),
                 nullif(p_event->>'logo_url', ''),
                 nullif(p_event->>'luma_url', ''),
+                nullif(p_event->>'og_image_url', ''),
                 jsonb_text_array(p_event->'meeting_hosts'),
                 case
                     when (p_event->>'meeting_requested')::boolean = true then false

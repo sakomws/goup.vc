@@ -271,6 +271,8 @@ pub struct EventFull {
     pub kind: EventKind,
     /// URL to the event logo.
     pub logo_url: String,
+    /// Open Graph image URL used for event link previews.
+    pub og_image_url: Option<String>,
     /// Event title.
     pub name: String,
     /// Event organizers snapshotted at creation time.
