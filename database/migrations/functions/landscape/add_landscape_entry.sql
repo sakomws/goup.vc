@@ -29,6 +29,7 @@ begin
         github_url,
         logo_url,
         category,
+        stage,
         tags
     )
     values (
@@ -43,6 +44,10 @@ begin
         nullif(trim(p_input->>'github_url'), ''),
         nullif(trim(p_input->>'logo_url'), ''),
         nullif(trim(p_input->>'category'), ''),
+        case
+            when trim(p_input->>'kind') = 'startup' then nullif(trim(p_input->>'stage'), '')
+            else null
+        end,
         coalesce(p_tags, '{}'::text[])
     )
     returning landscape_entry_id into v_entry_id;

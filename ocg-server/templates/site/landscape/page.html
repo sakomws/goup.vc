@@ -24,7 +24,7 @@
       </h1>
 
       <p class="font-metrophobic mt-4 max-w-xl text-balance text-base leading-[1.65] text-white/65 lg:text-lg">
-        Browse alliance startups, accelerators, GitHub projects, partner communities, investors, podcast leads, tools, and community-built products.
+        Discover alliance startups and community-built projects, alongside accelerators, GitHub projects, partner communities, investors, podcast leads, and tools.
       </p>
     </div>
   </section>
@@ -79,8 +79,8 @@
           hx-get="/landscape"
           hx-target="body"
           hx-push-url="true"
-          hx-trigger="submit, search from:#landscape-query, change from:#landscape-category, change from:#landscape-kind"
-          class="mb-8 grid gap-3 rounded-[2rem] border border-stone-200 bg-white/95 p-3 shadow-lg shadow-stone-200/50 md:grid-cols-[minmax(0,1fr)_180px_220px_auto] md:items-center">
+          hx-trigger="submit, search from:#landscape-query, change from:#landscape-sector, change from:#landscape-stage, change from:#landscape-kind"
+          class="mb-8 grid gap-3 rounded-[2rem] border border-stone-200 bg-white/95 p-3 shadow-lg shadow-stone-200/50 lg:grid-cols-[minmax(0,1fr)_150px_170px_150px_auto] lg:items-center">
       <input type="hidden"
              name="github_sort"
              value="{{ filters.github_sort.as_deref().unwrap_or("stars") }}" />
@@ -111,12 +111,34 @@
                 {% if filters.kind.as_deref() == Some("podcast_lead") %}selected{% endif %}>Podcast leads</option>
       </select>
 
-      <label class="sr-only" for="landscape-category">Category</label>
-      <input id="landscape-category"
+      <label class="sr-only" for="landscape-sector">Sector</label>
+      <select id="landscape-sector"
              name="category"
-             value="{{ filters.category.as_deref().unwrap_or("") }}"
-             class="input h-11 rounded-full border-stone-200 bg-stone-50/70 px-4 transition focus:border-stone-400 focus:bg-white focus:outline-none focus:ring-0"
-             placeholder="Category" />
+              class="input h-11 rounded-full border-stone-200 bg-stone-50/70 px-4 transition focus:border-stone-400 focus:bg-white focus:outline-none focus:ring-0">
+        <option value="">All sectors</option>
+        <option value="AI" {% if filters.category.as_deref() == Some("AI") %}selected{% endif %}>AI</option>
+        <option value="ClimateTech" {% if filters.category.as_deref() == Some("ClimateTech") %}selected{% endif %}>ClimateTech</option>
+        <option value="Cybersecurity" {% if filters.category.as_deref() == Some("Cybersecurity") %}selected{% endif %}>Cybersecurity</option>
+        <option value="DevTools" {% if filters.category.as_deref() == Some("DevTools") %}selected{% endif %}>DevTools</option>
+        <option value="EdTech" {% if filters.category.as_deref() == Some("EdTech") %}selected{% endif %}>EdTech</option>
+        <option value="Fintech" {% if filters.category.as_deref() == Some("Fintech") %}selected{% endif %}>Fintech</option>
+        <option value="HealthTech" {% if filters.category.as_deref() == Some("HealthTech") %}selected{% endif %}>HealthTech</option>
+        <option value="Infrastructure" {% if filters.category.as_deref() == Some("Infrastructure") %}selected{% endif %}>Infrastructure</option>
+      </select>
+
+      <label class="sr-only" for="landscape-stage">Startup stage</label>
+      <select id="landscape-stage"
+              name="stage"
+              class="input h-11 rounded-full border-stone-200 bg-stone-50/70 px-4 transition focus:border-stone-400 focus:bg-white focus:outline-none focus:ring-0">
+        <option value="">All startup stages</option>
+        <option value="pre_seed" {% if filters.stage.as_deref() == Some("pre_seed") %}selected{% endif %}>Pre-seed</option>
+        <option value="seed" {% if filters.stage.as_deref() == Some("seed") %}selected{% endif %}>Seed</option>
+        <option value="series_a" {% if filters.stage.as_deref() == Some("series_a") %}selected{% endif %}>Series A</option>
+        <option value="series_b" {% if filters.stage.as_deref() == Some("series_b") %}selected{% endif %}>Series B</option>
+        <option value="series_c_plus" {% if filters.stage.as_deref() == Some("series_c_plus") %}selected{% endif %}>Series C+</option>
+        <option value="growth" {% if filters.stage.as_deref() == Some("growth") %}selected{% endif %}>Growth</option>
+        <option value="public" {% if filters.stage.as_deref() == Some("public") %}selected{% endif %}>Public</option>
+      </select>
 
       <button class="inline-flex h-11 items-center justify-center rounded-full bg-stone-950 px-6 text-sm font-bold text-white shadow-sm transition hover:bg-stone-800"
               type="submit">Search</button>
@@ -155,6 +177,9 @@
             {% endif -%}
             {% if let Some(category) = &filters.category -%}
               <input type="hidden" name="category" value="{{ category }}" />
+            {% endif -%}
+            {% if let Some(stage) = &filters.stage -%}
+              <input type="hidden" name="stage" value="{{ stage }}" />
             {% endif -%}
             <label class="text-[10px] font-bold uppercase tracking-[0.22em] text-[#9A9088]"
                    for="github-leaderboard-sort">Rank by</label>
@@ -293,6 +318,11 @@
                   <span class="kind-badge {{ entry.kind|landscape_kind_accent }}">{{ entry.kind|landscape_kind_label }}</span>
                   {% if let Some(category) = &entry.category -%}
                     <span class="font-metrophobic text-xs text-[#9A9088]">{{ category }}</span>
+                  {% endif -%}
+                  {% if let Some(stage) = &entry.stage -%}
+                    <span class="font-metrophobic text-xs text-[#9A9088]">
+                      {% if stage == "pre_seed" %}Pre-seed{% else if stage == "seed" %}Seed{% else if stage == "series_a" %}Series A{% else if stage == "series_b" %}Series B{% else if stage == "series_c_plus" %}Series C+{% else if stage == "growth" %}Growth{% else %}Public{% endif %}
+                    </span>
                   {% endif -%}
                 </div>
               </div>

@@ -27,6 +27,15 @@ const LANDSCAPE_KINDS: [&str; 6] = [
     "investor",
 ];
 const ACCELERATOR_COHORT_STATUSES: [&str; 4] = ["planned", "open", "running", "completed"];
+const STARTUP_STAGES: [&str; 7] = [
+    "pre_seed",
+    "seed",
+    "series_a",
+    "series_b",
+    "series_c_plus",
+    "growth",
+    "public",
+];
 
 /// Public landscape search filters.
 #[skip_serializing_none]
@@ -44,6 +53,9 @@ pub(crate) struct LandscapeFilters {
     /// Filter by category.
     #[garde(length(max = MAX_LEN_M))]
     pub category: Option<String>,
+    /// Filter startups by funding stage.
+    #[garde(length(max = MAX_LEN_M), custom(valid_startup_stage_opt))]
+    pub stage: Option<String>,
     /// Sort option for the GitHub leaderboard.
     #[garde(length(max = MAX_LEN_M))]
     pub github_sort: Option<String>,
@@ -66,6 +78,7 @@ impl Default for LandscapeFilters {
             alliance: None,
             kind: None,
             category: None,
+            stage: None,
             github_sort: None,
             limit: Some(20),
             offset: Some(0),
@@ -135,6 +148,10 @@ pub(crate) struct LandscapeEntryInput {
     #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_M))]
     pub category: Option<String>,
+    /// Startup funding stage.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(valid_startup_stage_opt), length(max = MAX_LEN_M))]
+    pub stage: Option<String>,
     /// Tags, comma-separated.
     #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(length(max = MAX_LEN_M))]
@@ -206,6 +223,8 @@ pub(crate) struct LandscapeEntry {
     pub logo_url: Option<String>,
     /// Category label.
     pub category: Option<String>,
+    /// Startup funding stage.
+    pub stage: Option<String>,
     /// Tags.
     #[serde(default)]
     pub tags: Vec<String>,
@@ -327,6 +346,17 @@ fn valid_accelerator_cohort_status_opt(value: &Option<String>, _ctx: &()) -> gar
         Ok(())
     } else {
         Err(garde::Error::new("invalid accelerator cohort status"))
+    }
+}
+
+fn valid_startup_stage_opt(value: &Option<String>, _ctx: &()) -> garde::Result {
+    let Some(value) = value.as_deref().map(str::trim) else {
+        return Ok(());
+    };
+    if STARTUP_STAGES.contains(&value) {
+        Ok(())
+    } else {
+        Err(garde::Error::new("invalid startup stage"))
     }
 }
 

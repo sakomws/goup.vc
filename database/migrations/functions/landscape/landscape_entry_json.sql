@@ -13,6 +13,7 @@ returns jsonb language sql stable as $$
         'github_url', p_entry.github_url,
         'logo_url', p_entry.logo_url,
         'category', p_entry.category,
+        'stage', p_entry.stage,
         'tags', p_entry.tags,
         'published', p_entry.published,
         'created_at', extract(epoch from p_entry.created_at)::bigint,
