@@ -6,6 +6,7 @@ declare
     v_query text := nullif(trim(p_filters->>'query'), '');
     v_kind text := nullif(trim(p_filters->>'kind'), '');
     v_category text := nullif(trim(p_filters->>'category'), '');
+    v_stage text := nullif(trim(p_filters->>'stage'), '');
     v_alliance text := nullif(trim(p_filters->>'alliance'), '');
     v_total int;
     v_entries jsonb;
@@ -18,6 +19,7 @@ begin
         where le.published = true
         and (v_alliance is null or a.name = v_alliance)
         and (v_kind is null or le.kind = v_kind)
+        and (v_stage is null or (le.kind = 'startup' and le.stage = v_stage))
         and (
             v_category is null
             or le.category ilike '%' || escape_ilike_pattern(v_category) || '%' escape '\'
@@ -28,6 +30,7 @@ begin
             or le.summary ilike '%' || escape_ilike_pattern(v_query) || '%' escape '\'
             or le.description ilike '%' || escape_ilike_pattern(v_query) || '%' escape '\'
             or le.category ilike '%' || escape_ilike_pattern(v_query) || '%' escape '\'
+            or le.stage ilike '%' || escape_ilike_pattern(v_query) || '%' escape '\'
             or lap.application_url ilike '%' || escape_ilike_pattern(v_query) || '%' escape '\'
             or lap.curriculum_url ilike '%' || escape_ilike_pattern(v_query) || '%' escape '\'
             or lap.cohort_status ilike '%' || escape_ilike_pattern(v_query) || '%' escape '\'

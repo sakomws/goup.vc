@@ -16,6 +16,10 @@ begin
         github_url = nullif(trim(p_input->>'github_url'), ''),
         logo_url = nullif(trim(p_input->>'logo_url'), ''),
         category = nullif(trim(p_input->>'category'), ''),
+        stage = case
+            when trim(p_input->>'kind') = 'startup' then nullif(trim(p_input->>'stage'), '')
+            else null
+        end,
         tags = coalesce(p_tags, '{}'::text[]),
         updated_at = current_timestamp
     where landscape_entry_id = p_entry_id

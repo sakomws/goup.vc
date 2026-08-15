@@ -48,11 +48,24 @@
           </select>
         </div>
         <div class="space-y-2 lg:col-span-3">
-          <label class="form-label" for="new-landscape-category">Category</label>
+          <label class="form-label" for="new-landscape-category">Sector</label>
           <input id="new-landscape-category"
                  name="category"
                  class="input-primary"
                  placeholder="AI, DevOps, Fintech" />
+        </div>
+        <div class="space-y-2 lg:col-span-3">
+          <label class="form-label" for="new-landscape-stage">Startup stage</label>
+          <select id="new-landscape-stage" name="stage" class="select-primary">
+            <option value="">Not set</option>
+            <option value="pre_seed">Pre-seed</option>
+            <option value="seed">Seed</option>
+            <option value="series_a">Series A</option>
+            <option value="series_b">Series B</option>
+            <option value="series_c_plus">Series C+</option>
+            <option value="growth">Growth</option>
+            <option value="public">Public</option>
+          </select>
         </div>
         <div class="space-y-2 lg:col-span-12">
           <label class="form-label" for="new-landscape-summary">Summary</label>
@@ -261,11 +274,27 @@
             </div>
             <div class="space-y-2">
               <label class="form-label"
-                     for="landscape-category-{{ entry.landscape_entry_id }}">Category</label>
+                     for="landscape-category-{{ entry.landscape_entry_id }}">Sector</label>
               <input id="landscape-category-{{ entry.landscape_entry_id }}"
                      name="category"
                      class="input-primary"
                      value="{{ entry.category.as_deref().unwrap_or("") }}" />
+            </div>
+            <div class="space-y-2">
+              <label class="form-label"
+                     for="landscape-stage-{{ entry.landscape_entry_id }}">Startup stage</label>
+              <select id="landscape-stage-{{ entry.landscape_entry_id }}"
+                      name="stage"
+                      class="select-primary">
+                <option value="">Not set</option>
+                <option value="pre_seed" {% if entry.stage.as_deref() == Some("pre_seed") %}selected{% endif %}>Pre-seed</option>
+                <option value="seed" {% if entry.stage.as_deref() == Some("seed") %}selected{% endif %}>Seed</option>
+                <option value="series_a" {% if entry.stage.as_deref() == Some("series_a") %}selected{% endif %}>Series A</option>
+                <option value="series_b" {% if entry.stage.as_deref() == Some("series_b") %}selected{% endif %}>Series B</option>
+                <option value="series_c_plus" {% if entry.stage.as_deref() == Some("series_c_plus") %}selected{% endif %}>Series C+</option>
+                <option value="growth" {% if entry.stage.as_deref() == Some("growth") %}selected{% endif %}>Growth</option>
+                <option value="public" {% if entry.stage.as_deref() == Some("public") %}selected{% endif %}>Public</option>
+              </select>
             </div>
           </div>
           <div class="space-y-2">
