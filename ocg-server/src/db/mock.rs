@@ -1346,6 +1346,11 @@ mock! {
             alliance_id: Uuid,
             filters: &crate::types::landscape::DashboardLandscapeFilters,
         ) -> Result<crate::types::landscape::LandscapeOutput>;
+        async fn list_alliance_landscape_entries_for_export(
+            &self,
+            alliance_id: Uuid,
+            filters: &crate::types::landscape::DashboardLandscapeFilters,
+        ) -> Result<crate::types::landscape::LandscapeOutput>;
         async fn add_landscape_entry(
             &self,
             actor_user_id: Uuid,

@@ -28,6 +28,13 @@ pub(crate) trait DBLandscape {
         filters: &DashboardLandscapeFilters,
     ) -> Result<LandscapeOutput>;
 
+    /// Lists all matching entries for an authorized dashboard CSV export.
+    async fn list_alliance_landscape_entries_for_export(
+        &self,
+        alliance_id: Uuid,
+        filters: &DashboardLandscapeFilters,
+    ) -> Result<LandscapeOutput>;
+
     /// Add a landscape entry to an alliance.
     async fn add_landscape_entry(
         &self,
@@ -88,6 +95,19 @@ where
     ) -> Result<LandscapeOutput> {
         self.fetch_json_one(
             "select list_alliance_landscape_entries($1::uuid, $2::jsonb)",
+            &[&alliance_id, &Json(filters)],
+        )
+        .await
+    }
+
+    #[instrument(skip(self, filters), err)]
+    async fn list_alliance_landscape_entries_for_export(
+        &self,
+        alliance_id: Uuid,
+        filters: &DashboardLandscapeFilters,
+    ) -> Result<LandscapeOutput> {
+        self.fetch_json_one(
+            "select list_alliance_landscape_entries_for_export($1::uuid, $2::jsonb)",
             &[&alliance_id, &Json(filters)],
         )
         .await

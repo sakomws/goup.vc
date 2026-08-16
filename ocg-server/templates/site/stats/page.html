@@ -543,10 +543,11 @@
             {% if stats.landscape_overview.by_category.len() > 0 -%}
               <div class="mt-6 grid gap-x-12 sm:grid-cols-2 lg:grid-cols-3">
                 {% for (label, count) in stats.landscape_overview.by_category -%}
-                  <div class="flex items-baseline justify-between gap-4 border-0 border-b border-solid border-stone-200 py-3">
+                  <a href="{{ label|landscape_category_url }}"
+                     class="flex items-baseline justify-between gap-4 border-0 border-b border-solid border-stone-200 py-3 transition hover:border-stone-400 hover:text-stone-950">
                     <span class="min-w-0 truncate text-sm text-stone-700">{{ label }}</span>
                     <span class="font-amethysta text-base font-bold tabular-nums text-stone-950">{{ count|num_fmt }}</span>
-                  </div>
+                  </a>
                 {% endfor -%}
               </div>
             {% endif -%}

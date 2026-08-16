@@ -121,6 +121,10 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
 
     // Alliance landscape management endpoints
     let landscape_management = Router::new()
+        .route(
+            "/landscape.csv",
+            get(dashboard::alliance::landscape::download_csv),
+        )
         .route("/landscape/add", post(dashboard::alliance::landscape::add))
         .route(
             "/landscape/{entry_id}/delete",

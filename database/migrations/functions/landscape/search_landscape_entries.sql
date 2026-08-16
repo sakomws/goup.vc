@@ -20,6 +20,10 @@ begin
         and (v_kind is null or le.kind = v_kind)
         and (
             v_category is null
+            or (
+                v_category = 'Uncategorized'
+                and nullif(trim(le.category), '') is null
+            )
             or le.category ilike '%' || escape_ilike_pattern(v_category) || '%' escape '\'
         )
         and (

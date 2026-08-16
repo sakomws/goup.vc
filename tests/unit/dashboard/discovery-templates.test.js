@@ -23,6 +23,7 @@ describe("discovery dashboard templates", () => {
     );
     expect(template).to.include("candidates discovered");
     expect(template).to.include("job drafts created");
+    expect(template).to.include("run.error_message");
   });
 
   it("keeps group candidates visible when no event draft exists", async () => {
