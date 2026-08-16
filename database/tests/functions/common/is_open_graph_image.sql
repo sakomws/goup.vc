@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(7);
+select plan(8);
 
 -- ============================================================================
 -- VARIABLES
@@ -76,6 +76,7 @@ insert into "group" (
 
     active,
     deleted,
+    banner_url,
     og_image_url
 ) values
     (
@@ -87,6 +88,7 @@ insert into "group" (
 
         true,
         false,
+        '/images/group-banner.png',
         '/images/group-og.png'
     ),
     (
@@ -98,6 +100,7 @@ insert into "group" (
 
         false,
         false,
+        null,
         '/images/inactive-group-og.png'
     ),
     (
@@ -109,6 +112,7 @@ insert into "group" (
 
         false,
         true,
+        null,
         '/images/deleted-group-og.png'
     ),
     (
@@ -120,6 +124,7 @@ insert into "group" (
 
         true,
         false,
+        null,
         '/images/inactive-alliance-group-og.png'
     );
 
@@ -146,6 +151,13 @@ select is(
     is_open_graph_image('/images/group-og.png'),
     true,
     'Returns true for active group Open Graph images from active alliances'
+);
+
+-- Should return true for active group banners used as Open Graph fallbacks
+select is(
+    is_open_graph_image('/images/group-banner.png'),
+    true,
+    'Returns true for active group banners used as Open Graph fallbacks'
 );
 
 -- Should return false for inactive group Open Graph images

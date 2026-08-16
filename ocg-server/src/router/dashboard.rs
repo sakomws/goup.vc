@@ -98,6 +98,10 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
 
     // Alliance groups management endpoints
     let groups_management = Router::new()
+        .route(
+            "/members.csv",
+            get(dashboard::alliance::members::download_csv),
+        )
         .route("/groups/add", post(dashboard::alliance::groups::add))
         .route(
             "/groups/{group_id}/activate",
@@ -470,6 +474,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
 
     // Group member management endpoints
     let members_management = Router::new()
+        .route("/members.csv", get(dashboard::group::members::download_csv))
         .route(
             "/members/requests/{user_id}/approve",
             post(dashboard::group::members::approve_join_request),

@@ -49,7 +49,12 @@ async fn test_log_in_page_success() {
     let nm = MockNotificationsManager::new();
 
     // Setup router and send request
-    let router = TestRouterBuilder::new(db, nm).build().await;
+    let mut server_cfg = HttpServerConfig::default();
+    server_cfg.login.linkedin = true;
+    let router = TestRouterBuilder::new(db, nm)
+        .with_server_cfg(server_cfg)
+        .build()
+        .await;
     let request = Request::builder()
         .method("GET")
         .uri(LOG_IN_URL)
@@ -66,6 +71,9 @@ async fn test_log_in_page_success() {
         &HeaderValue::from_static("text/html; charset=utf-8"),
     );
     assert!(!bytes.is_empty());
+    let body = String::from_utf8(bytes.to_vec()).unwrap();
+    assert!(body.contains("We use your verified email, name, and photo"));
+    assert!(body.contains("We don't import your profile URL, work history, or connections."));
 }
 
 #[tokio::test]
@@ -123,7 +131,12 @@ async fn test_sign_up_page_success() {
     let nm = MockNotificationsManager::new();
 
     // Setup router and send request
-    let router = TestRouterBuilder::new(db, nm).build().await;
+    let mut server_cfg = HttpServerConfig::default();
+    server_cfg.login.linkedin = true;
+    let router = TestRouterBuilder::new(db, nm)
+        .with_server_cfg(server_cfg)
+        .build()
+        .await;
     let request = Request::builder()
         .method("GET")
         .uri(SIGN_UP_URL)
@@ -143,6 +156,8 @@ async fn test_sign_up_page_success() {
     let body = String::from_utf8(bytes.to_vec()).unwrap();
     assert!(body.contains("Create your account."));
     assert!(body.contains("Continue with LinkedIn"));
+    assert!(body.contains("We use your verified email, name, and photo"));
+    assert!(body.contains("We don't import your profile URL, work history, or connections."));
 }
 
 #[tokio::test]

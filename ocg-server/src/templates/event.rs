@@ -76,6 +76,9 @@ impl Page {
             .as_deref()
             .or(self.event.group.og_image_url.as_deref())
             .or(self.event.alliance.og_image_url.as_deref())
+            .or(self.event.banner_url.as_deref())
+            .or(self.event.group.banner_url.as_deref())
+            .or(Some(self.event.alliance.banner_url.as_str()))
             .map(|image_url| helpers::open_graph_image_url(&self.base_url, image_url))
     }
 
@@ -208,6 +211,17 @@ mod tests {
         assert_eq!(
             page.preview_description(),
             "Test Group in Test Alliance alliance. Open Alliance Groups, where Open Source alliances thrive."
+        );
+    }
+
+    #[test]
+    fn test_open_graph_image_url_falls_back_to_event_banner() {
+        let mut page = sample_page(None, chrono_tz::UTC);
+        page.event.banner_url = Some("/images/event-banner.png".to_string());
+
+        assert_eq!(
+            page.open_graph_image_url().as_deref(),
+            Some("https://example.test/images/og/event-banner.png")
         );
     }
 

@@ -9,7 +9,9 @@ use uuid::Uuid;
 
 use crate::{
     db::{PgClient, PgExecutor},
-    templates::alliance::{self, AllianceMembersFilters, AllianceMembersOutput},
+    templates::alliance::{
+        self, AllianceMemberExport, AllianceMembersFilters, AllianceMembersOutput,
+    },
     types::{
         event::{EventKind, EventSummary},
         group::GroupSummary,
@@ -51,6 +53,13 @@ pub(crate) trait DBAlliance {
         alliance_id: Uuid,
         filters: &AllianceMembersFilters,
     ) -> Result<AllianceMembersOutput>;
+
+    /// Lists private member contact details for an authorized CSV export.
+    async fn list_alliance_members_for_export(
+        &self,
+        alliance_id: Uuid,
+        filters: &AllianceMembersFilters,
+    ) -> Result<Vec<AllianceMemberExport>>;
 
     /// Lists enabled partner integrations for the public alliance site.
     async fn list_public_partner_integrations(
@@ -175,6 +184,20 @@ where
     ) -> Result<AllianceMembersOutput> {
         self.fetch_json_one(
             "select list_alliance_members($1::uuid, $2::jsonb)",
+            &[&alliance_id, &Json(filters)],
+        )
+        .await
+    }
+
+    /// [`DBAlliance::list_alliance_members_for_export`]
+    #[instrument(skip(self, filters), err)]
+    async fn list_alliance_members_for_export(
+        &self,
+        alliance_id: Uuid,
+        filters: &AllianceMembersFilters,
+    ) -> Result<Vec<AllianceMemberExport>> {
+        self.fetch_json_one(
+            "select list_alliance_members_for_export($1::uuid, $2::jsonb)",
             &[&alliance_id, &Json(filters)],
         )
         .await

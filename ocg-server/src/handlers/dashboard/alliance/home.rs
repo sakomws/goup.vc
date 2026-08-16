@@ -181,6 +181,7 @@ pub(crate) async fn page(
             let (_, template) = members::prepare_list_page(
                 &db,
                 alliance_id,
+                user_id,
                 raw_query.as_deref().unwrap_or_default(),
             )
             .await?;
