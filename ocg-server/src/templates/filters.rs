@@ -15,6 +15,7 @@
 use chrono::{DateTime, Utc};
 use chrono_tz::Tz;
 use num_format::{Locale, ToFormattedString};
+use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use tracing::error;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -101,6 +102,18 @@ pub(crate) fn md_to_html(s: &str, _: &dyn askama::Values) -> askama::Result<Stri
 #[askama::filter_fn]
 pub(crate) fn num_fmt(n: &i64, _: &dyn askama::Values) -> askama::Result<String> {
     Ok(n.to_formatted_string(&Locale::en))
+}
+
+/// Builds a public landscape URL filtered by category.
+#[askama::filter_fn]
+pub(crate) fn landscape_category_url<S: AsRef<str>>(
+    category: S,
+    _: &dyn askama::Values,
+) -> askama::Result<String> {
+    Ok(format!(
+        "/landscape?category={}",
+        utf8_percent_encode(category.as_ref(), NON_ALPHANUMERIC)
+    ))
 }
 
 /// Returns up to two uppercase initials extracted from a name, used as a

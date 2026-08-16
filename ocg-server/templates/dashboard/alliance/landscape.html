@@ -200,12 +200,19 @@
   <button class="btn-primary" type="submit">Search</button>
 </form>
 
-<div class="mb-5 flex items-center justify-between gap-3">
+<div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
   <div class="text-sm text-stone-600">
     {{ pagination::range_display(offset = filters.offset.unwrap_or(0) , count = entries.len(), total = total, label = "entry") }}
   </div>
-  <a class="text-sm font-semibold text-primary-700 hover:text-primary-900"
-     href="/landscape">Public landscape</a>
+  <div class="flex flex-wrap gap-3">
+    {% if can_manage_landscape -%}
+      <a href="/dashboard/alliance/landscape.csv"
+         class="btn-secondary-anchor"
+         download>Download CSV</a>
+    {% endif -%}
+    <a class="text-sm font-semibold text-primary-700 hover:text-primary-900"
+       href="/landscape">Public landscape</a>
+  </div>
 </div>
 
 {% if entries.is_empty() -%}

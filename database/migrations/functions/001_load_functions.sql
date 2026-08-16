@@ -68,6 +68,7 @@
 {{ template "landscape/add_landscape_entry.sql" }}
 {{ template "landscape/delete_landscape_entry.sql" }}
 {{ template "landscape/list_alliance_landscape_entries.sql" }}
+{{ template "landscape/list_alliance_landscape_entries_for_export.sql" }}
 {{ template "landscape/search_landscape_entries.sql" }}
 {{ template "landscape/update_landscape_entry.sql" }}
 {{ template "landscape/update_landscape_entry_published.sql" }}

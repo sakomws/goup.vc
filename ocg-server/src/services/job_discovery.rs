@@ -8,7 +8,7 @@ use garde::Validate;
 use tokio::time::sleep;
 use tokio_postgres::types::Json;
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::{
@@ -140,12 +140,21 @@ async fn ingest_users(
             for source_url in sources {
                 let mut seen = HashSet::new();
                 let search_domain = source_search_domain(&source_url)?;
-                let mut candidates: Vec<(String, JobInput)> = job_pages
-                    .discover_greenhouse_jobs(&source_url)
-                    .await?
-                    .into_iter()
-                    .map(|input| (input.apply_url.clone(), input))
-                    .collect();
+                let mut candidates: Vec<(String, JobInput)> =
+                    match job_pages.discover_greenhouse_jobs(&source_url).await {
+                        Ok(jobs) => jobs
+                            .into_iter()
+                            .map(|input| (input.apply_url.clone(), input))
+                            .collect(),
+                        Err(err) => {
+                            warn!(
+                                %err,
+                                source_url = %source_url,
+                                "skipped embedded Greenhouse discovery after source page fetch failed"
+                            );
+                            Vec::new()
+                        }
+                    };
                 for result in client
                     .search(&format!("jobs hiring careers site:{search_domain}"))
                     .await?

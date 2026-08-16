@@ -22,6 +22,10 @@ begin
         and (v_stage is null or (le.kind = 'startup' and le.stage = v_stage))
         and (
             v_category is null
+            or (
+                v_category = 'Uncategorized'
+                and nullif(trim(le.category), '') is null
+            )
             or le.category ilike '%' || escape_ilike_pattern(v_category) || '%' escape '\'
         )
         and (
