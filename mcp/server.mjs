@@ -242,6 +242,8 @@ async function runAction(action, args) {
       return updateEvent(args);
     case "search_all":
       return searchAll(args);
+    case "query_community_analytics":
+      return queryCommunityAnalytics(args);
     case "search_groups":
       return searchGroups(args);
     case "search_events":
@@ -352,6 +354,25 @@ async function searchAll(args) {
     null,
     2,
   );
+}
+
+async function queryCommunityAnalytics(args) {
+  const filters = buildCommunityAnalyticsFilters(args);
+  const sql = sqlWithJsonArgs(filters, `
+select query_community_analytics(
+  (j->>'start_at')::timestamptz,
+  (j->>'end_at')::timestamptz,
+  case
+    when j ? 'country_codes' then array(select jsonb_array_elements_text(j->'country_codes'))
+    else null
+  end,
+  nullif(j->>'alliance_name', ''),
+  (j->>'limit')::int
+)::text
+from args;
+`);
+
+  return (await runPsql(sql)).trim();
 }
 
 async function searchJobs(args) {
@@ -883,6 +904,33 @@ function buildSearchFilters(args) {
   return filters;
 }
 
+function buildCommunityAnalyticsFilters(args) {
+  const startAt = requireIsoTimestamp(args.start_at, "start_at");
+  const endAt = requireIsoTimestamp(args.end_at, "end_at");
+
+  if (Date.parse(startAt) >= Date.parse(endAt)) {
+    throw new Error("start_at must be before end_at");
+  }
+
+  const filters = {
+    start_at: startAt,
+    end_at: endAt,
+    limit: normalizeAnalyticsLimit(args.limit),
+  };
+  const allianceName = optionalString(args.alliance_name);
+  if (allianceName) filters.alliance_name = allianceName;
+
+  if (args.country_codes !== undefined) {
+    if (!Array.isArray(args.country_codes)) {
+      throw new Error("country_codes must be an array of ISO 3166-1 alpha-2 codes");
+    }
+
+    filters.country_codes = [...new Set(args.country_codes.map(normalizeCountryCode))];
+  }
+
+  return filters;
+}
+
 function normalizeLimit(value) {
   if (value === undefined || value === null) {
     return 20;
@@ -890,6 +938,18 @@ function normalizeLimit(value) {
 
   if (!Number.isInteger(value) || value < 1 || value > 100) {
     throw new Error("limit must be an integer from 1 to 100");
+  }
+
+  return value;
+}
+
+function normalizeAnalyticsLimit(value) {
+  if (value === undefined || value === null) {
+    return 10;
+  }
+
+  if (!Number.isInteger(value) || value < 1 || value > 50) {
+    throw new Error("limit must be an integer from 1 to 50");
   }
 
   return value;
@@ -922,6 +982,22 @@ function optionalString(value) {
 
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function normalizeCountryCode(value) {
+  if (typeof value !== "string" || !/^[A-Za-z]{2}$/.test(value.trim())) {
+    throw new Error("country_codes must contain ISO 3166-1 alpha-2 codes");
+  }
+
+  return value.trim().toUpperCase();
+}
+
+function requireIsoTimestamp(value, name) {
+  if (typeof value !== "string" || !value.trim() || Number.isNaN(Date.parse(value))) {
+    throw new Error(`${name} must be an ISO 8601 timestamp`);
+  }
+
+  return value.trim();
 }
 
 function parseJsonToolOutput(output) {

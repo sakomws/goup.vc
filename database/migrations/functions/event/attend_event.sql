@@ -18,6 +18,7 @@ declare
     v_registration_ends_at timestamptz;
     v_registration_questions jsonb;
     v_registration_starts_at timestamptz;
+    v_registration_mode text;
     v_registration_window_open boolean;
     v_starts_at timestamptz;
     v_waitlist_enabled boolean;
@@ -28,6 +29,7 @@ begin
         e.capacity,
         e.group_id,
         e.registration_ends_at,
+        e.registration_mode,
         e.registration_questions,
         e.registration_starts_at,
         e.starts_at,
@@ -37,6 +39,7 @@ begin
         v_capacity,
         v_group_id,
         v_registration_ends_at,
+        v_registration_mode,
         v_registration_questions,
         v_registration_starts_at,
         v_starts_at,
@@ -56,6 +59,10 @@ begin
     for update of e;
     if not found then
         raise exception 'event not found or inactive';
+    end if;
+
+    if v_registration_mode <> 'built_in' then
+        raise exception 'event does not use built-in registration';
     end if;
 
     -- Track question requirements so waitlist joins can skip answer validation

@@ -122,6 +122,28 @@ pub fn email_vec(value: &Option<Vec<String>>, _ctx: &()) -> garde::Result {
     Ok(())
 }
 
+/// Validates an optional Google Analytics 4 measurement ID.
+pub fn ga4_measurement_id(value: &Option<String>, _ctx: &()) -> garde::Result {
+    let Some(value) = value else {
+        return Ok(());
+    };
+
+    let valid = value.len() >= 8
+        && value.len() <= 34
+        && value.starts_with("G-")
+        && value[2..]
+            .bytes()
+            .all(|character| character.is_ascii_uppercase() || character.is_ascii_digit());
+
+    if valid {
+        Ok(())
+    } else {
+        Err(garde::Error::new(
+            "Google Analytics measurement ID must use the G-XXXXXXXX format",
+        ))
+    }
+}
+
 /// Validates that a required string is a valid image URL (absolute or relative).
 ///
 /// Accepts absolute URLs (with scheme) or relative URLs starting with `/`.
@@ -478,6 +500,14 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn test_ga4_measurement_id() {
+        assert!(ga4_measurement_id(&Some("G-AB12CD34".to_string()), &()).is_ok());
+        assert!(ga4_measurement_id(&Some("UA-123456".to_string()), &()).is_err());
+        assert!(ga4_measurement_id(&Some("G-lowercase".to_string()), &()).is_err());
+        assert!(ga4_measurement_id(&None, &()).is_ok());
     }
 
     #[test]

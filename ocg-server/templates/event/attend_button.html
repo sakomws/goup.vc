@@ -2,6 +2,17 @@
 {% import "macros/question_answers.html" as question_answers -%}
 {% import "event/attendance_macros.html" as attendance -%}
 {# Attend button section -#}
+{% if event.registration_mode == crate::types::event::EventRegistrationMode::External -%}
+  <a href="{{ event.external_registration_url.as_deref().unwrap_or_default() }}"
+     target="_blank"
+     rel="noopener noreferrer"
+     class="btn-primary-outline inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap px-5 text-sm md:h-[30px]">
+    <div class="svg-icon size-4 icon-external-link"></div>
+    Register externally
+  </a>
+{% else if event.registration_mode == crate::types::event::EventRegistrationMode::None -%}
+  <p class="text-sm text-stone-600">Registration is not required for this event.</p>
+{% else -%}
 <div id="attendance-container-{{ attendance_instance }}"
      data-attendance-container
      data-canceled="{{ event.canceled }}"
@@ -478,4 +489,5 @@
        hx-swap="none"></div>
   {# End attendance checker -#}
 </div>
+{% endif -%}
 {# End attend button section -#}

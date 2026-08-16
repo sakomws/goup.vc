@@ -8,6 +8,7 @@ use serde_with::skip_serializing_none;
 use uuid::Uuid;
 
 use crate::{
+    db::notifications::ScheduledEventAttendeeEmail,
     templates::{dashboard, dashboard::group::PresenceFilter, helpers::user_initials},
     types::{
         event::EventSummary,
@@ -40,6 +41,8 @@ pub(crate) struct ListPage {
     /// Registration questions configured for the event.
     #[serde(default)]
     pub registration_questions: Vec<QuestionnaireQuestion>,
+    /// Scheduled attendee emails available for organizer management.
+    pub scheduled_emails: Vec<ScheduledEventAttendeeEmail>,
     /// Total number of attendees for the selected event.
     pub total: usize,
 

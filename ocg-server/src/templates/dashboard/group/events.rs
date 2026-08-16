@@ -15,8 +15,8 @@ use crate::{
     templates::{dashboard, filters, helpers::DATE_FORMAT},
     types::{
         event::{
-            EventCategory, EventCfsLabel, EventFull, EventKindSummary, EventSummary, SessionKind,
-            SessionKindSummary,
+            EventCategory, EventCfsLabel, EventFull, EventKindSummary, EventRegistrationMode,
+            EventSummary, SessionKind, SessionKindSummary,
         },
         group::GroupSponsor,
         pagination::{self, Pagination, ToRawQuery},
@@ -234,6 +234,10 @@ pub(crate) struct Event {
     #[serde(default)]
     #[garde(dive)]
     pub registration_questions: Vec<QuestionnaireQuestion>,
+    /// Registration flow selected by the organizer.
+    #[serde(default)]
+    #[garde(skip)]
+    pub registration_mode: EventRegistrationMode,
     /// Timezone for the event.
     #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_TIMEZONE))]
     pub timezone: String,
@@ -341,6 +345,9 @@ pub(crate) struct Event {
     /// Registration end time.
     #[garde(skip)]
     pub registration_ends_at: Option<NaiveDateTime>,
+    /// Destination used when registration is handled outside Goup.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub external_registration_url: Option<String>,
     /// Whether the registration questions section was submitted.
     #[garde(skip)]
     pub registration_questions_present: Option<bool>,
@@ -752,7 +759,7 @@ pub(crate) struct TicketType {
 mod tests {
     use serde_json::Value;
 
-    use crate::types::payments::EventDiscountType;
+    use crate::types::{event::EventRegistrationMode, payments::EventDiscountType};
 
     use super::{DiscountCode, Event, TicketPriceWindow, TicketType};
 
@@ -792,6 +799,31 @@ registration_questions[0][options][0][label]=Vegetarian",
         assert_eq!(
             event.registration_questions[0].options[0].label,
             "Vegetarian"
+        );
+    }
+
+    #[test]
+    fn event_deserialization_accepts_external_registration() {
+        let event: Event = serde_qs::from_str(
+            "\
+category_id=00000000-0000-0000-0000-000000000001&\
+description=Event%20description&\
+kind_id=virtual&\
+name=Sample%20Event&\
+timezone=UTC&\
+registration_mode=external&\
+external_registration_url=https%3A%2F%2Fexample.com%2Fregister",
+        )
+        .unwrap();
+
+        assert_eq!(event.registration_mode, EventRegistrationMode::External);
+        assert_eq!(
+            event.external_registration_url.as_deref(),
+            Some("https://example.com/register")
+        );
+        assert_eq!(
+            event.to_db_payload().unwrap()["registration_mode"],
+            "external"
         );
     }
 

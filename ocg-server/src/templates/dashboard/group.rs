@@ -13,6 +13,7 @@ pub(crate) mod integrations;
 pub(crate) mod intentional_dating;
 pub(crate) mod invitation_requests;
 pub(crate) mod members;
+pub(crate) mod rolling_cfs;
 pub(crate) mod settings;
 pub(crate) mod sponsors;
 pub(crate) mod spotlights;

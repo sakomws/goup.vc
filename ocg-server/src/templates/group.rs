@@ -18,7 +18,7 @@ use crate::{
     },
     types::{
         event::{EventKind, EventSummary},
-        group::GroupFull,
+        group::{GroupFull, GroupRollingCfs},
         pagination,
         site::SiteSettings,
     },
@@ -53,6 +53,29 @@ pub(crate) struct Page {
     pub upcoming_events: Vec<UpcomingEventCard>,
     /// Authenticated user information.
     pub user: User,
+}
+
+/// Public page for a group's standing, date-flexible Call for Speakers.
+#[derive(Debug, Clone, Template)]
+#[template(path = "group/cfs.html")]
+pub(crate) struct CfsPage {
+    /// Alliance slug used by public form actions.
+    pub alliance_name: String,
+    /// Public rolling CFS configuration.
+    pub cfs: GroupRollingCfs,
+    /// Identifier for the current page.
+    #[allow(dead_code)]
+    pub page_id: PageId,
+    /// Current URL path.
+    pub path: String,
+    /// Global site settings.
+    pub site_settings: SiteSettings,
+    /// Proposals the signed-in user can submit.
+    pub session_proposals: Vec<crate::templates::event::SessionProposal>,
+    /// Authenticated user information.
+    pub user: User,
+    /// Optional success notice after submission.
+    pub notice: Option<String>,
 }
 
 /// Public group accelerator page.

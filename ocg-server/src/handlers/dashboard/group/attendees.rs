@@ -8,8 +8,9 @@ use axum::{
         StatusCode,
         header::{CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_TYPE},
     },
-    response::{Html, IntoResponse},
+    response::{Html, IntoResponse, Response},
 };
+use chrono::{DateTime, Utc};
 use garde::Validate;
 use qrcode::render::svg;
 use serde::{Deserialize, Serialize};
@@ -18,7 +19,10 @@ use uuid::Uuid;
 
 use crate::{
     config::HttpServerConfig,
-    db::{DBExt, DynDB, notifications::CustomNotificationTracking},
+    db::{
+        DBExt, DynDB,
+        notifications::{CustomNotificationTracking, NewScheduledEventAttendeeEmail},
+    },
     handlers::{
         error::HandlerError,
         extractors::{
@@ -86,7 +90,13 @@ pub(crate) async fn list_page(
         title: page_filters.title,
         ts_query: page_filters.ts_query.clone(),
     };
-    let (can_manage_events, event, registration_questions, search_attendees_results) = tokio::try_join!(
+    let (
+        can_manage_events,
+        event,
+        registration_questions,
+        search_attendees_results,
+        scheduled_emails,
+    ) = tokio::try_join!(
         db.user_has_group_permission(
             &alliance_id,
             &group_id,
@@ -95,7 +105,8 @@ pub(crate) async fn list_page(
         ),
         db.get_event_summary(alliance_id, group_id, event_id),
         db.get_event_registration_questions(alliance_id, event_id),
-        db.search_event_attendees(group_id, &search_filters)
+        db.search_event_attendees(group_id, &search_filters),
+        db.list_scheduled_event_attendee_emails(group_id, event_id)
     )?;
 
     // Prepare template
@@ -118,6 +129,7 @@ pub(crate) async fn list_page(
         navigation_links,
         refresh_url,
         registration_questions,
+        scheduled_emails,
         total: search_attendees_results.total,
         checked_in: page_filters.checked_in,
         event_ticket_type_ids: page_filters.event_ticket_type_ids,
@@ -539,6 +551,72 @@ pub(crate) async fn send_event_custom_notification(
     Ok(StatusCode::NO_CONTENT.into_response())
 }
 
+/// Schedules an attendee email for a future time.
+#[instrument(skip_all, err)]
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn schedule_event_custom_notification(
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    State(server_cfg): State<HttpServerConfig>,
+    Path(event_id): Path<Uuid>,
+    ValidatedFormQs(notification): ValidatedFormQs<EventCustomNotification>,
+) -> Result<impl IntoResponse, HandlerError> {
+    save_scheduled_event_custom_notification(
+        db,
+        &server_cfg,
+        alliance_id,
+        group_id,
+        event_id,
+        user.user_id,
+        None,
+        notification,
+    )
+    .await
+}
+
+/// Updates an attendee email that has not yet been sent.
+#[instrument(skip_all, err)]
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn update_scheduled_event_custom_notification(
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    State(server_cfg): State<HttpServerConfig>,
+    Path((event_id, scheduled_email_id)): Path<(Uuid, Uuid)>,
+    ValidatedFormQs(notification): ValidatedFormQs<EventCustomNotification>,
+) -> Result<impl IntoResponse, HandlerError> {
+    save_scheduled_event_custom_notification(
+        db,
+        &server_cfg,
+        alliance_id,
+        group_id,
+        event_id,
+        user.user_id,
+        Some(scheduled_email_id),
+        notification,
+    )
+    .await
+}
+
+/// Cancels an attendee email that has not yet been sent.
+#[instrument(skip_all, err)]
+pub(crate) async fn cancel_scheduled_event_custom_notification(
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path((event_id, scheduled_email_id)): Path<(Uuid, Uuid)>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.cancel_scheduled_event_attendee_email(scheduled_email_id, group_id, event_id)
+        .await?;
+    Ok((
+        StatusCode::NO_CONTENT,
+        [("HX-Trigger", "refresh-event-attendees")],
+    )
+        .into_response())
+}
+
 // Download handlers.
 
 /// Downloads a CSV file with all attendees for a specific event.
@@ -652,6 +730,10 @@ pub(crate) struct EventCustomNotification {
     #[serde(default)]
     #[garde(skip)]
     pub recipient_user_ids: Vec<Uuid>,
+    /// RFC3339 UTC time for a future delivery.
+    #[serde(default)]
+    #[garde(skip)]
+    pub scheduled_at: Option<String>,
     /// Subject line for the notification email.
     #[serde(alias = "title")]
     #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
@@ -680,6 +762,104 @@ pub(crate) struct RefundReviewInput {
 }
 
 // Helpers.
+
+/// Validates, renders, and persists a future attendee email.
+#[allow(clippy::too_many_arguments)]
+async fn save_scheduled_event_custom_notification(
+    db: DynDB,
+    server_cfg: &HttpServerConfig,
+    alliance_id: Uuid,
+    group_id: Uuid,
+    event_id: Uuid,
+    created_by: Uuid,
+    scheduled_email_id: Option<Uuid>,
+    notification: EventCustomNotification,
+) -> Result<Response, HandlerError> {
+    let scheduled_at = notification
+        .scheduled_at
+        .as_deref()
+        .ok_or_else(|| anyhow::anyhow!("Select a future send time."))?
+        .parse::<DateTime<chrono::FixedOffset>>()
+        .map_err(|_| anyhow::anyhow!("Send time must be a valid UTC timestamp."))?
+        .with_timezone(&Utc);
+    if scheduled_at <= Utc::now() {
+        return Ok((StatusCode::BAD_REQUEST, "Send time must be in the future.").into_response());
+    }
+
+    let requested_user_ids = match notification.recipient_scope {
+        EventCustomNotificationRecipientScope::All => None,
+        EventCustomNotificationRecipientScope::Selected => {
+            if notification.recipient_user_ids.is_empty() {
+                return Ok(
+                    (StatusCode::BAD_REQUEST, "Select at least one attendee.").into_response()
+                );
+            }
+            Some(notification.recipient_user_ids.clone())
+        }
+    };
+    let (site_settings, event, recipient_user_ids) = tokio::try_join!(
+        db.get_site_settings(),
+        db.get_event_summary_by_id(alliance_id, event_id),
+        db.resolve_event_custom_notification_recipient_ids(
+            group_id,
+            event_id,
+            notification.recipient_scope.as_ref(),
+            requested_user_ids
+        ),
+    )?;
+    if recipient_user_ids.is_empty() {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            "No selected attendees can receive this email.",
+        )
+            .into_response());
+    }
+
+    let base_url = server_cfg.base_url.strip_suffix('/').unwrap_or(&server_cfg.base_url);
+    let template_data = EventCustom {
+        body: notification.body.clone(),
+        link: format!(
+            "{}/{}/group/{}/event/{}",
+            base_url,
+            event.alliance_name,
+            event.public_group_slug(),
+            event.slug
+        ),
+        subject: notification.subject.clone(),
+        event,
+        theme: site_settings.theme,
+    };
+    let scheduled_email = NewScheduledEventAttendeeEmail {
+        body: notification.body,
+        created_by,
+        event_id,
+        group_id,
+        recipient_count: recipient_user_ids.len(),
+        recipient_scope: notification.recipient_scope.as_ref().to_string(),
+        recipient_user_ids: if notification.recipient_scope
+            == EventCustomNotificationRecipientScope::All
+        {
+            None
+        } else {
+            Some(recipient_user_ids)
+        },
+        scheduled_at,
+        subject: notification.subject,
+        template_data: serde_json::to_value(template_data)?,
+    };
+    if let Some(scheduled_email_id) = scheduled_email_id {
+        db.update_scheduled_event_attendee_email(scheduled_email_id, &scheduled_email)
+            .await?;
+    } else {
+        db.schedule_event_attendee_email(&scheduled_email).await?;
+    }
+
+    Ok((
+        StatusCode::NO_CONTENT,
+        [("HX-Trigger", "refresh-event-attendees")],
+    )
+        .into_response())
+}
 
 /// Builds the CSV payload for confirmed attendees, optionally appending one
 /// column per registration question with the attendee's answer.

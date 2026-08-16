@@ -167,6 +167,12 @@ through the standard `tools/list` method.
 - `goup_create_github_project`: add a GitHub project to the landscape through `add_landscape_entry`; requires `github_url`.
 - `goup_create_startups_bulk`: add many startups to the landscape in one call, sharing `actor_user_id`, `alliance_id`, and a default `published`; each entry is created independently so one failure does not abort the rest, and the result reports per-entry status.
 - `goup_search`: search public events, groups, jobs, ecosystem entries, and wiki sources in one call.
+- `goup_query_community_analytics`: aggregate public event and confirmed-attendee
+  counts for a required time range, optionally narrowed to an alliance and ISO
+  country codes. It returns totals, country breakdowns, and top communities;
+  it excludes test, deleted, unpublished, canceled, and inactive records, and
+  returns no attendee, user, event, or group identifiers. For a continent
+  request, pass the relevant ISO 3166-1 alpha-2 country-code set.
 - `goup_search_groups`: list or search groups.
 - `goup_search_events`: list or search events.
 - `goup_search_members`: list or search regular group members.

@@ -1092,6 +1092,7 @@ pub(crate) fn sample_group_summary(group_id: Uuid) -> GroupSummary {
         region: Some(sample_group_region()),
         slug_pretty: None,
         state: Some("CA".to_string()),
+        web_analytics_measurement_id: None,
     }
 }
 
@@ -1116,6 +1117,7 @@ pub(crate) fn sample_group_update() -> GroupUpdate {
         region_id: Some(Uuid::new_v4()),
         state: Some("MA".to_string()),
         website_url: Some("https://example.test".to_string()),
+        web_analytics_measurement_id: None,
 
         ..Default::default()
     }

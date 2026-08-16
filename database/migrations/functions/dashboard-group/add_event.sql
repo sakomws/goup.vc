@@ -92,6 +92,8 @@ begin
                 meetup_url,
                 payment_currency_code,
                 photos_urls,
+                registration_mode,
+                external_registration_url,
                 registration_ends_at,
                 registration_required,
                 registration_questions,
@@ -147,6 +149,12 @@ begin
                 nullif(p_event->>'meetup_url', ''),
                 v_payment_currency_code,
                 jsonb_text_array(p_event->'photos_urls'),
+                coalesce(nullif(p_event->>'registration_mode', ''), 'built_in'),
+                case
+                    when coalesce(nullif(p_event->>'registration_mode', ''), 'built_in') = 'external'
+                    then nullif(p_event->>'external_registration_url', '')
+                    else null
+                end,
                 (p_event->>'registration_ends_at')::timestamp at time zone (p_event->>'timezone'),
                 (p_event->>'registration_required')::boolean,
                 coalesce(p_event->'registration_questions', '[]'::jsonb),

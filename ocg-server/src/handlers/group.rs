@@ -7,6 +7,8 @@ use axum::{
     http::{HeaderMap, HeaderValue, StatusCode, Uri, header::CACHE_CONTROL},
     response::{Html, IntoResponse, Redirect},
 };
+use garde::Validate;
+use serde::Deserialize;
 use serde_json::json;
 use tracing::{instrument, warn};
 use uuid::Uuid;
@@ -17,7 +19,7 @@ use crate::{
     config::HttpServerConfig,
     db::DynDB,
     handlers::{
-        extractors::{CurrentUser, ValidatedForm},
+        extractors::{CurrentUser, ValidatedForm, ValidatedFormQs},
         request_matches_site,
         site::not_found,
         trim_public_gallery_images,
@@ -32,8 +34,8 @@ use crate::{
         },
         dashboard::group::members::GroupMembersFilters,
         group::{
-            self, AcceleratorPage, BookExchangePage, MembersPage, Page, ReportPage, SpotlightsPage,
-            StorePage,
+            self, AcceleratorPage, BookExchangePage, CfsPage, MembersPage, Page, ReportPage,
+            SpotlightsPage, StorePage,
         },
         notifications::{GroupWelcome, MockInterviewMatched},
     },
@@ -50,6 +52,16 @@ use super::{error::HandlerError, extractors::AllianceId};
 
 #[cfg(test)]
 mod tests;
+
+/// Form payload for submitting a reusable proposal to a rolling CFS.
+#[derive(Debug, Deserialize, Validate)]
+pub(crate) struct GroupCfsSubmissionInput {
+    #[serde(default)]
+    #[garde(length(max = 10))]
+    label_ids: Vec<Uuid>,
+    #[garde(skip)]
+    session_proposal_id: Uuid,
+}
 
 // Pages handlers.
 
@@ -123,6 +135,66 @@ pub(crate) async fn page(
     };
 
     Ok((PUBLIC_SHARED_CACHE_HEADERS, Html(template.render()?)).into_response())
+}
+
+/// Renders a group's public, date-flexible Call for Speakers.
+#[instrument(skip_all)]
+pub(crate) async fn cfs_page(
+    auth_session: AuthSession,
+    State(db): State<DynDB>,
+    Path((alliance_name, group_slug)): Path<(String, String)>,
+    uri: Uri,
+) -> Result<impl IntoResponse, HandlerError> {
+    let (alliance_id, site_settings) = tokio::try_join!(
+        db.get_alliance_id_by_name(&alliance_name),
+        db.get_site_settings()
+    )?;
+    let Some(alliance_id) = alliance_id else {
+        return not_found::render(site_settings);
+    };
+    let Some(cfs) = db.get_group_cfs(alliance_id, &group_slug).await? else {
+        return not_found::render(site_settings);
+    };
+    let user_id = auth_session.user.as_ref().map(|user| user.user_id);
+    let user = User::from_session(auth_session).await?;
+    let session_proposals = if let Some(user_id) = user_id {
+        db.list_user_session_proposals_for_group_cfs(user_id, cfs.group_id)
+            .await?
+    } else {
+        vec![]
+    };
+    let template = CfsPage {
+        alliance_name,
+        cfs,
+        page_id: PageId::Group,
+        path: uri.path().to_string(),
+        site_settings,
+        session_proposals,
+        user,
+        notice: None,
+    };
+    Ok(Html(template.render()?).into_response())
+}
+
+/// Submits a reusable proposal to a group's standing Call for Speakers.
+#[instrument(skip_all, err)]
+pub(crate) async fn submit_cfs_submission(
+    auth_session: AuthSession,
+    State(db): State<DynDB>,
+    AllianceId(alliance_id): AllianceId,
+    Path((_alliance_name, group_id)): Path<(String, Uuid)>,
+    ValidatedFormQs(input): ValidatedFormQs<GroupCfsSubmissionInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let user_id = auth_session.user.as_ref().expect("user to be logged in").user_id;
+    db.add_group_cfs_submission(
+        alliance_id,
+        group_id,
+        user_id,
+        input.session_proposal_id,
+        &input.label_ids,
+    )
+    .await?;
+    Ok(StatusCode::CREATED)
 }
 
 /// Handler that renders the public group accelerator page.

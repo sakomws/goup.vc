@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(300);
+select plan(301);
 
 -- ============================================================================
 -- VARIABLES
@@ -168,6 +168,10 @@ select has_function('get_group_sponsor', array['uuid', 'uuid']::name[]);
 select has_function('get_group_stats', array['uuid', 'uuid']::name[]);
 select has_function('get_group_summary', array['uuid', 'uuid']::name[]);
 select has_function('get_group_upcoming_events', array['uuid', 'text', 'text[]', 'integer']::name[]);
+select has_function(
+    'query_community_analytics',
+    array['timestamp with time zone', 'timestamp with time zone', 'text[]', 'text', 'integer']::name[]
+);
 select has_function('get_session_meeting_sync_state_hash', array['uuid']::name[]);
 select has_function('get_site_home_stats', '{}'::name[]);
 select has_function('get_site_recently_added_groups', '{}'::name[]);

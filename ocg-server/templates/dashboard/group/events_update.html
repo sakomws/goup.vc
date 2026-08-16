@@ -316,6 +316,35 @@
 
               {# Registration required -#}
               <div class="col-span-full lg:col-span-3">
+                <label for="registration_mode" class="form-label">Registration</label>
+                <div class="mt-2">
+                  <select id="registration_mode" name="registration_mode" class="input-primary">
+                    <option value="built_in"
+                            {% if event.registration_mode == crate::types::event::EventRegistrationMode::BuiltIn %}selected{% endif %}>Register on Goup</option>
+                    <option value="external"
+                            {% if event.registration_mode == crate::types::event::EventRegistrationMode::External %}selected{% endif %}>Register on an external site</option>
+                    <option value="none"
+                            {% if event.registration_mode == crate::types::event::EventRegistrationMode::None %}selected{% endif %}>No registration</option>
+                  </select>
+                </div>
+                <p class="form-legend">Choose where attendees complete registration.</p>
+              </div>
+              <div class="col-span-full lg:col-span-3">
+                <label for="external_registration_url" class="form-label">External registration URL</label>
+                <div class="mt-2">
+                  <input type="url"
+                         name="external_registration_url"
+                         id="external_registration_url"
+                         class="input-primary"
+                         placeholder="https://example.com/register"
+                         {% if let Some(external_registration_url) = &event.external_registration_url %}value="{{ external_registration_url }}"{% endif %}>
+                </div>
+                <p class="form-legend">Required when registration happens on an external site.</p>
+              </div>
+              {# End registration mode -#}
+
+              {# Registration required -#}
+              <div class="col-span-full lg:col-span-3">
                 <label class="inline-flex items-center cursor-pointer">
                   <input id="toggle_registration_required"
                          name="toggle_registration_required"

@@ -542,12 +542,17 @@ const populateRefundReviewModal = (triggerButton, root = document) => {
  * @returns {Object} Notification controls.
  */
 const getAttendeeNotificationControls = (root) => ({
+  deliveryMode: getElementById(root, "attendee-notification-delivery-mode"),
   form: getElementById(root, formId),
   modal: getElementById(root, modalId),
   recipientScope: getElementById(root, "attendee-notification-recipient-scope"),
   recipientSummary: getElementById(root, "attendee-notification-recipient-summary"),
   selectedFields: getElementById(root, "attendee-notification-selected-fields"),
+  scheduledAt: getElementById(root, "attendee-notification-scheduled-at"),
+  scheduledFields: getElementById(root, "attendee-notification-schedule-fields"),
+  scheduledLocal: getElementById(root, "attendee-notification-scheduled-local"),
   submit: getElementById(root, "submit-attendee-notification"),
+  submitLabel: getElementById(root, "attendee-notification-submit-label"),
 });
 
 /**
@@ -692,9 +697,90 @@ const setNotificationEndpoint = (root, eventId) => {
 
   if (eventId) {
     form.setAttribute("hx-post", `/dashboard/group/notifications/${eventId}`);
+    form.dataset.notificationEventId = eventId;
   } else {
     form.removeAttribute("hx-post");
+    delete form.dataset.notificationEventId;
   }
+};
+
+/**
+ * Set the form transport and timestamp fields for immediate or scheduled sends.
+ * @param {Document|Element} root Query root.
+ * @returns {void}
+ */
+const syncNotificationDeliveryMode = (root) => {
+  const { deliveryMode, form, scheduledAt, scheduledFields, scheduledLocal, submitLabel } =
+    getAttendeeNotificationControls(root);
+  if (!form || !deliveryMode) return;
+
+  const scheduled = deliveryMode.value === "scheduled";
+  setElementHidden(scheduledFields, !scheduled);
+  if (submitLabel) submitLabel.textContent = scheduled ? "Schedule email" : "Send email";
+  const eventId = form.dataset.notificationEventId || "";
+  const scheduledEmailId = form.dataset.notificationScheduleId || "";
+  form.removeAttribute("hx-post");
+  form.removeAttribute("hx-put");
+  if (eventId) {
+    if (scheduled && scheduledEmailId) {
+      form.setAttribute(
+        "hx-put",
+        `/dashboard/group/notifications/${eventId}/scheduled/${scheduledEmailId}`,
+      );
+    } else {
+      form.setAttribute(
+        "hx-post",
+        scheduled ? `/dashboard/group/notifications/${eventId}/scheduled` : `/dashboard/group/notifications/${eventId}`,
+      );
+    }
+  }
+  if (!scheduled && scheduledAt) scheduledAt.value = "";
+  if (scheduled && scheduledLocal && scheduledAt) {
+    const date = new Date(scheduledLocal.value);
+    scheduledAt.value = Number.isNaN(date.getTime()) ? "" : date.toISOString();
+  }
+  window.htmx?.process?.(form);
+};
+
+/**
+ * Populate the compose modal for a saved attendee email schedule.
+ * @param {Document|Element} root Query root.
+ * @param {HTMLElement} trigger Schedule row edit trigger.
+ * @returns {void}
+ */
+const editScheduledEmail = (root, trigger) => {
+  const { deliveryMode, form, scheduledAt, scheduledFields, scheduledLocal, selectedFields, submitLabel } =
+    getAttendeeNotificationControls(root);
+  const eventId = trigger.closest("[data-attendee-email-selection-bar]")?.dataset.eventId ||
+    root.querySelector("[data-attendee-email-selection-start]")?.dataset.eventId || "";
+  const scheduledEmailId = trigger.dataset.scheduledEmailId || "";
+  if (!form || !eventId || !scheduledEmailId) return;
+
+  const subject = getElementById(root, "attendee-subject");
+  const body = getElementById(root, "attendee-body");
+  if (subject) subject.value = trigger.dataset.subject || "";
+  if (body) body.value = trigger.dataset.body || "";
+  const scope = trigger.dataset.recipientScope === "selected-attendees" ? "selected" : "all";
+  const ids = (trigger.dataset.recipientIds || "").split(",").filter(Boolean);
+  setNotificationRecipients(root, { scope, recipients: ids.map((id) => ({ id })) });
+  if (deliveryMode) deliveryMode.value = "scheduled";
+  if (scheduledAt) scheduledAt.value = trigger.dataset.scheduledAt || "";
+  if (scheduledLocal && scheduledAt?.value) {
+    const date = new Date(scheduledAt.value);
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+    scheduledLocal.value = local.toISOString().slice(0, 16);
+  }
+  setElementHidden(scheduledFields, false);
+  if (submitLabel) submitLabel.textContent = "Save schedule";
+  form.dataset.notificationEventId = eventId;
+  form.dataset.notificationScheduleId = scheduledEmailId;
+  form.removeAttribute("hx-post");
+  form.setAttribute(
+    "hx-put",
+    `/dashboard/group/notifications/${eventId}/scheduled/${scheduledEmailId}`,
+  );
+  window.htmx?.process?.(form);
+  setScopedModalVisibility(root, modalId, true);
 };
 
 /**
@@ -707,6 +793,10 @@ const resetNotificationForm = (root) => {
   const allRecipientTotal = Number(recipientSummary?.dataset.allRecipientTotal || 0);
 
   form?.reset();
+  if (form) {
+    form.removeAttribute("hx-put");
+    delete form.dataset.notificationScheduleId;
+  }
   setNotificationRecipients(root, {
     allRecipientTotal,
     recipients: [],
@@ -715,6 +805,13 @@ const resetNotificationForm = (root) => {
   if (submit) {
     submit.dataset.notificationBaseDisabled = submit.disabled ? "true" : "false";
   }
+  const { deliveryMode, scheduledAt, scheduledFields, scheduledLocal, submitLabel } =
+    getAttendeeNotificationControls(root);
+  if (deliveryMode) deliveryMode.value = "now";
+  if (scheduledAt) scheduledAt.value = "";
+  if (scheduledLocal) scheduledLocal.value = "";
+  setElementHidden(scheduledFields, true);
+  if (submitLabel) submitLabel.textContent = "Send email";
 };
 
 /**
@@ -904,6 +1001,12 @@ const initializeAttendeeNotification = (root = document) => {
   }
 
   root.addEventListener("click", (event) => {
+    const scheduledEdit = closestElementWithinRoot(event.target, "[data-attendee-scheduled-email-edit]", root);
+    if (scheduledEdit instanceof HTMLElement) {
+      event.stopPropagation();
+      editScheduledEmail(root, scheduledEdit);
+      return;
+    }
     const openTrigger = closestElementWithinRoot(event.target, "[data-attendee-notification-open]", root);
     if (openTrigger instanceof HTMLElement && !openTrigger.hasAttribute("disabled")) {
       event.stopPropagation();
@@ -927,6 +1030,13 @@ const initializeAttendeeNotification = (root = document) => {
       "#close-attendee-notification-modal, #cancel-attendee-notification, #overlay-attendee-notification-modal",
       closeNotificationModal,
     );
+  });
+
+  root.addEventListener("change", (event) => {
+    const { deliveryMode, scheduledLocal } = getAttendeeNotificationControls(root);
+    if (event.target === deliveryMode || event.target === scheduledLocal) {
+      syncNotificationDeliveryMode(root);
+    }
   });
 
   root.addEventListener("htmx:afterRequest", (event) => {

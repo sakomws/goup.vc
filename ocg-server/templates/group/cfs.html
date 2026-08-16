@@ -1,0 +1,58 @@
+{% extends "common/base.html" -%}
+{% import "macros/ui.html" as ui -%}
+
+{% block head_title -%}
+  <title>Call for Speakers · {{ cfs.group_name }}</title>
+{% endblock head_title -%}
+
+{% block content -%}
+  <div class="container mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
+    <div class="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-xl shadow-stone-200/50 sm:p-10">
+      <p class="text-sm font-black uppercase tracking-[0.18em] text-primary-600">Call for Speakers</p>
+      <h1 class="mt-3 text-3xl font-black text-stone-900 sm:text-4xl">{{ cfs.group_name }}</h1>
+      <p class="mt-4 text-lg text-stone-700">
+        This is a rolling call for speakers. There is no fixed event date: organizers will align a date with confirmed speakers.
+      </p>
+      {% if let Some(description) = &cfs.description -%}
+        <div class="prose mt-6 max-w-none text-stone-700">{{ description|md_to_html|safe }}</div>
+      {% endif -%}
+
+      {% if let Some(notice) = &notice -%}
+        <div class="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">{{ notice }}</div>
+      {% endif -%}
+
+      <div class="mt-8 border-t border-stone-200 pt-7">
+        {% if !user.logged_in -%}
+          <p class="text-stone-700">Sign in to submit a reusable session proposal.</p>
+          <a class="btn-primary mt-4 inline-flex" href="/log-in?next_url=/{{ alliance_name }}/group/{{ cfs.group_slug }}/cfs">Sign in</a>
+        {% else if session_proposals.is_empty() -%}
+          <p class="text-stone-700">Create a session proposal first, then return here to submit it.</p>
+          <a class="btn-primary-outline-anchor mt-4 inline-flex" href="/dashboard/user?tab=session-proposals">Manage session proposals</a>
+        {% else -%}
+          <form method="post" action="/{{ alliance_name }}/group/{{ cfs.group_id }}/cfs-submissions" class="space-y-5">
+            <div>
+              <label class="form-label" for="session_proposal_id">Session proposal</label>
+              <select id="session_proposal_id" class="select-primary mt-2" name="session_proposal_id" required>
+                <option value="">Select a proposal</option>
+                {% for proposal in session_proposals -%}
+                  <option value="{{ proposal.session_proposal_id }}" {% if proposal.is_submitted %}disabled{% endif %}>{{ proposal.title }}</option>
+                {% endfor -%}
+              </select>
+              <p class="form-legend">Already submitted proposals are unavailable. Approved proposals can be scheduled for more than one event.</p>
+            </div>
+            {% if !cfs.labels.is_empty() -%}
+              <div>
+                <label class="form-label">Labels</label>
+                <cfs-label-selector class="mt-2 block" name="label_ids" labels="{{ cfs.labels|json }}" max-selected="10" placeholder="Optional labels"></cfs-label-selector>
+              </div>
+            {% endif -%}
+            <button class="btn-primary inline-flex items-center" type="submit">
+              Submit proposal
+              <span class="ms-2">{{ ui::spinner(size = "size-4") -}}</span>
+            </button>
+          </form>
+        {% endif -%}
+      </div>
+    </div>
+  </div>
+{% endblock content -%}

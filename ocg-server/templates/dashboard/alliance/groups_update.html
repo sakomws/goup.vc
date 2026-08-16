@@ -180,6 +180,20 @@
           {# Open Graph image URL -#}
           {{ form_fields::image_field(label = "Open Graph Image", name = "og_image_url", image_kind = "banner", target = "open_graph", help_prefix_text = "Size required 1200 x 630 px. Format must be PNG, JPEG, or WebP.", legend = "Used for group and event link previews. If this image isn't provided, we'll fall back to the alliance Open Graph image if set.", value_attr = og_image_value) -}}
           {# End Open Graph image URL -#}
+
+          <div class="col-span-full lg:col-span-3">
+            <label for="web_analytics_measurement_id" class="form-label">Google Analytics measurement ID</label>
+            <div class="mt-2">
+              <input id="web_analytics_measurement_id"
+                     name="web_analytics_measurement_id"
+                     class="input-primary"
+                     maxlength="34"
+                     pattern="G-[A-Z0-9]{6,32}"
+                     placeholder="G-XXXXXXXXXX"
+                     value="{%- if let Some(measurement_id) = &group.web_analytics_measurement_id -%}{{ measurement_id }}{%- endif -%}">
+            </div>
+            <p class="form-legend">Optional. Adds this group’s Google Analytics 4 tag to its public event pages.</p>
+          </div>
         </div>
       </div>
 

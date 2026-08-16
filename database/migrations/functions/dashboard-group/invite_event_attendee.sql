@@ -14,6 +14,7 @@ declare
     v_has_registration_questions boolean;
     v_normalized_email text := lower(nullif(btrim(p_email), ''));
     v_registration_questions jsonb;
+    v_registration_mode text;
     v_target_user_id uuid;
 begin
     -- Validate invitation target shape
@@ -23,8 +24,8 @@ begin
     end if;
 
     -- Lock and validate the event, capturing registration questions for the invitation
-    select e.registration_questions
-    into v_registration_questions
+    select e.registration_questions, e.registration_mode
+    into v_registration_questions, v_registration_mode
     from event e
     join "group" g using (group_id)
     where e.event_id = p_event_id
@@ -41,6 +42,10 @@ begin
 
     if not found then
         raise exception 'event not found or inactive';
+    end if;
+
+    if v_registration_mode <> 'built_in' then
+        raise exception 'event does not use built-in registration';
     end if;
 
     -- Route invitees through the questions flow when any registration questions exist

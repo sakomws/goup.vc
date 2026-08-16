@@ -1515,6 +1515,10 @@ async fn test_list_page_success() {
         .times(1)
         .withf(move |cid, eid| *cid == alliance_id && *eid == event_id)
         .returning(|_, _| Ok(vec![]));
+    db.expect_list_scheduled_event_attendee_emails()
+        .times(1)
+        .withf(move |gid, eid| *gid == group_id && *eid == event_id)
+        .returning(|_, _| Ok(vec![]));
 
     // Setup notifications manager mock
     let nm = MockNotificationsManager::new();
@@ -1816,6 +1820,10 @@ async fn test_list_page_with_pagination_params() {
         .times(1)
         .withf(move |cid, eid| *cid == alliance_id && *eid == event_id)
         .returning(|_, _| Ok(vec![]));
+    db.expect_list_scheduled_event_attendee_emails()
+        .times(1)
+        .withf(move |gid, eid| *gid == group_id && *eid == event_id)
+        .returning(|_, _| Ok(vec![]));
 
     // Setup notifications manager mock
     let nm = MockNotificationsManager::new();
@@ -1921,6 +1929,10 @@ async fn test_list_page_with_search_query() {
     db.expect_get_event_registration_questions()
         .times(1)
         .withf(move |cid, eid| *cid == alliance_id && *eid == event_id)
+        .returning(|_, _| Ok(vec![]));
+    db.expect_list_scheduled_event_attendee_emails()
+        .times(1)
+        .withf(move |gid, eid| *gid == group_id && *eid == event_id)
         .returning(|_, _| Ok(vec![]));
 
     // Setup notifications manager mock
@@ -2217,6 +2229,7 @@ async fn test_send_event_custom_notification_success() {
         body: notification_body.to_string(),
         recipient_scope: EventCustomNotificationRecipientScope::All,
         recipient_user_ids: vec![],
+        scheduled_at: None,
         subject: notification_subject.to_string(),
     })
     .unwrap();
@@ -2337,6 +2350,7 @@ async fn test_send_event_custom_notification_selected_recipients_success() {
         body: notification_body.to_string(),
         recipient_scope: EventCustomNotificationRecipientScope::Selected,
         recipient_user_ids: requested_recipient_ids,
+        scheduled_at: None,
         subject: notification_subject.to_string(),
     })
     .unwrap();
@@ -2446,6 +2460,7 @@ async fn test_send_event_custom_notification_selected_recipients_requires_select
         body: "Body".to_string(),
         recipient_scope: EventCustomNotificationRecipientScope::Selected,
         recipient_user_ids: vec![],
+        scheduled_at: None,
         subject: "Subject".to_string(),
     })
     .unwrap();
@@ -2517,6 +2532,7 @@ async fn test_send_event_custom_notification_selected_recipients_no_eligible_rec
         body: "Body".to_string(),
         recipient_scope: EventCustomNotificationRecipientScope::Selected,
         recipient_user_ids: requested_attendee_ids,
+        scheduled_at: None,
         subject: "Subject".to_string(),
     })
     .unwrap();
@@ -2601,6 +2617,7 @@ async fn test_send_event_custom_notification_no_recipients() {
         body: "Body".to_string(),
         recipient_scope: EventCustomNotificationRecipientScope::All,
         recipient_user_ids: vec![],
+        scheduled_at: None,
         subject: "Subject".to_string(),
     })
     .unwrap();
@@ -2662,5 +2679,91 @@ async fn test_send_event_custom_notification_no_recipients() {
     assert_eq!(
         String::from_utf8(bytes.to_vec()).unwrap(),
         "No attendees with verified email addresses and email notifications enabled."
+    );
+}
+
+#[tokio::test]
+async fn test_schedule_event_custom_notification_persists_future_email() {
+    let alliance_id = Uuid::new_v4();
+    let event_id = Uuid::new_v4();
+    let group_id = Uuid::new_v4();
+    let recipient_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(
+        session_id,
+        user_id,
+        &auth_hash,
+        Some(alliance_id),
+        Some(group_id),
+    );
+    let event = sample_event_summary(event_id, group_id);
+    let scheduled_at = (chrono::Utc::now() + chrono::Duration::hours(1)).to_rfc3339();
+    let scheduled_at_query = scheduled_at.replace('+', "%2B").replace(':', "%3A");
+
+    let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .returning(|_, _, _, _| Ok(true));
+    db.expect_get_site_settings()
+        .times(1)
+        .returning(|| Ok(sample_site_settings()));
+    db.expect_get_event_summary_by_id()
+        .times(1)
+        .withf(move |cid, eid| *cid == alliance_id && *eid == event_id)
+        .returning(move |_, _| Ok(event.clone()));
+    db.expect_resolve_event_custom_notification_recipient_ids()
+        .times(1)
+        .withf(move |gid, eid, scope, ids| {
+            *gid == group_id && *eid == event_id && scope == "all-attendees" && ids.is_none()
+        })
+        .returning(move |_, _, _, _| Ok(vec![recipient_id]));
+    db.expect_schedule_event_attendee_email()
+        .times(1)
+        .withf(move |email| {
+            email.created_by == user_id
+                && email.event_id == event_id
+                && email.group_id == group_id
+                && email.recipient_count == 1
+                && email.recipient_scope == "all-attendees"
+                && email.recipient_user_ids.is_none()
+                && email.subject == "Scheduled update"
+                && email.body == "See you soon"
+        })
+        .returning(|_| Ok(Uuid::new_v4()));
+
+    let nm = MockNotificationsManager::new();
+    let router = TestRouterBuilder::new(db, nm)
+        .with_server_cfg(HttpServerConfig {
+            base_url: "https://ocg.test".to_string(),
+            ..sample_tracking_server_cfg()
+        })
+        .build()
+        .await;
+    let request = Request::builder()
+        .method("POST")
+        .uri(format!("/dashboard/group/notifications/{event_id}/scheduled"))
+        .header(COOKIE, format!("id={session_id}"))
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(format!(
+            "recipient_scope=all&subject=Scheduled+update&body=See+you+soon&scheduled_at={scheduled_at_query}"
+        )))
+        .unwrap();
+    let response = router.oneshot(request).await.unwrap();
+    let (parts, body) = response.into_parts();
+    let bytes = to_bytes(body, usize::MAX).await.unwrap();
+
+    assert_empty_hx_trigger_response(
+        &parts,
+        &bytes,
+        StatusCode::NO_CONTENT,
+        "refresh-event-attendees",
     );
 }

@@ -7,7 +7,8 @@ use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use cached::cached;
-use serde::Serialize;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use uuid::Uuid;
 
@@ -19,6 +20,14 @@ use crate::{
 /// Trait that defines database operations used to manage notifications.
 #[async_trait]
 pub(crate) trait DBNotifications {
+    /// Cancels a scheduled attendee email that has not yet been sent.
+    async fn cancel_scheduled_event_attendee_email(
+        &self,
+        scheduled_email_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<()>;
+
     /// Claims a pending notification for delivery.
     async fn claim_pending_notification(&self) -> Result<Option<Notification>>;
 
@@ -27,6 +36,9 @@ pub(crate) trait DBNotifications {
 
     /// Enqueues due `CoffeeMeet` suggestions and returns the number created.
     async fn enqueue_due_coffee_meet_suggestions(&self, base_url: &str) -> Result<usize>;
+
+    /// Enqueues all scheduled attendee emails that are due.
+    async fn enqueue_due_scheduled_event_attendee_emails(&self) -> Result<usize>;
 
     /// Enqueues a notification to be delivered.
     async fn enqueue_notification(&self, notification: &NewNotification) -> Result<()>;
@@ -40,6 +52,13 @@ pub(crate) trait DBNotifications {
 
     /// Retrieves a notification attachment by its ID.
     async fn get_notification_attachment(&self, attachment_id: Uuid) -> Result<Attachment>;
+
+    /// Lists scheduled attendee emails for an event.
+    async fn list_scheduled_event_attendee_emails(
+        &self,
+        group_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Vec<ScheduledEventAttendeeEmail>>;
 
     /// Marks stale claimed notifications with an unknown delivery outcome.
     async fn mark_stale_processing_notifications_unknown(&self, timeout: Duration)
@@ -55,6 +74,19 @@ pub(crate) trait DBNotifications {
         max_delivery_attempts: usize,
     ) -> Result<()>;
 
+    /// Creates a future attendee email schedule.
+    async fn schedule_event_attendee_email(
+        &self,
+        email: &NewScheduledEventAttendeeEmail,
+    ) -> Result<Uuid>;
+
+    /// Updates a future attendee email schedule.
+    async fn update_scheduled_event_attendee_email(
+        &self,
+        scheduled_email_id: Uuid,
+        email: &NewScheduledEventAttendeeEmail,
+    ) -> Result<()>;
+
     /// Updates a notification after a delivery attempt.
     async fn update_notification(
         &self,
@@ -68,6 +100,20 @@ impl<T> DBNotifications for T
 where
     T: PgExecutor + Send + Sync,
 {
+    #[instrument(skip(self), err)]
+    async fn cancel_scheduled_event_attendee_email(
+        &self,
+        scheduled_email_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select cancel_scheduled_event_attendee_email($1::uuid, $2::uuid, $3::uuid);",
+            &[&scheduled_email_id, &group_id, &event_id],
+        )
+        .await
+    }
+
     #[instrument(skip(self), err)]
     async fn claim_pending_notification(&self) -> Result<Option<Notification>> {
         // Claim pending notification (if any)
@@ -152,6 +198,18 @@ where
             .map_err(|_| anyhow!("enqueued CoffeeMeet suggestion count cannot be negative"))?;
 
         Ok(count)
+    }
+
+    #[instrument(skip(self), err)]
+    async fn enqueue_due_scheduled_event_attendee_emails(&self) -> Result<usize> {
+        let count = self
+            .fetch_scalar_one::<i64>(
+                "select enqueue_due_scheduled_event_attendee_emails()::bigint;",
+                &[],
+            )
+            .await?;
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        Ok(count as usize)
     }
 
     #[instrument(skip(self, notification), err)]
@@ -290,6 +348,19 @@ where
     }
 
     #[instrument(skip(self), err)]
+    async fn list_scheduled_event_attendee_emails(
+        &self,
+        group_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Vec<ScheduledEventAttendeeEmail>> {
+        self.fetch_json_one(
+            "select list_scheduled_event_attendee_emails($1::uuid, $2::uuid);",
+            &[&group_id, &event_id],
+        )
+        .await
+    }
+
+    #[instrument(skip(self), err)]
     async fn mark_stale_processing_notifications_unknown(
         &self,
         timeout: Duration,
@@ -356,6 +427,57 @@ where
         Ok(())
     }
 
+    #[instrument(skip(self, email), err)]
+    async fn schedule_event_attendee_email(
+        &self,
+        email: &NewScheduledEventAttendeeEmail,
+    ) -> Result<Uuid> {
+        let recipient_count = i32::try_from(email.recipient_count)
+            .map_err(|_| anyhow!("recipient count cannot exceed i32::MAX"))?;
+        self.fetch_scalar_one(
+            "select schedule_event_attendee_email($1::uuid, $2::uuid, $3::uuid, $4::text, $5::text, $6::jsonb, $7::text, $8::uuid[], $9::integer, $10::timestamptz);",
+            &[
+                &email.created_by,
+                &email.group_id,
+                &email.event_id,
+                &email.subject,
+                &email.body,
+                &email.template_data,
+                &email.recipient_scope,
+                &email.recipient_user_ids,
+                &recipient_count,
+                &email.scheduled_at,
+            ],
+        )
+        .await
+    }
+
+    #[instrument(skip(self, email), err)]
+    async fn update_scheduled_event_attendee_email(
+        &self,
+        scheduled_email_id: Uuid,
+        email: &NewScheduledEventAttendeeEmail,
+    ) -> Result<()> {
+        let recipient_count = i32::try_from(email.recipient_count)
+            .map_err(|_| anyhow!("recipient count cannot exceed i32::MAX"))?;
+        self.execute(
+            "select update_scheduled_event_attendee_email($1::uuid, $2::uuid, $3::uuid, $4::text, $5::text, $6::jsonb, $7::text, $8::uuid[], $9::integer, $10::timestamptz);",
+            &[
+                &scheduled_email_id,
+                &email.group_id,
+                &email.event_id,
+                &email.subject,
+                &email.body,
+                &email.template_data,
+                &email.recipient_scope,
+                &email.recipient_user_ids,
+                &recipient_count,
+                &email.scheduled_at,
+            ],
+        )
+        .await
+    }
+
     /// Updates the notification record after processing, marking it as processed and
     /// recording any error.
     #[instrument(skip(self, notification), err)]
@@ -392,6 +514,52 @@ pub(crate) struct CustomNotificationTracking {
     pub(crate) recipient_count: usize,
     /// Subject stored in the custom notification record.
     pub(crate) subject: String,
+}
+
+/// Data required to schedule a custom email for event attendees.
+pub(crate) struct NewScheduledEventAttendeeEmail {
+    /// Email body stored for display and auditing.
+    pub(crate) body: String,
+    /// Organizer who created the schedule.
+    pub(crate) created_by: Uuid,
+    /// Event the email belongs to.
+    pub(crate) event_id: Uuid,
+    /// Group that owns the event.
+    pub(crate) group_id: Uuid,
+    /// Eligible recipient count at the time the schedule was saved.
+    pub(crate) recipient_count: usize,
+    /// Recipient scope persisted for due-time eligibility resolution.
+    pub(crate) recipient_scope: String,
+    /// Explicit attendee selection, when the scope is selected attendees.
+    pub(crate) recipient_user_ids: Option<Vec<Uuid>>,
+    /// Time at which the email becomes eligible to enqueue.
+    pub(crate) scheduled_at: DateTime<Utc>,
+    /// Email subject stored for display and auditing.
+    pub(crate) subject: String,
+    /// Fully rendered event custom email template data.
+    pub(crate) template_data: serde_json::Value,
+}
+
+/// A persisted event attendee email schedule for organizer management.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub(crate) struct ScheduledEventAttendeeEmail {
+    /// Email body.
+    pub body: String,
+    /// Number of eligible recipients when last scheduled or sent.
+    pub recipient_count: usize,
+    /// Recipient scope, either all or selected attendees.
+    pub recipient_scope: String,
+    /// Explicit selected attendee IDs, if applicable.
+    pub recipient_user_ids: Option<Vec<Uuid>>,
+    /// Time at which the email is scheduled to send.
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub scheduled_at: DateTime<Utc>,
+    /// Unique identifier for the schedule.
+    pub scheduled_event_attendee_email_id: Uuid,
+    /// Delivery lifecycle status.
+    pub status: String,
+    /// Email subject.
+    pub subject: String,
 }
 
 /// Serialized attachment payload passed to `enqueue_notification`.
