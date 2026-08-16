@@ -331,6 +331,7 @@ test.describe("group dashboard events view", () => {
     const dashboardContent = organizerGroupPage.locator("#dashboard-content");
     await dashboardContent.getByRole("button", { name: "Add Event" }).click();
     await expect(organizerGroupPage.locator("#name")).toBeVisible();
+    await expect(organizerGroupPage.locator("#starts_at")).toBeHidden();
 
     // The add form exposes authoring tabs and omits review-only tabs.
     const addSectionSelect = organizerGroupPage.locator(
@@ -346,6 +347,8 @@ test.describe("group dashboard events view", () => {
       "data-active",
       "true",
     );
+    await expect(organizerGroupPage.locator("#name")).toBeHidden();
+    await expect(organizerGroupPage.locator("#starts_at")).toBeVisible();
 
     // Open an existing event and verify review tabs lazy-load their tables.
     await navigateToPath(organizerGroupPage, "/dashboard/group?tab=events");
