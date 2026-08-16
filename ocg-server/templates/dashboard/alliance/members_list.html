@@ -7,6 +7,13 @@
   <div class="text-sm text-stone-600">
     {{ pagination::range_display(offset = offset.unwrap_or(0) , count = members.len(), total = total, label = "member") }}
   </div>
+  <div class="flex flex-wrap gap-2">
+    {% if can_export_members -%}
+      <a href="/dashboard/alliance/members.csv"
+         class="btn-secondary-anchor"
+         download>Download CSV</a>
+    {% endif -%}
+  </div>
   <form id="alliance-members-search-form"
         hx-get="/dashboard/alliance/members"
         hx-target="#dashboard-content"

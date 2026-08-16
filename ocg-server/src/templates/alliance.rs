@@ -321,6 +321,24 @@ pub(crate) struct AllianceMembersOutput {
     pub total: usize,
 }
 
+/// Private member fields returned only for an authorized alliance CSV export.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct AllianceMemberExport {
+    pub name: Option<String>,
+    pub username: String,
+    pub email: String,
+    pub phone_country_code: Option<String>,
+    pub phone_number: Option<String>,
+    pub group_names: Vec<String>,
+    pub company: Option<String>,
+    pub title: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    pub linkedin_url: Option<String>,
+    pub github_url: Option<String>,
+    pub website_url: Option<String>,
+}
+
 impl BrandPage {
     /// Returns the canonical public URL for the alliance brand page.
     pub(crate) fn canonical_url(&self) -> String {

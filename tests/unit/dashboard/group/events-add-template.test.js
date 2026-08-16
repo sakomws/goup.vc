@@ -57,6 +57,17 @@ describe("dashboard group event add template", () => {
     expect(startsAtIndex).to.be.greaterThan(dateVenueFormIndex);
   });
 
+  it("keeps additional information inside the Details panel", async () => {
+    const template = normalizeWhitespace(await loadTemplate());
+
+    expect(template).to.include(
+      '{# End Event Description -#} </div> </div> {# Additional Information section -#}',
+    );
+    expect(template).to.not.include(
+      '{# End Event Description -#} </div> </div> </div> {# Additional Information section -#}',
+    );
+  });
+
   it("shows a draft event title header above add tabs and content", async () => {
     // Load the event add template before checking the draft event reminder.
     const template = normalizeWhitespace(await loadTemplate());

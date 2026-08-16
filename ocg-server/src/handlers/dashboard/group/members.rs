@@ -4,7 +4,10 @@ use anyhow::Result;
 use askama::Template;
 use axum::{
     extract::{Path, RawQuery, State},
-    http::{HeaderName, StatusCode},
+    http::{
+        HeaderName, StatusCode,
+        header::{CONTENT_DISPOSITION, CONTENT_TYPE},
+    },
     response::{Html, IntoResponse},
 };
 use garde::Validate;
@@ -65,6 +68,39 @@ pub(crate) async fn list_page(
     let headers = [(HeaderName::from_static("hx-push-url"), url)];
 
     Ok((headers, Html(template.render()?)))
+}
+
+/// Downloads all members of the selected group as an administrator-only CSV.
+#[instrument(skip_all, err)]
+pub(crate) async fn download_csv(
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    RawQuery(raw_query): RawQuery,
+) -> Result<impl IntoResponse, HandlerError> {
+    let mut filters: GroupMembersFilters =
+        serde_qs_config().deserialize_str(raw_query.as_deref().unwrap_or_default())?;
+    filters.limit = None;
+    filters.offset = None;
+    filters.validate()?;
+
+    let (group, output) = tokio::try_join!(
+        db.get_group_summary(alliance_id, group_id),
+        db.list_group_members(group_id, user.user_id, true, &filters)
+    )?;
+    let csv = build_members_csv(&output.members)?;
+    let file_name = format!("group-{}-members.csv", group.slug);
+    Ok((
+        [
+            (CONTENT_TYPE, "text/csv; charset=utf-8".to_string()),
+            (
+                CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{file_name}\""),
+            ),
+        ],
+        csv,
+    ))
 }
 
 // Actions handlers.
@@ -245,6 +281,41 @@ pub(crate) struct GroupCustomNotification {
     #[serde(alias = "title")]
     #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
     pub subject: String,
+}
+
+fn build_members_csv(members: &[members::GroupMember]) -> Result<Vec<u8>, HandlerError> {
+    let mut writer = csv::WriterBuilder::new()
+        .terminator(csv::Terminator::Any(b'\n'))
+        .from_writer(vec![]);
+    writer
+        .write_record([
+            "Name", "Username", "Email", "Phone", "Company", "Title", "City", "Country", "Joined",
+            "LinkedIn", "GitHub", "Website",
+        ])
+        .map_err(anyhow::Error::from)?;
+    for member in members {
+        writer
+            .write_record([
+                member.name.as_deref().unwrap_or(&member.username),
+                &member.username,
+                &member.email,
+                &format!(
+                    "{} {}",
+                    member.phone_country_code.as_deref().unwrap_or(""),
+                    member.phone_number.as_deref().unwrap_or("")
+                ),
+                member.company.as_deref().unwrap_or(""),
+                member.title.as_deref().unwrap_or(""),
+                member.city.as_deref().unwrap_or(""),
+                member.country.as_deref().unwrap_or(""),
+                &member.created_at.format("%Y-%m-%d").to_string(),
+                member.linkedin_url.as_deref().unwrap_or(""),
+                member.github_url.as_deref().unwrap_or(""),
+                member.website_url.as_deref().unwrap_or(""),
+            ])
+            .map_err(anyhow::Error::from)?;
+    }
+    writer.into_inner().map_err(|error| anyhow::Error::from(error).into())
 }
 
 // Helpers.

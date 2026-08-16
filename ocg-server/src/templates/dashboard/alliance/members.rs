@@ -12,6 +12,8 @@ use crate::{
 #[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "dashboard/alliance/members_list.html")]
 pub(crate) struct ListPage {
+    /// Whether the current user can export private member contact details.
+    pub can_export_members: bool,
     /// Alliance settings for member-card feature gates.
     pub alliance: AllianceFull,
     /// Members across all groups in the alliance.

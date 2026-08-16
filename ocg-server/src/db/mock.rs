@@ -280,6 +280,11 @@ mock! {
             alliance_id: Uuid,
             filters: &crate::templates::alliance::AllianceMembersFilters,
         ) -> Result<crate::templates::alliance::AllianceMembersOutput>;
+        async fn list_alliance_members_for_export(
+            &self,
+            alliance_id: Uuid,
+            filters: &crate::templates::alliance::AllianceMembersFilters,
+        ) -> Result<Vec<crate::templates::alliance::AllianceMemberExport>>;
         async fn list_public_partner_integrations(
             &self,
             alliance_id: Uuid,
