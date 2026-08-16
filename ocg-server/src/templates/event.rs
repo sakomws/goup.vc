@@ -2,6 +2,7 @@
 
 use askama::Template;
 use chrono::{DateTime, Utc};
+use chrono_tz::Tz;
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -40,6 +41,8 @@ pub(crate) struct Page {
     pub site_settings: SiteSettings,
     /// Authenticated user information.
     pub user: User,
+    /// Preferred timezone of the signed-in viewer, when configured.
+    pub viewer_timezone: Option<Tz>,
 }
 
 impl Page {
@@ -98,6 +101,36 @@ impl Page {
         } else {
             self.event.name.clone()
         }
+    }
+
+    /// Returns the event schedule rendered in the viewer's configured timezone.
+    pub(crate) fn viewer_event_time(&self) -> Option<String> {
+        let viewer_timezone = self.viewer_timezone?;
+        let starts_at = self.event.starts_at?;
+
+        if viewer_timezone == self.event.timezone {
+            return None;
+        }
+
+        let starts_at = starts_at.with_timezone(&viewer_timezone);
+        let date = starts_at.format("%b %-d, %Y");
+        let start_time = starts_at.format("%-I:%M %p %Z");
+        let schedule = match self.event.ends_at {
+            Some(ends_at) => {
+                let ends_at = ends_at.with_timezone(&viewer_timezone);
+                if starts_at.date_naive() == ends_at.date_naive() {
+                    format!("{date}, {start_time} – {}", ends_at.format("%-I:%M %p %Z"))
+                } else {
+                    format!(
+                        "{date}, {start_time} – {}",
+                        ends_at.format("%b %-d, %Y %-I:%M %p %Z")
+                    )
+                }
+            }
+            None => format!("{date}, {start_time}"),
+        };
+
+        Some(schedule)
     }
 }
 
@@ -205,6 +238,31 @@ mod tests {
     }
 
     #[test]
+    fn test_viewer_event_time_uses_preferred_timezone() {
+        let mut page = sample_page(
+            Some(Utc.with_ymd_and_hms(2030, 3, 6, 7, 30, 0).unwrap()),
+            chrono_tz::UTC,
+        );
+        page.viewer_timezone = Some(Los_Angeles);
+
+        assert_eq!(
+            page.viewer_event_time().as_deref(),
+            Some("Mar 5, 2030, 11:30 PM PST")
+        );
+    }
+
+    #[test]
+    fn test_viewer_event_time_omits_matching_event_timezone() {
+        let mut page = sample_page(
+            Some(Utc.with_ymd_and_hms(2030, 3, 6, 7, 30, 0).unwrap()),
+            Los_Angeles,
+        );
+        page.viewer_timezone = Some(Los_Angeles);
+
+        assert_eq!(page.viewer_event_time(), None);
+    }
+
+    #[test]
     fn test_preview_description_uses_group_and_alliance_names() {
         let page = sample_page(None, chrono_tz::UTC);
 
@@ -248,6 +306,7 @@ mod tests {
             path: "/test-alliance/group/test-group/event/test-event".to_string(),
             site_settings: SiteSettings::default(),
             user: User::default(),
+            viewer_timezone: None,
         }
     }
 }

@@ -311,6 +311,48 @@
     "action": "update_event"
   },
   {
+    "name": "goup_query_community_analytics",
+    "title": "GOUP Community Analytics",
+    "description": "Return aggregate-only counts for completed public community events. Excludes test, deleted, unpublished, canceled, inactive, and non-confirmed attendance records; never returns attendee or user data.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "start_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Inclusive ISO 8601 UTC start timestamp."
+        },
+        "end_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Exclusive ISO 8601 UTC end timestamp."
+        },
+        "country_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{2}$"
+          },
+          "description": "Optional ISO 3166-1 alpha-2 event-country filter. Supply multiple codes for a region such as Europe."
+        },
+        "alliance_name": {
+          "type": "string",
+          "description": "Optional alliance slug/name filter."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 10,
+          "description": "Maximum country and community breakdown rows."
+        }
+      },
+      "required": ["start_at", "end_at"],
+      "additionalProperties": false
+    },
+    "action": "query_community_analytics"
+  },
+  {
     "name": "goup_search",
     "title": "GOUP Global Search",
     "description": "Search across GOUP events, groups, jobs, ecosystem entries, and wiki feed sources in one call.",

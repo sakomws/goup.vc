@@ -75,6 +75,7 @@ returns json as $$
         'whatsapp_url', g.whatsapp_url,
         'wechat_url', g.wechat_url,
         'website_url', g.website_url,
+        'web_analytics_measurement_id', g.web_analytics_measurement_id,
         'youtube_url', g.youtube_url,
 
         -- Include alliance summary and related collections

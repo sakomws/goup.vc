@@ -33,6 +33,36 @@ pub struct GroupMinimal {
     pub slug_pretty: Option<String>,
 }
 
+/// Public configuration for a group's standing Call for Speakers.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupRollingCfs {
+    /// Public explanation that this is a rolling, date-flexible call.
+    pub description: Option<String>,
+    /// Whether the standing call is accepting proposals.
+    pub enabled: bool,
+    /// Group identifier.
+    pub group_id: Uuid,
+    /// Group display name.
+    pub group_name: String,
+    /// Group slug used in public links.
+    pub group_slug: String,
+    /// Optional organizer-defined proposal labels.
+    #[serde(default)]
+    pub labels: Vec<GroupRollingCfsLabel>,
+}
+
+/// A label that organizers can use to classify rolling CFS proposals.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupRollingCfsLabel {
+    /// Display color.
+    pub color: String,
+    /// Label identifier.
+    pub group_cfs_label_id: Uuid,
+    /// Display name.
+    pub name: String,
+}
+
 impl GroupMinimal {
     /// Returns the slug to use in public URLs.
     pub fn public_slug(&self) -> &str {
@@ -82,6 +112,8 @@ pub struct GroupSummary {
     pub longitude: Option<f64>,
     /// URL to the group's Open Graph image used for link previews.
     pub og_image_url: Option<String>,
+    /// Google Analytics 4 measurement ID for this group's public event pages.
+    pub web_analytics_measurement_id: Option<String>,
     /// Pre-rendered HTML for map popovers.
     pub popover_html: Option<String>,
     /// Geographic region this group belongs to.
@@ -197,6 +229,8 @@ pub struct GroupFull {
     pub longitude: Option<f64>,
     /// URL to the group's Open Graph image used for link previews.
     pub og_image_url: Option<String>,
+    /// Google Analytics 4 measurement ID for this group's public event pages.
+    pub web_analytics_measurement_id: Option<String>,
     /// Payments recipient configuration for the group.
     pub payment_recipient: Option<GroupPaymentRecipient>,
     /// Gallery of photo URLs.

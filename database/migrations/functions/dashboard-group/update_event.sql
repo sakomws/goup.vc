@@ -283,6 +283,12 @@ begin
         meetup_url = nullif(p_event->>'meetup_url', ''),
         payment_currency_code = v_payment_currency_code,
         photos_urls = v_event_photos_urls,
+        registration_mode = coalesce(nullif(p_event->>'registration_mode', ''), 'built_in'),
+        external_registration_url = case
+            when coalesce(nullif(p_event->>'registration_mode', ''), 'built_in') = 'external'
+            then nullif(p_event->>'external_registration_url', '')
+            else null
+        end,
         registration_ends_at = v_registration_ends_at,
         registration_required = (p_event->>'registration_required')::boolean,
         registration_questions = v_registration_questions,

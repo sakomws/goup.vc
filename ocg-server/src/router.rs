@@ -220,6 +220,10 @@ pub(crate) async fn setup(
             "/{alliance}/event/{event_id}/cfs-submissions",
             post(event::submit_cfs_submission),
         )
+        .route(
+            "/{alliance}/group/{group_id}/cfs-submissions",
+            post(group::submit_cfs_submission),
+        )
         .route("/{alliance}/group/{group_id}/join", post(group::join_group))
         .route(
             "/{alliance}/group/{group_id}/accelerator/cohorts/{cohort_id}/apply",
@@ -453,6 +457,7 @@ pub(crate) async fn setup(
             "/{alliance}/group/{group_slug}/accelerator",
             get(group::accelerator_page),
         )
+        .route("/{alliance}/group/{group_slug}/cfs", get(group::cfs_page))
         .route("/{alliance}/group/{group_slug}", get(group::page))
         .route(
             "/{alliance}/event/{event_id}/cfs-modal",

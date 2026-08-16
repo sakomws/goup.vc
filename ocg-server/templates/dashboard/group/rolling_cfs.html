@@ -1,0 +1,114 @@
+{% import "macros/dashboard.html" as dashboard -%}
+{% import "macros/badges.html" as badges -%}
+
+{{ dashboard::page_title(title = "Rolling Call for Speakers", description = "Collect proposals without publishing a placeholder event, review them in one pool, and schedule approved talks when a date is agreed.") -}}
+
+<div id="rolling-cfs-refresh"
+     hx-get="/dashboard/group/rolling-cfs"
+     hx-trigger="refresh-rolling-cfs from:body"
+     hx-target="#dashboard-content"
+     hx-swap="innerHTML"></div>
+
+{% if !can_manage_events -%}
+  {{ dashboard::permission_warning(message = "Your role cannot manage Calls for Speakers.") -}}
+{% endif -%}
+
+<div class="mt-8 grid gap-10">
+  <form class="rounded-2xl border border-stone-200 bg-white p-6"
+        hx-put="/dashboard/group/rolling-cfs"
+        hx-disabled-elt="button[type=submit]">
+    <div class="flex items-center justify-between gap-4">
+      <div>
+        <h2 class="text-lg font-bold text-stone-900">Standing call</h2>
+        <p class="mt-1 text-sm text-stone-600">Speakers are told that dates are arranged after approval.</p>
+      </div>
+      <label class="inline-flex items-center gap-2 text-sm font-semibold text-stone-800">
+        <input type="checkbox" name="enabled" value="true" {% if config.enabled %}checked{% endif %} {% if !can_manage_events %}disabled{% endif %}>
+        Accept proposals
+      </label>
+    </div>
+    <div class="mt-5">
+      <label class="form-label" for="rolling-cfs-description">Public description</label>
+      <textarea id="rolling-cfs-description" class="textarea-primary mt-2" name="description" rows="4" {% if !can_manage_events %}disabled{% endif %}>{% if let Some(description) = &config.description %}{{ description }}{% endif %}</textarea>
+    </div>
+    <div class="mt-5">
+      <label for="rolling-cfs-labels" class="form-label">Proposal labels</label>
+      <p class="form-legend mt-1">Optional labels help speakers and reviewers organize a standing proposal pool.</p>
+      <cfs-labels-editor id="rolling-cfs-labels"
+                         class="mt-3 block"
+                         field-name="labels"
+                         labels="{{ config.labels|json }}"
+                         max-items="20"
+                         colors="{{ crate::validation::CFS_LABEL_COLORS|json }}">
+      </cfs-labels-editor>
+    </div>
+    <button class="btn-primary mt-5" type="submit" {% if !can_manage_events %}disabled{% endif %}>Save rolling CFS</button>
+  </form>
+
+  <section>
+    <div class="flex items-end justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-bold text-stone-900">Proposal pool</h2>
+        <p class="mt-1 text-sm text-stone-600">{{ submissions.len() }} active proposals. Assignment history is retained for proposals reused across events.</p>
+      </div>
+    </div>
+    <div class="mt-5 space-y-4">
+      {% for submission in submissions -%}
+        <article class="rounded-2xl border border-stone-200 bg-white p-5">
+          <div class="flex flex-col justify-between gap-4 lg:flex-row">
+            <div>
+              <h3 class="font-bold text-stone-900">{{ submission.title }}</h3>
+              <p class="mt-1 text-sm text-stone-600">{{ submission.speaker_name }} · submitted {{ submission.created_at.format("%b %-d, %Y") }}</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                {{ badges::submission_status_badge(status_id = submission.status_id, label = submission.status_name, extra_styles = Some("px-2.5 py-0.5 uppercase")) -}}
+                {% for label in submission.labels -%}
+                  {{ badges::cfs_label_chip(name = &label.name, color = &label.color) -}}
+                {% endfor -%}
+                <span class="text-xs text-stone-500">{{ submission.ratings_count }} ratings{% if let Some(rating) = submission.average_rating %} · {{ rating }} average{% endif %}</span>
+              </div>
+            </div>
+            <div class="min-w-64">
+              <form class="grid gap-2"
+                    hx-put="/dashboard/group/rolling-cfs/submissions/{{ submission.group_cfs_submission_id }}"
+                    hx-disabled-elt="button">
+                <select class="select-primary" name="status_id" {% if !can_manage_events %}disabled{% endif %}>
+                  {% for status in statuses -%}
+                    <option value="{{ status.cfs_submission_status_id }}" {% if submission.status_id == status.cfs_submission_status_id %}selected{% endif %}>{{ status.display_name }}</option>
+                  {% endfor -%}
+                </select>
+                <select class="select-primary" name="rating_stars" {% if !can_manage_events %}disabled{% endif %}>
+                  <option value="">Leave my rating unchanged</option>
+                  <option value="0">Clear my rating</option>
+                  {% for star in 1..6 %}<option value="{{ star }}">{{ star }} stars</option>{% endfor %}
+                </select>
+                <input class="input-primary" name="rating_comment" placeholder="Optional reviewer note" {% if !can_manage_events %}disabled{% endif %}>
+                <button class="btn-primary" type="submit" {% if !can_manage_events %}disabled{% endif %}>Save review</button>
+              </form>
+              {% if submission.status_id == "approved" && !events.is_empty() -%}
+                <form class="mt-3 flex gap-2"
+                      hx-post="/dashboard/group/rolling-cfs/submissions/{{ submission.group_cfs_submission_id }}/assignments">
+                  <select class="select-primary min-w-0 flex-1" name="event_id" {% if !can_manage_events %}disabled{% endif %}>
+                    {% for event in events -%}
+                      <option value="{{ event.event_id }}">{{ event.name }}{% if let Some(starts_at) = event.starts_at %} · {{ starts_at.format("%b %-d") }}{% endif %}</option>
+                    {% endfor -%}
+                  </select>
+                  <button class="btn-primary-outline" type="submit" {% if !can_manage_events %}disabled{% endif %}>Assign</button>
+                </form>
+              {% endif -%}
+            </div>
+          </div>
+          {% if !submission.assignments.is_empty() -%}
+            <div class="mt-4 border-t border-stone-100 pt-3 text-sm text-stone-600">
+              <span class="font-semibold text-stone-800">Assignment history:</span>
+              {% for assignment in submission.assignments -%}
+                <span class="ms-2">{{ assignment.event_name }} ({{ assignment.assigned_at.format("%b %-d, %Y") }})</span>{% if !loop.last %}, {% endif %}
+              {% endfor -%}
+            </div>
+          {% endif -%}
+        </article>
+      {% else -%}
+        <div class="rounded-2xl border border-dashed border-stone-300 bg-white p-10 text-center text-stone-600">No rolling CFS submissions yet.</div>
+      {% endfor -%}
+    </div>
+  </section>
+</div>

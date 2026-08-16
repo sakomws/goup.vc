@@ -64,6 +64,7 @@ mod tests;
 /// Handler that renders the event page.
 #[instrument(skip_all)]
 pub(crate) async fn page(
+    auth_session: AuthSession,
     State(db): State<DynDB>,
     State(server_cfg): State<HttpServerConfig>,
     Path((alliance_name, group_slug, event_slug)): Path<(String, String, String)>,
@@ -95,6 +96,14 @@ pub(crate) async fn page(
     // Trim gallery media
     trim_public_gallery_images(&mut event.photos_urls);
 
+    let viewer_timezone = auth_session
+        .user
+        .as_ref()
+        .and_then(|user| user.timezone.as_deref())
+        .and_then(|timezone| timezone.parse().ok());
+    let user = User::from_session(auth_session).await?;
+    let is_logged_in = user.logged_in;
+
     // Prepare template
     let template = Page {
         base_url: server_cfg.base_url,
@@ -102,10 +111,19 @@ pub(crate) async fn page(
         page_id: PageId::Event,
         path: uri.path().to_string(),
         site_settings,
-        user: User::default(),
+        user,
+        viewer_timezone,
     };
 
-    Ok((PUBLIC_SHARED_CACHE_HEADERS, Html(template.render()?)).into_response())
+    if is_logged_in {
+        Ok((
+            [(CACHE_CONTROL, CACHE_CONTROL_NO_STORE)],
+            Html(template.render()?),
+        )
+            .into_response())
+    } else {
+        Ok((PUBLIC_SHARED_CACHE_HEADERS, Html(template.render()?)).into_response())
+    }
 }
 
 /// Handler that renders the check-in page.

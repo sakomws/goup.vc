@@ -41,7 +41,8 @@ returns json as $$
             )
         else null end,
         'slug_pretty', g.slug_pretty,
-        'state', g.state
+        'state', g.state,
+        'web_analytics_measurement_id', g.web_analytics_measurement_id
     )) as json_data
     from "group" g
     join alliance c using (alliance_id)

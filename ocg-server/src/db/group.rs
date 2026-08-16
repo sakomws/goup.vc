@@ -9,13 +9,37 @@ use crate::{
     db::PgExecutor,
     types::{
         event::{EventKind, EventSummary},
-        group::{GroupFull, GroupJoinOutcome, GroupMembershipStatus},
+        group::{GroupFull, GroupJoinOutcome, GroupMembershipStatus, GroupRollingCfs},
     },
 };
 
 /// Database trait defining all data access operations for the group site.
 #[async_trait]
 pub(crate) trait DBGroup {
+    /// Adds a proposal to the group's standing Call for Speakers.
+    async fn add_group_cfs_submission(
+        &self,
+        alliance_id: Uuid,
+        group_id: Uuid,
+        user_id: Uuid,
+        session_proposal_id: Uuid,
+        label_ids: &[Uuid],
+    ) -> Result<Uuid>;
+
+    /// Retrieves the public rolling CFS configuration for a group.
+    async fn get_group_cfs(
+        &self,
+        alliance_id: Uuid,
+        group_slug: &str,
+    ) -> Result<Option<GroupRollingCfs>>;
+
+    /// Lists the current user's reusable proposals for a rolling CFS.
+    async fn list_user_session_proposals_for_group_cfs(
+        &self,
+        user_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<Vec<crate::templates::event::SessionProposal>>;
+
     /// Retrieves group information.
     async fn get_group_full_by_slug(
         &self,
@@ -74,6 +98,51 @@ impl<T> DBGroup for T
 where
     T: PgExecutor + Send + Sync,
 {
+    /// [`DBGroup::add_group_cfs_submission`]
+    #[instrument(skip(self), err)]
+    async fn add_group_cfs_submission(
+        &self,
+        alliance_id: Uuid,
+        group_id: Uuid,
+        user_id: Uuid,
+        session_proposal_id: Uuid,
+        label_ids: &[Uuid],
+    ) -> Result<Uuid> {
+        self.fetch_scalar_one(
+            "select add_group_cfs_submission($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::uuid[])::uuid",
+            &[&alliance_id, &group_id, &user_id, &session_proposal_id, &label_ids],
+        )
+        .await
+    }
+
+    /// [`DBGroup::get_group_cfs`]
+    #[instrument(skip(self), err)]
+    async fn get_group_cfs(
+        &self,
+        alliance_id: Uuid,
+        group_slug: &str,
+    ) -> Result<Option<GroupRollingCfs>> {
+        self.fetch_json_opt(
+            "select get_group_cfs($1::uuid, $2::text)",
+            &[&alliance_id, &group_slug],
+        )
+        .await
+    }
+
+    /// [`DBGroup::list_user_session_proposals_for_group_cfs`]
+    #[instrument(skip(self), err)]
+    async fn list_user_session_proposals_for_group_cfs(
+        &self,
+        user_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<Vec<crate::templates::event::SessionProposal>> {
+        self.fetch_json_one(
+            "select list_user_session_proposals_for_group_cfs($1::uuid, $2::uuid)",
+            &[&user_id, &group_id],
+        )
+        .await
+    }
+
     /// [`DBGroup::get_group_full_by_slug`]
     #[instrument(skip(self), err)]
     async fn get_group_full_by_slug(

@@ -11,6 +11,7 @@ declare
     v_event_deleted boolean;
     v_event_ends_at timestamptz;
     v_event_published boolean;
+    v_registration_mode text;
     v_event_starts_at timestamptz;
     v_group_active boolean;
     v_payment_recipient jsonb;
@@ -24,6 +25,7 @@ begin
         g.payment_recipient,
         e.payment_currency_code,
         e.published,
+        e.registration_mode,
         e.starts_at
     into
         v_event_canceled,
@@ -33,6 +35,7 @@ begin
         v_payment_recipient,
         v_currency_code,
         v_event_published,
+        v_registration_mode,
         v_event_starts_at
     from event e
     join "group" g on g.group_id = e.group_id
@@ -51,6 +54,10 @@ begin
            and coalesce(v_event_ends_at, v_event_starts_at) <= current_timestamp
        ) then
         raise exception 'event not found or inactive';
+    end if;
+
+    if v_registration_mode <> 'built_in' then
+        raise exception 'event does not use built-in registration';
     end if;
 
     -- Require any payment recipient before validating provider compatibility

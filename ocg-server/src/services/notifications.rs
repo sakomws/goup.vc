@@ -225,8 +225,10 @@ impl EnqueueWorker {
         let event_reminders = self.db.enqueue_due_event_reminders(&self.base_url).await?;
         let coffee_meet_suggestions =
             self.db.enqueue_due_coffee_meet_suggestions(&self.base_url).await?;
+        let scheduled_event_attendee_emails =
+            self.db.enqueue_due_scheduled_event_attendee_emails().await?;
 
-        Ok(event_reminders + coffee_meet_suggestions)
+        Ok(event_reminders + coffee_meet_suggestions + scheduled_event_attendee_emails)
     }
 }
 

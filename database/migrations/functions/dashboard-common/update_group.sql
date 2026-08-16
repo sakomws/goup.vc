@@ -105,6 +105,7 @@ begin
         website_url = nullif(p_group->>'website_url', ''),
         whatsapp_url = nullif(p_group->>'whatsapp_url', ''),
         wechat_url = nullif(p_group->>'wechat_url', ''),
+        web_analytics_measurement_id = nullif(upper(btrim(p_group->>'web_analytics_measurement_id')), ''),
         youtube_url = nullif(p_group->>'youtube_url', '')
     where group_id = p_group_id
     and alliance_id = p_alliance_id

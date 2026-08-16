@@ -337,6 +337,56 @@
 </div>
 {# End header actions -#}
 
+{% if can_manage_events && !scheduled_emails.is_empty() -%}
+  <section class="mb-6 rounded-lg border border-stone-200 bg-white p-4">
+    <div class="mb-3 flex items-center justify-between gap-3">
+      <div>
+        <h2 class="font-semibold text-stone-900">Scheduled emails</h2>
+        <p class="text-sm text-stone-600">Future attendee messages and their delivery status.</p>
+      </div>
+    </div>
+    <ul class="divide-y divide-stone-100">
+      {% for scheduled_email in scheduled_emails -%}
+        <li class="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
+            <div class="font-medium text-stone-900">{{ scheduled_email.subject }}</div>
+            <div class="text-sm text-stone-600">
+              {{ scheduled_email.scheduled_at.format("%b %e, %Y %H:%M UTC") }}
+              · {{ scheduled_email.recipient_count }} recipient{% if scheduled_email.recipient_count != 1 %}s{% endif %}
+              · {{ scheduled_email.recipient_scope }}
+              · {{ scheduled_email.status }}
+            </div>
+          </div>
+          {% if scheduled_email.status == "scheduled" -%}
+            <div class="flex shrink-0 gap-2">
+              <button type="button"
+                      class="btn-primary-outline btn-mini"
+                      data-attendee-scheduled-email-edit
+                      data-scheduled-email-id="{{ scheduled_email.scheduled_event_attendee_email_id }}"
+                      data-scheduled-at="{{ scheduled_email.scheduled_at.to_rfc3339() }}"
+                      data-recipient-scope="{{ scheduled_email.recipient_scope }}"
+                      data-subject="{{ scheduled_email.subject }}"
+                      data-body="{{ scheduled_email.body }}"
+                      data-recipient-ids="{% if let Some(recipient_user_ids) = &scheduled_email.recipient_user_ids %}{% for recipient_user_id in recipient_user_ids %}{{ recipient_user_id }}{% if !loop.last %},{% endif %}{% endfor %}{% endif %}">Edit</button>
+              <button type="button"
+                      class="btn-primary-outline btn-mini"
+                      hx-delete="/dashboard/group/notifications/{{ event.event_id }}/scheduled/{{ scheduled_email.scheduled_event_attendee_email_id }}"
+                      hx-trigger="confirmed"
+                      hx-indicator="#dashboard-spinner"
+                      hx-disabled-elt="this"
+                      data-confirm-action
+                      data-confirm-message="Cancel this scheduled email?"
+                      data-confirm-text="Cancel"
+                      data-success-message="Scheduled email canceled."
+                      data-error-message="Unable to cancel the scheduled email.">Cancel</button>
+            </div>
+          {% endif -%}
+        </li>
+      {% endfor -%}
+    </ul>
+  </section>
+{% endif -%}
+
 {# Email selection mode -#}
 <div data-attendee-email-selection-bar
      class="hidden mb-4 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
@@ -979,6 +1029,7 @@
                  name="recipient_scope"
                  value="all">
           <div id="attendee-notification-selected-fields"></div>
+          <input type="hidden" id="attendee-notification-scheduled-at" name="scheduled_at">
 
           <div class="mb-4">
             <label for="attendee-subject" class="form-label">
@@ -1010,6 +1061,20 @@
               <p class="mt-1 text-xs text-stone-500">Plain text only. No HTML formatting.</p>
             </div>
           </div>
+          <div class="mb-6">
+            <label for="attendee-notification-delivery-mode" class="form-label">Delivery</label>
+            <select id="attendee-notification-delivery-mode" class="input-primary mt-2">
+              <option value="now">Send now</option>
+              <option value="scheduled">Schedule for later</option>
+            </select>
+            <div id="attendee-notification-schedule-fields" class="mt-3 hidden">
+              <label for="attendee-notification-scheduled-local" class="form-label">Send at</label>
+              <input id="attendee-notification-scheduled-local"
+                     type="datetime-local"
+                     class="input-primary mt-2">
+              <p class="mt-1 text-xs text-stone-500">Uses your local time and is saved in UTC.</p>
+            </div>
+          </div>
           <div class="flex justify-end gap-3 pt-6 border-t border-stone-200">
             <button id="cancel-attendee-notification"
                     type="button"
@@ -1026,7 +1091,7 @@
                       disabled title="Canceled events cannot send attendee emails."
                     {% endif -%}>
               {{ ui::btn_spinner(id = "attendee-notification-spinner", spinner_type = "2") -}}
-              Send email
+              <span id="attendee-notification-submit-label">Send email</span>
             </button>
           </div>
         </form>

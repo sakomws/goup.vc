@@ -282,6 +282,9 @@ pub struct EventFull {
     /// Registration questions configured for the event.
     #[serde(default)]
     pub registration_questions: Vec<QuestionnaireQuestion>,
+    /// Registration flow used by the event.
+    #[serde(default)]
+    pub registration_mode: EventRegistrationMode,
     /// Whether registration questions are read-only for this event.
     #[serde(default)]
     pub registration_questions_locked: bool,
@@ -378,6 +381,8 @@ pub struct EventFull {
     /// Registration end time in UTC.
     #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub registration_ends_at: Option<DateTime<Utc>>,
+    /// Destination used when registration is handled outside Goup.
+    pub external_registration_url: Option<String>,
     /// Whether registration is required.
     pub registration_required: Option<bool>,
     /// Registration start time in UTC.
@@ -749,6 +754,17 @@ pub enum EventKind {
     #[default]
     InPerson,
     Virtual,
+}
+
+/// Registration ownership for an event.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, strum::Display)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum EventRegistrationMode {
+    #[default]
+    BuiltIn,
+    External,
+    None,
 }
 
 /// Event kind summary.

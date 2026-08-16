@@ -484,6 +484,39 @@ mock! {
 
     #[async_trait]
     impl crate::db::dashboard::group::DBDashboardGroup for DB {
+        async fn assign_group_cfs_submission(
+            &self,
+            reviewer_id: Uuid,
+            group_id: Uuid,
+            event_id: Uuid,
+            submission_id: Uuid,
+        ) -> Result<Uuid>;
+        async fn get_group_cfs_dashboard(
+            &self,
+            group_id: Uuid,
+        ) -> Result<crate::templates::dashboard::group::rolling_cfs::Config>;
+        async fn list_group_cfs_assignment_events(
+            &self,
+            group_id: Uuid,
+        ) -> Result<Vec<crate::templates::dashboard::group::rolling_cfs::AssignmentEvent>>;
+        async fn list_group_cfs_submissions(
+            &self,
+            group_id: Uuid,
+        ) -> Result<Vec<crate::templates::dashboard::group::rolling_cfs::Submission>>;
+        async fn update_group_cfs(
+            &self,
+            group_id: Uuid,
+            enabled: bool,
+            description: Option<String>,
+            labels: &[crate::types::event::EventCfsLabel],
+        ) -> Result<()>;
+        async fn update_group_cfs_submission(
+            &self,
+            reviewer_id: Uuid,
+            group_id: Uuid,
+            submission_id: Uuid,
+            submission: &crate::templates::dashboard::group::rolling_cfs::SubmissionUpdate,
+        ) -> Result<()>;
         async fn accept_event_invitation_request(
             &self,
             actor_user_id: Uuid,
@@ -1156,6 +1189,24 @@ mock! {
 
     #[async_trait]
     impl crate::db::group::DBGroup for DB {
+        async fn add_group_cfs_submission(
+            &self,
+            alliance_id: Uuid,
+            group_id: Uuid,
+            user_id: Uuid,
+            session_proposal_id: Uuid,
+            label_ids: &[Uuid],
+        ) -> Result<Uuid>;
+        async fn get_group_cfs(
+            &self,
+            alliance_id: Uuid,
+            group_slug: &str,
+        ) -> Result<Option<crate::types::group::GroupRollingCfs>>;
+        async fn list_user_session_proposals_for_group_cfs(
+            &self,
+            user_id: Uuid,
+            group_id: Uuid,
+        ) -> Result<Vec<crate::templates::event::SessionProposal>>;
         async fn get_group_full_by_slug(
             &self,
             alliance_id: Uuid,
@@ -1468,6 +1519,12 @@ mock! {
 
     #[async_trait]
     impl crate::db::notifications::DBNotifications for DB {
+        async fn cancel_scheduled_event_attendee_email(
+            &self,
+            scheduled_email_id: Uuid,
+            group_id: Uuid,
+            event_id: Uuid,
+        ) -> Result<()>;
         async fn enqueue_due_event_reminders(
             &self,
             base_url: &str,
@@ -1476,6 +1533,7 @@ mock! {
             &self,
             base_url: &str,
         ) -> Result<usize>;
+        async fn enqueue_due_scheduled_event_attendee_emails(&self) -> Result<usize>;
         async fn enqueue_notification(
             &self,
             notification: &crate::services::notifications::NewNotification,
@@ -1489,6 +1547,11 @@ mock! {
             &self,
             attachment_id: Uuid
         ) -> Result<crate::services::notifications::Attachment>;
+        async fn list_scheduled_event_attendee_emails(
+            &self,
+            group_id: Uuid,
+            event_id: Uuid,
+        ) -> Result<Vec<crate::db::notifications::ScheduledEventAttendeeEmail>>;
         async fn claim_pending_notification(
             &self,
         ) -> Result<Option<crate::services::notifications::Notification>>;
@@ -1503,6 +1566,15 @@ mock! {
             base_retry_after: std::time::Duration,
             max_retry_after: std::time::Duration,
             max_delivery_attempts: usize,
+        ) -> Result<()>;
+        async fn schedule_event_attendee_email(
+            &self,
+            email: &crate::db::notifications::NewScheduledEventAttendeeEmail,
+        ) -> Result<Uuid>;
+        async fn update_scheduled_event_attendee_email(
+            &self,
+            scheduled_email_id: Uuid,
+            email: &crate::db::notifications::NewScheduledEventAttendeeEmail,
         ) -> Result<()>;
         async fn update_notification(
             &self,

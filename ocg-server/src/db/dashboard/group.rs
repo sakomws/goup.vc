@@ -25,6 +25,10 @@ use crate::{
             integrations::IntegrationPage,
             invitation_requests::{InvitationRequestsFilters, InvitationRequestsOutput},
             members::{GroupJoinRequest, GroupMembersFilters, GroupMembersOutput},
+            rolling_cfs::{
+                AssignmentEvent as GroupCfsAssignmentEvent, Config as GroupCfsConfig,
+                Submission as GroupCfsSubmission, SubmissionUpdate as GroupCfsSubmissionUpdate,
+            },
             sponsors::{GroupSponsorsFilters, GroupSponsorsOutput, Sponsor},
             spotlights::{GroupMemberSpotlight, SpotlightInput},
             store::{GroupStoreItem, StoreItemInput},
@@ -49,6 +53,15 @@ use crate::{
 /// Database trait for group dashboard operations.
 #[async_trait]
 pub(crate) trait DBDashboardGroup {
+    /// Assigns an approved rolling CFS proposal to a dated event.
+    async fn assign_group_cfs_submission(
+        &self,
+        reviewer_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        submission_id: Uuid,
+    ) -> Result<Uuid>;
+
     /// Accepts a pending event invitation request.
     async fn accept_event_invitation_request(
         &self,
@@ -125,6 +138,18 @@ pub(crate) trait DBDashboardGroup {
         group_id: Uuid,
         requester_user_id: Uuid,
     ) -> Result<()>;
+
+    /// Retrieves the group's rolling CFS configuration.
+    async fn get_group_cfs_dashboard(&self, group_id: Uuid) -> Result<GroupCfsConfig>;
+
+    /// Lists events that can receive an assigned rolling proposal.
+    async fn list_group_cfs_assignment_events(
+        &self,
+        group_id: Uuid,
+    ) -> Result<Vec<GroupCfsAssignmentEvent>>;
+
+    /// Lists the standing CFS pool including ratings and assignment history.
+    async fn list_group_cfs_submissions(&self, group_id: Uuid) -> Result<Vec<GroupCfsSubmission>>;
 
     /// Cancels an event (sets canceled=true).
     async fn cancel_event(&self, actor_user_id: Uuid, group_id: Uuid, event_id: Uuid)
@@ -316,6 +341,24 @@ pub(crate) trait DBDashboardGroup {
 
     /// Lists reviewer-available CFS submission statuses.
     async fn list_cfs_submission_statuses_for_review(&self) -> Result<Vec<CfsSubmissionStatus>>;
+
+    /// Updates the standing CFS configuration.
+    async fn update_group_cfs(
+        &self,
+        group_id: Uuid,
+        enabled: bool,
+        description: Option<String>,
+        labels: &[crate::types::event::EventCfsLabel],
+    ) -> Result<()>;
+
+    /// Reviews a submission in the standing CFS pool.
+    async fn update_group_cfs_submission(
+        &self,
+        reviewer_id: Uuid,
+        group_id: Uuid,
+        submission_id: Uuid,
+        submission: &GroupCfsSubmissionUpdate,
+    ) -> Result<()>;
 
     /// Lists group dashboard audit log rows.
     async fn list_group_audit_logs(
@@ -613,6 +656,75 @@ impl<T> DBDashboardGroup for T
 where
     T: PgExecutor + Send + Sync,
 {
+    #[instrument(skip(self), err)]
+    async fn assign_group_cfs_submission(
+        &self,
+        reviewer_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        submission_id: Uuid,
+    ) -> Result<Uuid> {
+        self.fetch_scalar_one(
+            "select assign_group_cfs_submission($1::uuid, $2::uuid, $3::uuid, $4::uuid)::uuid",
+            &[&reviewer_id, &group_id, &event_id, &submission_id],
+        )
+        .await
+    }
+
+    #[instrument(skip(self), err)]
+    async fn get_group_cfs_dashboard(&self, group_id: Uuid) -> Result<GroupCfsConfig> {
+        self.fetch_json_one("select get_group_cfs_dashboard($1::uuid)", &[&group_id])
+            .await
+    }
+
+    #[instrument(skip(self), err)]
+    async fn list_group_cfs_assignment_events(
+        &self,
+        group_id: Uuid,
+    ) -> Result<Vec<GroupCfsAssignmentEvent>> {
+        self.fetch_json_one(
+            "select list_group_cfs_assignment_events($1::uuid)",
+            &[&group_id],
+        )
+        .await
+    }
+
+    #[instrument(skip(self), err)]
+    async fn list_group_cfs_submissions(&self, group_id: Uuid) -> Result<Vec<GroupCfsSubmission>> {
+        self.fetch_json_one("select list_group_cfs_submissions($1::uuid)", &[&group_id])
+            .await
+    }
+
+    #[instrument(skip(self, labels), err)]
+    async fn update_group_cfs(
+        &self,
+        group_id: Uuid,
+        enabled: bool,
+        description: Option<String>,
+        labels: &[crate::types::event::EventCfsLabel],
+    ) -> Result<()> {
+        self.execute(
+            "select update_group_cfs($1::uuid, $2::bool, $3::text, $4::jsonb)",
+            &[&group_id, &enabled, &description, &Json(labels)],
+        )
+        .await
+    }
+
+    #[instrument(skip(self, submission), err)]
+    async fn update_group_cfs_submission(
+        &self,
+        reviewer_id: Uuid,
+        group_id: Uuid,
+        submission_id: Uuid,
+        submission: &GroupCfsSubmissionUpdate,
+    ) -> Result<()> {
+        self.execute(
+            "select update_group_cfs_submission($1::uuid, $2::uuid, $3::uuid, $4::jsonb)",
+            &[&reviewer_id, &group_id, &submission_id, &Json(submission)],
+        )
+        .await
+    }
+
     /// [`DBDashboardGroup::accept_event_invitation_request`]
     #[instrument(skip(self), err)]
     async fn accept_event_invitation_request(

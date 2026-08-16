@@ -299,6 +299,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             get(dashboard::group::attendees::generate_check_in_qr_code),
         )
         .route("/events", get(dashboard::group::events::list_page))
+        .route("/rolling-cfs", get(dashboard::group::rolling_cfs::page))
         .route("/integrations", get(dashboard::group::integrations::page))
         .route("/events/add", get(dashboard::group::events::add_page))
         .route(
@@ -406,6 +407,18 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             post(dashboard::group::accelerator::add_week),
         )
         .route("/events/add", post(dashboard::group::events::add))
+        .route(
+            "/rolling-cfs",
+            put(dashboard::group::rolling_cfs::update_config),
+        )
+        .route(
+            "/rolling-cfs/submissions/{submission_id}",
+            put(dashboard::group::rolling_cfs::update_submission),
+        )
+        .route(
+            "/rolling-cfs/submissions/{submission_id}/assignments",
+            post(dashboard::group::rolling_cfs::assign_submission),
+        )
         .route("/events/preview", post(dashboard::group::events::preview))
         .route(
             "/events/{event_id}/attendees/invite",
@@ -470,6 +483,15 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .route(
             "/notifications/{event_id}",
             post(dashboard::group::attendees::send_event_custom_notification),
+        )
+        .route(
+            "/notifications/{event_id}/scheduled",
+            post(dashboard::group::attendees::schedule_event_custom_notification),
+        )
+        .route(
+            "/notifications/{event_id}/scheduled/{scheduled_email_id}",
+            put(dashboard::group::attendees::update_scheduled_event_custom_notification)
+                .delete(dashboard::group::attendees::cancel_scheduled_event_custom_notification),
         )
         .route("/users/search", get(common::search_user))
         .route_layer(check_selected_group_permission(

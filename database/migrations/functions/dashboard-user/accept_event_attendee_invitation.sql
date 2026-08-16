@@ -22,6 +22,7 @@ begin
     and e.deleted = false
     and e.published = true
     and e.canceled = false
+    and e.registration_mode = 'built_in'
     and (
         coalesce(e.ends_at, e.starts_at) is null
         or coalesce(e.ends_at, e.starts_at) >= current_timestamp

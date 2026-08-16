@@ -32,6 +32,15 @@
 {% endblock twitter_meta -%}
 
 {% block scripts -%}
+  {% if let Some(measurement_id) = &event.group.web_analytics_measurement_id -%}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ measurement_id }}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag("js", new Date());
+      gtag("config", "{{ measurement_id }}");
+    </script>
+  {% endif -%}
   <script type="module" src="/static/js/common/breadcrumb-nav.js"></script>
   <script type="module" src="/static/js/common/modals/images-gallery.js"></script>
   <script type="module" src="/static/js/common/charts/page-views.js"></script>
@@ -293,6 +302,12 @@
                   {% endmatch -%}
                 {% else -%}
                   <div class="text-lg sm:text-xl xl:text-3xl font-semibold text-stone-800">TBD</div>
+                {% endif -%}
+                {% if let Some(viewer_event_time) = self.viewer_event_time() -%}
+                  <div class="mt-3 border-t border-stone-200 pt-3 text-sm text-stone-600">
+                    <span class="font-semibold text-stone-700">Your time:</span>
+                    {{ viewer_event_time }}
+                  </div>
                 {% endif -%}
                 <div data-registration-window-message-container
                      {% if let Some(message) = &registration_window_message %}title="{{ message }}"{% endif %}
