@@ -21,16 +21,14 @@
        href="{{ url }}"
        target="_blank"
        rel="noopener noreferrer"
-       title="{{ entry.name }}"
        hx-boost="false">{% call logo_media(entry) %}{% endcall %}</a>
   {% else if let Some(url) = &entry.github_url -%}
     <a class="{{ tile_class }}"
        href="{{ url }}"
        target="_blank"
        rel="noopener noreferrer"
-       title="{{ entry.name }}"
        hx-boost="false">{% call logo_media(entry) %}{% endcall %}</a>
   {% else -%}
-    <div class="{{ tile_class }}" title="{{ entry.name }}">{% call logo_media(entry) %}{% endcall %}</div>
+    <div class="{{ tile_class }}">{% call logo_media(entry) %}{% endcall %}</div>
   {% endif -%}
 {%- endmacro %}

@@ -478,6 +478,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* Landscape logo marquee */
 .marquee-row {
   overflow: hidden;
+  /* The tiles lift on hover, so leave clipping room above and below and pull it
+     back with a matching negative margin to keep the row spacing unchanged. */
+  padding-block: 0.375rem;
+  margin-block: -0.375rem;
   -webkit-mask-image: linear-gradient(to right,
       transparent,
       black 8%,

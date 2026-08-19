@@ -237,7 +237,7 @@
         <div class="py-4">
           <div class="grid md:grid-cols-2 gap-5 sm:gap-8 md:gap-5 lg:gap-8">
             {# Event date -#}
-            <div class="border border-stone-200 rounded-lg h-full bg-white">
+            <div class="border border-stone-200 rounded-lg h-full min-w-0 bg-white">
               <div class="p-4 h-full flex flex-col">
                 {% let registration_window_message = event.registration_window_message() -%}
                 <div class="flex items-center justify-between mb-4 min-h-[25px]">
@@ -327,7 +327,7 @@
           </div>
           {# End event date -#}
           {# Location -#}
-          <div class="border border-stone-200 rounded-lg p-4 bg-white h-full flex flex-col">
+          <div class="border border-stone-200 rounded-lg p-4 bg-white h-full min-w-0 flex flex-col">
             <div class="flex items-center justify-between mb-4 min-h-[25px]">
               <div class="text-base/3 uppercase font-semibold text-stone-400">Location</div>
             </div>
