@@ -181,3 +181,61 @@ through the standard `tools/list` method.
 - `goup_search_landscape`: search published landscape entries.
 - `goup_search_wiki`: list or search wiki feed sources.
 - `goup_submit_talk`: create and submit a talk proposal to an open event CFS.
+
+## Landscape link health check
+
+`health-check.mjs` is a standalone job that keeps the landscape from filling up
+with dead links. Startups get acquired, shut down, or drop their domain, and
+those entries otherwise stay published forever.
+
+Each run walks every published landscape entry with a website, checks whether
+the site still resolves, and records a per-entry failure streak in a small JSON
+state file. A site that answers at all, including one that blocks bots with 401
+or 403, counts as alive. Only hard signals count against an entry: a domain that
+no longer resolves, a refused or reset connection, a timeout, or a `404`, `410`,
+or `451`. Transient problems such as `5xx` are retried once and, if still
+failing, only add to the streak rather than acting immediately.
+
+After `HEALTHCHECK_FAILURE_THRESHOLD` consecutive failing runs (default `3`) an
+entry is unpublished through `update_landscape_entry_published`, which is
+reversible and writes an audit log. Entries are never deleted, so a human can
+review and permanently remove them later. The job is a dry run by default and
+only unpublishes when `HEALTHCHECK_APPLY=true` and a valid
+`HEALTHCHECK_ACTOR_USER_ID` are set.
+
+Run it once by hand:
+
+```bash
+cd mcp
+# dry run, prints what it would unpublish
+npm run health-check
+# apply
+HEALTHCHECK_APPLY=true HEALTHCHECK_ACTOR_USER_ID='<uuid>' npm run health-check
+```
+
+Environment:
+
+- `DATABASE_URL` or `TERN_CONF`: database connection, same as the MCP server.
+- `HEALTHCHECK_ACTOR_USER_ID`: user id recorded as the actor for unpublish audit logs.
+- `HEALTHCHECK_APPLY`: `true` to unpublish; otherwise a dry run. Defaults to a dry run.
+- `HEALTHCHECK_FAILURE_THRESHOLD`: consecutive failing runs before unpublishing. Defaults to `3`.
+- `HEALTHCHECK_STATE_FILE`: streak state file. Defaults to `~/.config/ocg/landscape-health-state.json`.
+- `HEALTHCHECK_TIMEOUT_MS`: per-request timeout. Defaults to `15000`.
+- `HEALTHCHECK_CONCURRENCY`: parallel checks. Defaults to `12`.
+
+Schedule it on EC2 with the units in `mcp/systemd`. They reuse
+`~/.config/ocg/mcp.env`, so add `HEALTHCHECK_APPLY=true` and
+`HEALTHCHECK_ACTOR_USER_ID` there once you have reviewed a dry run:
+
+```bash
+sudo cp mcp/systemd/goup-landscape-health.service /etc/systemd/system/
+sudo cp mcp/systemd/goup-landscape-health.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now goup-landscape-health.timer
+# run once now and read the report
+sudo systemctl start goup-landscape-health.service
+journalctl -u goup-landscape-health.service -n 100 --no-pager
+```
+
+Adjust `User` and `WorkingDirectory` in the service file to match the
+deployment before copying it.

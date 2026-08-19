@@ -1,0 +1,14 @@
+[Unit]
+Description=GOUP landscape link health check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Adjust User and WorkingDirectory to match the deployment.
+User=ubuntu
+WorkingDirectory=/home/ubuntu/goup.vc/mcp
+# mcp.env should provide DATABASE_URL (or TERN_CONF) plus, to actually
+# unpublish dead links, HEALTHCHECK_APPLY=true and HEALTHCHECK_ACTOR_USER_ID.
+EnvironmentFile=%h/.config/ocg/mcp.env
+ExecStart=/usr/bin/env node health-check.mjs

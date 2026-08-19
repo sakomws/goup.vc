@@ -5,8 +5,9 @@
   "type": "module",
   "description": "Remote MCP server for GOUP VC operational tools.",
   "scripts": {
-    "check": "node --check server.mjs && node -e \"JSON.parse(require('node:fs').readFileSync('tools.json', 'utf8'))\"",
-    "start": "node server.mjs"
+    "check": "node --check server.mjs && node --check health-check.mjs && node -e \"JSON.parse(require('node:fs').readFileSync('tools.json', 'utf8'))\"",
+    "start": "node server.mjs",
+    "health-check": "node health-check.mjs"
   },
   "engines": {
     "node": ">=20"
