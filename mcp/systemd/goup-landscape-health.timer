@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the GOUP landscape link health check daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=30m
+
+[Install]
+WantedBy=timers.target
