@@ -1,85 +1,249 @@
 {% extends "common/base.html" -%}
 
 {% block jumbotron -%}
-  <div class="relative overflow-hidden">
-    <div class="absolute inset-x-0 top-0 h-72 bg-linear-to-b from-white to-transparent"></div>
-    <section class="relative container mx-auto max-w-7xl px-4 pt-10 pb-8 sm:px-6 lg:px-8 lg:pt-16 lg:pb-10">
-      <div class="relative overflow-hidden rounded-[2.25rem] border border-stone-200 bg-white/95 p-6 shadow-xl shadow-stone-200/60 backdrop-blur sm:p-8 lg:p-10">
-        <div class="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-linear-to-l from-stone-50 to-transparent">
-        </div>
-        <div class="relative max-w-4xl">
-          <div class="mb-4 inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-stone-700">
-            Sponsor GOUP
-          </div>
-          <h1 class="text-balance text-4xl font-black tracking-[-0.045em] text-stone-950 sm:text-5xl lg:text-6xl">
-            Support the builder community
-          </h1>
-          <p class="mt-4 max-w-2xl text-base/7 font-medium text-stone-600">
-            Partner with GOUP to support events, hackathons, community programs, and useful
-            opportunities for builders.
-          </p>
-          <p class="mt-4 max-w-2xl text-sm/7 text-stone-600 sm:text-base/7">
-            Sponsorship helps keep GOUP warm, practical, and accessible: more rooms for builders to meet,
-            more projects discovered, more jobs shared, and more community programs that turn introductions
-            into real momentum.
-          </p>
-        </div>
+  {# Dark statement hero, matching the landscape/docs treatment -#}
+  <section class="relative isolate overflow-hidden bg-[#1A1510]">
+    {# Background hairlines -#}
+    <div class="pointer-events-none absolute inset-0 opacity-[0.06]"
+         style="background-image: repeating-linear-gradient(115deg, transparent 0, transparent 78px, #ffffff 78px, #ffffff 79px);">
+    </div>
+    {# End background hairlines -#}
+
+    <div class="relative mx-auto max-w-7xl px-4 pt-14 pb-16 sm:px-6 lg:px-8 lg:pt-20 lg:pb-24">
+      <p class="mb-5 inline-flex rounded-full border border-white/20 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.28em] text-white/60">
+        Sponsor GOUP
+      </p>
+
+      <h1 class="font-amethysta max-w-3xl text-balance text-4xl font-bold leading-[1.02] text-[#FAF5EE] sm:text-5xl lg:text-6xl">
+        Support the builder community
+      </h1>
+
+      <p class="font-metrophobic mt-5 max-w-xl text-balance text-base leading-[1.65] text-white/65 lg:text-lg">
+        Partner with GOUP to back events, hackathons, and community programs that turn introductions
+        into real momentum for founders, engineers, researchers, and creators.
+      </p>
+
+      <div class="mt-8 flex flex-col items-start gap-3 sm:flex-row">
+        <a href="#sponsor-form"
+           class="rounded-full border border-[#2461D1] bg-[#3D7EFF] px-[26px] py-[13px] text-[15px] font-medium text-white shadow-[0_0_0_2px_#90BBFF80,0_7px_18px_-2px_#3D7EFF45] [text-shadow:0_4px_4px_#00000040]">
+          Start a conversation
+        </a>
+        <a href="#memberships"
+           class="rounded-full border border-white/20 bg-white/[0.06] px-[26px] py-[13px] text-[15px] font-medium text-[#FAF5EE] backdrop-blur-[4px] transition hover:bg-white/10">
+          See membership levels
+        </a>
       </div>
-    </section>
-  </div>
+    </div>
+  </section>
 {% endblock jumbotron -%}
 
 {% block content -%}
-  <div class="container mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8 lg:pb-20">
-    <div class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-      <aside class="rounded-[2rem] border border-[#d8c7b2] bg-[#fffaf5] p-6 text-stone-950 shadow-lg shadow-[#d8c7b2]/30 sm:p-8">
-        <h2 class="text-2xl font-black tracking-tight">Why sponsor?</h2>
-        <div class="mt-6 grid gap-4 text-sm/6 text-stone-700">
-          <p>Reach a trusted network of founders, engineers, researchers, creators, and community leaders.</p>
-          <p>Support high-signal events, learning, open source, AI, startup, and career initiatives.</p>
-          <p>
-            Help members find collaborators, talent, sponsors, and opportunities without turning the community into noise.
-          </p>
-        </div>
-        <div class="mt-8 rounded-3xl border border-[#d8c7b2] bg-white/75 p-5 text-sm/6 text-stone-700">
-          <div class="font-bold text-stone-950">Members-first sponsorship</div>
-          <p class="mt-2">
-            We prioritize useful support: community calls, member spotlights, event support, project visibility,
-            and jobs that help builders move forward.
-          </p>
-        </div>
-        <div class="mt-8 rounded-3xl border border-[#d8c7b2] bg-white/75 p-5 text-sm/6 text-stone-700">
-          We’ll reply from <a href="mailto:{{ crate::templates::site::sponsor::SPONSOR_INQUIRY_RECIPIENT }}"
-    class="font-bold text-stone-950 underline decoration-[#d8c7b2] underline-offset-4">{{ crate::templates::site::sponsor::SPONSOR_INQUIRY_RECIPIENT }}</a>.
-        </div>
-      </aside>
 
-      <section class="rounded-[2rem] border border-stone-200 bg-white/95 p-6 shadow-lg shadow-stone-200/50 sm:p-8 lg:p-10">
-        {% if submitted -%}
-          <div class="rounded-3xl border border-stone-200 bg-stone-50 p-6">
-            <h2 class="text-2xl font-black tracking-tight text-stone-950">Thanks for reaching out.</h2>
-            <p class="mt-3 text-base/7 text-stone-600">
-              Your sponsorship inquiry was sent to the GOUP team. We’ll follow up soon.
-            </p>
-            <a href="/"
-               hx-boost="true"
-               hx-target="body"
-               class="mt-6 inline-flex rounded-full border border-[#d8c7b2] bg-[#f5efe7] px-5 py-2.5 text-sm font-bold text-stone-950 transition hover:bg-[#eadcc9]">Back to GOUP</a>
+  {# Why sponsor -#}
+  <section class="relative overflow-hidden border-t border-[#E2DDD8]">
+    <div class="absolute inset-0 -z-10"
+         style="background: radial-gradient(160% 160% at 88% 10%, #e5d8c566 0%, #FAFAF7 81%)"></div>
+
+    <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+      <div class="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-[72px]">
+        <div class="flex flex-col gap-5 lg:w-[360px] lg:flex-none">
+          <div class="inline-flex w-fit items-center rounded-full border border-[#C8BDB3] px-4 py-2 text-[11px] font-semibold tracking-[2.5px] text-[#8A7A6E]">
+            WHY SPONSOR
           </div>
+          <h2 class="font-amethysta text-[36px] font-bold leading-[1.12] text-[#1A1510] sm:text-[40px]">
+            Show up for people who build in public
+          </h2>
+          <p class="font-metrophobic text-[17px] leading-[1.65] text-[#6B6058]">
+            Sponsorship keeps GOUP warm, practical, and accessible: more rooms for builders to meet,
+            more projects discovered, more jobs shared.
+          </p>
+        </div>
+
+        <div class="min-w-0 flex-1 divide-y divide-[#E2DDD8] border-y border-[#E2DDD8]">
+          <div class="flex items-start gap-4 py-7 first:pt-0 last:pb-0 sm:gap-6">
+            <span class="svg-icon mt-1 size-5 shrink-0 icon-network bg-[#3a2f25]"></span>
+            <div class="flex flex-col gap-1.5">
+              <div class="font-metrophobic text-xl font-semibold text-[#1A1510]">Reach the network</div>
+              <p class="font-metrophobic text-[15px] leading-[1.65] text-[#6B6058]">
+                Reach a trusted network of founders, engineers, researchers, creators, and community leaders.
+              </p>
+            </div>
+          </div>
+          <div class="flex items-start gap-4 py-7 first:pt-0 last:pb-0 sm:gap-6">
+            <span class="svg-icon mt-1 size-5 shrink-0 icon-megaphone bg-[#3a2f25]"></span>
+            <div class="flex flex-col gap-1.5">
+              <div class="font-metrophobic text-xl font-semibold text-[#1A1510]">Support high-signal programs</div>
+              <p class="font-metrophobic text-[15px] leading-[1.65] text-[#6B6058]">
+                Back high-signal events, learning, open source, AI, startup, and career initiatives.
+              </p>
+            </div>
+          </div>
+          <div class="flex items-start gap-4 py-7 first:pt-0 last:pb-0 sm:gap-6">
+            <span class="svg-icon mt-1 size-5 shrink-0 icon-handshake bg-[#3a2f25]"></span>
+            <div class="flex flex-col gap-1.5">
+              <div class="font-metrophobic text-xl font-semibold text-[#1A1510]">Help without adding noise</div>
+              <p class="font-metrophobic text-[15px] leading-[1.65] text-[#6B6058]">
+                Help members find collaborators, talent, sponsors, and opportunities without turning the
+                community into noise.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  {# End why sponsor -#}
+
+  {# Memberships: a column-based showcase, one column per level, rather than -#}
+  {# role-labeled pricing cards. Columns share a single hairline-bordered grid -#}
+  {# (same divide-x/divide-y technique as the "why sponsor" 2x2 grid on the -#}
+  {# homepage), and each level's line items sit inside its own column, -#}
+  {# separated by their own hairlines. The top level keeps the accent blue -#}
+  {# the landscape leaderboard reserves for its top rank. -#}
+  <section id="memberships" class="border-t border-[#E2DDD8]">
+    <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+      <div class="flex flex-col gap-3 md:max-w-2xl">
+        <div class="inline-flex w-fit items-center rounded-full border border-[#C8BDB3] px-4 py-2 text-[11px] font-semibold tracking-[2.5px] text-[#8A7A6E]">
+          MEMBERSHIPS
+        </div>
+        <h2 class="font-amethysta text-[36px] font-bold leading-[1.12] text-[#1A1510] sm:text-[40px]">
+          Choose your level of support
+        </h2>
+        <p class="font-metrophobic text-[17px] leading-[1.65] text-[#6B6058]">
+          GOUP sponsorships are flexible. Start with a community contribution, grow into deeper ecosystem
+          support, or design a strategic partnership around events, hiring, open source, AI, and builder
+          programs.
+        </p>
+      </div>
+
+      <div class="mt-12 grid grid-cols-1 divide-y divide-[#E2DDD8] border border-[#E2DDD8] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {# Community -#}
+        <div class="flex flex-col px-6 py-8 sm:px-7 sm:py-10">
+          <div class="font-amethysta text-sm font-bold tracking-[1px] text-[#c2b6a8]">01</div>
+          <h3 class="font-amethysta mt-2 text-2xl font-bold text-[#1A1510]">Community</h3>
+          <p class="font-metrophobic mt-2 text-[15px] leading-[1.6] text-[#6B6058]">
+            For academic, nonprofit, and early community partners.
+          </p>
+          <ul class="mt-6 flex flex-col divide-y divide-[#E2DDD8] border-t border-[#E2DDD8]">
+            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
+              Recognition on GOUP community channels
+            </li>
+            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
+              Member-friendly event or hackathon support
+            </li>
+            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
+              Access to share relevant opportunities with the network
+            </li>
+          </ul>
+        </div>
+
+        {# Builder -#}
+        <div class="flex flex-col px-6 py-8 sm:px-7 sm:py-10">
+          <div class="font-amethysta text-sm font-bold tracking-[1px] text-[#c2b6a8]">02</div>
+          <h3 class="font-amethysta mt-2 text-2xl font-bold text-[#1A1510]">Builder</h3>
+          <p class="font-metrophobic mt-2 text-[15px] leading-[1.6] text-[#6B6058]">
+            For teams that want steady visibility and community touchpoints.
+          </p>
+          <ul class="mt-6 flex flex-col divide-y divide-[#E2DDD8] border-t border-[#E2DDD8]">
+            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
+              Everything in Community
+            </li>
+            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
+              Featured member, job, project, or event spotlights
+            </li>
+            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
+              Support for focused programs, workshops, and founder/operator sessions
+            </li>
+          </ul>
+        </div>
+
+        {# Ecosystem — the featured column gets a soft wash and the accent blue, no card chrome -#}
+        <div class="flex flex-col bg-[#f5efe7]/60 px-6 py-8 sm:px-7 sm:py-10">
+          <div class="font-amethysta text-sm font-bold tracking-[1px] text-[#2461D1]">03</div>
+          <h3 class="font-amethysta mt-2 text-2xl font-bold text-[#1A1510]">Ecosystem</h3>
+          <p class="font-metrophobic mt-2 text-[15px] leading-[1.6] text-[#6B6058]">
+            For organizations investing deeply in the builder network.
+          </p>
+          <ul class="mt-6 flex flex-col divide-y divide-[#ddd0bd] border-t border-[#ddd0bd]">
+            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
+              Everything in Builder
+            </li>
+            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
+              Custom partnership around events, hiring, landscape visibility, or community programs
+            </li>
+            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
+              Founder, engineering, research, and community leader engagement opportunities
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+  {# End memberships -#}
+
+  {# Contact -#}
+  <section id="sponsor-form" class="relative overflow-hidden border-t border-[#E2DDD8]">
+    <div class="absolute inset-0 -z-10"
+         style="background: radial-gradient(170% 170% at 12% 88%, #E5D8C580 0%, #FAFAF780 70%)"></div>
+
+    <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+      <div class="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
+        <div class="flex flex-col gap-6">
+          <div class="flex flex-col gap-4">
+            <div class="inline-flex w-fit items-center rounded-full border border-[#C8BDB3] px-4 py-2 text-[11px] font-semibold tracking-[2.5px] text-[#8A7A6E]">
+              GET IN TOUCH
+            </div>
+            <h2 class="font-amethysta text-[32px] font-bold leading-[1.12] text-[#1A1510] sm:text-[36px]">
+              What happens next
+            </h2>
+          </div>
+
+          <ol class="flex flex-col divide-y divide-[#E2DDD8] border-y border-[#E2DDD8]">
+            <li class="flex items-start gap-4 py-5 first:pt-0 last:pb-0">
+              <span class="font-amethysta text-lg font-bold text-[#c2b6a8]">1</span>
+              <p class="font-metrophobic text-[15px] leading-[1.6] text-[#3a2f25]">
+                Send your sponsorship inquiry with enough context on fit, timing, and goals.
+              </p>
+            </li>
+            <li class="flex items-start gap-4 py-5 first:pt-0 last:pb-0">
+              <span class="font-amethysta text-lg font-bold text-[#c2b6a8]">2</span>
+              <p class="font-metrophobic text-[15px] leading-[1.6] text-[#3a2f25]">
+                We prioritize useful, members-first support and review how it fits.
+              </p>
+            </li>
+            <li class="flex items-start gap-4 py-5 first:pt-0 last:pb-0">
+              <span class="font-amethysta text-lg font-bold text-[#c2b6a8]">3</span>
+              <p class="font-metrophobic text-[15px] leading-[1.6] text-[#3a2f25]">
+                We'll reply from
+                <a href="mailto:{{ crate::templates::site::sponsor::SPONSOR_INQUIRY_RECIPIENT }}"
+                   class="font-semibold text-[#1A1510] underline decoration-[#d8c7b2] underline-offset-4">{{ crate::templates::site::sponsor::SPONSOR_INQUIRY_RECIPIENT }}</a>.
+              </p>
+            </li>
+          </ol>
+        </div>
+
+        <div class="rounded-[2rem] border border-[#eadcc9] bg-[#fffaf5]/95 p-6 shadow-lg shadow-[#d8c7b2]/20 backdrop-blur sm:p-8 lg:p-10">
+          {% if submitted -%}
+          <h2 class="font-amethysta text-2xl font-bold text-[#1A1510]">Thanks for reaching out.</h2>
+          <p class="font-metrophobic mt-3 text-base/7 text-[#6B6058]">
+            Your sponsorship inquiry was sent to the GOUP team. We'll follow up soon.
+          </p>
+          <a href="/"
+             hx-boost="true"
+             hx-target="body"
+             class="mt-6 inline-flex rounded-full border border-[#2461D1] bg-[#3D7EFF] px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_0_2px_#90BBFF80,0_7px_18px_-2px_#3D7EFF45]">Back to GOUP</a>
         {% elif !user.logged_in -%}
-          <div class="rounded-3xl border border-stone-200 bg-stone-50 p-6">
-            <h2 class="text-2xl font-black tracking-tight text-stone-950">Log in to send a sponsor inquiry</h2>
-            <p class="mt-3 text-base/7 text-stone-600">
-              Please log in first so the GOUP team can follow up with a trusted account.
-            </p>
-            <a href="/log-in?next_url=/sponsor"
-               hx-boost="false"
-               class="mt-6 inline-flex rounded-full border border-[#d8c7b2] bg-[#f5efe7] px-5 py-2.5 text-sm font-bold text-stone-950 transition hover:bg-[#eadcc9]">Log in to continue</a>
-          </div>
+          <h2 class="font-amethysta text-2xl font-bold text-[#1A1510]">Log in to send a sponsor inquiry</h2>
+          <p class="font-metrophobic mt-3 text-base/7 text-[#6B6058]">
+            Please log in first so the GOUP team can follow up with a trusted account.
+          </p>
+          <a href="/log-in?next_url=/sponsor"
+             hx-boost="false"
+             class="mt-6 inline-flex rounded-full border border-[#2461D1] bg-[#3D7EFF] px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_0_2px_#90BBFF80,0_7px_18px_-2px_#3D7EFF45]">Log in to continue</a>
         {% else -%}
           <div>
-            <h2 class="text-2xl font-black tracking-tight text-stone-950">Tell us about your sponsorship idea</h2>
-            <p class="mt-2 text-sm/6 text-stone-600">
+            <h2 class="font-amethysta text-2xl font-bold text-[#1A1510]">Tell us about your sponsorship idea</h2>
+            <p class="font-metrophobic mt-2 text-sm/6 text-[#6B6058]">
               Share enough context for us to understand fit, timing, and how you would like to support GOUP.
             </p>
           </div>
@@ -151,61 +315,22 @@
               </div>
             </div>
 
-            <div class="flex flex-col gap-4 rounded-3xl border border-stone-100 bg-stone-50/80 p-4 sm:flex-row sm:items-center sm:justify-end">
+            <div class="flex flex-col gap-4 rounded-3xl border border-[#f0e8dc] bg-[#fbf7f1] p-4 sm:flex-row sm:items-center sm:justify-end">
               <a href="/"
                  hx-boost="true"
                  hx-target="body"
-                 class="inline-flex h-10 items-center justify-center rounded-full border border-stone-200 bg-white px-5 text-sm font-bold text-stone-700 shadow-sm transition hover:border-[#d8c7b2] hover:bg-[#f5efe7] hover:text-stone-950">Cancel</a>
+                 class="inline-flex h-10 items-center justify-center rounded-full border border-[#eadcc9] bg-white px-5 text-sm font-bold text-[#3a2f25] shadow-sm transition hover:border-[#c9b291] hover:bg-[#f5efe7]">Cancel</a>
               <button type="submit"
-                      class="inline-flex h-10 items-center justify-center rounded-full border border-[#d8c7b2] bg-[#f5efe7] px-5 text-sm font-bold text-stone-950 shadow-sm transition hover:bg-[#eadcc9]">
+                      class="inline-flex h-10 items-center justify-center rounded-full border border-[#2461D1] bg-[#3D7EFF] px-5 text-sm font-bold text-white shadow-[0_0_0_2px_#90BBFF80,0_7px_18px_-2px_#3D7EFF45]">
                 Send sponsor inquiry
               </button>
             </div>
           </form>
         {% endif -%}
-      </section>
+        </div>
+      </div>
     </div>
+  </section>
+  {# End contact -#}
 
-    <section class="mt-8 rounded-[2rem] border border-stone-200 bg-white/95 p-6 shadow-lg shadow-stone-200/50 sm:p-8 lg:p-10">
-      <div class="max-w-3xl">
-        <h2 class="text-2xl font-black tracking-tight text-stone-950">Memberships to suit your organization</h2>
-        <p class="mt-3 text-sm/6 text-stone-600">
-          GOUP sponsorships are flexible. Start with a community contribution, grow into deeper ecosystem
-          support, or design a strategic partnership around events, hiring, open source, AI, and builder programs.
-        </p>
-      </div>
-
-      <div class="mt-8 grid gap-5 lg:grid-cols-3">
-        <article class="rounded-3xl border border-stone-200 bg-stone-50 p-6">
-          <h3 class="text-lg font-black tracking-tight text-stone-950">Community</h3>
-          <p class="mt-2 text-sm/6 text-stone-600">For academic, nonprofit, and early community partners.</p>
-          <ul class="mt-5 grid gap-3 text-sm/6 text-stone-700">
-            <li>Recognition on GOUP community channels.</li>
-            <li>Member-friendly event or hackathon support.</li>
-            <li>Access to share relevant opportunities with the network.</li>
-          </ul>
-        </article>
-
-        <article class="rounded-3xl border border-stone-300 bg-white p-6 shadow-sm">
-          <h3 class="text-lg font-black tracking-tight text-stone-950">Builder</h3>
-          <p class="mt-2 text-sm/6 text-stone-600">For teams that want steady visibility and community touchpoints.</p>
-          <ul class="mt-5 grid gap-3 text-sm/6 text-stone-700">
-            <li>Everything in Community.</li>
-            <li>Featured member, job, project, or event spotlights.</li>
-            <li>Support for focused programs, workshops, and founder/operator sessions.</li>
-          </ul>
-        </article>
-
-        <article class="rounded-3xl border border-[#d8c7b2] bg-[#f5efe7] p-6 text-stone-950">
-          <h3 class="text-lg font-black tracking-tight">Ecosystem</h3>
-          <p class="mt-2 text-sm/6 text-stone-700">For organizations investing deeply in the builder network.</p>
-          <ul class="mt-5 grid gap-3 text-sm/6 text-stone-700">
-            <li>Everything in Builder.</li>
-            <li>Custom partnership around events, hiring, landscape visibility, or community programs.</li>
-            <li>Founder, engineering, research, and community leader engagement opportunities.</li>
-          </ul>
-        </article>
-      </div>
-    </section>
-  </div>
 {% endblock content -%}
