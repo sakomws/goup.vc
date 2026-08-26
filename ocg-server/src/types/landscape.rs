@@ -18,6 +18,8 @@ use crate::{
     },
 };
 
+/// Entries shown per page on the public landscape listing.
+const LANDSCAPE_PAGINATION_LIMIT: usize = 20;
 const LANDSCAPE_KINDS: [&str; 6] = [
     "accelerator",
     "startup",
@@ -42,31 +44,44 @@ const STARTUP_STAGES: [&str; 7] = [
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub(crate) struct LandscapeFilters {
     /// Free-text search query.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(length(max = MAX_LEN_M))]
     pub query: Option<String>,
     /// Filter by alliance slug/name.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(length(max = MAX_LEN_M))]
     pub alliance: Option<String>,
     /// Filter by entry kind.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(length(max = MAX_LEN_M))]
     pub kind: Option<String>,
     /// Filter by category.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(length(max = MAX_LEN_M))]
     pub category: Option<String>,
     /// Filter startups by funding stage.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(length(max = MAX_LEN_M), custom(valid_startup_stage_opt))]
     pub stage: Option<String>,
     /// Sort option for the GitHub leaderboard.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(length(max = MAX_LEN_M))]
     pub github_sort: Option<String>,
     /// Number of results per page.
-    #[serde(default = "dashboard::default_limit")]
+    #[serde(default = "default_landscape_limit")]
     #[garde(range(max = MAX_PAGINATION_LIMIT))]
     pub limit: Option<usize>,
     /// Pagination offset.
     #[serde(default = "dashboard::default_offset")]
     #[garde(skip)]
     pub offset: Option<usize>,
+}
+
+/// Default page size for the public landscape listing. Shared by `Default` and
+/// serde so that a request with no query string and a request that only sets
+/// filters agree on how many entries a page holds.
+fn default_landscape_limit() -> Option<usize> {
+    Some(LANDSCAPE_PAGINATION_LIMIT)
 }
 
 crate::impl_pagination_and_raw_query!(LandscapeFilters, limit, offset);
@@ -80,8 +95,8 @@ impl Default for LandscapeFilters {
             category: None,
             stage: None,
             github_sort: None,
-            limit: Some(20),
-            offset: Some(0),
+            limit: default_landscape_limit(),
+            offset: dashboard::default_offset(),
         }
     }
 }

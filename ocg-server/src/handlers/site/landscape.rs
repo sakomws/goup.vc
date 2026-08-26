@@ -354,6 +354,8 @@ mod dev_mocks {
         category: &'static str,
         summary: &'static str,
         tags: &'static [&'static str],
+        /// Funding stage, for entries of the startup kind.
+        stage: Option<&'static str>,
         /// Repository path, for entries backed by a GitHub repository.
         repository: Option<&'static str>,
         /// Mock repository metrics as (stars, forks, open issues, watchers).
@@ -369,6 +371,7 @@ mod dev_mocks {
             category: "AutoTech",
             summary: "An automotive parts marketplace connecting drivers with spare parts sellers through instant quote requests.",
             tags: &["Marketplace", "Logistics"],
+            stage: Some("seed"),
             repository: None,
             metrics: None,
         },
@@ -378,6 +381,7 @@ mod dev_mocks {
             category: "Cybersecurity",
             summary: "Hosts capture-the-flag challenges that let users practice real offensive and defensive security skills in a safe environment.",
             tags: &["Security", "Education"],
+            stage: Some("pre_seed"),
             repository: None,
             metrics: None,
         },
@@ -387,6 +391,7 @@ mod dev_mocks {
             category: "ML",
             summary: "Azerbaijani notes, summaries, and learning materials based on the book Hands-on Machine Learning.",
             tags: &["Machine Learning", "Localization"],
+            stage: None,
             repository: Some("Lala2398/Hands_on_ML_Azerbaijani"),
             metrics: Some((62, 9, 0, 4)),
         },
@@ -396,6 +401,7 @@ mod dev_mocks {
             category: "EdTech",
             summary: "An online learning platform focused on practical, competency-based education in technology, business, and professional skills.",
             tags: &["Education", "Careers"],
+            stage: Some("series_a"),
             repository: None,
             metrics: None,
         },
@@ -405,6 +411,7 @@ mod dev_mocks {
             category: "EdTech",
             summary: "An international challenge on informatics and computational thinking that introduces school students to problem solving through short, engaging tasks.",
             tags: &["Community", "Students"],
+            stage: None,
             repository: None,
             metrics: None,
         },
@@ -414,6 +421,7 @@ mod dev_mocks {
             category: "AI",
             summary: "Derives CODEOWNERS from git history with confidence scoring, expertise decay detection, and bus factor analysis. Pure git, no LLMs.",
             tags: &["Developer Tools", "CI"],
+            stage: None,
             repository: Some("Turall/CheckOwners"),
             metrics: Some((31, 4, 2, 3)),
         },
@@ -423,6 +431,7 @@ mod dev_mocks {
             category: "AI",
             summary: "AI native pricing infrastructure for founders and digital service providers, helping teams build and continuously improve pricing strategies.",
             tags: &["Pricing", "SaaS"],
+            stage: Some("pre_seed"),
             repository: None,
             metrics: None,
         },
@@ -432,6 +441,7 @@ mod dev_mocks {
             category: "FoodTech",
             summary: "Community-built coffee logging app for people who take their coffee seriously. Log and rate individual drinks and build a visual Coffee Passport.",
             tags: &["Consumer", "Mobile"],
+            stage: Some("seed"),
             repository: None,
             metrics: None,
         },
@@ -441,6 +451,7 @@ mod dev_mocks {
             category: "AI",
             summary: "Automatically generates SEO-optimized titles, keywords, and descriptions for content and uploads them in bulk to stock platforms.",
             tags: &["Automation", "SEO"],
+            stage: Some("series_b"),
             repository: None,
             metrics: None,
         },
@@ -450,6 +461,7 @@ mod dev_mocks {
             category: "Developer Tools",
             summary: "A Python client for the Open Policy Agent REST API, covering policy management and document evaluation.",
             tags: &["Python", "Policy"],
+            stage: None,
             repository: Some("Turall/OPA-python-client"),
             metrics: Some((65, 14, 0, 3)),
         },
@@ -459,6 +471,7 @@ mod dev_mocks {
             category: "FinTech",
             summary: "A double-entry ledger service with a typed API for building accounting and balance tracking into products.",
             tags: &["Ledger", "Accounting"],
+            stage: None,
             repository: Some("tislib/roda-ledger"),
             metrics: Some((16, 2, 1, 1)),
         },
@@ -468,6 +481,7 @@ mod dev_mocks {
             category: "Developer Tools",
             summary: "A caching layer with pluggable backends and a small, predictable API surface for Python services.",
             tags: &["Caching", "Python"],
+            stage: None,
             repository: Some("Turall/cache-house"),
             metrics: Some((16, 1, 0, 2)),
         },
@@ -477,6 +491,7 @@ mod dev_mocks {
             category: "Developer Tools",
             summary: "LDAP authentication integration for FastAPI applications, with session handling and role mapping.",
             tags: &["FastAPI", "Auth"],
+            stage: None,
             repository: Some("Turall/fastapi-ldap"),
             metrics: Some((15, 1, 0, 1)),
         },
@@ -486,6 +501,7 @@ mod dev_mocks {
             category: "Community",
             summary: "The platform behind the GOUP alliance: events, groups, jobs, and this ecosystem landscape.",
             tags: &["Rust", "Community"],
+            stage: None,
             repository: Some("sakomws/goup.vc"),
             metrics: Some((13, 3, 1, 1)),
         },
@@ -495,6 +511,7 @@ mod dev_mocks {
             category: "ML",
             summary: "A structured data science learning roadmap with curated resources for each stage of the path.",
             tags: &["Data Science", "Learning"],
+            stage: None,
             repository: Some("AzizNadirov/ds-roadmap"),
             metrics: Some((11, 1, 0, 1)),
         },
@@ -504,6 +521,7 @@ mod dev_mocks {
             category: "Data",
             summary: "A desktop viewer for Parquet files with schema inspection and quick querying.",
             tags: &["Parquet", "Desktop"],
+            stage: None,
             repository: Some("AzizNadirov/ParVu"),
             metrics: Some((10, 2, 2, 1)),
         },
@@ -513,6 +531,7 @@ mod dev_mocks {
             category: "Infrastructure",
             summary: "Tracks and narrates Kubernetes cluster change history so teams can see what shifted and when.",
             tags: &["Kubernetes", "Observability"],
+            stage: None,
             repository: Some("Turall/kubechronicle"),
             metrics: Some((8, 1, 0, 0)),
         },
@@ -522,6 +541,7 @@ mod dev_mocks {
             category: "Program",
             summary: "A cohort-based program for alliance founders, pairing weekly build sessions with distribution and fundraising support.",
             tags: &["Cohort", "Founders"],
+            stage: None,
             repository: None,
             metrics: None,
         },
@@ -531,6 +551,7 @@ mod dev_mocks {
             category: "Community",
             summary: "A partner community running open source meetups, workshops, and contribution drives across the region.",
             tags: &["Open Source", "Meetups"],
+            stage: None,
             repository: None,
             metrics: None,
         },
@@ -540,6 +561,7 @@ mod dev_mocks {
             category: "Pre-seed",
             summary: "An early-stage fund backing alliance founders at pre-seed, with a focus on developer tools and applied AI.",
             tags: &["Pre-seed", "Fund"],
+            stage: None,
             repository: None,
             metrics: None,
         },
@@ -549,13 +571,14 @@ mod dev_mocks {
             category: "Media",
             summary: "A podcast lead covering founder stories from the alliance, recorded live at community events.",
             tags: &["Podcast", "Stories"],
+            stage: None,
             repository: None,
             metrics: None,
         },
     ];
 
-    /// Builds mock landscape entries, honouring the kind and free-text filters
-    /// so the search controls remain testable against mock data.
+    /// Builds mock landscape entries, honouring the kind, stage, and free-text
+    /// filters so the search controls remain testable against mock data.
     pub(super) fn mock_entries(filters: &LandscapeFilters) -> Vec<LandscapeEntry> {
         let now = Utc::now();
         let query = filters.query.as_deref().map(str::to_lowercase);
@@ -564,6 +587,14 @@ mod dev_mocks {
         MOCK_ENTRIES
             .iter()
             .filter(|mock| filters.kind.as_deref().is_none_or(|kind| kind == mock.kind))
+            // A stage filter narrows to startups only, matching the stage
+            // predicate in `search_landscape_entries`.
+            .filter(|mock| {
+                filters
+                    .stage
+                    .as_deref()
+                    .is_none_or(|stage| mock.kind == "startup" && mock.stage == Some(stage))
+            })
             .filter(|mock| {
                 category
                     .as_deref()
@@ -659,7 +690,7 @@ mod dev_mocks {
                 .map(|repository| format!("https://github.com/{repository}")),
             logo_url: None,
             category: Some(mock.category.to_string()),
-            stage: None,
+            stage: mock.stage.map(str::to_string),
             tags: mock.tags.iter().map(|tag| (*tag).to_string()).collect(),
             published: true,
             affiliations: Vec::new(),
@@ -745,6 +776,60 @@ mod tests {
         let mut zeroed = vec![project(0), project(0)];
         apply_share_percentages(&mut zeroed);
         assert!(zeroed.iter().all(|project| project.share_pct == 6));
+    }
+
+    #[test]
+    fn blank_filter_values_clear_the_filter() {
+        // Resetting a select to its "All ..." option submits an empty value.
+        // Those must parse as "no filter" instead of failing validation, or the
+        // page cannot be returned to its unfiltered state.
+        let filters = parse_filters("query=&kind=&category=&stage=&github_sort=")
+            .expect("blank filter values should parse");
+        assert_eq!(filters.query, None);
+        assert_eq!(filters.kind, None);
+        assert_eq!(filters.category, None);
+        assert_eq!(filters.stage, None);
+        assert_eq!(filters.github_sort, None);
+    }
+
+    #[test]
+    fn clears_one_filter_while_keeping_the_others() {
+        let filters = parse_filters("category=AI&stage=&kind=startup")
+            .expect("clearing a single filter should parse");
+        assert_eq!(filters.stage, None);
+        assert_eq!(filters.category.as_deref(), Some("AI"));
+        assert_eq!(filters.kind.as_deref(), Some("startup"));
+    }
+
+    #[test]
+    fn trims_whitespace_only_filter_values() {
+        let filters =
+            parse_filters("query=%20%20&stage=%20").expect("whitespace filters should parse");
+        assert_eq!(filters.query, None);
+        assert_eq!(filters.stage, None);
+    }
+
+    #[test]
+    fn keeps_valid_filter_values() {
+        let filters = parse_filters("stage=seed&kind=startup").expect("valid filters should parse");
+        assert_eq!(filters.stage.as_deref(), Some("seed"));
+        assert_eq!(filters.kind.as_deref(), Some("startup"));
+    }
+
+    #[test]
+    fn filtered_and_unfiltered_requests_share_a_page_size() {
+        // Touching any filter must not change how many entries a page holds,
+        // otherwise clearing a filter cannot restore the original listing.
+        let unfiltered = parse_filters("").expect("empty query should parse");
+        let filtered = parse_filters("stage=").expect("blank filter should parse");
+        assert_eq!(unfiltered.limit, filtered.limit);
+        assert_eq!(unfiltered.offset, filtered.offset);
+        assert_eq!(unfiltered.limit, LandscapeFilters::default().limit);
+    }
+
+    #[test]
+    fn rejects_unknown_startup_stage() {
+        assert!(parse_filters("stage=not_a_stage").is_err());
     }
 
     #[test]
