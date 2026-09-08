@@ -47,9 +47,11 @@ pub(crate) async fn update_page(
         db.list_group_parent_options(alliance_id, group_id),
         db.list_regions(alliance_id)
     )?;
+    let external_payments = db.get_group_external_payments_context(community_id, group_id).await?;
     let template = settings::UpdatePage {
         can_manage_settings,
         categories,
+        external_payments,
         group,
         parent_group_options,
         payments_enabled: payments_cfg.is_some(),

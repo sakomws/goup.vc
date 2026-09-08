@@ -314,6 +314,7 @@ mod tests {
             group_category_name: "Alliance".to_string(),
             group_name: "Test Group".to_string(),
             group_slug: "test-group".to_string(),
+            has_external_payment: false,
             has_registration_questions: false,
             has_related_events: false,
             kind: EventKind::InPerson,

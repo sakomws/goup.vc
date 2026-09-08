@@ -11,6 +11,7 @@ import {
 import { isEscapeEvent } from "/static/js/common/keyboard.js";
 import { toggleModalVisibility } from "/static/js/common/modals/modal-lifecycle.js";
 import { isSuccessfulXHRStatus } from "/static/js/common/utils.js";
+import { applyExternalRefundReviewCopy } from "/static/js/dashboard/group/attendees/shared.js";
 
 const RECOVERY_MODAL_ID = "refund-recovery-modal";
 const REFUND_FILTER_FORM_SELECTOR = "#refund-filters";
@@ -21,6 +22,7 @@ const REFUND_REVIEW_CONFIGS = [
     contextPrefix: "refund-approve",
     formId: "refund-approve-form",
     modalId: "refund-approve-modal",
+    externalSuccessMessage: "Refund recorded. Attendance canceled.",
     reviewNoteId: "refund-approve-review-note",
     triggerSelector: "[data-refund-approve-open]",
     urlDataKey: "refundApproveUrl",
@@ -286,6 +288,14 @@ const openRefundReviewModal = (root, trigger, config) => {
   if (reason) {
     reason.textContent = trigger.dataset.refundReason || "No reason provided.";
   }
+
+  applyExternalRefundReviewCopy(
+    form,
+    trigger,
+    `${config.contextPrefix}-external-note`,
+    root,
+    config.externalSuccessMessage,
+  );
 
   const actionsMenuSummary = trigger.closest("[data-actions-menu]")?.querySelector("summary");
   const focusOrigin = actionsMenuSummary instanceof HTMLElement ? actionsMenuSummary : trigger;

@@ -140,6 +140,10 @@ pub(crate) struct Group {
     /// Additional links as key-value pairs.
     #[garde(custom(url_map_values))]
     pub extra_links: Option<BTreeMap<String, String>>,
+    /// Whether the group collects paid tickets outside the platform.
+    #[serde(default)]
+    #[garde(skip)]
+    pub external_payments_enabled: Option<bool>,
     /// Facebook profile URL.
     #[garde(url, length(max = MAX_LEN_L))]
     pub facebook_url: Option<String>,

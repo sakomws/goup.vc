@@ -205,6 +205,30 @@ begin
         end
             is distinct from v_before.external_payment_window_hours;
 
+    -- Compare external-payment URL, instructions, and window
+    v_external_configuration_changed :=
+        case
+            when p_event ? 'external_payment_instructions'
+            then nullif(btrim(p_event->>'external_payment_instructions'), '')
+            else nullif(btrim(p_event_before->>'external_payment_instructions'), '')
+        end
+            is distinct from nullif(
+                btrim(p_event_before->>'external_payment_instructions'),
+                ''
+            )
+        or case
+            when p_event ? 'external_payment_url'
+            then nullif(btrim(p_event->>'external_payment_url'), '')
+            else nullif(btrim(p_event_before->>'external_payment_url'), '')
+        end
+            is distinct from nullif(btrim(p_event_before->>'external_payment_url'), '')
+        or case
+            when p_event ? 'external_payment_window_hours'
+            then nullif(p_event->>'external_payment_window_hours', '')
+            else nullif(p_event_before->>'external_payment_window_hours', '')
+        end
+            is distinct from nullif(p_event_before->>'external_payment_window_hours', '');
+
     -- Report changes that can govern a paid purchase
     return is_event_ticketing_payload_paid_capable(v_ticket_types) and (
         v_external_configuration_changed
