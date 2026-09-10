@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(78);
+select plan(81);
 
 -- ============================================================================
 -- TESTS
@@ -740,6 +740,64 @@ select columns_are('group_views', array[
     'group_id',
     'day',
     'total'
+]);
+
+-- Test: gtm_lead columns should match expected
+select columns_are('gtm_lead', array[
+    'gtm_lead_id',
+    'alliance_id',
+    'group_id',
+    'kind',
+    'stage',
+    'name',
+    'org_name',
+    'email',
+    'website_url',
+    'linkedin_url',
+    'landscape_entry_id',
+    'user_id',
+    'group_sponsor_id',
+    'owner_user_id',
+    'score',
+    'estimated_value_cents',
+    'currency',
+    'next_action_at',
+    'renewal_at',
+    'lost_reason',
+    'source',
+    'notes',
+    'payload',
+    'created_at',
+    'updated_at'
+]);
+
+-- Test: gtm_lead_activity columns should match expected
+select columns_are('gtm_lead_activity', array[
+    'gtm_lead_activity_id',
+    'gtm_lead_id',
+    'actor_user_id',
+    'agent_id',
+    'kind',
+    'body',
+    'details',
+    'created_at'
+]);
+
+-- Test: gtm_agent_draft columns should match expected
+select columns_are('gtm_agent_draft', array[
+    'gtm_agent_draft_id',
+    'alliance_id',
+    'group_id',
+    'gtm_lead_id',
+    'agent_id',
+    'status',
+    'title',
+    'body',
+    'suggested_stage',
+    'payload',
+    'created_at',
+    'reviewed_at',
+    'reviewed_by'
 ]);
 
 -- Test: images columns should match expected

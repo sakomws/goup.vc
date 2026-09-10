@@ -266,6 +266,16 @@ async function runAction(action, args) {
       return searchWiki(args);
     case "submit_talk":
       return submitTalk(args);
+    case "search_leads":
+      return searchLeads(args);
+    case "create_lead":
+      return createLead(args);
+    case "transition_lead":
+      return transitionLead(args);
+    case "run_gtm_agent":
+      return runGtmAgent(args);
+    case "review_gtm_draft":
+      return reviewGtmDraft(args);
     default:
       throw new Error(`Unknown tool action: ${action}`);
   }
@@ -387,6 +397,132 @@ async function searchJobs(args) {
 select search_jobs(j)::text from args;
 `);
 
+  return (await runPsql(sql)).trim();
+}
+
+async function searchLeads(args) {
+  const allianceId = requireUuid(args.alliance_id, "alliance_id");
+  const filters = {
+    query: optionalString(args.query),
+    kind: optionalString(args.kind),
+    stage: optionalString(args.stage),
+    group_id: optionalString(args.group_id),
+    limit: normalizeLimit(args.limit),
+  };
+  const sql = sqlWithJsonArgs(filters, `
+select list_gtm_leads('${allianceId}'::uuid, j)::text from args;
+`);
+  return (await runPsql(sql)).trim();
+}
+
+async function createLead(args) {
+  if (!ENABLE_MUTATIONS) {
+    throw new Error("Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow GTM mutations.");
+  }
+  const actorUserId = requireUuid(args.actor_user_id, "actor_user_id");
+  const allianceId = requireUuid(args.alliance_id, "alliance_id");
+  const input = {
+    kind: requireString(args.kind, "kind"),
+    name: requireString(args.name, "name"),
+    org_name: optionalString(args.org_name),
+    email: optionalString(args.email),
+    website_url: optionalString(args.website_url),
+    notes: optionalString(args.notes),
+    group_id: optionalString(args.group_id),
+    source: "manual",
+  };
+  const inputJson = Buffer.from(JSON.stringify(input), "utf8").toString("base64");
+  const sql = `
+select json_build_object(
+  'gtm_lead_id', add_gtm_lead(
+    '${actorUserId}'::uuid,
+    '${allianceId}'::uuid,
+    convert_from(decode('${inputJson}', 'base64'), 'UTF8')::jsonb
+  )
+)::text;
+`;
+  return (await runPsql(sql)).trim();
+}
+
+async function transitionLead(args) {
+  if (!ENABLE_MUTATIONS) {
+    throw new Error("Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow GTM mutations.");
+  }
+  const actorUserId = requireUuid(args.actor_user_id, "actor_user_id");
+  const allianceId = requireUuid(args.alliance_id, "alliance_id");
+  const leadId = requireUuid(args.gtm_lead_id, "gtm_lead_id");
+  const stage = requireString(args.stage, "stage");
+  const details = {
+    lost_reason: optionalString(args.lost_reason),
+  };
+  const detailsJson = Buffer.from(JSON.stringify(details), "utf8").toString("base64");
+  const sql = `
+select transition_gtm_lead(
+  '${actorUserId}'::uuid,
+  '${allianceId}'::uuid,
+  '${leadId}'::uuid,
+  ${sqlStringLiteral(stage)},
+  true,
+  convert_from(decode('${detailsJson}', 'base64'), 'UTF8')::jsonb
+)::text;
+`;
+  return (await runPsql(sql)).trim();
+}
+
+async function runGtmAgent(args) {
+  if (!ENABLE_MUTATIONS) {
+    throw new Error("Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow GTM mutations.");
+  }
+  const actorUserId = requireUuid(args.actor_user_id, "actor_user_id");
+  const allianceId = requireUuid(args.alliance_id, "alliance_id");
+  const agentId = requireString(args.agent_id, "agent_id");
+  const leadId = optionalString(args.gtm_lead_id);
+  const groupId = optionalString(args.group_id);
+  const reply = optionalString(args.reply);
+  const title = `MCP ${agentId} draft`;
+  const input = {
+    agent_id: agentId,
+    gtm_lead_id: leadId,
+    group_id: groupId,
+    title,
+    body: reply || `Operator-requested ${agentId} draft. Review before any stage change.`,
+    suggested_stage: agentId === "won_lost" ? "won" : agentId === "lead_generation" ? "lead_generation" : agentId,
+    payload: reply ? { reply } : {},
+  };
+  const inputJson = Buffer.from(JSON.stringify(input), "utf8").toString("base64");
+  const sql = `
+select json_build_object(
+  'gtm_agent_draft_id', add_gtm_agent_draft(
+    '${actorUserId}'::uuid,
+    '${allianceId}'::uuid,
+    convert_from(decode('${inputJson}', 'base64'), 'UTF8')::jsonb
+  )
+)::text;
+`;
+  return (await runPsql(sql)).trim();
+}
+
+async function reviewGtmDraft(args) {
+  if (!ENABLE_MUTATIONS) {
+    throw new Error("Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow GTM mutations.");
+  }
+  const actorUserId = requireUuid(args.actor_user_id, "actor_user_id");
+  const allianceId = requireUuid(args.alliance_id, "alliance_id");
+  const draftId = requireUuid(args.draft_id, "draft_id");
+  const input = {
+    status: requireString(args.status, "status"),
+    body: optionalString(args.body),
+    suggested_stage: optionalString(args.suggested_stage),
+  };
+  const inputJson = Buffer.from(JSON.stringify(input), "utf8").toString("base64");
+  const sql = `
+select review_gtm_agent_draft(
+  '${actorUserId}'::uuid,
+  '${allianceId}'::uuid,
+  '${draftId}'::uuid,
+  convert_from(decode('${inputJson}', 'base64'), 'UTF8')::jsonb
+)::text;
+`;
   return (await runPsql(sql)).trim();
 }
 

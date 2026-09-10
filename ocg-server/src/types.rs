@@ -3,6 +3,7 @@
 pub mod alliance;
 pub mod event;
 pub mod group;
+pub(crate) mod gtm;
 pub(crate) mod jobs;
 pub(crate) mod landscape;
 pub mod location;

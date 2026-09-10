@@ -50,6 +50,7 @@
     "features/meetings.md",
     "features/mock-interviews.md",
     "features/accelerator.md",
+    "features/gtm.md",
     "api/index.md",
     "deployment.md",
     "security.md",

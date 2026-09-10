@@ -27,6 +27,7 @@ pub(crate) mod attendees;
 pub(crate) mod book_exchange;
 pub(crate) mod coffee_meet;
 pub(crate) mod events;
+pub(crate) mod gtm;
 pub(crate) mod home;
 pub(crate) mod integrations;
 pub(crate) mod intentional_dating;

@@ -1,0 +1,161 @@
+{% import "macros/dashboard.html" as dashboard -%}
+{% import "macros/pagination.html" as pagination -%}
+
+{{ dashboard::page_title(title = "GTM", description = "Track alliance and group leads through the nine-stage pipeline. Agents draft work; organizers approve every stage move.") -}}
+
+<section class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+  {% for stage in stages() -%}
+    <a href="{{ dashboard_tab_url }}&stage={{ stage }}"
+       hx-get="{{ dashboard_base }}/gtm?stage={{ stage }}"
+       hx-target="#dashboard-content"
+       hx-indicator="#dashboard-spinner"
+       class="rounded-2xl border px-4 py-3 text-left shadow-sm
+              {% if is_stage(stage) -%}
+                border-primary-300 bg-primary-50
+              {% else -%}
+                border-stone-200 bg-white
+              {% endif -%}">
+      <div class="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-stone-500">{{ stage_label(stage) }}</div>
+      <div class="mt-1 text-2xl font-black text-stone-950">{{ stage_count(stage) }}</div>
+    </a>
+  {% endfor -%}
+</section>
+
+<div class="my-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+  <form class="flex flex-col gap-3 sm:flex-row sm:flex-wrap"
+        hx-get="{{ dashboard_base }}/gtm"
+        hx-target="#dashboard-content"
+        hx-indicator="#dashboard-spinner">
+    <input type="search"
+           name="query"
+           value="{{ query_value() }}"
+           class="input-primary sm:w-56"
+           placeholder="Search leads" />
+    <select name="kind" class="select-primary">
+      <option value="">All kinds</option>
+      {% for kind in kinds() -%}
+        <option value="{{ kind }}" {% if is_kind(kind) %}selected{% endif %}>{{ kind }}</option>
+      {% endfor -%}
+    </select>
+    <select name="stage" class="select-primary">
+      <option value="">All stages</option>
+      {% for stage in stages() -%}
+        <option value="{{ stage }}" {% if is_stage(stage) %}selected{% endif %}>{{ stage_label(stage) }}</option>
+      {% endfor -%}
+    </select>
+    <button type="submit" class="btn-secondary">Filter</button>
+  </form>
+  <div class="flex flex-wrap gap-2">
+    <button type="button"
+            hx-post="{{ dashboard_base }}/gtm/agents/run"
+            hx-vals='{"agent_id":"lead_generation"}'
+            hx-target="#dashboard-content"
+            hx-indicator="#dashboard-spinner"
+            {% if !can_manage_gtm %}disabled{% endif %}
+            class="btn-secondary {% if !can_manage_gtm %}opacity-50 cursor-not-allowed{% endif %}">
+      Run lead-gen agent
+    </button>
+  </div>
+</div>
+
+{% if can_manage_gtm -%}
+  <section class="mb-8 overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
+    <div class="border-b border-stone-100 px-5 py-4">
+      <h2 class="text-lg font-black tracking-tight text-stone-950">Add lead</h2>
+    </div>
+    <form class="inert-form grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3"
+          hx-post="{{ dashboard_base }}/gtm/add"
+          hx-target="#dashboard-content"
+          hx-indicator="#dashboard-spinner">
+      <div class="space-y-2">
+        <label class="form-label" for="gtm-name">Name</label>
+        <input id="gtm-name" name="name" class="input-primary" required maxlength="100" />
+      </div>
+      <div class="space-y-2">
+        <label class="form-label" for="gtm-kind">Kind</label>
+        <select id="gtm-kind" name="kind" class="select-primary" required>
+          {% for kind in kinds() -%}
+            <option value="{{ kind }}">{{ kind }}</option>
+          {% endfor -%}
+        </select>
+      </div>
+      <div class="space-y-2">
+        <label class="form-label" for="gtm-org">Organization</label>
+        <input id="gtm-org" name="org_name" class="input-primary" maxlength="100" />
+      </div>
+      <div class="space-y-2">
+        <label class="form-label" for="gtm-email">Email</label>
+        <input id="gtm-email" name="email" type="email" class="input-primary" />
+      </div>
+      <div class="space-y-2">
+        <label class="form-label" for="gtm-website">Website</label>
+        <input id="gtm-website" name="website_url" type="url" class="input-primary" placeholder="https://" />
+      </div>
+      <div class="space-y-2">
+        <label class="form-label" for="gtm-linkedin">LinkedIn</label>
+        <input id="gtm-linkedin" name="linkedin_url" type="url" class="input-primary" placeholder="https://" />
+      </div>
+      <div class="space-y-2 sm:col-span-2 lg:col-span-3">
+        <label class="form-label" for="gtm-notes">Notes</label>
+        <textarea id="gtm-notes" name="notes" class="input-primary" rows="2"></textarea>
+      </div>
+      <div>
+        <button type="submit" class="btn-primary">Create lead</button>
+      </div>
+    </form>
+  </section>
+{% endif -%}
+
+<div class="text-sm text-stone-600 mb-3">
+  {{ pagination::range_display(offset = filters.offset.unwrap_or(0), count = leads.len(), total = total, label = "lead") }}
+</div>
+
+<div class="dashboard-table-scroll relative overflow-x-auto">
+  <table class="table-auto w-full text-xs lg:text-sm text-left text-stone-500 mb-8"
+         role="table"
+         aria-label="GTM leads">
+    <thead class="text-xs text-stone-700 uppercase bg-stone-100 border-b border-stone-200">
+      <tr>
+        <th class="px-3 xl:px-5 py-3">Lead</th>
+        <th class="px-3 xl:px-5 py-3">Kind</th>
+        <th class="px-3 xl:px-5 py-3">Stage</th>
+        <th class="hidden md:table-cell px-3 xl:px-5 py-3">Score</th>
+        <th class="px-3 xl:px-5 py-3"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if leads.is_empty() -%}
+        <tr class="bg-white border-b border-stone-200">
+          <td colspan="5" class="px-5 py-8 text-stone-500">No leads yet. Add one manually or run the lead-generation agent.</td>
+        </tr>
+      {% else -%}
+        {% for lead in leads -%}
+          <tr class="bg-white border-b border-stone-200">
+            <td class="px-3 xl:px-5 py-3">
+              <div class="font-semibold text-stone-950">{{ lead.name }}</div>
+              <div class="text-stone-500">{{ lead.org_name.as_deref().unwrap_or("") }}</div>
+            </td>
+            <td class="px-3 xl:px-5 py-3">{{ lead.kind }}</td>
+            <td class="px-3 xl:px-5 py-3">{{ stage_label(lead.stage) }}</td>
+            <td class="hidden md:table-cell px-3 xl:px-5 py-3">
+              {% if let Some(score) = lead.score -%}
+                {{ score }}
+              {% else -%}
+                —
+              {% endif -%}
+            </td>
+            <td class="px-3 xl:px-5 py-3 text-right">
+              <button type="button"
+                      hx-get="{{ dashboard_base }}/gtm/{{ lead.gtm_lead_id }}"
+                      hx-target="#dashboard-content"
+                      hx-indicator="#dashboard-spinner"
+                      class="btn-secondary">Open</button>
+            </td>
+          </tr>
+        {% endfor -%}
+      {% endif -%}
+    </tbody>
+  </table>
+</div>
+
+{{ pagination::navigation_links(links = navigation_links, hx_target = "#dashboard-content", hx_indicator = "#dashboard-spinner") -}}

@@ -28,6 +28,7 @@ pub(crate) mod email_templates;
 pub(crate) mod event_categories;
 pub(crate) mod group_categories;
 pub(crate) mod groups;
+pub(crate) mod gtm;
 pub(crate) mod home;
 pub(crate) mod intentional_dating;
 pub(crate) mod landscape;

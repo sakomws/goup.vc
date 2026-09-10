@@ -15,6 +15,7 @@ use crate::{
                 accelerator, analytics, book_exchange, coffee_meet, events, integrations,
                 intentional_dating, members, settings, sponsors, spotlights, store, team,
             },
+            gtm,
         },
         filters,
         helpers::user_initials,
@@ -87,6 +88,8 @@ pub(crate) enum Content {
     Analytics(Box<analytics::Page>),
     /// Events management page.
     Events(Box<events::ListPage>),
+    /// GTM pipeline page.
+    Gtm(gtm::ListPage),
     /// `CoffeeMeet` subscriber page.
     CoffeeMeet(coffee_meet::ListPage),
     /// Group book exchange page.
@@ -125,6 +128,11 @@ impl Content {
     /// Check if the content is the events page.
     fn is_events(&self) -> bool {
         matches!(self, Content::Events(_))
+    }
+
+    /// Check if the content is the GTM page.
+    fn is_gtm(&self) -> bool {
+        matches!(self, Content::Gtm(_))
     }
 
     /// Check if the content is the `CoffeeMeet` page.
@@ -189,6 +197,7 @@ impl std::fmt::Display for Content {
             Content::BookExchange(template) => write!(f, "{}", template.render()?),
             Content::CoffeeMeet(template) => write!(f, "{}", template.render()?),
             Content::Events(template) => write!(f, "{}", template.render()?),
+            Content::Gtm(template) => write!(f, "{}", template.render()?),
             Content::IntentionalDating(template) => write!(f, "{}", template.render()?),
             Content::Integrations(template) => write!(f, "{}", template.render()?),
             Content::Logs(template) => write!(f, "{}", template.render()?),
@@ -216,6 +225,8 @@ pub(crate) enum Tab {
     Analytics,
     /// Events management tab.
     Events,
+    /// GTM pipeline tab.
+    Gtm,
     /// `CoffeeMeet` tab.
     CoffeeMeet,
     /// Book exchange tab.

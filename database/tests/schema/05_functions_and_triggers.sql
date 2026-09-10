@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(301);
+select plan(315);
 
 -- ============================================================================
 -- VARIABLES
@@ -97,6 +97,20 @@ select has_function('add_group', array['uuid', 'uuid', 'jsonb']::name[]);
 select has_function('add_group_category', array['uuid', 'uuid', 'jsonb']::name[]);
 select has_function('add_group_sponsor', array['uuid', 'uuid', 'jsonb']::name[]);
 select has_function('add_group_team_member', array['uuid', 'uuid', 'uuid', 'text']::name[]);
+select has_function('add_gtm_agent_draft', array['uuid', 'uuid', 'jsonb']::name[]);
+select has_function('add_gtm_lead', array['uuid', 'uuid', 'jsonb']::name[]);
+select has_function('add_gtm_lead_activity', array['uuid', 'uuid', 'text', 'text', 'text', 'jsonb']::name[]);
+select has_function('apply_gtm_won_side_effects', array['uuid', 'uuid', 'jsonb']::name[]);
+select has_function('get_gtm_lead', array['uuid', 'uuid']::name[]);
+select has_function('gtm_agent_draft_json', array['gtm_agent_draft']::name[]);
+select has_function('gtm_is_legal_transition', array['text', 'text', 'boolean']::name[]);
+select has_function('gtm_lead_json', array['gtm_lead']::name[]);
+select has_function('list_gtm_agent_drafts', array['uuid', 'jsonb']::name[]);
+select has_function('list_gtm_leads', array['uuid', 'jsonb']::name[]);
+select has_function('review_gtm_agent_draft', array['uuid', 'uuid', 'uuid', 'jsonb']::name[]);
+select has_function('suggest_gtm_lead_candidates', array['uuid', 'uuid', 'integer']::name[]);
+select has_function('transition_gtm_lead', array['uuid', 'uuid', 'uuid', 'text', 'boolean', 'jsonb']::name[]);
+select has_function('update_gtm_lead', array['uuid', 'uuid', 'uuid', 'jsonb']::name[]);
 select has_function('add_meeting', array['text', 'text', 'text', 'text', 'text', 'uuid', 'uuid', 'timestamp with time zone', 'text']::name[]);
 select has_function('add_region', array['uuid', 'uuid', 'jsonb']::name[]);
 select has_function('add_session_proposal', array['uuid', 'jsonb']::name[]);

@@ -77,6 +77,8 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
             "/groups/{group_id}/update",
             get(dashboard::alliance::groups::update_page),
         )
+        .route("/gtm", get(dashboard::alliance::gtm::list_page))
+        .route("/gtm/{lead_id}", get(dashboard::alliance::gtm::detail_page))
         .route("/landscape", get(dashboard::alliance::landscape::list_page))
         .route("/logs", get(dashboard::alliance::logs::list_page))
         .route(
@@ -121,6 +123,27 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
         )
         .route_layer(check_selected_alliance_permission(
             AlliancePermission::GroupsWrite,
+        ));
+
+    // Alliance GTM management endpoints
+    let gtm_management = Router::new()
+        .route("/gtm/add", post(dashboard::alliance::gtm::add))
+        .route("/gtm/agents/run", post(dashboard::alliance::gtm::run_agent))
+        .route("/gtm/{lead_id}", put(dashboard::alliance::gtm::update))
+        .route(
+            "/gtm/{lead_id}/transition",
+            post(dashboard::alliance::gtm::transition),
+        )
+        .route(
+            "/gtm/{lead_id}/agents/run",
+            post(dashboard::alliance::gtm::run_lead_agent),
+        )
+        .route(
+            "/gtm/drafts/{draft_id}/review",
+            post(dashboard::alliance::gtm::review_draft),
+        )
+        .route_layer(check_selected_alliance_permission(
+            AlliancePermission::GtmWrite,
         ));
 
     // Alliance landscape management endpoints
@@ -255,6 +278,7 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
         .merge(dashboard_read)
         .merge(platform_management)
         .merge(groups_management)
+        .merge(gtm_management)
         .merge(landscape_management)
         .merge(settings_management)
         .merge(taxonomy_management)
@@ -345,6 +369,8 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             "/settings/update",
             get(dashboard::group::settings::update_page),
         )
+        .route("/gtm", get(dashboard::group::gtm::list_page))
+        .route("/gtm/{lead_id}", get(dashboard::group::gtm::detail_page))
         .route("/sponsors", get(dashboard::group::sponsors::list_page))
         .route("/sponsors/add", get(dashboard::group::sponsors::add_page))
         .route(
@@ -558,6 +584,25 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             GroupPermission::SettingsWrite,
         ));
 
+    // Group GTM management endpoints
+    let gtm_management = Router::new()
+        .route("/gtm/add", post(dashboard::group::gtm::add))
+        .route("/gtm/agents/run", post(dashboard::group::gtm::run_agent))
+        .route("/gtm/{lead_id}", put(dashboard::group::gtm::update))
+        .route(
+            "/gtm/{lead_id}/transition",
+            post(dashboard::group::gtm::transition),
+        )
+        .route(
+            "/gtm/{lead_id}/agents/run",
+            post(dashboard::group::gtm::run_lead_agent),
+        )
+        .route(
+            "/gtm/drafts/{draft_id}/review",
+            post(dashboard::group::gtm::review_draft),
+        )
+        .route_layer(check_selected_group_permission(GroupPermission::GtmWrite));
+
     // Group sponsor management endpoints
     let sponsors_management = Router::new()
         .route("/sponsors/add", post(dashboard::group::sponsors::add))
@@ -600,6 +645,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .merge(dashboard_read)
         .merge(events_management)
         .merge(members_management)
+        .merge(gtm_management)
         .merge(settings_management)
         .merge(sponsors_management)
         .merge(team_management)

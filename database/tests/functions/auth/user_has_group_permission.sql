@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(131);
+select plan(149);
 
 -- ============================================================================
 -- VARIABLES
@@ -326,6 +326,7 @@ with tested_permissions (
 ) as (
     values
         ('group.events.write'),
+        ('group.gtm.write'),
         ('group.members.write'),
         ('group.read'),
         ('group.settings.write'),
@@ -373,6 +374,7 @@ with actors (
             :'userAllianceAdminID'::uuid,
             array[
                 'group.events.write',
+                'group.gtm.write',
                 'group.members.write',
                 'group.read',
                 'group.settings.write',
@@ -387,6 +389,7 @@ with actors (
             :'userAllianceAdminID'::uuid,
             array[
                 'group.events.write',
+                'group.gtm.write',
                 'group.members.write',
                 'group.read',
                 'group.settings.write',
@@ -401,6 +404,7 @@ with actors (
             :'userAllianceGroupsManagerID'::uuid,
             array[
                 'group.events.write',
+                'group.gtm.write',
                 'group.members.write',
                 'group.read',
                 'group.settings.write',
@@ -445,6 +449,7 @@ with actors (
             :'userDualRoleID'::uuid,
             array[
                 'group.events.write',
+                'group.gtm.write',
                 'group.members.write',
                 'group.read',
                 'group.settings.write',
@@ -459,6 +464,7 @@ with actors (
             :'userGroupAdminID'::uuid,
             array[
                 'group.events.write',
+                'group.gtm.write',
                 'group.members.write',
                 'group.read',
                 'group.settings.write',
@@ -499,6 +505,7 @@ with actors (
             :'userOtherGroupAdminID'::uuid,
             array[
                 'group.events.write',
+                'group.gtm.write',
                 'group.members.write',
                 'group.read',
                 'group.settings.write',
@@ -546,6 +553,7 @@ with actors (
 ) as (
     values
         ('group.events.write'),
+        ('group.gtm.write'),
         ('group.members.write'),
         ('group.read'),
         ('group.settings.write'),

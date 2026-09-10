@@ -422,6 +422,7 @@ select results_eq(
     'select alliance_permission_id, display_name from alliance_permission order by alliance_permission_id',
     $$ values
         ('alliance.groups.write', 'Groups Write'),
+        ('alliance.gtm.write', 'GTM Write'),
         ('alliance.read', 'Read'),
         ('alliance.settings.write', 'Settings Write'),
         ('alliance.taxonomy.write', 'Taxonomy Write'),
@@ -436,6 +437,8 @@ select results_eq(
     $$ values
         ('alliance.groups.write', 'admin'),
         ('alliance.groups.write', 'groups-manager'),
+        ('alliance.gtm.write', 'admin'),
+        ('alliance.gtm.write', 'groups-manager'),
         ('alliance.read', 'admin'),
         ('alliance.read', 'groups-manager'),
         ('alliance.read', 'viewer'),
@@ -451,12 +454,14 @@ select results_eq(
     'select alliance_role_id, group_permission_id from alliance_role_group_permission order by alliance_role_id, group_permission_id',
     $$ values
         ('admin', 'group.events.write'),
+        ('admin', 'group.gtm.write'),
         ('admin', 'group.members.write'),
         ('admin', 'group.read'),
         ('admin', 'group.settings.write'),
         ('admin', 'group.sponsors.write'),
         ('admin', 'group.team.write'),
         ('groups-manager', 'group.events.write'),
+        ('groups-manager', 'group.gtm.write'),
         ('groups-manager', 'group.members.write'),
         ('groups-manager', 'group.read'),
         ('groups-manager', 'group.settings.write'),
@@ -472,6 +477,7 @@ select results_eq(
     'select group_permission_id, display_name from group_permission order by group_permission_id',
     $$ values
         ('group.events.write', 'Events Write'),
+        ('group.gtm.write', 'GTM Write'),
         ('group.members.write', 'Members Write'),
         ('group.read', 'Read'),
         ('group.settings.write', 'Settings Write'),
@@ -498,6 +504,7 @@ select results_eq(
     $$ values
         ('group.events.write', 'admin'),
         ('group.events.write', 'events-manager'),
+        ('group.gtm.write', 'admin'),
         ('group.members.write', 'admin'),
         ('group.read', 'admin'),
         ('group.read', 'events-manager'),

@@ -1392,6 +1392,66 @@ mock! {
     }
 
     #[async_trait]
+    impl crate::db::gtm::DBGtm for DB {
+        async fn list_gtm_leads(
+            &self,
+            alliance_id: Uuid,
+            filters: &crate::types::gtm::GtmLeadFilters,
+        ) -> Result<crate::types::gtm::GtmLeadList>;
+        async fn get_gtm_lead(
+            &self,
+            alliance_id: Uuid,
+            gtm_lead_id: Uuid,
+        ) -> Result<Option<crate::types::gtm::GtmLead>>;
+        async fn add_gtm_lead(
+            &self,
+            actor_user_id: Uuid,
+            alliance_id: Uuid,
+            input: &crate::types::gtm::GtmLeadInput,
+        ) -> Result<Uuid>;
+        async fn update_gtm_lead(
+            &self,
+            actor_user_id: Uuid,
+            alliance_id: Uuid,
+            gtm_lead_id: Uuid,
+            input: &serde_json::Value,
+        ) -> Result<()>;
+        async fn transition_gtm_lead(
+            &self,
+            actor_user_id: Uuid,
+            alliance_id: Uuid,
+            gtm_lead_id: Uuid,
+            stage: &str,
+            human: bool,
+            details: &serde_json::Value,
+        ) -> Result<()>;
+        async fn add_gtm_agent_draft(
+            &self,
+            actor_user_id: Uuid,
+            alliance_id: Uuid,
+            input: &serde_json::Value,
+        ) -> Result<Uuid>;
+        async fn list_gtm_agent_drafts(
+            &self,
+            alliance_id: Uuid,
+            filters: &serde_json::Value,
+        ) -> Result<crate::types::gtm::GtmAgentDraftList>;
+        async fn review_gtm_agent_draft(
+            &self,
+            actor_user_id: Uuid,
+            alliance_id: Uuid,
+            draft_id: Uuid,
+            input: &serde_json::Value,
+        ) -> Result<crate::types::gtm::GtmReviewDraftResult>;
+        async fn suggest_gtm_lead_candidates(
+            &self,
+            alliance_id: Uuid,
+            group_id: Option<Uuid>,
+            limit: i32,
+        ) -> Result<crate::types::gtm::GtmLeadCandidates>;
+    }
+
+    #[async_trait]
     impl crate::db::landscape::DBLandscape for DB {
         async fn search_landscape_entries(
             &self,

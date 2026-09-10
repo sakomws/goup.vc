@@ -900,5 +900,232 @@
       "additionalProperties": false
     },
     "action": "submit_talk"
+  },
+  {
+    "name": "goup_search_leads",
+    "title": "GOUP Search GTM Leads",
+    "description": "List or search GTM leads for an alliance through list_gtm_leads. Requires database access through DATABASE_URL or TERN_CONF.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "alliance_id": {
+          "type": "string",
+          "description": "Alliance ID that owns the pipeline."
+        },
+        "query": {
+          "type": "string",
+          "description": "Optional name, org, or email search."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["sponsor", "startup", "investor", "speaker", "organizer"],
+          "description": "Optional lead kind."
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "lead_generation",
+            "reachout",
+            "get_response",
+            "qualification",
+            "proposal",
+            "negotiation",
+            "won",
+            "lost",
+            "delivered",
+            "renewal"
+          ],
+          "description": "Optional pipeline stage."
+        },
+        "group_id": {
+          "type": "string",
+          "description": "Optional group assignment filter."
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Optional page size."
+        }
+      },
+      "required": ["alliance_id"],
+      "additionalProperties": false
+    },
+    "action": "search_leads"
+  },
+  {
+    "name": "goup_create_lead",
+    "title": "GOUP Create GTM Lead",
+    "description": "Create a GTM lead through add_gtm_lead. Requires MCP_ENABLE_MUTATIONS=true and database access.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "actor_user_id": {
+          "type": "string",
+          "description": "User ID recorded as the creator."
+        },
+        "alliance_id": {
+          "type": "string",
+          "description": "Alliance ID that owns the lead."
+        },
+        "group_id": {
+          "type": "string",
+          "description": "Optional group assignment."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["sponsor", "startup", "investor", "speaker", "organizer"]
+        },
+        "name": {
+          "type": "string",
+          "description": "Lead display name."
+        },
+        "org_name": {
+          "type": "string",
+          "description": "Optional organization name."
+        },
+        "email": {
+          "type": "string",
+          "description": "Optional contact email."
+        },
+        "website_url": {
+          "type": "string",
+          "description": "Optional website URL."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes."
+        }
+      },
+      "required": ["actor_user_id", "alliance_id", "kind", "name"],
+      "additionalProperties": false
+    },
+    "action": "create_lead"
+  },
+  {
+    "name": "goup_transition_lead",
+    "title": "GOUP Transition GTM Lead",
+    "description": "Move a GTM lead to another stage through transition_gtm_lead. Humans may move to any stage. Requires MCP_ENABLE_MUTATIONS=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "actor_user_id": {
+          "type": "string",
+          "description": "User ID recorded as the actor."
+        },
+        "alliance_id": {
+          "type": "string",
+          "description": "Alliance ID that owns the lead."
+        },
+        "gtm_lead_id": {
+          "type": "string",
+          "description": "Lead ID to move."
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "lead_generation",
+            "reachout",
+            "get_response",
+            "qualification",
+            "proposal",
+            "negotiation",
+            "won",
+            "lost",
+            "delivered",
+            "renewal"
+          ]
+        },
+        "lost_reason": {
+          "type": "string",
+          "description": "Optional lost reason."
+        }
+      },
+      "required": ["actor_user_id", "alliance_id", "gtm_lead_id", "stage"],
+      "additionalProperties": false
+    },
+    "action": "transition_lead"
+  },
+  {
+    "name": "goup_run_gtm_agent",
+    "title": "GOUP Run GTM Agent",
+    "description": "Create a pending GTM agent draft. Agents never advance stage. Requires MCP_ENABLE_MUTATIONS=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "actor_user_id": {
+          "type": "string",
+          "description": "User ID recorded as the actor."
+        },
+        "alliance_id": {
+          "type": "string",
+          "description": "Alliance ID that owns the pipeline."
+        },
+        "gtm_lead_id": {
+          "type": "string",
+          "description": "Lead ID. Required except for lead_generation."
+        },
+        "group_id": {
+          "type": "string",
+          "description": "Optional group scope for lead generation."
+        },
+        "agent_id": {
+          "type": "string",
+          "enum": [
+            "lead_generation",
+            "reachout",
+            "get_response",
+            "qualification",
+            "proposal",
+            "negotiation",
+            "won_lost",
+            "delivered",
+            "renewal"
+          ]
+        },
+        "reply": {
+          "type": "string",
+          "description": "Optional pasted reply for the Get Response agent."
+        }
+      },
+      "required": ["actor_user_id", "alliance_id", "agent_id"],
+      "additionalProperties": false
+    },
+    "action": "run_gtm_agent"
+  },
+  {
+    "name": "goup_review_gtm_draft",
+    "title": "GOUP Review GTM Draft",
+    "description": "Approve or reject a pending GTM agent draft through review_gtm_agent_draft. Requires MCP_ENABLE_MUTATIONS=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "actor_user_id": {
+          "type": "string",
+          "description": "User ID recorded as the reviewer."
+        },
+        "alliance_id": {
+          "type": "string",
+          "description": "Alliance ID that owns the draft."
+        },
+        "draft_id": {
+          "type": "string",
+          "description": "Draft ID to review."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["approved", "rejected"]
+        },
+        "body": {
+          "type": "string",
+          "description": "Optional edited draft body."
+        },
+        "suggested_stage": {
+          "type": "string",
+          "description": "Optional edited suggested stage."
+        }
+      },
+      "required": ["actor_user_id", "alliance_id", "draft_id", "status"],
+      "additionalProperties": false
+    },
+    "action": "review_gtm_draft"
   }
 ]

@@ -6,6 +6,8 @@ pub(crate) mod alliance;
 pub(crate) mod common;
 /// Group dashboard handlers.
 pub(crate) mod group;
+/// Shared GTM dashboard handlers.
+pub(crate) mod gtm;
 /// Jobs dashboard handlers.
 pub(crate) mod jobs;
 /// User dashboard handlers.

@@ -204,6 +204,21 @@
 {{ template "dashboard-group/update_group_team_member_role.sql" }}
 {{ template "dashboard-group/update_event.sql" }}
 
+{{ template "dashboard-gtm/gtm_lead_json.sql" }}
+{{ template "dashboard-gtm/gtm_agent_draft_json.sql" }}
+{{ template "dashboard-gtm/gtm_is_legal_transition.sql" }}
+{{ template "dashboard-gtm/add_gtm_lead_activity.sql" }}
+{{ template "dashboard-gtm/add_gtm_lead.sql" }}
+{{ template "dashboard-gtm/update_gtm_lead.sql" }}
+{{ template "dashboard-gtm/transition_gtm_lead.sql" }}
+{{ template "dashboard-gtm/list_gtm_leads.sql" }}
+{{ template "dashboard-gtm/get_gtm_lead.sql" }}
+{{ template "dashboard-gtm/add_gtm_agent_draft.sql" }}
+{{ template "dashboard-gtm/list_gtm_agent_drafts.sql" }}
+{{ template "dashboard-gtm/apply_gtm_won_side_effects.sql" }}
+{{ template "dashboard-gtm/review_gtm_agent_draft.sql" }}
+{{ template "dashboard-gtm/suggest_gtm_lead_candidates.sql" }}
+
 {{ template "dashboard-user/accept_alliance_team_invitation.sql" }}
 {{ template "dashboard-user/accept_event_attendee_invitation.sql" }}
 {{ template "dashboard-user/accept_group_team_invitation.sql" }}

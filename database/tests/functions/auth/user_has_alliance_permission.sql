@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(43);
+select plan(50);
 
 -- ============================================================================
 -- VARIABLES
@@ -136,6 +136,7 @@ with tested_permissions (
 ) as (
     values
         ('alliance.groups.write'),
+        ('alliance.gtm.write'),
         ('alliance.read'),
         ('alliance.settings.write'),
         ('alliance.taxonomy.write'),
@@ -180,6 +181,7 @@ with actors (
             :'userAdminID'::uuid,
             array[
                 'alliance.groups.write',
+                'alliance.gtm.write',
                 'alliance.read',
                 'alliance.settings.write',
                 'alliance.taxonomy.write',
@@ -198,6 +200,7 @@ with actors (
             :'userGroupsManagerID'::uuid,
             array[
                 'alliance.groups.write',
+                'alliance.gtm.write',
                 'alliance.read'
             ]::text[]
         ),
@@ -219,6 +222,7 @@ with actors (
             :'userRegularID'::uuid,
             array[
                 'alliance.groups.write',
+                'alliance.gtm.write',
                 'alliance.read',
                 'alliance.settings.write',
                 'alliance.taxonomy.write',
@@ -238,6 +242,7 @@ with actors (
 ) as (
     values
         ('alliance.groups.write'),
+        ('alliance.gtm.write'),
         ('alliance.read'),
         ('alliance.settings.write'),
         ('alliance.taxonomy.write'),

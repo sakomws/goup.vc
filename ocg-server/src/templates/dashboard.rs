@@ -6,6 +6,8 @@ pub(crate) mod alliance;
 pub(crate) mod audit;
 /// Group dashboard templates.
 pub(crate) mod group;
+/// Shared GTM dashboard templates.
+pub(crate) mod gtm;
 /// Jobs dashboard templates.
 pub(crate) mod jobs;
 /// User dashboard templates.

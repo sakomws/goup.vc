@@ -15,7 +15,7 @@ use crate::{
                 group_categories, groups, intentional_dating, landscape, members,
                 partner_integrations, regions, settings, team,
             },
-            audit,
+            audit, gtm,
         },
         filters,
         helpers::user_initials,
@@ -61,6 +61,8 @@ pub(crate) enum Content {
     GroupCategories(group_categories::ListPage),
     /// Groups management page.
     Groups(groups::ListPage),
+    /// GTM pipeline page.
+    Gtm(gtm::ListPage),
     /// Private book exchange page.
     BookExchange(book_exchange::ListPage),
     /// Private intentional dating curation page.
@@ -110,6 +112,11 @@ impl Content {
     /// Check if the content is the groups page.
     fn is_groups(&self) -> bool {
         matches!(self, Content::Groups(_))
+    }
+
+    /// Check if the content is the GTM page.
+    fn is_gtm(&self) -> bool {
+        matches!(self, Content::Gtm(_))
     }
 
     /// Check if the content is the book exchange page.
@@ -167,6 +174,7 @@ impl std::fmt::Display for Content {
             Content::EventCategories(template) => write!(f, "{}", template.render()?),
             Content::GroupCategories(template) => write!(f, "{}", template.render()?),
             Content::Groups(template) => write!(f, "{}", template.render()?),
+            Content::Gtm(template) => write!(f, "{}", template.render()?),
             Content::BookExchange(template) => write!(f, "{}", template.render()?),
             Content::IntentionalDating(template) => write!(f, "{}", template.render()?),
             Content::PartnerIntegrations(template) => write!(f, "{}", template.render()?),
@@ -200,6 +208,8 @@ pub(crate) enum Tab {
     GroupCategories,
     /// Groups management tab.
     Groups,
+    /// GTM pipeline tab.
+    Gtm,
     /// Private book exchange tab.
     BookExchange,
     /// Private intentional dating curation tab.

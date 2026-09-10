@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(70);
+select plan(73);
 
 -- ============================================================================
 -- TESTS
@@ -488,6 +488,29 @@ select indexes_are('session_kind', array[
 -- Test: site indexes should match expected
 select indexes_are('site', array[
     'site_pkey'
+]);
+
+-- Test: gtm_lead indexes should match expected
+select indexes_are('gtm_lead', array[
+    'gtm_lead_pkey',
+    'gtm_lead_alliance_stage_idx',
+    'gtm_lead_group_stage_idx',
+    'gtm_lead_alliance_email_key',
+    'gtm_lead_alliance_website_key'
+]);
+
+-- Test: gtm_lead_activity indexes should match expected
+select indexes_are('gtm_lead_activity', array[
+    'gtm_lead_activity_pkey',
+    'gtm_lead_activity_lead_created_idx'
+]);
+
+-- Test: gtm_agent_draft indexes should match expected
+select indexes_are('gtm_agent_draft', array[
+    'gtm_agent_draft_pkey',
+    'gtm_agent_draft_alliance_status_idx',
+    'gtm_agent_draft_lead_status_idx',
+    'gtm_agent_draft_pending_lead_agent_key'
 ]);
 
 -- Test: user indexes should match expected
