@@ -76,6 +76,7 @@ async fn test_cancel_attendance_cancels_pending_registration_and_enqueues_notifi
             Ok(EventLeaveOutcome {
                 left_status: EventAttendanceStatus::Attendee,
                 promoted_user_ids: vec![],
+                refund_event_purchase_id: None,
             })
         });
     tx.expect_get_site_settings()
@@ -177,6 +178,7 @@ async fn test_cancel_attendance_promotes_waitlisted_users_and_enqueues_notificat
             Ok(EventLeaveOutcome {
                 left_status: EventAttendanceStatus::Attendee,
                 promoted_user_ids: vec![promoted_user_id],
+                refund_event_purchase_id: None,
             })
         });
     tx.expect_get_site_settings()
@@ -291,6 +293,7 @@ async fn test_cancel_attendance_rolls_back_when_notification_enqueue_fails() {
             Ok(EventLeaveOutcome {
                 left_status: EventAttendanceStatus::Attendee,
                 promoted_user_ids: vec![],
+                refund_event_purchase_id: None,
             })
         });
     tx.expect_get_site_settings()

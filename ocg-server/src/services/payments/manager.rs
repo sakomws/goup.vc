@@ -11,8 +11,10 @@ use tracing::warn;
 use uuid::Uuid;
 
 use crate::{
-    config::HttpServerConfig, db::DynDB, services::notifications::DynNotificationsManager,
-    types::payments::PreparedEventCheckout,
+    config::HttpServerConfig,
+    db::DynDB,
+    services::notifications::DynNotificationsManager,
+    types::payments::{ChargeModel, PreparedEventCheckout},
 };
 
 use super::{
@@ -191,6 +193,18 @@ impl PgPaymentsManager {
             return Ok(provider_checkout_url);
         }
 
+        if prepared_checkout.purchase.charge_model == ChargeModel::External {
+            let base_url = self.server_cfg.base_url.trim_end_matches('/');
+            let group_slug = prepared_checkout
+                .group_slug_pretty
+                .as_deref()
+                .unwrap_or(&prepared_checkout.group_slug);
+            return Ok(format!(
+                "{base_url}/{}/group/{}/event/{}?payment=external",
+                prepared_checkout.alliance_name, group_slug, prepared_checkout.event_slug
+            ));
+        }
+
         // Load the payment provider required to open a fresh checkout session
         let payments_provider = self.payments_provider()?;
 
@@ -215,6 +229,7 @@ impl PgPaymentsManager {
 
                 discount_code: prepared_checkout.purchase.discount_code.clone(),
                 group_slug_pretty: prepared_checkout.group_slug_pretty.clone(),
+                application_fee_amount_minor: prepared_checkout.purchase.platform_fee_amount_minor,
             })
             .await?;
 

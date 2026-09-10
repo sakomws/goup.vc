@@ -41,6 +41,7 @@ returns json as $$
         'description_short', g.description_short,
         'discord_url', g.discord_url,
         'event_defaults', g.event_defaults,
+        'external_payments_enabled', g.external_payments_enabled,
         'extra_links', g.extra_links,
         'facebook_url', g.facebook_url,
         'flickr_url', g.flickr_url,
@@ -55,6 +56,7 @@ returns json as $$
         'mentorship_enabled', g.mentorship_enabled,
         'mock_interviews_enabled', g.mock_interviews_enabled,
         'og_image_url', g.og_image_url,
+        'parent_group_id', g.parent_group_id,
         'payment_recipient', g.payment_recipient,
         'photos_urls', g.photos_urls,
         'region', case when r.region_id is not null then

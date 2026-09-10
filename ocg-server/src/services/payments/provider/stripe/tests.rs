@@ -285,6 +285,7 @@ fn sample_checkout_session_input() -> CreateCheckoutSessionInput {
 
         discount_code: Some("EARLYBIRD".to_string()),
         group_slug_pretty: Some("pretty-group".to_string()),
+        application_fee_amount_minor: 0,
     }
 }
 
@@ -301,6 +302,9 @@ fn sample_stripe_provider() -> StripeProvider {
         publishable_key: "pk_test".to_string(),
         secret_key: "sk_test".to_string(),
         webhook_secret: "whsec_test".to_string(),
+        platform_fee_bps: 0,
+        automatic_tax: false,
+        create_invoices: false,
     })
 }
 

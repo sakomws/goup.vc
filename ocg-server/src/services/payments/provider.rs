@@ -85,6 +85,8 @@ pub(crate) struct CreateCheckoutSessionInput {
     pub discount_code: Option<String>,
     /// Admin-managed group slug used in return URLs.
     pub group_slug_pretty: Option<String>,
+    /// Platform application fee in minor units taken from this purchase.
+    pub application_fee_amount_minor: i64,
 }
 
 impl CreateCheckoutSessionInput {

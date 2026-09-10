@@ -225,6 +225,18 @@
               {% let attendance_instance = "main" -%}
               {% include "event/attend_button.html" %}
               {# End attend button section -#}
+              {% if event.external_payment_instructions.is_some() || event.external_payment_url.is_some() -%}
+                <div class="mt-4 max-w-md rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <div class="font-semibold">Pay outside Stripe</div>
+                  {% if let Some(instructions) = &event.external_payment_instructions -%}
+                    <p class="mt-1 whitespace-pre-line">{{ instructions }}</p>
+                  {% endif -%}
+                  {% if let Some(url) = &event.external_payment_url -%}
+                    <a href="{{ url }}" class="mt-2 inline-flex text-amber-900 underline" target="_blank" rel="noopener noreferrer">Open payment instructions</a>
+                  {% endif -%}
+                  <p class="mt-2 text-amber-800">After you pay, an organizer will confirm your ticket.</p>
+                </div>
+              {% endif -%}
             </div>
 
           </div>

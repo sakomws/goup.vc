@@ -1332,6 +1332,7 @@ async fn test_leave_event_success() {
             Ok(EventLeaveOutcome {
                 left_status: EventAttendanceStatus::Attendee,
                 promoted_user_ids: vec![],
+                refund_event_purchase_id: None,
             })
         });
     tx.expect_get_site_settings()
@@ -1411,6 +1412,7 @@ async fn test_leave_waitlist_success() {
             Ok(EventLeaveOutcome {
                 left_status: EventAttendanceStatus::Waitlisted,
                 promoted_user_ids: vec![],
+                refund_event_purchase_id: None,
             })
         });
     expect_successful_transaction(&mut db, tx);
@@ -1494,6 +1496,7 @@ async fn test_leave_event_promotes_waitlisted_users_and_enqueues_notification() 
             Ok(EventLeaveOutcome {
                 left_status: EventAttendanceStatus::Attendee,
                 promoted_user_ids: vec![promoted_user_id],
+                refund_event_purchase_id: None,
             })
         });
     tx.expect_get_site_settings()
@@ -1587,6 +1590,7 @@ async fn test_leave_event_rolls_back_when_notification_context_load_fails() {
             Ok(EventLeaveOutcome {
                 left_status: EventAttendanceStatus::Attendee,
                 promoted_user_ids: vec![],
+                refund_event_purchase_id: None,
             })
         });
     tx.expect_get_site_settings()

@@ -76,6 +76,20 @@ sequenceDiagram
 
 Users request refunds from the event page. Refund requests are stored in the database and visible to group organizers in the dashboard. Organizers approve or reject through the dashboard; approval triggers a Stripe refund API call and sends a notification email to the user.
 
+Canceling a paid attendee from the group dashboard now queues that refund automatically and the handler attempts to approve it immediately.
+
+### Platform fee, tax, and invoices
+
+Stripe Checkout can take an application fee (`payments.platform_fee_bps`), enable Stripe Tax (`payments.automatic_tax`), and create a customer invoice (`payments.create_invoices`). The fee is snapshotted onto each `event_purchase` as `platform_fee_amount_minor`.
+
+### External payments
+
+Groups can enable organizer-confirmed off-Stripe payments. When an event has payment instructions or a payment URL, checkout creates an `external` purchase instead of a Stripe session. Organizers confirm it with `PUT /dashboard/group/events/{event_id}/attendees/{user_id}/external-payment/confirm`.
+
+### Parent groups
+
+Groups can set a single-level parent chapter in group settings. The parent must belong to the same alliance and cannot itself be a subgroup.
+
 ## Configuration
 
 Payments are optional. They are enabled by setting `payments.provider = stripe` and providing API keys:
@@ -85,6 +99,9 @@ Payments are optional. They are enabled by setting `payments.provider = stripe` 
 | `payments.provider` | `OCG_PAYMENTS__PROVIDER` | `stripe` |
 | `payments.stripe.secret_key` | `OCG_PAYMENTS__STRIPE__SECRET_KEY` | Stripe secret key |
 | `payments.stripe.webhook_secret` | `OCG_PAYMENTS__STRIPE__WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `payments.platform_fee_bps` | `OCG_PAYMENTS__PLATFORM_FEE_BPS` | Application fee in basis points (0–10000) |
+| `payments.automatic_tax` | `OCG_PAYMENTS__AUTOMATIC_TAX` | Enable Stripe Tax on Checkout |
+| `payments.create_invoices` | `OCG_PAYMENTS__CREATE_INVOICES` | Create a Stripe invoice for each Checkout |
 
 ## Integration points
 

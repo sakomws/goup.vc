@@ -357,6 +357,7 @@ async fn test_cancel_event_attendee_attendance_promotes_waitlist_and_enqueues_no
             Ok(EventLeaveOutcome {
                 left_status: EventAttendanceStatus::Attendee,
                 promoted_user_ids: vec![promoted_user_id],
+                refund_event_purchase_id: None,
             })
         });
     tx.expect_get_site_settings()
@@ -480,6 +481,7 @@ async fn test_cancel_event_attendee_attendance_rolls_back_when_notification_enqu
             Ok(EventLeaveOutcome {
                 left_status: EventAttendanceStatus::Attendee,
                 promoted_user_ids: vec![],
+                refund_event_purchase_id: None,
             })
         });
     tx.expect_get_site_settings()

@@ -189,6 +189,13 @@ pub(crate) struct Group {
     /// Google Analytics 4 measurement ID for public event pages.
     #[garde(custom(ga4_measurement_id))]
     pub web_analytics_measurement_id: Option<String>,
+    /// Whether the group accepts organizer-confirmed off-Stripe payments.
+    #[serde(default)]
+    #[garde(skip)]
+    pub external_payments_enabled: bool,
+    /// Parent group used for single-level chapter relationships.
+    #[garde(skip)]
+    pub parent_group_id: Option<Uuid>,
     /// Payments recipient configuration for the group.
     #[garde(skip)]
     pub payment_recipient: Option<GroupPaymentRecipient>,

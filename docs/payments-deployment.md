@@ -50,6 +50,9 @@ payments:
   publishableKey: "pk_test_..."
   secretKey: "sk_test_..."
   webhookSecret: "whsec_..."
+  platformFeeBps: 0
+  automaticTax: false
+  createInvoices: false
 ```
 
 Notes:

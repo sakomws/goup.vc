@@ -33,6 +33,17 @@ pub struct GroupMinimal {
     pub slug_pretty: Option<String>,
 }
 
+/// Group that can be selected as a parent chapter.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GroupParentOption {
+    /// Unique identifier for the parent group.
+    pub group_id: Uuid,
+    /// Display name of the parent group.
+    pub name: String,
+    /// URL-friendly identifier for this group.
+    pub slug: String,
+}
+
 /// Public configuration for a group's standing Call for Speakers.
 #[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -231,6 +242,11 @@ pub struct GroupFull {
     pub og_image_url: Option<String>,
     /// Google Analytics 4 measurement ID for this group's public event pages.
     pub web_analytics_measurement_id: Option<String>,
+    /// Whether the group accepts organizer-confirmed off-Stripe payments.
+    #[serde(default)]
+    pub external_payments_enabled: bool,
+    /// Parent group used for single-level chapter relationships.
+    pub parent_group_id: Option<Uuid>,
     /// Payments recipient configuration for the group.
     pub payment_recipient: Option<GroupPaymentRecipient>,
     /// Gallery of photo URLs.

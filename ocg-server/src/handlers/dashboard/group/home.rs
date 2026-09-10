@@ -165,21 +165,24 @@ pub(crate) async fn page(
             Content::Logs(template)
         }
         Tab::Settings => {
-            let (can_manage_settings, group, categories, regions) = tokio::try_join!(
-                db.user_has_group_permission(
-                    &alliance_id,
-                    &group_id,
-                    &user.user_id,
-                    GroupPermission::SettingsWrite
-                ),
-                db.get_group_full(alliance_id, group_id),
-                db.list_group_categories(alliance_id),
-                db.list_regions(alliance_id)
-            )?;
+            let (can_manage_settings, group, categories, parent_group_options, regions) =
+                tokio::try_join!(
+                    db.user_has_group_permission(
+                        &alliance_id,
+                        &group_id,
+                        &user.user_id,
+                        GroupPermission::SettingsWrite
+                    ),
+                    db.get_group_full(alliance_id, group_id),
+                    db.list_group_categories(alliance_id),
+                    db.list_group_parent_options(alliance_id, group_id),
+                    db.list_regions(alliance_id)
+                )?;
             Content::Settings(Box::new(settings::UpdatePage {
                 can_manage_settings,
                 categories,
                 group,
+                parent_group_options,
                 payments_enabled: payments_cfg.is_some(),
                 regions,
             }))

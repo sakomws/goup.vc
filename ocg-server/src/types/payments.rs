@@ -124,6 +124,19 @@ pub struct EventDiscountCode {
     pub total_available: Option<i32>,
 }
 
+/// How a ticket purchase is charged.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChargeModel {
+    /// Off-Stripe payment that an organizer confirms.
+    External,
+    /// Zero-amount ticket completed locally.
+    Free,
+    /// Stripe Checkout payment.
+    #[default]
+    Stripe,
+}
+
 /// Purchase summary shown to organizers and attendees.
 #[skip_serializing_none]
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
@@ -132,8 +145,14 @@ pub struct EventPurchaseSummary {
     pub discount_amount_minor: i64,
     /// Recorded purchase amount after discounts.
     pub amount_minor: i64,
+    /// How this purchase is charged.
+    #[serde(default)]
+    pub charge_model: ChargeModel,
     /// Currency used for the purchase.
     pub currency_code: String,
+    /// Platform application fee snapshotted at checkout.
+    #[serde(default)]
+    pub platform_fee_amount_minor: i64,
     /// Purchase identifier.
     pub event_purchase_id: Uuid,
     /// Purchase status.
@@ -153,6 +172,10 @@ pub struct EventPurchaseSummary {
     pub hold_expires_at: Option<DateTime<Utc>>,
     /// Provider checkout URL for resuming the payment.
     pub provider_checkout_url: Option<String>,
+    /// Hosted invoice URL created by the payments provider.
+    pub provider_invoice_hosted_url: Option<String>,
+    /// PDF invoice URL created by the payments provider.
+    pub provider_invoice_pdf_url: Option<String>,
     /// Provider payment reference used to manage the completed payment.
     pub provider_payment_reference: Option<String>,
     /// Provider purchase session identifier.

@@ -459,6 +459,10 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             post(dashboard::group::attendees::manual_check_in),
         )
         .route(
+            "/events/{event_id}/attendees/{user_id}/external-payment/confirm",
+            put(dashboard::group::attendees::confirm_external_event_purchase),
+        )
+        .route(
             "/events/{event_id}/attendees/{user_id}/invitation/cancel",
             put(dashboard::group::attendees::cancel_event_attendee_invitation),
         )

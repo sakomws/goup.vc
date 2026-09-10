@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(315);
+select plan(318);
 
 -- ============================================================================
 -- VARIABLES
@@ -131,6 +131,7 @@ select has_function('claim_google_meet_recording_for_publish', array['bigint', '
 select has_function('claim_meeting_for_auto_end', '{}'::name[]);
 select has_function('claim_meeting_out_of_sync', '{}'::name[]);
 select has_function('claim_pending_notification', array['integer', 'integer']::name[]);
+select has_function('complete_external_event_purchase', array['uuid', 'uuid', 'uuid', 'uuid', 'text']::name[]);
 select has_function('complete_free_event_purchase', array['uuid']::name[]);
 select has_function('count_user_pending_invitations', array['uuid']::name[]);
 select has_function('deactivate_group', array['uuid', 'uuid', 'uuid']::name[]);
@@ -238,6 +239,7 @@ select has_function('list_group_coffee_meet_subscribers', array['uuid']::name[])
 select has_function('list_group_events', array['uuid', 'jsonb']::name[]);
 select has_function('list_group_join_requests', array['uuid']::name[]);
 select has_function('list_group_members', array['uuid', 'uuid', 'boolean', 'jsonb']::name[]);
+select has_function('list_group_parent_options', array['uuid', 'uuid']::name[]);
 select has_function('list_group_members_ids', array['uuid']::name[]);
 select has_function('list_group_roles', '{}'::name[]);
 select has_function('list_group_sponsors', array['uuid', 'jsonb', 'boolean']::name[]);
@@ -392,6 +394,7 @@ select has_trigger('event_sponsor', 'event_sponsor_group_check');
 select has_trigger('event_ticket_type', 'event_ticketing_consistency_on_event_ticket_type');
 select has_trigger('event_waitlist', 'event_waitlist_attendee_check');
 select has_trigger('group', 'group_category_alliance_check');
+select has_trigger('group', 'group_parent_relationship_check');
 select has_trigger('group', 'group_region_alliance_check');
 select has_trigger('group', 'group_slug_pretty_validate');
 select has_trigger('session', 'session_cfs_submission_approved_check');

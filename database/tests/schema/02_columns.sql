@@ -285,6 +285,9 @@ select columns_are('event', array[
     'meeting_requested',
     'meeting_sync_claimed_at',
     'meetup_url',
+    'external_payment_instructions',
+    'external_payment_url',
+    'external_payment_window_hours',
     'payment_currency_code',
     'photos_urls',
     'published_at',
@@ -301,6 +304,8 @@ select columns_are('event', array[
     'venue_country_name',
     'venue_name',
     'venue_state',
+    'tax_behavior',
+    'tax_calculation_mode',
     'venue_zip_code',
     'waitlist_enabled'
 ]);
@@ -440,7 +445,17 @@ select columns_are('event_purchase', array[
     'provider_checkout_url',
     'provider_payment_reference',
     'refunded_at',
-    'event_discount_code_id'
+    'event_discount_code_id',
+    'platform_fee_amount_minor',
+    'charge_model',
+    'tax_amount_minor',
+    'tax_behavior',
+    'tax_calculation_mode',
+    'provider_invoice_id',
+    'provider_invoice_hosted_url',
+    'provider_invoice_pdf_url',
+    'external_payment_details',
+    'external_payment_marked_by_user_id'
 ]);
 
 -- Test: event_refund_request columns should match expected
@@ -586,6 +601,7 @@ select columns_are('group', array[
     'description_short',
     'discord_url',
     'event_defaults',
+    'external_payments_enabled',
     'extra_links',
     'facebook_url',
     'flickr_url',
@@ -601,6 +617,7 @@ select columns_are('group', array[
     'mentorship_enabled',
     'mock_interviews_enabled',
     'og_image_url',
+    'parent_group_id',
     'payment_recipient',
     'photos_urls',
     'region_id',

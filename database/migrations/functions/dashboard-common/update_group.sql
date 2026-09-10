@@ -76,6 +76,7 @@ begin
             when p_group ? 'event_defaults' then nullif(p_group->'event_defaults', 'null'::jsonb)
             else event_defaults
         end,
+        external_payments_enabled = coalesce((p_group->>'external_payments_enabled')::boolean, false),
         extra_links = p_group->'extra_links',
         facebook_url = nullif(p_group->>'facebook_url', ''),
         flickr_url = nullif(p_group->>'flickr_url', ''),
@@ -90,6 +91,11 @@ begin
         mentorship_enabled = coalesce((p_group->>'mentorship_enabled')::boolean, false),
         mock_interviews_enabled = coalesce((p_group->>'mock_interviews_enabled')::boolean, false),
         og_image_url = nullif(p_group->>'og_image_url', ''),
+        parent_group_id = case
+            when nullif(p_group->>'parent_group_id', '') is not null
+            then (p_group->>'parent_group_id')::uuid
+            else null
+        end,
         payment_recipient = case
             when p_group ? 'payment_recipient' then v_new_payment_recipient
             else payment_recipient

@@ -70,6 +70,10 @@ async fn test_update_page_success() {
         .times(1)
         .withf(move |cid| *cid == alliance_id)
         .returning(move |_| Ok(vec![category.clone()]));
+    db.expect_list_group_parent_options()
+        .times(1)
+        .withf(move |cid, gid| *cid == alliance_id && *gid == group_id)
+        .returning(|_, _| Ok(vec![]));
     db.expect_list_regions()
         .times(1)
         .withf(move |cid| *cid == alliance_id)

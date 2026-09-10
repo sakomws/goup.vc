@@ -274,26 +274,29 @@ select throws_ok(
     'Should reject events outside the selected group'
 );
 
--- Should reject paid attendees.
-select throws_ok(
+-- Should cancel paid attendees and queue a refund.
+select results_eq(
     format(
-        $$ select cancel_event_attendee_attendance(%L, %L, %L, %L) $$,
+        $$ select cancel_event_attendee_attendance(%L, %L, %L, %L)::jsonb $$,
         :'actorID', :'groupID', :'eventPaidID', :'paidAttendeeID'
     ),
-    'paid attendees cannot be canceled from attendee actions',
-    'Should reject paid attendee cancellation'
+    format(
+        $$ values ('{"left_status": "attendee", "promoted_user_ids": [], "refund_event_purchase_id": "%s"}'::jsonb) $$,
+        :'purchaseID'
+    ),
+    'Should cancel a paid attendance and return the refund purchase id'
 );
 
 select is(
     (select count(*)::int from event_attendee where event_id = :'eventPaidID' and user_id = :'paidAttendeeID'),
-    1,
-    'Should keep paid attendee rows'
+    0,
+    'Should remove paid attendee rows'
 );
 
 select is(
     (select status from event_purchase where event_purchase_id = :'purchaseID'),
-    'completed',
-    'Should keep paid purchases unchanged'
+    'refund-requested',
+    'Should queue a refund for the paid purchase'
 );
 
 -- Should promote a waitlisted user when canceling from a full event.

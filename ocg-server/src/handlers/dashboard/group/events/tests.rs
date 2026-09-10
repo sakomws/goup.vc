@@ -203,6 +203,9 @@ async fn test_add_page_success() {
             publishable_key: "pk_test_123".to_string(),
             secret_key: "sk_test_123".to_string(),
             webhook_secret: "whsec_test_123".to_string(),
+            platform_fee_bps: 0,
+            automatic_tax: false,
+            create_invoices: false,
         }))
         .build()
         .await;
@@ -290,6 +293,9 @@ async fn test_list_page_success() {
             publishable_key: "pk_test_123".to_string(),
             secret_key: "sk_test_123".to_string(),
             webhook_secret: "whsec_test_123".to_string(),
+            platform_fee_bps: 0,
+            automatic_tax: false,
+            create_invoices: false,
         }))
         .build()
         .await;
@@ -433,6 +439,9 @@ async fn test_update_page_hides_clear_ticketing_when_event_has_ticket_purchases(
             publishable_key: "pk_test_123".to_string(),
             secret_key: "sk_test_123".to_string(),
             webhook_secret: "whsec_test_123".to_string(),
+            platform_fee_bps: 0,
+            automatic_tax: false,
+            create_invoices: false,
         }))
         .build()
         .await;
@@ -562,6 +571,9 @@ async fn test_update_page_success() {
             publishable_key: "pk_test_123".to_string(),
             secret_key: "sk_test_123".to_string(),
             webhook_secret: "whsec_test_123".to_string(),
+            platform_fee_bps: 0,
+            automatic_tax: false,
+            create_invoices: false,
         }))
         .build()
         .await;
@@ -2682,6 +2694,9 @@ async fn test_update_ticketed_event_without_payment_recipient_returns_unprocessa
             publishable_key: "pk_test".to_string(),
             secret_key: "sk_test".to_string(),
             webhook_secret: "whsec_test".to_string(),
+            platform_fee_bps: 0,
+            automatic_tax: false,
+            create_invoices: false,
         }))
         .build()
         .await;
