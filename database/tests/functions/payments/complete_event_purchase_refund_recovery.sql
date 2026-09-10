@@ -1,0 +1,1571 @@
+-- Tests completing externally resolved terminal provider refunds.
+
+-- ============================================================================
+-- SETUP
+-- ============================================================================
+
+begin;
+select plan(34);
+
+-- ============================================================================
+-- VARIABLES
+-- ============================================================================
+
+\set actorUserID '79530000-0000-0000-0000-000000000001'
+\set activeRecoveryEventID '79530000-0000-0000-0000-000000000035'
+\set activeRecoveryJobID '79530000-0000-0000-0000-000000000057'
+\set activeRecoveryPriceWindowID '79530000-0000-0000-0000-000000000036'
+\set activeRecoveryPurchaseID '79530000-0000-0000-0000-000000000037'
+\set activeRecoveryQueueUserID '79530000-0000-0000-0000-000000000038'
+\set activeRecoveryRefundID '79530000-0000-0000-0000-000000000039'
+\set activeRecoveryTicketTypeID '79530000-0000-0000-0000-000000000040'
+\set activeRecoveryUserID '79530000-0000-0000-0000-000000000041'
+\set attendanceCancellationDiscountCodeID '79530000-0000-0000-0000-000000000047'
+\set attendanceCancellationInitiatorID '79530000-0000-0000-0000-000000000046'
+\set attendanceCancellationJobID '79530000-0000-0000-0000-000000000058'
+\set attendanceCancellationPurchaseID '79530000-0000-0000-0000-000000000042'
+\set attendanceCancellationRefundID '79530000-0000-0000-0000-000000000043'
+\set attendanceCancellationRefundRequestID '79530000-0000-0000-0000-000000000044'
+\set attendanceCancellationUserID '79530000-0000-0000-0000-000000000045'
+\set automaticPurchaseID '79530000-0000-0000-0000-000000000013'
+\set automaticRefundID '79530000-0000-0000-0000-000000000014'
+\set automaticJobID '79530000-0000-0000-0000-000000000059'
+\set automaticUserID '79530000-0000-0000-0000-000000000015'
+\set communityID '79530000-0000-0000-0000-000000000002'
+\set discountCodeID '79530000-0000-0000-0000-000000000026'
+\set eventCancellationDiscountCodeID '79530000-0000-0000-0000-000000000048'
+\set eventCancellationJobID '79530000-0000-0000-0000-000000000060'
+\set eventCancellationPurchaseID '79530000-0000-0000-0000-000000000027'
+\set eventCancellationRefundID '79530000-0000-0000-0000-000000000028'
+\set eventCancellationRefundRequestID '79530000-0000-0000-0000-000000000033'
+\set eventCancellationUserID '79530000-0000-0000-0000-000000000029'
+\set eventCategoryID '79530000-0000-0000-0000-000000000003'
+\set eventID '79530000-0000-0000-0000-000000000004'
+\set eventTicketTypeID '79530000-0000-0000-0000-000000000005'
+\set groupCategoryID '79530000-0000-0000-0000-000000000006'
+\set groupID '79530000-0000-0000-0000-000000000007'
+\set invalidJobID '79530000-0000-0000-0000-000000000061'
+\set invalidPurchaseID '79530000-0000-0000-0000-000000000016'
+\set invalidRefundID '79530000-0000-0000-0000-000000000017'
+\set invalidUserID '79530000-0000-0000-0000-000000000018'
+\set missingRefundID '79530000-0000-0000-0000-000000000008'
+\set nonterminalJobID '79530000-0000-0000-0000-000000000062'
+\set nonterminalPurchaseID '79530000-0000-0000-0000-000000000030'
+\set nonterminalRefundID '79530000-0000-0000-0000-000000000031'
+\set nonterminalUserID '79530000-0000-0000-0000-000000000032'
+\set organizerJobID '79530000-0000-0000-0000-000000000063'
+\set organizerPurchaseID '79530000-0000-0000-0000-000000000019'
+\set organizerRefundID '79530000-0000-0000-0000-000000000020'
+\set organizerRefundRequestID '79530000-0000-0000-0000-000000000021'
+\set organizerUserID '79530000-0000-0000-0000-000000000022'
+\set priceWindowID '79530000-0000-0000-0000-000000000009'
+\set purchaseID '79530000-0000-0000-0000-000000000010'
+\set refundID '79530000-0000-0000-0000-000000000011'
+\set refundJobID '79530000-0000-0000-0000-000000000064'
+\set replacementRecoveryEventID '79530000-0000-0000-0000-000000000049'
+\set replacementRecoveryJobID '79530000-0000-0000-0000-000000000065'
+\set replacementRecoveryOriginalPurchaseID '79530000-0000-0000-0000-000000000050'
+\set replacementRecoveryPriceWindowID '79530000-0000-0000-0000-000000000056'
+\set replacementRecoveryRefundID '79530000-0000-0000-0000-000000000051'
+\set replacementRecoveryRefundRequestID '79530000-0000-0000-0000-000000000052'
+\set replacementRecoveryReplacementPurchaseID '79530000-0000-0000-0000-000000000053'
+\set replacementRecoveryTicketTypeID '79530000-0000-0000-0000-000000000054'
+\set replacementRecoveryUserID '79530000-0000-0000-0000-000000000055'
+\set siteID '79530000-0000-0000-0000-000000000034'
+\set unpinnedJobID '79530000-0000-0000-0000-000000000066'
+\set unpinnedPurchaseID '79530000-0000-0000-0000-000000000023'
+\set unpinnedRefundID '79530000-0000-0000-0000-000000000024'
+\set unpinnedUserID '79530000-0000-0000-0000-000000000025'
+\set userID '79530000-0000-0000-0000-000000000012'
+
+-- ============================================================================
+-- SEED DATA
+-- ============================================================================
+
+-- Site settings used to build recovery completion notifications
+insert into site (site_id, description, theme, title)
+values (
+    :'siteID',
+    'Complete refund recovery site',
+    '{"primary_color": "#2563eb"}'::jsonb,
+    'Complete Refund Recovery Site'
+);
+
+-- Baseline community, categories and users
+select fx_community(:'communityID');
+select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_user(:'activeRecoveryQueueUserID');
+select fx_user(:'activeRecoveryUserID');
+select fx_user(:'attendanceCancellationInitiatorID');
+select fx_user(:'attendanceCancellationUserID');
+select fx_user(:'automaticUserID');
+select fx_user(:'eventCancellationUserID');
+select fx_user(:'invalidUserID');
+select fx_user(:'nonterminalUserID');
+select fx_user(:'organizerUserID');
+select fx_user(:'replacementRecoveryUserID');
+select fx_user(:'unpinnedUserID');
+select fx_user(:'userID');
+
+-- Operator completing refund recovery
+select fx_user(:'actorUserID', jsonb_build_object('username', 'recovery-operator'));
+
+-- Group
+select fx_group(:'groupID', :'communityID', :'groupCategoryID', jsonb_build_object('payment_recipient', '{"provider":"stripe","recipient_id":"acct_recovery","seller_display_name":"Recovery Fiscal Sponsor"}'::jsonb));
+
+-- Canceled event shared by external recovery scenarios
+select fx_event(:'eventID', :'groupID', :'eventCategoryID', jsonb_build_object(
+    'canceled', true,
+    'published', true,
+    'published_at', now(),
+    'starts_at', now() + interval '1 day'
+));
+
+-- Active event used to verify queue promotion after recovery completion
+select fx_event(:'activeRecoveryEventID', :'groupID', :'eventCategoryID', jsonb_build_object(
+    'payment_currency_code', 'USD',
+    'published', true,
+    'published_at', current_timestamp,
+    'starts_at', current_timestamp + interval '1 day'
+));
+
+-- Canceled event used to preserve attendance backed by a replacement purchase
+select fx_event(:'replacementRecoveryEventID', :'groupID', :'eventCategoryID', jsonb_build_object(
+    'canceled', true,
+    'payment_currency_code', 'USD',
+    'published', true,
+    'published_at', current_timestamp,
+    'starts_at', current_timestamp + interval '1 day'
+));
+
+-- Ticket type
+select fx_event_ticket_type(:'eventTicketTypeID', :'eventID', jsonb_build_object(
+    'seats_total', 10,
+    'title', 'General admission'
+));
+
+-- Full active tier whose recovery completion releases the queued seat
+select fx_event_ticket_type(:'activeRecoveryTicketTypeID', :'activeRecoveryEventID', jsonb_build_object(
+    'seats_total', 1,
+    'title', 'Recovery admission'
+));
+
+-- Ticket type shared by the original and replacement purchases
+select fx_event_ticket_type(:'replacementRecoveryTicketTypeID', :'replacementRecoveryEventID', jsonb_build_object(
+    'seats_total', 10,
+    'title', 'Replacement recovery admission'
+));
+
+-- Price window
+select fx_event_ticket_price_window(:'priceWindowID', :'eventTicketTypeID', jsonb_build_object('amount_minor', 2500));
+
+-- Current price used to snapshot the promoted recovery offer
+select fx_event_ticket_price_window(:'activeRecoveryPriceWindowID', :'activeRecoveryTicketTypeID', jsonb_build_object('amount_minor', 2500));
+
+-- Current paid price for replacement-purchase recovery
+select fx_event_ticket_price_window(:'replacementRecoveryPriceWindowID', :'replacementRecoveryTicketTypeID', jsonb_build_object('amount_minor', 2500));
+
+-- App-composed notification payload handed to atomic recovery completion
+create temporary table refund_recovery_test_data (
+    notification_template_data jsonb not null
+);
+
+insert into refund_recovery_test_data
+values (
+    jsonb_build_object(
+        'event', jsonb_build_object('event_id', :'eventID'::text),
+        'link', 'https://example.test/complete-refund-recovery-community/group/complete-refund-recovery-group/event/complete-refund-recovery-event',
+        'theme', (select theme::jsonb from site limit 1)
+    )
+);
+
+-- Discount reservation released when the organizer recovery completes
+insert into event_discount_code (
+    event_discount_code_id,
+    amount_minor,
+    available,
+    available_override_active,
+    code,
+    event_id,
+    kind,
+    title
+) values (
+    :'discountCodeID',
+    500,
+    0,
+    true,
+    'SAVE5',
+    :'eventID',
+    'fixed_amount',
+    'Save 5'
+);
+
+-- Discount reservation released when attendance cancellation recovery completes
+insert into event_discount_code (
+    event_discount_code_id,
+    amount_minor,
+    available,
+    available_override_active,
+    code,
+    event_id,
+    kind,
+    title
+) values (
+    :'attendanceCancellationDiscountCodeID',
+    500,
+    0,
+    true,
+    'ATTEND5',
+    :'eventID',
+    'fixed_amount',
+    'Attendance cancellation discount'
+);
+
+-- Discount reservation released when event cancellation recovery completes
+insert into event_discount_code (
+    event_discount_code_id,
+    amount_minor,
+    available,
+    available_override_active,
+    code,
+    event_id,
+    kind,
+    title
+) values (
+    :'eventCancellationDiscountCodeID',
+    500,
+    0,
+    true,
+    'EVENT5',
+    :'eventID',
+    'fixed_amount',
+    'Event cancellation discount'
+);
+
+-- Purchase awaiting recovery
+insert into event_purchase (
+    event_purchase_id,
+    amount_minor,
+    currency_code,
+    discount_amount_minor,
+    discount_code,
+    event_discount_code_id,
+    event_id,
+    event_ticket_type_id,
+    status,
+    ticket_title,
+    user_id,
+
+    refunded_at,
+
+    charge_model,
+    connected_seller_id,
+    final_platform_fee_amount_minor,
+    payment_provider_id,
+    provider_charge_id,
+    provider_checkout_session_id,
+    provider_object_account_id,
+    provider_payment_reference,
+    provider_total_minor,
+    seller_snapshot,
+    subtotal_excluding_tax_minor,
+    tax_amount_minor,
+    tax_behavior,
+    tax_calculation_mode,
+    tax_classification,
+    venue_snapshot
+)
+select
+    fixtures.event_purchase_id::uuid,
+    fixtures.amount_minor,
+    fixtures.currency_code,
+    fixtures.discount_amount_minor,
+    fixtures.discount_code,
+    fixtures.event_discount_code_id::uuid,
+    fixtures.event_id::uuid,
+    fixtures.event_ticket_type_id::uuid,
+    fixtures.status,
+    fixtures.ticket_title,
+    fixtures.user_id::uuid,
+    fixtures.refunded_at,
+
+    'direct-charge',
+    'acct_refunds',
+    0,
+    'stripe',
+    'ch_' || fixtures.event_purchase_id,
+    'cs_' || fixtures.event_purchase_id,
+    'acct_refunds',
+    'pi_' || fixtures.event_purchase_id,
+    fixtures.amount_minor,
+    '{"connected_account_id":"acct_refunds","display_name":"Sponsor","provider":"stripe"}'::jsonb,
+    fixtures.amount_minor,
+    0,
+    'inclusive',
+    'manual',
+    'professional-event-admission',
+    '{}'::jsonb
+from (values (
+    :'purchaseID',
+    2500,
+    'USD',
+    0,
+    null,
+    null,
+    :'eventID',
+    :'eventTicketTypeID',
+    'refund-recovery-pending',
+    'General admission',
+    :'userID',
+
+    current_timestamp
+), (
+    :'attendanceCancellationPurchaseID',
+    2000,
+    'USD',
+    500,
+    'ATTEND5',
+    :'attendanceCancellationDiscountCodeID',
+    :'eventID',
+    :'eventTicketTypeID',
+    'refund-requested',
+    'General admission',
+    :'attendanceCancellationUserID',
+
+    null
+), (
+    :'eventCancellationPurchaseID',
+    2000,
+    'USD',
+    500,
+    'EVENT5',
+    :'eventCancellationDiscountCodeID',
+    :'eventID',
+    :'eventTicketTypeID',
+    'refund-pending',
+    'General admission',
+    :'eventCancellationUserID',
+
+    null
+), (
+    :'automaticPurchaseID',
+    2500,
+    'USD',
+    0,
+    null,
+    null,
+    :'eventID',
+    :'eventTicketTypeID',
+    'refund-pending',
+    'General admission',
+    :'automaticUserID',
+
+    null
+), (
+    :'invalidPurchaseID',
+    2500,
+    'USD',
+    0,
+    null,
+    null,
+    :'eventID',
+    :'eventTicketTypeID',
+    'completed',
+    'General admission',
+    :'invalidUserID',
+
+    null
+), (
+    :'nonterminalPurchaseID',
+    2500,
+    'USD',
+    0,
+    null,
+    null,
+    :'eventID',
+    :'eventTicketTypeID',
+    'refund-pending',
+    'General admission',
+    :'nonterminalUserID',
+
+    null
+), (
+    :'organizerPurchaseID',
+    2000,
+    'USD',
+    500,
+    'SAVE5',
+    :'discountCodeID',
+    :'eventID',
+    :'eventTicketTypeID',
+    'refund-pending',
+    'General admission',
+    :'organizerUserID',
+
+    null
+), (
+    :'replacementRecoveryOriginalPurchaseID',
+    2500,
+    'USD',
+    0,
+    null,
+    null,
+    :'replacementRecoveryEventID',
+    :'replacementRecoveryTicketTypeID',
+    'refund-pending',
+    'Replacement recovery admission',
+    :'replacementRecoveryUserID',
+
+    null
+), (
+    :'replacementRecoveryReplacementPurchaseID',
+    2500,
+    'USD',
+    0,
+    null,
+    null,
+    :'replacementRecoveryEventID',
+    :'replacementRecoveryTicketTypeID',
+    'completed',
+    'Replacement recovery admission',
+    :'replacementRecoveryUserID',
+
+    null
+), (
+    :'unpinnedPurchaseID',
+    2500,
+    'USD',
+    0,
+    null,
+    null,
+    :'eventID',
+    :'eventTicketTypeID',
+    'refund-pending',
+    'General admission',
+    :'unpinnedUserID',
+
+    null
+)) as fixtures (
+    event_purchase_id,
+    amount_minor,
+    currency_code,
+    discount_amount_minor,
+    discount_code,
+    event_discount_code_id,
+    event_id,
+    event_ticket_type_id,
+    status,
+    ticket_title,
+    user_id,
+    refunded_at
+);
+
+-- Recoverable purchase currently occupying the active tier
+insert into event_purchase (
+    amount_minor,
+    currency_code,
+    event_id,
+    event_purchase_id,
+    event_ticket_type_id,
+    refunded_at,
+    status,
+    ticket_title,
+    user_id,
+
+    charge_model,
+    connected_seller_id,
+    final_platform_fee_amount_minor,
+    payment_provider_id,
+    provider_charge_id,
+    provider_checkout_session_id,
+    provider_object_account_id,
+    provider_payment_reference,
+    provider_total_minor,
+    seller_snapshot,
+    subtotal_excluding_tax_minor,
+    tax_amount_minor,
+    tax_behavior,
+    tax_calculation_mode,
+    tax_classification,
+    venue_snapshot
+) values (
+    2500,
+    'USD',
+    :'activeRecoveryEventID',
+    :'activeRecoveryPurchaseID',
+    :'activeRecoveryTicketTypeID',
+    current_timestamp,
+    'refund-recovery-pending',
+    'Recovery admission',
+    :'activeRecoveryUserID',
+    'direct-charge', 'acct_refunds', 0, 'stripe', 'ch_active_recovery',
+    'cs_active_recovery', 'acct_refunds', 'pi_active_recovery', 2500,
+    '{"connected_account_id":"acct_refunds","display_name":"Sponsor","provider":"stripe"}'::jsonb,
+    2500, 0, 'inclusive', 'manual', 'professional-event-admission', '{}'::jsonb
+);
+
+-- FIFO queue waiting for active-tier recovery to release capacity
+insert into event_waitlist (
+    created_at,
+    event_id,
+    event_ticket_type_id,
+    user_id
+) values (
+    current_timestamp,
+    :'activeRecoveryEventID',
+    :'activeRecoveryTicketTypeID',
+    :'activeRecoveryQueueUserID'
+);
+
+-- Refund requests awaiting external recovery
+insert into event_refund_request (
+    event_refund_request_id,
+    event_purchase_id,
+    requested_by_user_id,
+    status
+) values (
+    :'attendanceCancellationRefundRequestID',
+    :'attendanceCancellationPurchaseID',
+    :'actorUserID',
+    'approving'
+), (
+    :'eventCancellationRefundRequestID',
+    :'eventCancellationPurchaseID',
+    :'eventCancellationUserID',
+    'approving'
+), (
+    :'organizerRefundRequestID',
+    :'organizerPurchaseID',
+    :'organizerUserID',
+    'approving'
+), (
+    :'replacementRecoveryRefundRequestID',
+    :'replacementRecoveryOriginalPurchaseID',
+    :'actorUserID',
+    'approving'
+);
+
+-- Confirmed attendees exercise automatic preservation and organizer release
+insert into event_attendee (event_id, user_id)
+values
+    (:'eventID', :'automaticUserID'),
+    (:'eventID', :'organizerUserID'),
+    (:'replacementRecoveryEventID', :'replacementRecoveryUserID');
+
+-- Checked-in attendance retained until attendance cancellation recovery completes
+insert into event_attendee (
+    checked_in,
+    checked_in_at,
+    event_id,
+    user_id
+) values (
+    true,
+    current_timestamp,
+    :'eventID',
+    :'attendanceCancellationUserID'
+);
+
+-- Attendance already canceled when event-cancellation recovery begins
+insert into event_attendee (
+    attendance_canceled_at,
+    attendance_canceled_by_user_id,
+    event_id,
+    status,
+    user_id
+) values (
+    current_timestamp,
+    :'actorUserID',
+    :'eventID',
+    'attendance-canceled',
+    :'eventCancellationUserID'
+);
+
+-- Failed payment jobs for terminal provider refunds awaiting operator recovery
+insert into payment_job (
+    payment_job_id, event_purchase_id, failure_message, idempotency_key,
+    kind, payment_provider_id, status
+) values
+    (:'activeRecoveryJobID', :'activeRecoveryPurchaseID', 'destination account is closed: re_active_failed', 'event-purchase-refund-active-recovery-job', 'event-purchase-refund', 'stripe', 'failed'),
+    (:'attendanceCancellationJobID', :'attendanceCancellationPurchaseID', 'provider refund failed: re_attendance_cancellation_failed', 'event-purchase-refund-attendance-cancellation-recovery-job', 'event-purchase-refund', 'stripe', 'failed'),
+    (:'automaticJobID', :'automaticPurchaseID', 'provider refund failed: re_automatic_failed', 'event-purchase-refund-automatic-recovery-job', 'event-purchase-refund', 'stripe', 'failed'),
+    (:'eventCancellationJobID', :'eventCancellationPurchaseID', 'provider refund failed: re_event_cancellation_failed', 'event-purchase-refund-event-cancellation-recovery-job', 'event-purchase-refund', 'stripe', 'failed'),
+    (:'invalidJobID', :'invalidPurchaseID', 'provider refund failed: re_invalid_failed', 'event-purchase-refund-invalid-recovery-job', 'event-purchase-refund', 'stripe', 'failed'),
+    (:'nonterminalJobID', :'nonterminalPurchaseID', 'provider refund failed: re_nonterminal_failed', 'event-purchase-refund-nonterminal-recovery-job', 'event-purchase-refund', 'stripe', 'failed'),
+    (:'organizerJobID', :'organizerPurchaseID', 'provider refund failed: re_organizer_failed', 'event-purchase-refund-organizer-recovery-job', 'event-purchase-refund', 'stripe', 'failed'),
+    (:'refundJobID', :'purchaseID', 'destination account is closed: re_failed_123', 'event-purchase-refund-recovery-completion-job', 'event-purchase-refund', 'stripe', 'failed'),
+    (:'replacementRecoveryJobID', :'replacementRecoveryOriginalPurchaseID', 'provider refund failed: re_replacement_recovery_failed', 'event-purchase-refund-replacement-recovery-job', 'event-purchase-refund', 'stripe', 'failed'),
+    (:'unpinnedJobID', :'unpinnedPurchaseID', 'provider request failed before returning an id', 'event-purchase-refund-unpinned-recovery-job', 'event-purchase-refund', 'stripe', 'failed');
+
+-- Terminal provider refunds in each supported or invalid local state
+insert into event_purchase_refund (
+    event_purchase_refund_id,
+    amount_minor,
+    currency_code,
+    event_purchase_id,
+    kind,
+    payment_job_id,
+    payment_provider_id,
+    status,
+    terminal_failure,
+
+    event_refund_request_id,
+    finalized_at,
+    provider_refund_id
+) values (
+    :'refundID',
+    2500,
+    'USD',
+    :'purchaseID',
+    'automatic-unfulfillable-checkout',
+    :'refundJobID',
+    'stripe',
+    'provider-failed',
+    true,
+
+    null,
+    current_timestamp,
+    're_failed_123'
+), (
+    :'eventCancellationRefundID',
+    2000,
+    'USD',
+    :'eventCancellationPurchaseID',
+    'event-cancellation',
+    :'eventCancellationJobID',
+    'stripe',
+    'provider-failed',
+    true,
+
+    :'eventCancellationRefundRequestID',
+    null,
+    're_event_cancellation_failed'
+), (
+    :'automaticRefundID',
+    2500,
+    'USD',
+    :'automaticPurchaseID',
+    'automatic-unfulfillable-checkout',
+    :'automaticJobID',
+    'stripe',
+    'provider-failed',
+    true,
+
+    null,
+    null,
+    're_automatic_failed'
+), (
+    :'invalidRefundID',
+    2500,
+    'USD',
+    :'invalidPurchaseID',
+    'automatic-unfulfillable-checkout',
+    :'invalidJobID',
+    'stripe',
+    'provider-failed',
+    true,
+
+    null,
+    null,
+    're_invalid_failed'
+), (
+    :'nonterminalRefundID',
+    2500,
+    'USD',
+    :'nonterminalPurchaseID',
+    'automatic-unfulfillable-checkout',
+    :'nonterminalJobID',
+    'stripe',
+    'provider-failed',
+    false,
+
+    null,
+    null,
+    're_nonterminal_failed'
+), (
+    :'organizerRefundID',
+    2000,
+    'USD',
+    :'organizerPurchaseID',
+    'refund-request-approval',
+    :'organizerJobID',
+    'stripe',
+    'provider-failed',
+    true,
+
+    :'organizerRefundRequestID',
+    null,
+    're_organizer_failed'
+), (
+    :'unpinnedRefundID',
+    2500,
+    'USD',
+    :'unpinnedPurchaseID',
+    'automatic-unfulfillable-checkout',
+    :'unpinnedJobID',
+    'stripe',
+    'provider-failed',
+    false,
+
+    null,
+    null,
+    null
+);
+
+-- Terminal attendance cancellation refunds awaiting operator recovery
+insert into event_purchase_refund (
+    event_purchase_refund_id,
+    amount_minor,
+    currency_code,
+    event_purchase_id,
+    kind,
+    payment_job_id,
+    payment_provider_id,
+    status,
+    terminal_failure,
+
+    event_refund_request_id,
+    initiated_by_user_id,
+    provider_refund_id
+) values
+    (
+        :'attendanceCancellationRefundID',
+        2000,
+        'USD',
+        :'attendanceCancellationPurchaseID',
+        'attendance-cancellation',
+        :'attendanceCancellationJobID',
+        'stripe',
+        'provider-failed',
+        true,
+
+        :'attendanceCancellationRefundRequestID',
+        :'attendanceCancellationInitiatorID',
+        're_attendance_cancellation_failed'
+    ),
+    (
+        :'replacementRecoveryRefundID',
+        2500,
+        'USD',
+        :'replacementRecoveryOriginalPurchaseID',
+        'attendance-cancellation',
+        :'replacementRecoveryJobID',
+        'stripe',
+        'provider-failed',
+        true,
+
+        :'replacementRecoveryRefundRequestID',
+        :'actorUserID',
+        're_replacement_recovery_failed'
+    );
+
+-- Terminal provider failure awaiting operator recovery on the active event
+insert into event_purchase_refund (
+    amount_minor,
+    currency_code,
+    event_purchase_id,
+    event_purchase_refund_id,
+    finalized_at,
+    kind,
+    payment_job_id,
+    payment_provider_id,
+    provider_refund_id,
+    status,
+    terminal_failure
+) values (
+    2500,
+    'USD',
+    :'activeRecoveryPurchaseID',
+    :'activeRecoveryRefundID',
+    current_timestamp,
+    'automatic-unfulfillable-checkout',
+    :'activeRecoveryJobID',
+    'stripe',
+    're_active_failed',
+    'provider-failed',
+    true
+);
+
+-- ============================================================================
+-- TESTS
+-- ============================================================================
+
+-- Should reject contradictory provider-pending finalization state
+select throws_ok(
+    format($$
+        update event_purchase_refund
+        set status = 'provider-pending'
+        where event_purchase_refund_id = %L::uuid
+    $$, :'refundID'),
+    '23514',
+    null,
+    'Should reject contradictory provider-pending finalization state'
+);
+
+-- Should reject partial recovery evidence
+select throws_ok(
+    format($$
+        update payment_job
+        set recovery_reference = 'bank-transfer-123'
+        where payment_job_id = %L::uuid
+    $$, :'refundJobID'),
+    '23514',
+    null,
+    'Should reject partial recovery evidence'
+);
+
+-- Should require an operator
+select throws_ok(
+    format($$select complete_event_purchase_refund_recovery(
+        null,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-123',
+        'Verified by finance',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'groupID', :'refundID'),
+    'actor user id is required',
+    'Should require an operator'
+);
+
+-- Should require an external recovery reference
+select throws_ok(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        ' ',
+        'Verified by finance',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'refundID'),
+    'OCG01',
+    'recovery reference is required',
+    'Should require an external recovery reference'
+);
+
+-- Should require a recovery note
+select throws_ok(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-123',
+        ' ',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'refundID'),
+    'OCG01',
+    'recovery note is required',
+    'Should require a recovery note'
+);
+
+-- Should reject an unknown durable refund
+select throws_ok(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-123',
+        'Verified by finance',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'missingRefundID'),
+    'OCG01',
+    'event purchase refund not found',
+    'Should reject an unknown durable refund'
+);
+
+-- Should reject a terminal refund outside a recoverable purchase state
+select throws_ok(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-invalid',
+        'Invalid local state',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'invalidRefundID'),
+    'OCG01',
+    'recoverable event purchase refund not found',
+    'Should reject a terminal refund outside a recoverable purchase state'
+);
+
+-- Should reject a terminal refund without a pinned provider attempt
+select throws_ok(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-unpinned',
+        'Provider attempt is uncertain',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'unpinnedRefundID'),
+    'OCG01',
+    'recoverable event purchase refund not found',
+    'Should reject a terminal refund without a pinned provider attempt'
+);
+
+-- Should reject a pinned provider result that is not terminal
+select throws_ok(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-nonterminal',
+        'Provider result remains retryable',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'nonterminalRefundID'),
+    'OCG01',
+    'recoverable event purchase refund not found',
+    'Should reject a pinned provider result that is not terminal'
+);
+
+-- Should preserve a nonterminal provider failure after rejected recovery
+select results_eq(
+    format($$
+        select ep.status, pj.recovery_completed_at, epr.terminal_failure
+        from event_purchase ep
+        join event_purchase_refund epr using (event_purchase_id)
+        join payment_job pj on pj.payment_job_id = epr.payment_job_id
+        where epr.event_purchase_refund_id = %L::uuid
+    $$, :'nonterminalRefundID'),
+    $$ values ('refund-pending'::text, null::timestamptz, false) $$,
+    'Should preserve a nonterminal provider failure after rejected recovery'
+);
+
+-- Should preserve invalid states without appending audit entries
+select results_eq(
+    format($$
+        select
+            invalid_ep.status,
+            invalid_pj.recovery_completed_at is null,
+            unpinned_ep.status,
+            unpinned_pj.recovery_completed_at is null,
+            (
+                select count(*)::int
+                from audit_log
+                where action = 'event_refund_recovery_completed'
+            )
+        from event_purchase invalid_ep
+        join event_purchase_refund invalid_epr using (event_purchase_id)
+        join payment_job invalid_pj
+            on invalid_pj.payment_job_id = invalid_epr.payment_job_id
+        cross join event_purchase unpinned_ep
+        join event_purchase_refund unpinned_epr
+            on unpinned_epr.event_purchase_id = unpinned_ep.event_purchase_id
+        join payment_job unpinned_pj
+            on unpinned_pj.payment_job_id = unpinned_epr.payment_job_id
+        where invalid_ep.event_purchase_id = %L::uuid
+        and unpinned_ep.event_purchase_id = %L::uuid
+    $$, :'invalidPurchaseID', :'unpinnedPurchaseID'),
+    $$ values (
+        'completed'::text,
+        true,
+        'refund-pending'::text,
+        true,
+        0::int
+    ) $$,
+    'Should preserve invalid states without appending audit entries'
+);
+
+-- Should complete active-event recovery with configured provider reconciliation
+select results_eq(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-active',
+        'Verified active-event refund',
+        (select notification_template_data from refund_recovery_test_data),
+        'stripe'
+    )$$, :'actorUserID', :'groupID', :'activeRecoveryRefundID'),
+    format($$ values (jsonb_build_object(
+        'event_id', %L::uuid,
+        'recovered_now', true,
+        'user_id', %L::uuid
+    )) $$, :'activeRecoveryEventID', :'activeRecoveryUserID'),
+    'Should complete active-event recovery'
+);
+
+-- Should offer the released active-tier seat to the FIFO queue head
+select is(
+    (
+        select jsonb_build_object(
+            'offer_status', (
+                select status
+                from admission_offer
+                where event_id = :'activeRecoveryEventID'::uuid
+                and user_id = :'activeRecoveryQueueUserID'::uuid
+            ),
+            'purchase_status', (
+                select status
+                from event_purchase
+                where event_purchase_id = :'activeRecoveryPurchaseID'::uuid
+            ),
+            'waitlist_count', (
+                select count(*)
+                from event_waitlist
+                where event_id = :'activeRecoveryEventID'::uuid
+            )
+        )
+    ),
+    '{"offer_status":"pending","purchase_status":"refunded","waitlist_count":0}'::jsonb,
+    'Should promote the queue after recovery releases capacity'
+);
+
+-- Should complete an externally resolved recovery
+select results_eq(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        ' bank-transfer-123 ',
+        ' Verified by finance ',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'refundID'),
+    format($$ values (jsonb_build_object(
+        'event_id', %L::uuid,
+        'recovered_now', true,
+        'user_id', %L::uuid
+    )) $$, :'eventID', :'userID'),
+    'Should complete an externally resolved recovery'
+);
+
+-- Should preserve provider failure and store normalized recovery evidence
+select results_eq(
+    format($$
+        select
+            epr.status,
+            pj.recovery_completed_at is not null,
+            pj.recovery_completed_by_user_id,
+            pj.recovery_note,
+            pj.recovery_reference,
+            ep.status,
+            ep.refunded_at is not null
+        from event_purchase_refund epr
+        join event_purchase ep using (event_purchase_id)
+        join payment_job pj on pj.payment_job_id = epr.payment_job_id
+        where epr.event_purchase_refund_id = %L::uuid
+    $$, :'refundID'),
+    format($$ values (
+        'provider-failed'::text,
+        true,
+        %L::uuid,
+        'Verified by finance'::text,
+        'bank-transfer-123'::text,
+        'refunded'::text,
+        true
+    ) $$, :'actorUserID'),
+    'Should preserve provider failure and store normalized recovery evidence'
+);
+
+-- Should append the expected event audit entry
+select results_eq(
+    format($$
+        select
+            action,
+            actor_user_id,
+            actor_username,
+            community_id,
+            details,
+            event_id,
+            group_id,
+            resource_id,
+            resource_type
+        from audit_log
+        where action = 'event_refund_recovery_completed'
+        and details->>'event_purchase_refund_id' = %L
+    $$, :'refundID'),
+    format($$ values (
+        'event_refund_recovery_completed'::text,
+        %L::uuid,
+        'recovery-operator'::text,
+        %L::uuid,
+        jsonb_build_object(
+            'event_purchase_id', %L::uuid,
+            'event_purchase_refund_id', %L::uuid,
+            'payment_job_id', %L::uuid,
+            'provider_refund_id', 're_failed_123',
+            'recovery_note', 'Verified by finance',
+            'recovery_reference', 'bank-transfer-123',
+            'user_id', %L::uuid
+        ),
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'event'::text
+    ) $$,
+        :'actorUserID',
+        :'communityID',
+        :'purchaseID',
+        :'refundID',
+        :'refundJobID',
+        :'userID',
+        :'eventID',
+        :'groupID',
+        :'eventID'
+    ),
+    'Should append the expected event audit entry'
+);
+
+-- Should treat the same completion as an idempotent retry
+select results_eq(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-123',
+        'Verified by finance',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'refundID'),
+    format($$ values (jsonb_build_object(
+        'event_id', %L::uuid,
+        'recovered_now', false,
+        'user_id', %L::uuid
+    )) $$, :'eventID', :'userID'),
+    'Should treat the same completion as an idempotent retry'
+);
+
+-- Should keep a single audit entry after an idempotent retry
+select is(
+    (
+        select count(*)
+        from audit_log
+        where action = 'event_refund_recovery_completed'
+        and details->>'event_purchase_refund_id' = :'refundID'
+    ),
+    1::bigint,
+    'Should keep a single audit entry after an idempotent retry'
+);
+
+-- Should reject conflicting recovery evidence
+select throws_ok(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-456',
+        'Different evidence',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'refundID'),
+    'OCG01',
+    'refund recovery already completed with different evidence',
+    'Should reject conflicting recovery evidence'
+);
+
+-- Should preserve the original evidence after a conflicting retry
+select results_eq(
+    format($$
+        select pj.recovery_note, pj.recovery_reference
+        from event_purchase_refund epr
+        join payment_job pj on pj.payment_job_id = epr.payment_job_id
+        where epr.event_purchase_refund_id = %L::uuid
+    $$, :'refundID'),
+    $$ values (
+        'Verified by finance'::text,
+        'bank-transfer-123'::text
+    ) $$,
+    'Should preserve the original evidence after a conflicting retry'
+);
+
+-- Should require app-composed notification data before local finalization
+select throws_ok(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-automatic',
+        'Verified automatic refund',
+        null
+    )$$, :'actorUserID', :'groupID', :'automaticRefundID'),
+    'refund notification template data is required',
+    'Should require app-composed notification data before local finalization'
+);
+
+-- Should complete a terminal automatic refund before local finalization
+select results_eq(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-automatic',
+        'Verified automatic refund',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'automaticRefundID'),
+    format($$ values (jsonb_build_object(
+        'event_id', %L::uuid,
+        'recovered_now', true,
+        'user_id', %L::uuid
+    )) $$, :'eventID', :'automaticUserID'),
+    'Should complete a terminal automatic refund before local finalization'
+);
+
+-- Should finalize the automatic refund while preserving its provider failure
+select results_eq(
+    format($$
+        select
+            epr.finalized_at is not null,
+            pj.recovery_reference,
+            epr.status,
+            ep.refunded_at is not null,
+            ep.status,
+            (
+                select count(*)::int
+                from event_attendee
+                where event_id = %L::uuid
+                and user_id = %L::uuid
+            )
+        from event_purchase_refund epr
+        join event_purchase ep using (event_purchase_id)
+        join payment_job pj on pj.payment_job_id = epr.payment_job_id
+        where epr.event_purchase_refund_id = %L::uuid
+    $$, :'eventID', :'automaticUserID', :'automaticRefundID'),
+    $$ values (
+        true,
+        'bank-transfer-automatic'::text,
+        'provider-failed'::text,
+        true,
+        'refunded'::text,
+        1::int
+    ) $$,
+    'Should finalize the automatic refund while preserving its provider failure and attendee'
+);
+
+-- Should complete attendance-cancellation recovery
+select results_eq(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-attendance-cancellation',
+        'Verified attendance cancellation refund',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'attendanceCancellationRefundID'),
+    format($$ values (jsonb_build_object(
+        'event_id', %L::uuid,
+        'recovered_now', true,
+        'user_id', %L::uuid
+    )) $$, :'eventID', :'attendanceCancellationUserID'),
+    'Should complete attendance-cancellation recovery'
+);
+
+-- Should finalize attendance, purchase, request, recovery, and notification state
+select results_eq(
+    format($$
+        select
+            ea.attendance_canceled_at is not null,
+            ea.attendance_canceled_by_user_id,
+            ea.checked_in,
+            ea.checked_in_at,
+            ea.status,
+            ep.refunded_at is not null,
+            ep.status,
+            epr.finalized_at is not null,
+            pj.recovery_completed_at is not null,
+            pj.recovery_completed_by_user_id,
+            epr.status,
+            err.review_note,
+            err.reviewed_by_user_id,
+            err.status,
+            (
+                select available
+                from event_discount_code
+                where event_discount_code_id = %L::uuid
+            ),
+            (
+                select count(*)
+                from notification n
+                where n.kind = 'event-refund-approved'
+                and n.user_id = %L::uuid
+            )
+        from event_purchase_refund epr
+        join event_purchase ep using (event_purchase_id)
+        join payment_job pj on pj.payment_job_id = epr.payment_job_id
+        join event_attendee ea
+            on ea.event_id = ep.event_id
+            and ea.user_id = ep.user_id
+        join event_refund_request err
+            on err.event_purchase_id = ep.event_purchase_id
+        where epr.event_purchase_refund_id = %L::uuid
+    $$,
+        :'attendanceCancellationDiscountCodeID',
+        :'attendanceCancellationUserID',
+        :'attendanceCancellationRefundID'
+    ),
+    format($$ values (
+        true,
+        %L::uuid,
+        false,
+        null::timestamptz,
+        'attendance-canceled'::text,
+        true,
+        'refunded'::text,
+        true,
+        true,
+        %L::uuid,
+        'provider-failed'::text,
+        null::text,
+        %L::uuid,
+        'approved'::text,
+        1,
+        1::bigint
+    ) $$,
+        :'attendanceCancellationInitiatorID',
+        :'actorUserID',
+        :'actorUserID'
+    ),
+    'Should finalize attendance, purchase, request, recovery, and notification state'
+);
+
+-- Should complete recovery without canceling replacement-backed attendance
+select results_eq(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-replacement-recovery',
+        'Verified refund with replacement purchase',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'replacementRecoveryRefundID'),
+    format($$ values (jsonb_build_object(
+        'event_id', %L::uuid,
+        'recovered_now', true,
+        'user_id', %L::uuid
+    )) $$, :'replacementRecoveryEventID', :'replacementRecoveryUserID'),
+    'Should complete recovery without canceling replacement-backed attendance'
+);
+
+-- Should preserve attendance and the active replacement purchase
+select results_eq(
+    format($$
+        select
+            ea.attendance_canceled_at is null,
+            ea.attendance_canceled_by_user_id,
+            ea.status,
+            original.refunded_at is not null,
+            original.status,
+            replacement.status,
+            epr.finalized_at is not null,
+            pj.recovery_completed_at is not null,
+            err.status
+        from event_attendee ea
+        join event_purchase original
+            on original.event_id = ea.event_id
+            and original.user_id = ea.user_id
+        join event_purchase_refund epr
+            on epr.event_purchase_id = original.event_purchase_id
+        join payment_job pj on pj.payment_job_id = epr.payment_job_id
+        join event_refund_request err
+            on err.event_purchase_id = original.event_purchase_id
+        join event_purchase replacement
+            on replacement.event_purchase_id = %L::uuid
+        where ea.event_id = %L::uuid
+        and ea.user_id = %L::uuid
+        and original.event_purchase_id = %L::uuid
+    $$,
+        :'replacementRecoveryReplacementPurchaseID',
+        :'replacementRecoveryEventID',
+        :'replacementRecoveryUserID',
+        :'replacementRecoveryOriginalPurchaseID'
+    ),
+    $$ values (
+        true,
+        null::uuid,
+        'confirmed'::text,
+        true,
+        'refunded'::text,
+        'completed'::text,
+        true,
+        true,
+        'approved'::text
+    ) $$,
+    'Should preserve attendance and the active replacement purchase'
+);
+
+-- Should complete a terminal organizer refund converted by event cancellation
+select results_eq(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-organizer',
+        'Verified organizer refund',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'organizerRefundID'),
+    format($$ values (jsonb_build_object(
+        'event_id', %L::uuid,
+        'recovered_now', true,
+        'user_id', %L::uuid
+    )) $$, :'eventID', :'organizerUserID'),
+    'Should complete a terminal organizer refund after event cancellation'
+);
+
+-- Should finalize the organizer request and release its attendee
+select results_eq(
+    format($$
+        select
+            epr.finalized_at is not null,
+            epr.status,
+            ep.refunded_at is not null,
+            ep.status,
+            err.review_note,
+            err.reviewed_at is not null,
+            err.reviewed_by_user_id,
+            err.status,
+            (
+                select available
+                from event_discount_code
+                where event_discount_code_id = %L::uuid
+            ),
+            (
+                select count(*)::int
+                from event_attendee
+                where event_id = %L::uuid
+                and user_id = %L::uuid
+                and status = 'attendance-canceled'
+            )
+        from event_purchase_refund epr
+        join event_purchase ep using (event_purchase_id)
+        join event_refund_request err
+            on err.event_purchase_id = ep.event_purchase_id
+        where epr.event_purchase_refund_id = %L::uuid
+    $$, :'discountCodeID', :'eventID', :'organizerUserID', :'organizerRefundID'),
+    format($$ values (
+        true,
+        'provider-failed'::text,
+        true,
+        'refunded'::text,
+        'Verified organizer refund'::text,
+        true,
+        %L::uuid,
+        'approved'::text,
+        1,
+        1::int
+    ) $$, :'actorUserID'),
+    'Should finalize the organizer request and preserve canceled attendee history'
+);
+
+-- Should complete a terminal event-cancellation refund before local finalization
+select results_eq(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-event-cancellation',
+        'Verified event cancellation refund',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'eventCancellationRefundID'),
+    format($$ values (jsonb_build_object(
+        'event_id', %L::uuid,
+        'recovered_now', true,
+        'user_id', %L::uuid
+    )) $$, :'eventID', :'eventCancellationUserID'),
+    'Should complete a terminal event-cancellation refund before local finalization'
+);
+
+-- Should finalize event-cancellation purchase and recovery state
+select results_eq(
+    format($$
+        select
+            ea.attendance_canceled_by_user_id,
+            ea.status,
+            ep.refunded_at is not null,
+            ep.status,
+            epr.finalized_at is not null,
+            pj.recovery_completed_at is not null,
+            pj.recovery_completed_by_user_id,
+            epr.status,
+            err.reviewed_at is not null,
+            err.reviewed_by_user_id,
+            err.status,
+            (
+                select available
+                from event_discount_code
+                where event_discount_code_id = %L::uuid
+            )
+        from event_purchase_refund epr
+        join event_purchase ep using (event_purchase_id)
+        join payment_job pj on pj.payment_job_id = epr.payment_job_id
+        join event_attendee ea
+            on ea.event_id = ep.event_id
+            and ea.user_id = ep.user_id
+        join event_refund_request err
+            on err.event_refund_request_id = epr.event_refund_request_id
+        where epr.event_purchase_refund_id = %L::uuid
+    $$, :'eventCancellationDiscountCodeID', :'eventCancellationRefundID'),
+    format($$ values (
+        %L::uuid,
+        'attendance-canceled'::text,
+        true,
+        'refunded'::text,
+        true,
+        true,
+        %L::uuid,
+        'provider-failed'::text,
+        true,
+        %L::uuid,
+        'approved'::text,
+        1
+    ) $$, :'actorUserID', :'actorUserID', :'actorUserID'),
+    'Should finalize event cancellation request, purchase, discount, and recovery state'
+);
+
+-- Should enqueue one completion notification with the event context
+select results_eq(
+    format($$
+        select
+            n.kind,
+            n.user_id,
+            ntd.data->'event'->>'event_id',
+            ntd.data->>'link',
+            ntd.data->'theme'
+        from notification n
+        join notification_template_data ntd using (notification_template_data_id)
+        where n.kind = 'event-refund-approved'
+        and n.user_id = %L::uuid
+    $$, :'eventCancellationUserID'),
+    format($$
+        select
+            'event-refund-approved'::text,
+            %L::uuid,
+            %L::text,
+            'https://example.test/complete-refund-recovery-community/group/complete-refund-recovery-group/event/complete-refund-recovery-event'::text,
+            (select theme::jsonb from site limit 1)
+    $$, :'eventCancellationUserID', :'eventID'),
+    'Should enqueue one completion notification with the event context'
+);
+
+-- Should treat the event-cancellation recovery replay as idempotent
+select results_eq(
+    format($$select complete_event_purchase_refund_recovery(
+        %L::uuid,
+        %L::uuid,
+        %L::uuid,
+        'bank-transfer-event-cancellation',
+        'Verified event cancellation refund',
+        (select notification_template_data from refund_recovery_test_data)
+    )$$, :'actorUserID', :'groupID', :'eventCancellationRefundID'),
+    format($$ values (jsonb_build_object(
+        'event_id', %L::uuid,
+        'recovered_now', false,
+        'user_id', %L::uuid
+    )) $$, :'eventID', :'eventCancellationUserID'),
+    'Should treat the event-cancellation recovery replay as idempotent'
+);
+
+-- Should keep one completion notification after the recovery replay
+select is(
+    (
+        select count(*)
+        from notification
+        where kind = 'event-refund-approved'
+        and user_id = :'eventCancellationUserID'
+    ),
+    1::bigint,
+    'Should keep one completion notification after the recovery replay'
+);
+
+-- ============================================================================
+-- CLEANUP
+-- ============================================================================
+
+select * from finish();
+rollback;

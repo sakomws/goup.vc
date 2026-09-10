@@ -9,14 +9,21 @@ select plan(2);
 -- VARIABLES
 -- ============================================================================
 
+<<<<<<<< HEAD:database/tests/functions/common/list_redirect_alliances.sql
 \set activeAllianceID '0c130000-0000-0000-0000-000000000001'
 \set fallbackAllianceID '0c130000-0000-0000-0000-000000000002'
 \set inactiveAllianceID '0c130000-0000-0000-0000-000000000003'
+========
+\set activeCommunityID '0c000000-0000-0000-0000-000000000001'
+\set fallbackCommunityID '0c000000-0000-0000-0000-000000000002'
+\set inactiveCommunityID '0c000000-0000-0000-0000-000000000003'
+>>>>>>>> 14b0d0c1 (Database layer hardening (#675)):database/tests/functions/redirector/list_redirect_communities.sql
 
 -- ============================================================================
 -- SEED DATA
 -- ============================================================================
 
+<<<<<<<< HEAD:database/tests/functions/common/list_redirect_alliances.sql
 -- Alliances
 insert into alliance (
     alliance_id,
@@ -51,6 +58,15 @@ insert into alliance (
     'https://example.com/banner-inactive.png',
     'https://example.com/logo-inactive.png'
 );
+========
+-- Communities
+select fx_community(:'activeCommunityID', jsonb_build_object('name', 'active-community-list-redirect-communities'));
+select fx_community(:'fallbackCommunityID', jsonb_build_object('name', 'fallback-community'));
+select fx_community(:'inactiveCommunityID', jsonb_build_object(
+    'active', false,
+    'name', 'inactive-community-list-redirect-communities'
+));
+>>>>>>>> 14b0d0c1 (Database layer hardening (#675)):database/tests/functions/redirector/list_redirect_communities.sql
 
 update alliance
 set active = false
@@ -76,8 +92,13 @@ select is(
         from list_redirect_alliances() r
     ),
     '[
+<<<<<<<< HEAD:database/tests/functions/common/list_redirect_alliances.sql
         {"alliance_name": "active-alliance", "base_legacy_url": null},
         {"alliance_name": "fallback-alliance", "base_legacy_url": "https://legacy.example.org"}
+========
+        {"community_name": "active-community-list-redirect-communities", "base_legacy_url": null},
+        {"community_name": "fallback-community", "base_legacy_url": "https://legacy.example.org"}
+>>>>>>>> 14b0d0c1 (Database layer hardening (#675)):database/tests/functions/redirector/list_redirect_communities.sql
     ]'::jsonb,
     'Should return active alliances ordered by alliance name'
 );
@@ -86,8 +107,13 @@ select is(
 select ok(
     not exists(
         select 1
+<<<<<<<< HEAD:database/tests/functions/common/list_redirect_alliances.sql
         from list_redirect_alliances()
         where alliance_name = 'inactive-alliance'
+========
+        from list_redirect_communities()
+        where community_name = 'inactive-community-list-redirect-communities'
+>>>>>>>> 14b0d0c1 (Database layer hardening (#675)):database/tests/functions/redirector/list_redirect_communities.sql
     ),
     'Should exclude inactive alliances'
 );

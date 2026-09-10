@@ -17,7 +17,7 @@ begin
     and sp.user_id = p_actor_user_id;
 
     if not found then
-        raise exception 'session proposal not found';
+        raise exception 'session proposal not found' using errcode = 'OCG01';
     end if;
 
     -- Parse incoming co-speaker
@@ -30,7 +30,7 @@ begin
     where cs.session_proposal_id = p_session_proposal_id;
 
     if found then
-        raise exception 'session proposal linked to a session';
+        raise exception 'session proposal linked to a session' using errcode = 'OCG01';
     end if;
 
     -- Ensure proposals with submissions keep the same co-speaker
@@ -40,7 +40,7 @@ begin
         where cs.session_proposal_id = p_session_proposal_id;
 
         if found then
-            raise exception 'session proposal with submissions cannot change co-speaker';
+            raise exception 'session proposal with submissions cannot change co-speaker' using errcode = 'OCG01';
         end if;
     end if;
 
@@ -64,7 +64,7 @@ begin
     and user_id = p_actor_user_id;
 
     if not found then
-        raise exception 'session proposal not found';
+        raise exception 'session proposal not found' using errcode = 'OCG01';
     end if;
 
     -- Track the session proposal update

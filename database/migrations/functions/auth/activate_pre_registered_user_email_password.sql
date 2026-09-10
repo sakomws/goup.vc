@@ -51,7 +51,7 @@ begin
 
     -- Reject placeholders that were activated concurrently
     if not found then
-        raise exception 'pre-registered user not found';
+        raise exception 'pre-registered user not found' using errcode = 'OCG01';
     end if;
 
     -- Create/refresh email verification code for the activated user

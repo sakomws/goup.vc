@@ -84,6 +84,7 @@ select has_table('notification');
 select has_table('notification_attachment');
 select has_table('notification_kind');
 select has_table('notification_template_data');
+select has_table('payment_job');
 select has_table('payment_provider');
 select has_table('region');
 select has_table('session');
