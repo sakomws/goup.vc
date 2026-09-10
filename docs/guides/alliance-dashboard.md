@@ -43,6 +43,8 @@ Main areas:
 - [Analytics](/dashboard/alliance?tab=analytics ':ignore'): alliance growth trends and volume metrics.
 - [Groups](/dashboard/alliance?tab=groups ':ignore'): group creation, maintenance, activation state,
   and lifecycle transitions.
+- [GTM](/dashboard/alliance?tab=gtm ':ignore'): alliance-wide lead pipeline. Agents draft outreach
+  and stage recommendations; organizers approve every move.
 - [Logs](/dashboard/alliance?tab=logs ':ignore'): read-only audit trail for alliance dashboard actions.
 
 ![Alliance dashboard analytics](../screenshots/dashboard-alliance-analytics.png)

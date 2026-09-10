@@ -181,6 +181,11 @@ through the standard `tools/list` method.
 - `goup_search_landscape`: search published landscape entries.
 - `goup_search_wiki`: list or search wiki feed sources.
 - `goup_submit_talk`: create and submit a talk proposal to an open event CFS.
+- `goup_search_leads`: list or search GTM leads for an alliance.
+- `goup_create_lead`: create a GTM lead.
+- `goup_transition_lead`: move a GTM lead to another stage.
+- `goup_run_gtm_agent`: create a pending GTM agent draft.
+- `goup_review_gtm_draft`: approve or reject a pending GTM agent draft.
 
 ## Landscape link health check
 

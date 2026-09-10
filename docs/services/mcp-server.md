@@ -89,6 +89,11 @@ Each entry in `tools.json` has either an `output.text` field (static template, r
 | `goup_create_github_project` | action | Create a GitHub project landscape entry |
 | `goup_search_wiki` | action | Search curated RSS wiki sources |
 | `goup_submit_talk` | action | Submit a CFS/talk proposal |
+| `goup_search_leads` | action | Search GTM leads |
+| `goup_create_lead` | action | Create a GTM lead |
+| `goup_transition_lead` | action | Transition a GTM lead |
+| `goup_run_gtm_agent` | action | Create a pending GTM agent draft |
+| `goup_review_gtm_draft` | action | Approve or reject a GTM draft |
 
 Static tools return shell command strings (useful for AI-assisted deployment workflows). Action tools require network access to `ocg-server` or direct database access.
 

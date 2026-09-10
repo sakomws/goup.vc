@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(166);
+select plan(169);
 
 -- ============================================================================
 -- TESTS
@@ -57,6 +57,9 @@ select has_pk('group_sponsor');
 select has_pk('group_store_item');
 select has_pk('group_team');
 select hasnt_pk('group_views');
+select has_pk('gtm_agent_draft');
+select has_pk('gtm_lead');
+select has_pk('gtm_lead_activity');
 select has_pk('images');
 select has_pk('legacy_event_host');
 select has_pk('legacy_event_speaker');

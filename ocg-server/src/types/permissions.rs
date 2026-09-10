@@ -5,6 +5,8 @@
 pub(crate) enum AlliancePermission {
     /// Permission to manage groups in a alliance.
     GroupsWrite,
+    /// Permission to manage the alliance GTM pipeline.
+    GtmWrite,
     /// Permission to read the alliance dashboard.
     Read,
     /// Permission to manage alliance settings.
@@ -20,6 +22,7 @@ impl AlliancePermission {
     pub(crate) const fn as_str(self) -> &'static str {
         match self {
             Self::GroupsWrite => "alliance.groups.write",
+            Self::GtmWrite => "alliance.gtm.write",
             Self::Read => "alliance.read",
             Self::SettingsWrite => "alliance.settings.write",
             Self::TaxonomyWrite => "alliance.taxonomy.write",
@@ -39,6 +42,8 @@ impl PartialEq<AlliancePermission> for &AlliancePermission {
 pub(crate) enum GroupPermission {
     /// Permission to manage events in a group.
     EventsWrite,
+    /// Permission to manage the group GTM pipeline.
+    GtmWrite,
     /// Permission to manage group members.
     MembersWrite,
     /// Permission to read the group dashboard.
@@ -56,6 +61,7 @@ impl GroupPermission {
     pub(crate) const fn as_str(self) -> &'static str {
         match self {
             Self::EventsWrite => "group.events.write",
+            Self::GtmWrite => "group.gtm.write",
             Self::MembersWrite => "group.members.write",
             Self::Read => "group.read",
             Self::SettingsWrite => "group.settings.write",

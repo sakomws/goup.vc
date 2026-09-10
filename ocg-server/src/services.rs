@@ -2,6 +2,8 @@
 
 /// Scheduled external event discovery.
 pub(crate) mod event_discovery;
+/// Draft-only GTM agents for alliance and group leads.
+pub(crate) mod gtm;
 /// Images service module.
 pub(crate) mod images;
 /// Scheduled global jobs discovery.

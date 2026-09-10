@@ -11,7 +11,7 @@ use tokio_postgres::types::{FromSql, Json, ToSql};
 use crate::db::{
     accelerator::DBAccelerator, activity_tracker::DBActivityTracker, alliance::DBAlliance,
     auth::DBAuth, common::DBCommon, dashboard::DBDashboard, event::DBEvent, group::DBGroup,
-    images::DBImages, jobs::DBJobs, landscape::DBLandscape, meetings::DBMeetings,
+    gtm::DBGtm, images::DBImages, jobs::DBJobs, landscape::DBLandscape, meetings::DBMeetings,
     mock_interviews::DBMockInterviews, notifications::DBNotifications, payments::DBPayments,
     site::DBSite,
 };
@@ -43,6 +43,9 @@ pub(crate) mod activity_tracker;
 
 /// Module containing database functionality for the group site.
 pub(crate) mod group;
+
+/// Module containing database functionality for the GTM pipeline.
+pub(crate) mod gtm;
 
 /// Module containing database functionality for storing images.
 pub(crate) mod images;
@@ -85,6 +88,7 @@ pub(crate) trait DBOperations:
     + DBDashboard
     + DBEvent
     + DBGroup
+    + DBGtm
     + DBImages
     + DBJobs
     + DBLandscape
@@ -107,6 +111,7 @@ impl<T> DBOperations for T where
         + DBDashboard
         + DBEvent
         + DBGroup
+        + DBGtm
         + DBImages
         + DBJobs
         + DBLandscape

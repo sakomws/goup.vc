@@ -31,6 +31,8 @@ Run this checklist once a week or before a major event.
 3. Review [Members](/dashboard/group?tab=members ':ignore') for new members or communication needs.
 4. Review [Team](/dashboard/group?tab=team ':ignore') to confirm at least two trusted organizers have admin coverage.
 5. Check [Analytics](/dashboard/group?tab=analytics ':ignore') for attendance and growth trends.
+5a. Review [GTM](/dashboard/group?tab=gtm ':ignore') for open leads, pending agent drafts, and
+    upcoming renewals. Approve drafts before any outreach is sent.
 6. Update [Settings](/dashboard/group?tab=settings ':ignore') if links, descriptions, location, or branding changed.
 7. Review [Logs](/dashboard/group?tab=logs ':ignore') if anything looks unexpected.
 
@@ -96,6 +98,19 @@ Maintain:
 - A simple handoff note when organizers rotate out.
 
 If your alliance restricts group team management, ask an alliance admin or groups manager to update organizer access.
+
+## GTM pipeline
+
+Use [GTM](/dashboard/group?tab=gtm ':ignore') when you are working a sponsor,
+startup, investor, speaker, or organizer lead.
+
+- Create a lead manually or run the lead-generation agent.
+- Run the stage agent to draft outreach, qualification, or a proposal.
+- Approve or reject the draft. The lead does not change stage until you approve.
+- Won side effects (sponsor record, landscape entry, organizer invite) stay
+  optional checkboxes.
+
+Escalate alliance-wide deals to the [Alliance GTM tab](/dashboard/alliance?tab=gtm ':ignore').
 
 ## Escalation Paths
 

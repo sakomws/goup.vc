@@ -12,8 +12,8 @@ use axum_messages::Messages;
 use tracing::instrument;
 
 use super::{
-    accelerator, coffee_meet, events, integrations, logs, members, sponsors, spotlights, store,
-    team,
+    accelerator, coffee_meet, events, gtm, integrations, logs, members, sponsors, spotlights,
+    store, team,
 };
 
 use crate::{
@@ -81,6 +81,17 @@ pub(crate) async fn page(
                 db.get_group_stats(alliance_id, group_id)
             )?;
             Content::Analytics(Box::new(analytics::Page { group, stats }))
+        }
+        Tab::Gtm => {
+            let (_, template) = gtm::prepare_list_page(
+                &db,
+                alliance_id,
+                group_id,
+                user.user_id,
+                raw_query.as_deref().unwrap_or_default(),
+            )
+            .await?;
+            Content::Gtm(template)
         }
         Tab::Events => {
             let (_, template) = events::prepare_list_page(

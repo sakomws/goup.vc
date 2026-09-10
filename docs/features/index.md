@@ -13,6 +13,7 @@ GOUP Alliance is a community platform for builders, founders, and open source co
 | [Groups and alliances](groups-and-alliances.md) | Group and alliance hierarchy, membership, team management |
 | [Jobs](jobs.md) | Jobs board, global You.com-powered job discovery |
 | [Landscape](landscape.md) | Startup and OSS project directory |
+| [GTM](gtm.md) | Alliance and group lead pipeline with draft-only agents |
 | [Payments](payments.md) | Stripe-backed ticketed events, checkout, refunds |
 | [Notifications](notifications.md) | Email notifications, SMTP delivery queue |
 

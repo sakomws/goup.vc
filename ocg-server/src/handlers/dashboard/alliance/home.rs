@@ -11,7 +11,7 @@ use axum::{
 use axum_messages::Messages;
 use tracing::instrument;
 
-use super::{groups, landscape, logs, members, team};
+use super::{groups, gtm, landscape, logs, members, team};
 
 use crate::{
     auth::AuthSession,
@@ -167,6 +167,16 @@ pub(crate) async fn page(
         Tab::PartnerIntegrations => Content::PartnerIntegrations(
             super::partner_integrations::prepare_page(&db, alliance_id, user_id).await?,
         ),
+        Tab::Gtm => {
+            let (_, template) = gtm::prepare_list_page(
+                &db,
+                alliance_id,
+                user_id,
+                raw_query.as_deref().unwrap_or_default(),
+            )
+            .await?;
+            Content::Gtm(template)
+        }
         Tab::Landscape => {
             let (_, template) = landscape::prepare_list_page(
                 &db,
