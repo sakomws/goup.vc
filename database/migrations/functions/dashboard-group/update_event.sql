@@ -281,7 +281,32 @@ begin
         meeting_recording_url = nullif(p_event->>'meeting_recording_url', ''),
         meeting_requested = (p_event->>'meeting_requested')::boolean,
         meetup_url = nullif(p_event->>'meetup_url', ''),
+        external_payment_instructions = case
+            when p_event ? 'external_payment_instructions'
+            then nullif(p_event->>'external_payment_instructions', '')
+            else external_payment_instructions
+        end,
+        external_payment_url = case
+            when p_event ? 'external_payment_url'
+            then nullif(p_event->>'external_payment_url', '')
+            else external_payment_url
+        end,
+        external_payment_window_hours = case
+            when p_event ? 'external_payment_window_hours'
+            then nullif(p_event->>'external_payment_window_hours', '')::integer
+            else external_payment_window_hours
+        end,
         payment_currency_code = v_payment_currency_code,
+        tax_behavior = case
+            when p_event ? 'tax_behavior'
+            then coalesce(nullif(p_event->>'tax_behavior', ''), tax_behavior, 'inclusive')
+            else tax_behavior
+        end,
+        tax_calculation_mode = case
+            when p_event ? 'tax_calculation_mode'
+            then coalesce(nullif(p_event->>'tax_calculation_mode', ''), tax_calculation_mode, 'none')
+            else tax_calculation_mode
+        end,
         photos_urls = v_event_photos_urls,
         registration_mode = coalesce(nullif(p_event->>'registration_mode', ''), 'built_in'),
         external_registration_url = case

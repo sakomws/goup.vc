@@ -6,17 +6,23 @@ create or replace function prepare_event_checkout_purchase(
     p_user_id uuid,
     p_discount_code text,
     p_configured_provider text,
-    p_registration_answers jsonb default null
+    p_registration_answers jsonb default null,
+    p_platform_fee_bps integer default 0
 )
 returns jsonb as $$
 declare
     v_alliance_name text;
+    v_charge_model text;
     v_currency_code text;
     v_discount_amount_minor bigint;
     v_event_discount_code_id uuid;
     v_event_registration_ends_at timestamptz;
     v_event_registration_starts_at timestamptz;
     v_event_slug text;
+    v_external_payment_instructions text;
+    v_external_payment_url text;
+    v_external_payment_window_hours integer;
+    v_external_payments_enabled boolean;
     v_event_starts_at timestamptz;
     v_existing_purchase_id uuid;
     v_existing_purchase_matches_selection boolean;
@@ -26,6 +32,7 @@ declare
     v_group_slug_pretty text;
     v_hold_expires_at timestamptz := current_timestamp + interval '15 minutes';
     v_normalized_discount_code text := upper(nullif(btrim(p_discount_code), ''));
+    v_platform_fee_amount_minor bigint := 0;
     v_purchase_id uuid;
     v_recipient jsonb;
     v_registration_questions jsonb;
@@ -45,21 +52,29 @@ begin
     -- Load the route and recipient details needed by the checkout provider
     select
         c.name,
+        e.external_payment_instructions,
+        e.external_payment_url,
+        e.external_payment_window_hours,
         e.registration_ends_at,
         e.registration_questions,
         e.registration_starts_at,
         e.slug,
         e.starts_at,
+        g.external_payments_enabled,
         g.slug,
         g.slug_pretty,
         g.payment_recipient
     into
         v_alliance_name,
+        v_external_payment_instructions,
+        v_external_payment_url,
+        v_external_payment_window_hours,
         v_event_registration_ends_at,
         v_registration_questions,
         v_event_registration_starts_at,
         v_event_slug,
         v_event_starts_at,
+        v_external_payments_enabled,
         v_group_slug,
         v_group_slug_pretty,
         v_recipient
@@ -161,9 +176,32 @@ begin
         perform prepare_event_checkout_reserve_discount_code_availability(v_event_discount_code_id);
     end if;
 
+    v_charge_model := case
+        when v_final_amount_minor = 0 then 'free'
+        when v_external_payments_enabled
+             and (
+                 nullif(btrim(coalesce(v_external_payment_url, '')), '') is not null
+                 or nullif(btrim(coalesce(v_external_payment_instructions, '')), '') is not null
+             )
+        then 'external'
+        else 'stripe'
+    end;
+
+    if v_charge_model = 'external' then
+        v_hold_expires_at := current_timestamp
+            + make_interval(hours => greatest(coalesce(v_external_payment_window_hours, 72), 1));
+        v_platform_fee_amount_minor := 0;
+    else
+        v_platform_fee_amount_minor := least(
+            v_final_amount_minor,
+            (v_final_amount_minor * greatest(coalesce(p_platform_fee_bps, 0), 0)) / 10000
+        );
+    end if;
+
     -- Insert the new pending purchase and return the attendee-facing summary
     insert into event_purchase (
         amount_minor,
+        charge_model,
         currency_code,
         discount_amount_minor,
         discount_code,
@@ -171,11 +209,13 @@ begin
         event_id,
         event_ticket_type_id,
         hold_expires_at,
+        platform_fee_amount_minor,
         status,
         ticket_title,
         user_id
     ) values (
         v_final_amount_minor,
+        v_charge_model,
         v_currency_code,
         v_discount_amount_minor,
         v_normalized_discount_code,
@@ -183,6 +223,7 @@ begin
         p_event_id,
         p_event_ticket_type_id,
         v_hold_expires_at,
+        v_platform_fee_amount_minor,
         'pending',
         v_ticket_title,
         p_user_id

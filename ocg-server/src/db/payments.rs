@@ -60,6 +60,16 @@ pub(crate) trait DBPayments {
         event_purchase_id: Uuid,
     ) -> Result<CompletedEventPurchase>;
 
+    /// Completes an organizer-confirmed external purchase.
+    async fn complete_external_event_purchase(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        user_id: Uuid,
+        details: Option<String>,
+    ) -> Result<CompletedEventPurchase>;
+
     /// Expires a pending purchase when its provider checkout session expires.
     async fn expire_event_purchase_for_checkout_session(
         &self,
@@ -233,6 +243,23 @@ where
         .await
     }
 
+    /// [`DBPayments::complete_external_event_purchase`]
+    #[instrument(skip(self), err)]
+    async fn complete_external_event_purchase(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        user_id: Uuid,
+        details: Option<String>,
+    ) -> Result<CompletedEventPurchase> {
+        self.fetch_json_one(
+            "select complete_external_event_purchase($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::text)",
+            &[&actor_user_id, &group_id, &event_id, &user_id, &details],
+        )
+        .await
+    }
+
     /// [`DBPayments::expire_event_purchase_for_checkout_session`]
     #[instrument(skip(self), err)]
     async fn expire_event_purchase_for_checkout_session(
@@ -276,7 +303,8 @@ where
                 $4::uuid,
                 $5::text,
                 $6::text,
-                $7::jsonb
+                $7::jsonb,
+                $8::integer
             )
             ",
             &[
@@ -287,6 +315,7 @@ where
                 &input.discount_code,
                 &input.configured_provider.map(|provider| provider.to_string()),
                 &input.registration_answers.as_ref().map(Json),
+                &input.platform_fee_bps,
             ],
         )
         .await
@@ -488,6 +517,8 @@ pub(crate) struct PrepareEventCheckoutPurchaseInput {
     pub discount_code: Option<String>,
     /// Registration answers provided before checkout starts.
     pub registration_answers: Option<QuestionnaireAnswers>,
+    /// Platform application fee in basis points snapshotted onto the purchase.
+    pub platform_fee_bps: i32,
 }
 
 /// Data for a provider purchase that must be refunded.

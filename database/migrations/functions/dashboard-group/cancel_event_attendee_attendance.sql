@@ -43,7 +43,7 @@ begin
         raise exception 'event not found or inactive';
     end if;
 
-    -- Paid attendees must go through the refund workflow
+    -- Capture the latest refundable purchase so paid cancels can auto-refund
     select
         ep.amount_minor,
         ep.event_purchase_id
@@ -57,10 +57,6 @@ begin
     order by ep.created_at desc, ep.event_purchase_id desc
     limit 1;
 
-    if v_purchase_amount_minor > 0 then
-        raise exception 'paid attendees cannot be canceled from attendee actions';
-    end if;
-
     -- Remove only confirmed attendees
     delete from event_attendee
     where event_id = p_event_id
@@ -71,9 +67,35 @@ begin
         raise exception 'confirmed event attendee not found';
     end if;
 
-    -- If the attendee had a free ticket purchase, delegate the refund transition
-    if v_purchase_id is not null then
+    -- Free purchases can be refunded locally; paid ones queue an organizer refund
+    if v_purchase_id is not null and coalesce(v_purchase_amount_minor, 0) = 0 then
         perform refund_free_event_purchase(v_purchase_id);
+        v_purchase_id := null;
+    elsif v_purchase_id is not null and coalesce(v_purchase_amount_minor, 0) > 0 then
+        insert into event_refund_request (
+            event_purchase_id,
+            requested_by_user_id,
+            requested_reason,
+            status
+        )
+        select
+            v_purchase_id,
+            p_actor_user_id,
+            'Attendance canceled by organizer',
+            'pending'
+        where not exists (
+            select 1
+            from event_refund_request err
+            where err.event_purchase_id = v_purchase_id
+            and err.status in ('pending', 'approving')
+        );
+
+        update event_purchase
+        set
+            status = 'refund-requested',
+            updated_at = current_timestamp
+        where event_purchase_id = v_purchase_id
+        and status = 'completed';
     end if;
 
     -- Promote the next waitlisted user when a confirmed attendee frees a seat
@@ -97,9 +119,13 @@ begin
         jsonb_build_object('event_id', p_event_id, 'user_id', p_user_id)
     );
 
-    return json_build_object(
+    return json_strip_nulls(json_build_object(
         'left_status', 'attendee',
-        'promoted_user_ids', v_promoted_user_ids
-    );
+        'promoted_user_ids', v_promoted_user_ids,
+        'refund_event_purchase_id', case
+            when coalesce(v_purchase_amount_minor, 0) > 0 then v_purchase_id
+            else null
+        end
+    ));
 end;
 $$ language plpgsql;

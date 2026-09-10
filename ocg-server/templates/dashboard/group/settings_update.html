@@ -118,6 +118,24 @@
           </div>
           {# End Group region -#}
 
+          {# Parent group -#}
+          <div class="col-span-full lg:col-span-3">
+            <label for="parent_group_id" class="form-label">Parent group</label>
+            <div class="mt-2 grid grid-cols-1">
+              <select id="parent_group_id" name="parent_group_id" class="select-primary">
+                <option value="">No parent (top-level group)</option>
+                {% for parent in parent_group_options %}
+                  <option value="{{ parent.group_id }}"
+                          {% if self.is_selected_parent_group(parent.group_id) %}selected{% endif %}>{{ parent.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <p class="form-legend">
+              Optional parent chapter in the same alliance. A group can have one parent, and parent groups cannot themselves be subgroups.
+            </p>
+          </div>
+          {# End Parent group -#}
+
           {% let logo_value -%}value="{{ group.logo_url }}"{%- endlet %}
           {% let banner_value -%}value="{%- if let Some(banner_url) = &group.banner_url -%}{{ banner_url }}{%- endif -%}"{%- endlet %}
           {% let banner_mobile_value -%}value="{%- if let Some(banner_mobile_url) = &group.banner_mobile_url -%}{{ banner_mobile_url }}{%- endif -%}"{%- endlet %}
@@ -366,6 +384,24 @@
               Enter the Stripe connected account that should receive money for this group's paid events.
               Leave this blank to keep the group on free events only.
             </p>
+          </div>
+
+          <div class="col-span-full">
+            <div class="flex items-start gap-3">
+              <input type="checkbox"
+                     name="external_payments_enabled"
+                     id="external_payments_enabled"
+                     value="true"
+                     class="checkbox-primary mt-1"
+                     {% if group.external_payments_enabled %}checked{% endif %}>
+              <div>
+                <label for="external_payments_enabled" class="form-label">Enable external payments</label>
+                <p class="form-legend">
+                  Allow ticketed events to collect money off Stripe (wire, invoice, or sponsor transfer).
+                  Organizers confirm each payment before the attendee is marked as paid.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

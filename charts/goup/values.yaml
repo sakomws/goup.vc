@@ -114,6 +114,9 @@ payments:
   publishableKey: ""
   secretKey: ""
   webhookSecret: ""
+  platformFeeBps: 0
+  automaticTax: false
+  createInvoices: false
 
 # Database migrator configuration
 dbmigrator:

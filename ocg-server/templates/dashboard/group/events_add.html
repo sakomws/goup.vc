@@ -817,6 +817,55 @@
                     </div>
                     <p class="form-legend">Single currency used for all ticket prices on this event.</p>
                   </div>
+
+                  <div class="col-span-full lg:col-span-3">
+                    <label for="tax_calculation_mode" class="form-label">Tax calculation</label>
+                    <div class="mt-2">
+                      <select id="tax_calculation_mode" name="tax_calculation_mode" class="select-primary">
+                        <option value="none" selected>None</option>
+                        <option value="automatic">Automatic (Stripe Tax)</option>
+                        <option value="manual">Manual</option>
+                      </select>
+                    </div>
+                    <p class="form-legend">Automatic tax requires Stripe Tax and the deployment `automatic_tax` flag.</p>
+                  </div>
+
+                  <div class="col-span-full lg:col-span-3">
+                    <label for="tax_behavior" class="form-label">Tax behavior</label>
+                    <div class="mt-2">
+                      <select id="tax_behavior" name="tax_behavior" class="select-primary">
+                        <option value="inclusive" selected>Inclusive</option>
+                        <option value="exclusive">Exclusive</option>
+                      </select>
+                    </div>
+                    <p class="form-legend">Inclusive prices already include tax. Exclusive prices add tax at checkout.</p>
+                  </div>
+
+                  <div class="col-span-full">
+                    <label for="external_payment_instructions" class="form-label">External payment instructions</label>
+                    <div class="mt-2">
+                      <textarea id="external_payment_instructions"
+                                name="external_payment_instructions"
+                                rows="3"
+                                class="input-primary"
+                                maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }}"></textarea>
+                    </div>
+                    <p class="form-legend">Shown when the group has external payments enabled. Attendees pay off Stripe; organizers confirm the transfer.</p>
+                  </div>
+
+                  <div class="col-span-full lg:col-span-3">
+                    <label for="external_payment_url" class="form-label">External payment URL</label>
+                    <div class="mt-2">
+                      <input type="url" id="external_payment_url" name="external_payment_url" class="input-primary">
+                    </div>
+                  </div>
+
+                  <div class="col-span-full lg:col-span-3">
+                    <label for="external_payment_window_hours" class="form-label">External payment window (hours)</label>
+                    <div class="mt-2">
+                      <input type="number" id="external_payment_window_hours" name="external_payment_window_hours" min="1" max="8760" class="input-primary">
+                    </div>
+                  </div>
                 </div>
               </div>
 

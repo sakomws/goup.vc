@@ -823,6 +823,7 @@ async fn create_checkout_hold(
             event_ticket_type_id,
             registration_answers: input.registration_answers.registration_answers.clone(),
             user_id,
+            platform_fee_bps: payments_cfg.map(PaymentsConfig::platform_fee_bps).unwrap_or(0),
         },
     )
     .await

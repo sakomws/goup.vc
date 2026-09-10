@@ -497,6 +497,13 @@ impl PaymentsConfig {
         }
     }
 
+    /// Platform application fee in basis points for Stripe ticket sales.
+    pub(crate) fn platform_fee_bps(&self) -> i32 {
+        match self {
+            Self::Stripe(cfg) => cfg.platform_fee_bps.max(0),
+        }
+    }
+
     /// Validate the configured payments provider.
     fn validate(&self) -> Result<()> {
         match self {
@@ -519,6 +526,15 @@ pub(crate) struct PaymentsStripeConfig {
     pub secret_key: String,
     /// Stripe webhook secret used for signature verification.
     pub webhook_secret: String,
+    /// Application fee in basis points taken from each Stripe ticket sale.
+    #[serde(default)]
+    pub platform_fee_bps: i32,
+    /// Whether Stripe Checkout should calculate tax automatically.
+    #[serde(default)]
+    pub automatic_tax: bool,
+    /// Whether Stripe Checkout should create a customer invoice.
+    #[serde(default)]
+    pub create_invoices: bool,
 }
 
 impl PaymentsStripeConfig {
@@ -534,6 +550,10 @@ impl PaymentsStripeConfig {
 
         if self.webhook_secret.trim().is_empty() {
             bail!("payments.webhook_secret cannot be empty");
+        }
+
+        if self.platform_fee_bps < 0 || self.platform_fee_bps > 10_000 {
+            bail!("payments.platform_fee_bps must be between 0 and 10000");
         }
 
         Ok(())

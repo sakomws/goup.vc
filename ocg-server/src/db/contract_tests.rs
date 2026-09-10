@@ -1292,6 +1292,7 @@ async fn db_contracts_prepare_event_checkout_purchase_deserializes() -> Result<(
         configured_provider: Some(PaymentProvider::Stripe),
         discount_code: None,
         registration_answers: None,
+        platform_fee_bps: 0,
     };
     let checkout = db.prepare_event_checkout_purchase(alliance_id(), &input).await?;
 

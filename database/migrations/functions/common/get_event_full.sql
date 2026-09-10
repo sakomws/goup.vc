@@ -78,7 +78,12 @@ returns json as $$
             'meeting_recording_url', e.meeting_recording_url,
             'meeting_requested', e.meeting_requested,
             'meetup_url', e.meetup_url,
-            'payment_currency_code', e.payment_currency_code
+            'external_payment_instructions', e.external_payment_instructions,
+            'external_payment_url', e.external_payment_url,
+            'external_payment_window_hours', e.external_payment_window_hours,
+            'payment_currency_code', e.payment_currency_code,
+            'tax_behavior', e.tax_behavior,
+            'tax_calculation_mode', e.tax_calculation_mode
         )
         || jsonb_build_object(
             'has_ticket_purchases', exists (

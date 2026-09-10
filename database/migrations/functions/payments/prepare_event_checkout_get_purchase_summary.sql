@@ -6,6 +6,7 @@ returns jsonb as $$
     select jsonb_strip_nulls(
         jsonb_build_object(
             'amount_minor', ep.amount_minor,
+            'charge_model', ep.charge_model,
             'currency_code', ep.currency_code,
             'discount_amount_minor', ep.discount_amount_minor,
             'event_purchase_id', ep.event_purchase_id,
@@ -16,7 +17,10 @@ returns jsonb as $$
             'completed_at', extract(epoch from ep.completed_at)::bigint,
             'discount_code', ep.discount_code,
             'hold_expires_at', extract(epoch from ep.hold_expires_at)::bigint,
+            'platform_fee_amount_minor', ep.platform_fee_amount_minor,
             'provider_checkout_url', ep.provider_checkout_url,
+            'provider_invoice_hosted_url', ep.provider_invoice_hosted_url,
+            'provider_invoice_pdf_url', ep.provider_invoice_pdf_url,
             'provider_payment_reference', ep.provider_payment_reference,
             'provider_session_id', ep.provider_checkout_session_id,
             'refunded_at', extract(epoch from ep.refunded_at)::bigint

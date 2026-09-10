@@ -168,6 +168,11 @@ After the recipient is saved:
 - Refund requests stay managed in OCG by group administrators.
 - The group can continue managing its connected account details in Stripe when
   needed.
+- Optionally enable **external payments** on the same settings page to accept
+  wire or invoice payments. Event editors can add payment instructions; organizers
+  confirm each transfer before the ticket is marked paid.
+- Platform operators can set a Stripe application fee, automatic tax, and invoice
+  creation in Helm (`platformFeeBps`, `automaticTax`, `createInvoices`).
 
 For the rest of the paid-event flow, continue to
 [Event Operations](event-operations.md#paid-events-tickets-discounts-refunds).

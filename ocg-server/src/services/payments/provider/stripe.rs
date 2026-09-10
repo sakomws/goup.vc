@@ -125,6 +125,21 @@ impl StripeProvider {
             form_fields.push(("metadata[environment]".to_string(), "test".to_string()));
         }
 
+        if input.application_fee_amount_minor > 0 {
+            form_fields.push((
+                "payment_intent_data[application_fee_amount]".to_string(),
+                input.application_fee_amount_minor.to_string(),
+            ));
+        }
+
+        if self.cfg.automatic_tax {
+            form_fields.push(("automatic_tax[enabled]".to_string(), "true".to_string()));
+        }
+
+        if self.cfg.create_invoices {
+            form_fields.push(("invoice_creation[enabled]".to_string(), "true".to_string()));
+        }
+
         form_fields
     }
 

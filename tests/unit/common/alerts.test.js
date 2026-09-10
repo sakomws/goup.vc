@@ -55,6 +55,14 @@ describe("alerts", () => {
     expect(env.current.swal.calls[3].html).to.include("Missing field");
   });
 
+  it("escapes untrusted server error html", () => {
+    showServerErrorAlert("Save failed", `<img src=x onerror="alert(1)">`);
+
+    expect(env.current.swal.calls[0].html).to.include("Save failed");
+    expect(env.current.swal.calls[0].html).to.include("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+    expect(env.current.swal.calls[0].html).to.not.include("<img src=x");
+  });
+
   it("renders declarative page alerts once", () => {
     // Build the DOM fixture with server-rendered alert markers.
     document.body.innerHTML = `

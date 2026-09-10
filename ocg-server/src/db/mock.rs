@@ -814,6 +814,11 @@ mock! {
             &self,
             group_id: Uuid,
         ) -> Result<Vec<Uuid>>;
+        async fn list_group_parent_options(
+            &self,
+            alliance_id: Uuid,
+            group_id: Uuid,
+        ) -> Result<Vec<crate::types::group::GroupParentOption>>;
         async fn list_payment_currency_codes(&self) -> Result<Vec<String>>;
         async fn list_session_kinds(&self)
             -> Result<Vec<crate::types::event::SessionKindSummary>>;
@@ -1675,6 +1680,14 @@ mock! {
         async fn complete_free_event_purchase(
             &self,
             event_purchase_id: Uuid,
+        ) -> Result<crate::db::payments::CompletedEventPurchase>;
+        async fn complete_external_event_purchase(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_id: Uuid,
+            user_id: Uuid,
+            details: Option<String>,
         ) -> Result<crate::db::payments::CompletedEventPurchase>;
         async fn expire_event_purchase_for_checkout_session(
             &self,

@@ -373,6 +373,18 @@ pub struct EventFull {
     pub meetup_url: Option<String>,
     /// Currency used for event ticket purchases.
     pub payment_currency_code: Option<String>,
+    /// Off-Stripe payment instructions shown to attendees.
+    pub external_payment_instructions: Option<String>,
+    /// Off-Stripe payment URL shown to attendees.
+    pub external_payment_url: Option<String>,
+    /// Hours an external payment hold stays open.
+    pub external_payment_window_hours: Option<i32>,
+    /// Whether ticket prices include tax.
+    #[serde(default)]
+    pub tax_behavior: Option<String>,
+    /// How tax is calculated for this event.
+    #[serde(default)]
+    pub tax_calculation_mode: Option<String>,
     /// URLs to event photos.
     pub photos_urls: Option<Vec<String>>,
     /// When the event was published.
@@ -783,6 +795,9 @@ pub struct EventLeaveOutcome {
     pub left_status: EventAttendanceStatus,
     /// Users promoted from the waiting list as part of the operation.
     pub promoted_user_ids: Vec<Uuid>,
+    /// Paid purchase that should be refunded after attendance is canceled.
+    #[serde(default)]
+    pub refund_event_purchase_id: Option<Uuid>,
 }
 
 /// Event sponsor information.

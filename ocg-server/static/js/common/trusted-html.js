@@ -1,4 +1,17 @@
 /**
+ * Escapes untrusted text before inserting it into HTML.
+ * @param {unknown} value Text to escape.
+ * @returns {string} Escaped HTML string.
+ */
+export const escapeHtml = (value) =>
+  String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+
+/**
  * Reads server-rendered HTML from an existing trusted template node.
  * @param {Element|null|undefined} element Element to read.
  * @returns {string} Trusted HTML string.

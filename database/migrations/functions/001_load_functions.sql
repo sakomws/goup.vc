@@ -176,6 +176,7 @@
 {{ template "dashboard-group/list_group_join_requests.sql" }}
 {{ template "dashboard-group/list_group_events.sql" }}
 {{ template "dashboard-group/list_group_members.sql" }}
+{{ template "dashboard-group/list_group_parent_options.sql" }}
 {{ template "dashboard-group/list_group_members_ids.sql" }}
 {{ template "dashboard-group/list_group_roles.sql" }}
 {{ template "dashboard-group/list_group_sponsors.sql" }}
@@ -310,6 +311,7 @@
 {{ template "payments/attach_checkout_session_to_event_purchase.sql" }}
 {{ template "payments/begin_event_refund_approval.sql" }}
 {{ template "payments/cancel_event_checkout.sql" }}
+{{ template "payments/complete_external_event_purchase.sql" }}
 {{ template "payments/complete_free_event_purchase.sql" }}
 {{ template "payments/expire_event_purchase_for_checkout_session.sql" }}
 {{ template "payments/prepare_event_checkout_expire_previous_hold.sql" }} -- Dependency for prepare_event_checkout_purchase

@@ -45,7 +45,7 @@ use crate::{
             EventCategory, EventKindSummary as EventKind, EventLeaveOutcome,
             SessionKindSummary as SessionKind,
         },
-        group::{GroupRole, GroupRoleSummary, GroupSponsor},
+        group::{GroupParentOption, GroupRole, GroupRoleSummary, GroupSponsor},
         payments::{GroupPaymentRecipient, PaymentProvider},
     },
 };
@@ -480,6 +480,13 @@ pub(crate) trait DBDashboardGroup {
 
     /// Lists supported payment currency codes.
     async fn list_payment_currency_codes(&self) -> Result<Vec<String>>;
+
+    /// Lists groups that can be selected as a parent for the current group.
+    async fn list_group_parent_options(
+        &self,
+        alliance_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<Vec<GroupParentOption>>;
 
     /// Lists all available session kinds.
     async fn list_session_kinds(&self) -> Result<Vec<SessionKind>>;
@@ -1744,6 +1751,20 @@ where
     async fn list_group_team_members_ids(&self, group_id: Uuid) -> Result<Vec<Uuid>> {
         self.fetch_scalar_one("select list_group_team_members_ids($1::uuid)", &[&group_id])
             .await
+    }
+
+    /// [`DBDashboardGroup::list_group_parent_options`]
+    #[instrument(skip(self), err)]
+    async fn list_group_parent_options(
+        &self,
+        alliance_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<Vec<GroupParentOption>> {
+        self.fetch_json_one(
+            "select list_group_parent_options($1::uuid, $2::uuid)",
+            &[&alliance_id, &group_id],
+        )
+        .await
     }
 
     /// [`DBDashboardGroup::list_payment_currency_codes`]

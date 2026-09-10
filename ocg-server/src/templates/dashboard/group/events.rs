@@ -333,6 +333,21 @@ pub(crate) struct Event {
     /// Currency used for ticket purchases.
     #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
     pub payment_currency_code: Option<String>,
+    /// Off-Stripe payment instructions shown to attendees.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION_SHORT))]
+    pub external_payment_instructions: Option<String>,
+    /// Off-Stripe payment URL shown to attendees.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub external_payment_url: Option<String>,
+    /// Hours an external payment hold stays open.
+    #[garde(range(min = 1, max = 8760))]
+    pub external_payment_window_hours: Option<i32>,
+    /// Whether ticket prices include tax.
+    #[garde(skip)]
+    pub tax_behavior: Option<String>,
+    /// How tax is calculated for this event.
+    #[garde(skip)]
+    pub tax_calculation_mode: Option<String>,
     /// Gallery of photo URLs.
     #[garde(custom(trimmed_non_empty_vec))]
     pub photos_urls: Option<Vec<String>>,

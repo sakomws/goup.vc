@@ -1180,14 +1180,7 @@ pub(crate) fn sample_purchase_summary(status: EventPurchaseStatus) -> EventPurch
         event_ticket_type_id: Uuid::new_v4(),
         status,
         ticket_title: "General admission".to_string(),
-
-        completed_at: None,
-        discount_code: None,
-        hold_expires_at: None,
-        provider_checkout_url: None,
-        provider_payment_reference: None,
-        provider_session_id: None,
-        refunded_at: None,
+        ..EventPurchaseSummary::default()
     }
 }
 

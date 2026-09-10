@@ -771,10 +771,8 @@
                         {% if can_manage_events && attendee.status == "confirmed" -%}
                           <li>
                             <button id="cancel-attendance-{{ attendee.user.user_id }}"
-                                    {% if !self::is_paid_attendee(attendee.amount_minor) && !event.canceled && !event.is_past() -%}
-                                      hx-delete="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/attendance" hx-indicator="#dashboard-spinner" hx-trigger="confirmed" hx-disabled-elt="this" data-confirm-action data-confirm-message="Are you sure you want to cancel this attendance?" data-confirm-text="Yes" data-success-message="Attendance canceled." data-error-message="Something went wrong canceling this attendance. Please try again later."
-                                    {% else if self::is_paid_attendee(attendee.amount_minor) -%}
-                                      disabled title="Paid attendee attendance cannot be canceled from attendee actions."
+                                    {% if !event.canceled && !event.is_past() -%}
+                                      hx-delete="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/attendance" hx-indicator="#dashboard-spinner" hx-trigger="confirmed" hx-disabled-elt="this" data-confirm-action data-confirm-message="{% if self::is_paid_attendee(attendee.amount_minor) %}Cancel this paid attendance and refund the ticket?{% else %}Are you sure you want to cancel this attendance?{% endif %}" data-confirm-text="Yes" data-success-message="Attendance canceled." data-error-message="Something went wrong canceling this attendance. Please try again later."
                                     {% else if event.canceled -%}
                                       disabled title="Canceled event attendance cannot be canceled."
                                     {% else -%}

@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(169);
+select plan(171);
 
 -- ============================================================================
 -- TESTS
@@ -122,6 +122,7 @@ select col_is_fk('event_purchase', 'event_id', 'event');
 select col_is_fk('event_purchase', 'payment_provider_id', 'payment_provider');
 select col_is_fk('event_purchase', 'event_ticket_type_id', 'event_ticket_type');
 select col_is_fk('event_purchase', 'user_id', 'user');
+select col_is_fk('event_purchase', 'external_payment_marked_by_user_id', 'user');
 select col_is_fk('event_refund_request', 'event_purchase_id', 'event_purchase');
 select col_is_fk('event_refund_request', 'requested_by_user_id', 'user');
 select col_is_fk('event_refund_request', 'reviewed_by_user_id', 'user');
@@ -137,6 +138,7 @@ select col_is_fk('event_views', 'event_id', 'event');
 select col_is_fk('event_waitlist', 'event_id', 'event');
 select col_is_fk('event_waitlist', 'user_id', 'user');
 select col_is_fk('group', 'alliance_id', 'alliance');
+select col_is_fk('group', 'parent_group_id', 'group');
 select col_is_fk('group', 'group_category_id', 'group_category');
 select col_is_fk('group', 'group_site_layout_id', 'group_site_layout');
 select col_is_fk('group', 'region_id', 'region');

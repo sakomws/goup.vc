@@ -227,17 +227,20 @@ pub(crate) async fn cancel_event_attendee_attendance(
     SelectedAllianceId(alliance_id): SelectedAllianceId,
     SelectedGroupId(group_id): SelectedGroupId,
     State(db): State<DynDB>,
+    State(payments_manager): State<DynPaymentsManager>,
     State(server_cfg): State<HttpServerConfig>,
     Path((event_id, user_id)): Path<(Uuid, Uuid)>,
 ) -> Result<impl IntoResponse, HandlerError> {
     // Cancel the attendee and enqueue required notifications
+    let actor_user_id = user.user_id;
     let required_notification_server_cfg = server_cfg.clone();
-    db.as_ref()
+    let cancel_result = db
+        .as_ref()
         .transaction(|tx| {
             Box::pin(async move {
                 // Cancel attendance and collect any waitlist promotions
                 let cancel_result = tx
-                    .cancel_event_attendee_attendance(user.user_id, group_id, event_id, user_id)
+                    .cancel_event_attendee_attendance(actor_user_id, group_id, event_id, user_id)
                     .await?;
 
                 // Enqueue required attendee and promotion notifications before committing
@@ -247,7 +250,67 @@ pub(crate) async fn cancel_event_attendee_attendance(
                     alliance_id,
                     event_id,
                     user_id,
-                    cancel_result.promoted_user_ids,
+                    cancel_result.promoted_user_ids.clone(),
+                )
+                .await?;
+
+                Ok(cancel_result)
+            })
+        })
+        .await?;
+
+    if cancel_result.refund_event_purchase_id.is_some()
+        && let Err(err) = payments_manager
+            .approve_refund_request(&ApproveRefundRequestInput {
+                actor_user_id,
+                alliance_id,
+                event_id,
+                group_id,
+                user_id,
+
+                review_note: Some("Attendance canceled by organizer".to_string()),
+            })
+            .await
+    {
+        warn!(error = %err, "failed to auto-refund canceled paid attendance");
+    }
+
+    Ok((
+        StatusCode::NO_CONTENT,
+        [("HX-Trigger", "refresh-event-attendees")],
+    )
+        .into_response())
+}
+
+/// Confirms an off-Stripe ticket payment and marks the attendee as paid.
+#[instrument(skip_all, err)]
+pub(crate) async fn confirm_external_event_purchase(
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    State(server_cfg): State<HttpServerConfig>,
+    Path((event_id, user_id)): Path<(Uuid, Uuid)>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.as_ref()
+        .transaction(|tx| {
+            Box::pin(async move {
+                tx.complete_external_event_purchase(
+                    user.user_id,
+                    group_id,
+                    event_id,
+                    user_id,
+                    None,
+                )
+                .await?;
+
+                enqueue_event_welcome_notification(
+                    tx,
+                    &server_cfg,
+                    alliance_id,
+                    event_id,
+                    user_id,
+                    true,
                 )
                 .await?;
 

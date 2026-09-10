@@ -1,6 +1,7 @@
 import { expect } from "@open-wc/testing";
 
 import {
+  escapeHtml,
   insertTrustedHtml,
   readTrustedHtml,
   setTrustedHtml,
@@ -14,6 +15,14 @@ describe("common trusted html", () => {
 
   afterEach(() => {
     resetDom();
+  });
+
+  it("escapes untrusted text for html insertion", () => {
+    expect(escapeHtml(`<img src=x onerror="alert(1)">`)).to.equal(
+      "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;",
+    );
+    expect(escapeHtml("Tom & Jerry")).to.equal("Tom &amp; Jerry");
+    expect(escapeHtml(null)).to.equal("");
   });
 
   it("reads and writes trusted html fragments", () => {
