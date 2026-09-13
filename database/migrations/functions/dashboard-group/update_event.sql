@@ -271,7 +271,7 @@ begin
         end,
         meeting_join_instructions = nullif(p_event->>'meeting_join_instructions', ''),
         meeting_join_url = nullif(p_event->>'meeting_join_url', ''),
-        meeting_provider_id = p_event->>'meeting_provider_id',
+        meeting_provider_id = nullif(p_event->>'meeting_provider_id', ''),
         meeting_recording_published = coalesce(
             (p_event->>'meeting_recording_published')::boolean,
             (v_event_before->>'meeting_recording_published')::boolean,
