@@ -69,7 +69,7 @@ returns json as $$
     authorized as (
         select 1
         from primary_event pe
-        where user_has_group_permission(pe.alliance_id, pe.group_id, p_actor_user_id, 'group.events.write')
+        where user_has_group_permission(pe.alliance_id, pe.group_id, p_actor_user_id, 'group.events.write'::text)
     )
     select coalesce(json_agg(json_build_object(
         'alliance_id', g.alliance_id,
@@ -130,7 +130,7 @@ begin
     if v_primary_group_id = p_cohost_group_id then
         raise exception 'a group cannot co-host its own event';
     end if;
-    if not user_has_group_permission(v_primary_alliance_id, v_primary_group_id, p_actor_user_id, 'group.events.write') then
+    if not user_has_group_permission(v_primary_alliance_id, v_primary_group_id, p_actor_user_id, 'group.events.write'::text) then
         raise exception 'not allowed to co-host this event';
     end if;
 
@@ -191,7 +191,7 @@ begin
     if v_cohost_group_id is null then
         raise exception 'co-host invitation not found or already decided';
     end if;
-    if not user_has_group_permission(v_alliance_id, v_cohost_group_id, p_actor_user_id, 'group.events.write') then
+    if not user_has_group_permission(v_alliance_id, v_cohost_group_id, p_actor_user_id, 'group.events.write'::text) then
         raise exception 'not allowed to decide this co-host invitation';
     end if;
 
@@ -227,8 +227,8 @@ begin
         raise exception 'co-host invitation not found or inactive';
     end if;
     if not (
-        user_has_group_permission(v_primary_alliance_id, v_primary_group_id, p_actor_user_id, 'group.events.write')
-        or user_has_group_permission(v_cohost_alliance_id, v_cohost_group_id, p_actor_user_id, 'group.events.write')
+        user_has_group_permission(v_primary_alliance_id, v_primary_group_id, p_actor_user_id, 'group.events.write'::text)
+        or user_has_group_permission(v_cohost_alliance_id, v_cohost_group_id, p_actor_user_id, 'group.events.write'::text)
     ) then
         raise exception 'not allowed to revoke this co-host invitation';
     end if;
@@ -264,7 +264,7 @@ returns json as $$
     join "group" cg on cg.group_id = ec.cohost_group_id
     where ec.cohost_group_id = p_cohost_group_id
       and ec.status = 'pending'
-      and user_has_group_permission(cg.alliance_id, cg.group_id, p_actor_user_id, 'group.events.write');
+      and user_has_group_permission(cg.alliance_id, cg.group_id, p_actor_user_id, 'group.events.write'::text);
 $$ language sql stable;
 
 create or replace function get_event_cohosts(p_event_id uuid)
