@@ -119,7 +119,7 @@ begin
             p_alliance_id,
             v_group_id,
             candidate.user_id,
-            'group.events.write'
+            'group.events.write'::text
         )
     ) recipient;
 
