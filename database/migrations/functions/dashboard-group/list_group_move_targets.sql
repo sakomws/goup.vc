@@ -16,5 +16,5 @@ returns json as $$
       and g.deleted = false
       and g.active = true
       and g.group_id <> p_group_id
-      and user_has_group_permission(p_alliance_id, g.group_id, p_actor_user_id, 'group.events.write');
+      and user_has_group_permission(p_alliance_id, g.group_id, p_actor_user_id, 'group.events.write'::text);
 $$ language sql;

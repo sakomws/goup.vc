@@ -53,7 +53,7 @@ begin
         v_target_alliance_id,
         p_target_group_id,
         p_actor_user_id,
-        'group.events.write'
+        'group.events.write'::text
     ) then
         raise exception 'insufficient permissions on the target group';
     end if;
