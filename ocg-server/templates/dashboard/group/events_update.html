@@ -121,6 +121,35 @@
     {{ dashboard::permission_warning(message = "This event is canceled. Event details are read-only, but attendee and refund review tools remain available.", extra_classes = "") -}}
   {% endif -%}
 
+  {% if can_manage_events && !event.canceled -%}
+    <div class="mt-4 rounded-md border border-stone-900/10 bg-stone-50 px-4 py-3">
+      <form hx-put="/dashboard/group/events/{{ event.event_id }}/move"
+            hx-swap="none"
+            hx-indicator="#dashboard-spinner"
+            hx-confirm="Move this event to the selected group? Its public link will change."
+            class="flex flex-wrap items-end gap-3">
+        <div class="min-w-0 flex-1">
+          <label for="move-target-group" class="block text-sm font-medium text-stone-700">Change group</label>
+          <p class="mt-0.5 text-xs text-stone-500">Move this event to another group in the same alliance. Attendees, submissions and questions move with it.</p>
+          <select id="move-target-group"
+                  name="target_group_id"
+                  required
+                  class="select-primary mt-2 w-full max-w-sm"
+                  hx-get="/dashboard/group/events/{{ event.event_id }}/move-targets"
+                  hx-trigger="load"
+                  hx-target="this"
+                  hx-swap="beforeend">
+            <option value="" disabled selected>Select a group</option>
+          </select>
+        </div>
+        <button type="submit"
+                class="group btn-primary btn-mini inline-flex h-9 min-w-28 items-center justify-center gap-2 whitespace-nowrap">
+          <span>Change group</span>
+        </button>
+      </form>
+    </div>
+  {% endif -%}
+
   <div id="pending-changes-alert" class="hidden">
     <div class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary-200 bg-primary-50 px-4 py-3 text-primary-900">
       <div class="flex min-w-0 flex-1 items-start gap-3">

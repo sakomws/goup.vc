@@ -269,6 +269,52 @@ pub(crate) async fn set_group_defaults(
         .into_response())
 }
 
+/// Returns the `<option>` list of groups the current event can be moved into.
+#[instrument(skip_all, err)]
+pub(crate) async fn move_targets(
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(_event_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let targets = db
+        .list_group_move_targets(user.user_id, alliance_id, group_id)
+        .await?;
+    let template = events::MoveTargets { targets };
+
+    Ok(Html(template.render()?))
+}
+
+/// Payload for moving an event to another group.
+#[derive(Debug, Deserialize, Validate)]
+pub(crate) struct MoveEventForm {
+    /// Target group the event should be moved into.
+    #[garde(skip)]
+    pub target_group_id: Uuid,
+}
+
+/// Moves an event to another group within the same alliance.
+#[instrument(skip_all, err)]
+pub(crate) async fn move_to_group(
+    CurrentUser(user): CurrentUser,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(event_id): Path<Uuid>,
+    ValidatedFormQs(form): ValidatedFormQs<MoveEventForm>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.move_event(user.user_id, group_id, event_id, form.target_group_id)
+        .await?;
+
+    Ok((
+        StatusCode::NO_CONTENT,
+        [(
+            "HX-Location",
+            r#"{"path":"/dashboard/group?tab=events", "target":"body"}"#,
+        )],
+    ))
+}
+
 // Actions handlers.
 
 /// Adds a new event to the database.
