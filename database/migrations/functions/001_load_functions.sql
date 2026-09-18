@@ -204,6 +204,8 @@
 {{ template "dashboard-group/update_group_sponsor_featured.sql" }}
 {{ template "dashboard-group/update_group_team_member_role.sql" }}
 {{ template "dashboard-group/update_event.sql" }}
+{{ template "dashboard-group/move_event.sql" }}
+{{ template "dashboard-group/list_group_move_targets.sql" }}
 
 {{ template "dashboard-gtm/gtm_lead_json.sql" }}
 {{ template "dashboard-gtm/gtm_agent_draft_json.sql" }}

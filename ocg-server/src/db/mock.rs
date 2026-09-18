@@ -819,6 +819,19 @@ mock! {
             alliance_id: Uuid,
             group_id: Uuid,
         ) -> Result<Vec<crate::types::group::GroupParentOption>>;
+        async fn move_event(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_id: Uuid,
+            target_group_id: Uuid,
+        ) -> Result<()>;
+        async fn list_group_move_targets(
+            &self,
+            actor_user_id: Uuid,
+            alliance_id: Uuid,
+            group_id: Uuid,
+        ) -> Result<Vec<crate::types::group::GroupParentOption>>;
         async fn list_payment_currency_codes(&self) -> Result<Vec<String>>;
         async fn list_session_kinds(&self)
             -> Result<Vec<crate::types::event::SessionKindSummary>>;

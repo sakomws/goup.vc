@@ -18,7 +18,7 @@ use crate::{
             EventCategory, EventCfsLabel, EventFull, EventKindSummary, EventRegistrationMode,
             EventSummary, SessionKind, SessionKindSummary,
         },
-        group::GroupSponsor,
+        group::{GroupParentOption, GroupSponsor},
         pagination::{self, Pagination, ToRawQuery},
         payments::EventDiscountType,
         questionnaire::QuestionnaireQuestion,
@@ -136,6 +136,14 @@ impl UpdatePage {
     pub(crate) fn is_selected_payment_currency_code(&self, payment_currency_code: &str) -> bool {
         self.event.payment_currency_code.as_deref() == Some(payment_currency_code)
     }
+}
+
+/// Options partial listing the groups an event can be moved into.
+#[derive(Debug, Clone, Template)]
+#[template(path = "dashboard/group/event_move_targets.html")]
+pub(crate) struct MoveTargets {
+    /// Groups the event can be moved into.
+    pub targets: Vec<GroupParentOption>,
 }
 
 // Types.

@@ -488,6 +488,23 @@ pub(crate) trait DBDashboardGroup {
         group_id: Uuid,
     ) -> Result<Vec<GroupParentOption>>;
 
+    /// Moves an event to another group within the same alliance.
+    async fn move_event(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        target_group_id: Uuid,
+    ) -> Result<()>;
+
+    /// Lists groups an event can be moved into (same alliance, actor can manage events).
+    async fn list_group_move_targets(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<Vec<GroupParentOption>>;
+
     /// Lists all available session kinds.
     async fn list_session_kinds(&self) -> Result<Vec<SessionKind>>;
 
@@ -1763,6 +1780,37 @@ where
         self.fetch_json_one(
             "select list_group_parent_options($1::uuid, $2::uuid)",
             &[&alliance_id, &group_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::move_event`]
+    #[instrument(skip(self), err)]
+    async fn move_event(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        target_group_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select move_event($1::uuid, $2::uuid, $3::uuid, $4::uuid)",
+            &[&actor_user_id, &group_id, &event_id, &target_group_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::list_group_move_targets`]
+    #[instrument(skip(self), err)]
+    async fn list_group_move_targets(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<Vec<GroupParentOption>> {
+        self.fetch_json_one(
+            "select list_group_move_targets($1::uuid, $2::uuid, $3::uuid)",
+            &[&actor_user_id, &alliance_id, &group_id],
         )
         .await
     }

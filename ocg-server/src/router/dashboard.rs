@@ -347,6 +347,10 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             get(dashboard::group::events::details),
         )
         .route(
+            "/events/{event_id}/move-targets",
+            get(dashboard::group::events::move_targets),
+        )
+        .route(
             "/events/{event_id}/submissions",
             get(dashboard::group::submissions::list_page),
         )
@@ -493,6 +497,10 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .route(
             "/events/{event_id}/publish",
             put(dashboard::group::events::publish),
+        )
+        .route(
+            "/events/{event_id}/move",
+            put(dashboard::group::events::move_to_group),
         )
         .route(
             "/events/{event_id}/defaults",
