@@ -55,6 +55,43 @@ async fn test_add_success() {
 }
 
 #[tokio::test]
+async fn test_delete_success() {
+    let alliance_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let lead_id = Uuid::new_v4();
+
+    let mut db = MockDB::new();
+    expect_authenticated_alliance_session(&mut db, session_id, user_id, alliance_id);
+    expect_alliance_permission(&mut db, alliance_id, user_id, AlliancePermission::GtmWrite);
+    db.expect_delete_gtm_lead()
+        .times(1)
+        .withf(move |actor_user_id, id, id_lead, group_id| {
+            *actor_user_id == user_id
+                && *id == alliance_id
+                && *id_lead == lead_id
+                && group_id.is_none()
+        })
+        .returning(|_, _, _, _| Ok(()));
+
+    let router =
+        Box::pin(TestRouterBuilder::new(db, MockNotificationsManager::new()).build()).await;
+    let response = router
+        .oneshot(
+            Request::builder()
+                .method("DELETE")
+                .uri(format!("/dashboard/alliance/gtm/{lead_id}"))
+                .header(COOKIE, format!("id={session_id}"))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
 async fn test_review_draft_approves_without_sending_when_not_outreach() {
     let alliance_id = Uuid::new_v4();
     let session_id = session::Id::default();

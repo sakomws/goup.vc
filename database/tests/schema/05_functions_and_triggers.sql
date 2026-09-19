@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(318);
+select plan(319);
 
 -- ============================================================================
 -- VARIABLES
@@ -111,6 +111,7 @@ select has_function('review_gtm_agent_draft', array['uuid', 'uuid', 'uuid', 'jso
 select has_function('suggest_gtm_lead_candidates', array['uuid', 'uuid', 'integer']::name[]);
 select has_function('transition_gtm_lead', array['uuid', 'uuid', 'uuid', 'text', 'boolean', 'jsonb']::name[]);
 select has_function('update_gtm_lead', array['uuid', 'uuid', 'uuid', 'jsonb']::name[]);
+select has_function('delete_gtm_lead', array['uuid', 'uuid', 'uuid', 'uuid']::name[]);
 select has_function('add_meeting', array['text', 'text', 'text', 'text', 'text', 'uuid', 'uuid', 'timestamp with time zone', 'text']::name[]);
 select has_function('add_region', array['uuid', 'uuid', 'jsonb']::name[]);
 select has_function('add_session_proposal', array['uuid', 'jsonb']::name[]);

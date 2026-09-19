@@ -19,13 +19,14 @@ Path: [/dashboard/alliance?tab=gtm](/dashboard/alliance?tab=gtm ':ignore') and
 
 ## Pipeline
 
-```
+```text
 lead_generation → reachout → get_response → qualification → proposal → negotiation
   → won → delivered → renewal → reachout
   → lost → reachout
 ```
 
-Humans may move a lead to any stage. Agents only suggest the next legal stage.
+Humans may move a lead to any stage or delete it from the pipeline. Agents
+only suggest the next legal stage and cannot delete leads.
 
 ## Permissions
 
@@ -47,6 +48,7 @@ Get Response is organizer-logged in v1: paste a reply, then approve the summary.
 
 ## MCP
 
-`goup_search_leads`, `goup_create_lead`, `goup_transition_lead`,
-`goup_run_gtm_agent`, and `goup_review_gtm_draft` expose the same HITL loop.
+`goup_search_leads`, `goup_create_lead`, `goup_delete_lead`,
+`goup_transition_lead`, `goup_run_gtm_agent`, and `goup_review_gtm_draft`
+expose the same HITL loop. Pipeline agents still cannot delete leads.
 Mutations still require `MCP_ENABLE_MUTATIONS=true`.

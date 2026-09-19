@@ -129,7 +129,10 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
     let gtm_management = Router::new()
         .route("/gtm/add", post(dashboard::alliance::gtm::add))
         .route("/gtm/agents/run", post(dashboard::alliance::gtm::run_agent))
-        .route("/gtm/{lead_id}", put(dashboard::alliance::gtm::update))
+        .route(
+            "/gtm/{lead_id}",
+            put(dashboard::alliance::gtm::update).delete(dashboard::alliance::gtm::delete),
+        )
         .route(
             "/gtm/{lead_id}/transition",
             post(dashboard::alliance::gtm::transition),
@@ -600,7 +603,10 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
     let gtm_management = Router::new()
         .route("/gtm/add", post(dashboard::group::gtm::add))
         .route("/gtm/agents/run", post(dashboard::group::gtm::run_agent))
-        .route("/gtm/{lead_id}", put(dashboard::group::gtm::update))
+        .route(
+            "/gtm/{lead_id}",
+            put(dashboard::group::gtm::update).delete(dashboard::group::gtm::delete),
+        )
         .route(
             "/gtm/{lead_id}/transition",
             post(dashboard::group::gtm::transition),

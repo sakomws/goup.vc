@@ -44,6 +44,15 @@ pub(crate) trait DBGtm {
         input: &serde_json::Value,
     ) -> Result<()>;
 
+    /// Delete a lead. When `group_id` is set, the lead must belong to that group.
+    async fn delete_gtm_lead(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        gtm_lead_id: Uuid,
+        group_id: Option<Uuid>,
+    ) -> Result<()>;
+
     /// Move a lead to a new stage.
     async fn transition_gtm_lead(
         &self,
@@ -140,6 +149,21 @@ where
         self.execute(
             "select update_gtm_lead($1::uuid, $2::uuid, $3::uuid, $4::jsonb)",
             &[&actor_user_id, &alliance_id, &gtm_lead_id, &Json(input)],
+        )
+        .await
+    }
+
+    #[instrument(skip(self), err)]
+    async fn delete_gtm_lead(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        gtm_lead_id: Uuid,
+        group_id: Option<Uuid>,
+    ) -> Result<()> {
+        self.execute(
+            "select delete_gtm_lead($1::uuid, $2::uuid, $3::uuid, $4::uuid)",
+            &[&actor_user_id, &alliance_id, &gtm_lead_id, &group_id],
         )
         .await
     }

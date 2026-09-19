@@ -8,7 +8,7 @@ The `mcp/` directory contains a Node.js MCP (Model Context Protocol) JSON-RPC se
 
 ## Directory layout
 
-```
+```text
 mcp/
 ├── package.json    # Node.js ESM package, no runtime dependencies
 ├── server.mjs      # HTTP server, JSON-RPC dispatcher, tool runner
@@ -67,6 +67,10 @@ Each entry in `tools.json` has either an `output.text` field (static template, r
 | `create_github_project` | Insert landscape entry of kind `github_project` |
 | `search_wiki` | Fetch and filter RSS feeds from curated wiki sources |
 | `submit_talk` | Submit a talk/CFS proposal |
+| `search_leads` | Search GTM leads |
+| `create_lead` | Create a GTM lead |
+| `delete_lead` | Delete a GTM lead |
+| `transition_lead` | Transition a GTM lead |
 
 ### Registered tools (tools.json)
 
@@ -91,6 +95,7 @@ Each entry in `tools.json` has either an `output.text` field (static template, r
 | `goup_submit_talk` | action | Submit a CFS/talk proposal |
 | `goup_search_leads` | action | Search GTM leads |
 | `goup_create_lead` | action | Create a GTM lead |
+| `goup_delete_lead` | action | Delete a GTM lead |
 | `goup_transition_lead` | action | Transition a GTM lead |
 | `goup_run_gtm_agent` | action | Create a pending GTM agent draft |
 | `goup_review_gtm_draft` | action | Approve or reject a GTM draft |

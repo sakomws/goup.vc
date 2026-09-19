@@ -1434,6 +1434,13 @@ mock! {
             gtm_lead_id: Uuid,
             input: &serde_json::Value,
         ) -> Result<()>;
+        async fn delete_gtm_lead(
+            &self,
+            actor_user_id: Uuid,
+            alliance_id: Uuid,
+            gtm_lead_id: Uuid,
+            group_id: Option<Uuid>,
+        ) -> Result<()>;
         async fn transition_gtm_lead(
             &self,
             actor_user_id: Uuid,
