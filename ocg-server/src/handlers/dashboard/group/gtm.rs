@@ -76,6 +76,18 @@ pub(crate) async fn update(
     gtm_handlers::update(user, db, path, alliance_id, Some(group_id), input).await
 }
 
+/// Deletes a group lead.
+#[instrument(skip_all, err)]
+pub(crate) async fn delete(
+    user: CurrentUser,
+    db: State<DynDB>,
+    path: Path<Uuid>,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+) -> Result<impl IntoResponse, HandlerError> {
+    gtm_handlers::delete(user, db, path, alliance_id, Some(group_id)).await
+}
+
 /// Transitions a group lead.
 #[instrument(skip_all, err)]
 pub(crate) async fn transition(

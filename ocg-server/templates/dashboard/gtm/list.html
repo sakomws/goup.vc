@@ -145,11 +145,27 @@
               {% endif -%}
             </td>
             <td class="px-3 xl:px-5 py-3 text-right">
-              <button type="button"
-                      hx-get="{{ dashboard_base }}/gtm/{{ lead.gtm_lead_id }}"
-                      hx-target="#dashboard-content"
-                      hx-indicator="#dashboard-spinner"
-                      class="btn-secondary">Open</button>
+              <div class="flex flex-wrap justify-end gap-2">
+                <button type="button"
+                        hx-get="{{ dashboard_base }}/gtm/{{ lead.gtm_lead_id }}"
+                        hx-target="#dashboard-content"
+                        hx-indicator="#dashboard-spinner"
+                        class="btn-secondary">Open</button>
+                {% if can_manage_gtm -%}
+                  <button type="button"
+                          class="btn-tertiary text-red-700"
+                          hx-delete="{{ dashboard_base }}/gtm/{{ lead.gtm_lead_id }}"
+                          hx-target="#dashboard-content"
+                          hx-indicator="#dashboard-spinner"
+                          hx-trigger="confirmed"
+                          hx-disabled-elt="this"
+                          data-confirm-action
+                          data-confirm-message="Are you sure you want to delete this lead? This cannot be undone."
+                          data-confirm-text="Delete"
+                          data-success-message="Lead deleted."
+                          data-error-message="Something went wrong deleting this lead. Please try again later.">Delete</button>
+                {% endif -%}
+              </div>
             </td>
           </tr>
         {% endfor -%}

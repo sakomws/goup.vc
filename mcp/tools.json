@@ -1045,6 +1045,35 @@
     "action": "transition_lead"
   },
   {
+    "name": "goup_delete_lead",
+    "title": "GOUP Delete GTM Lead",
+    "description": "Permanently delete a GTM lead through delete_gtm_lead. Requires MCP_ENABLE_MUTATIONS=true and database access.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "actor_user_id": {
+          "type": "string",
+          "description": "User ID recorded as the actor."
+        },
+        "alliance_id": {
+          "type": "string",
+          "description": "Alliance ID that owns the lead."
+        },
+        "gtm_lead_id": {
+          "type": "string",
+          "description": "Lead ID to delete."
+        },
+        "group_id": {
+          "type": "string",
+          "description": "Optional group scope. When set, the lead must belong to this group."
+        }
+      },
+      "required": ["actor_user_id", "alliance_id", "gtm_lead_id"],
+      "additionalProperties": false
+    },
+    "action": "delete_lead"
+  },
+  {
     "name": "goup_run_gtm_agent",
     "title": "GOUP Run GTM Agent",
     "description": "Create a pending GTM agent draft. Agents never advance stage. Requires MCP_ENABLE_MUTATIONS=true.",

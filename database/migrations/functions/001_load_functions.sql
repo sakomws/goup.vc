@@ -213,6 +213,7 @@
 {{ template "dashboard-gtm/add_gtm_lead_activity.sql" }}
 {{ template "dashboard-gtm/add_gtm_lead.sql" }}
 {{ template "dashboard-gtm/update_gtm_lead.sql" }}
+{{ template "dashboard-gtm/delete_gtm_lead.sql" }}
 {{ template "dashboard-gtm/transition_gtm_lead.sql" }}
 {{ template "dashboard-gtm/list_gtm_leads.sql" }}
 {{ template "dashboard-gtm/get_gtm_lead.sql" }}

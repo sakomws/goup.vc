@@ -69,5 +69,21 @@ test.describe("group dashboard GTM view", () => {
     await expect(
       dashboardContent.locator("tr", { hasText: leadName }),
     ).toContainText("Reachout");
+
+    const leadRowAfterApprove = dashboardContent.locator("tr", { hasText: leadName });
+    await leadRowAfterApprove.getByRole("button", { name: "Delete" }).click();
+    await expect(organizerGroupPage.locator(".swal2-popup")).toBeVisible();
+
+    await Promise.all([
+      organizerGroupPage.waitForResponse(
+        (response) =>
+          response.request().method() === "DELETE" &&
+          response.url().includes("/dashboard/group/gtm/") &&
+          response.ok(),
+      ),
+      organizerGroupPage.getByRole("button", { name: "Delete" }).click(),
+    ]);
+
+    await expect(dashboardContent.locator("tr", { hasText: leadName })).toHaveCount(0);
   });
 });

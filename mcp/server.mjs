@@ -270,6 +270,8 @@ async function runAction(action, args) {
       return searchLeads(args);
     case "create_lead":
       return createLead(args);
+    case "delete_lead":
+      return deleteLead(args);
     case "transition_lead":
       return transitionLead(args);
     case "run_gtm_agent":
@@ -439,6 +441,28 @@ select json_build_object(
     '${allianceId}'::uuid,
     convert_from(decode('${inputJson}', 'base64'), 'UTF8')::jsonb
   )
+)::text;
+`;
+  return (await runPsql(sql)).trim();
+}
+
+async function deleteLead(args) {
+  if (!ENABLE_MUTATIONS) {
+    throw new Error("Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow GTM mutations.");
+  }
+  const actorUserId = requireUuid(args.actor_user_id, "actor_user_id");
+  const allianceId = requireUuid(args.alliance_id, "alliance_id");
+  const leadId = requireUuid(args.gtm_lead_id, "gtm_lead_id");
+  const groupId = optionalString(args.group_id);
+  const groupSql = groupId
+    ? `'${requireUuid(groupId, "group_id")}'::uuid`
+    : "null::uuid";
+  const sql = `
+select delete_gtm_lead(
+  '${actorUserId}'::uuid,
+  '${allianceId}'::uuid,
+  '${leadId}'::uuid,
+  ${groupSql}
 )::text;
 `;
   return (await runPsql(sql)).trim();

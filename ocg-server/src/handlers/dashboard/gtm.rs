@@ -147,6 +147,20 @@ pub(crate) async fn update(
     Ok((StatusCode::NO_CONTENT, [("HX-Trigger", "refresh-body")]).into_response())
 }
 
+/// Deletes a lead.
+#[instrument(skip_all, err)]
+pub(crate) async fn delete(
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    Path(gtm_lead_id): Path<Uuid>,
+    alliance_id: Uuid,
+    group_id: Option<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.delete_gtm_lead(user.user_id, alliance_id, gtm_lead_id, group_id)
+        .await?;
+    Ok((StatusCode::NO_CONTENT, [("HX-Trigger", "refresh-body")]).into_response())
+}
+
 /// Moves a lead to another stage.
 #[instrument(skip_all, err)]
 pub(crate) async fn transition(
