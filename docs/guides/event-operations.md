@@ -449,7 +449,8 @@ workflow instead.
 
 `Invite` is available for free RSVP events when you have event write access. You can select a
 registered platform user or enter an email address. For email invitations, the address must match
-the invitee's LF account primary email because they must log in with LF SSO to accept. Pending
+the invitee's GOUP sign-in email (GitHub, LinkedIn, or email). A Linux Foundation account is not
+required. Pending
 invitations show in the attendee table and can be canceled from the row actions menu. Rejected
 invitations remain visible and cannot be sent again for the same event and user.
 

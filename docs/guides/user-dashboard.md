@@ -112,9 +112,10 @@ Invitation statuses:
 When someone invites you to a team, you receive an in-app and email invitation with a direct path
 to accept or decline.
 
-When someone invites you to an event by email, sign in with LF SSO using the LF account whose
-primary email matches the invited address. If the email on your LF account is different, OCG
-cannot connect the invitation to your login and you will not be able to accept it.
+When someone invites you to an event by email, sign in with GitHub, LinkedIn, or email using the
+same address the invitation was sent to. A Linux Foundation account is not required. If the email
+on your GOUP account is different, GOUP cannot connect the invitation to your login and you will
+not be able to accept it.
 
 Typical post-accept behavior:
 
