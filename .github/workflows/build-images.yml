@@ -10,6 +10,10 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAMESPACE: ${{ github.repository }}
 
+concurrency:
+  group: build-images-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-images:
     runs-on: ubuntu-latest

@@ -12,7 +12,7 @@ on:
 
 concurrency:
   group: production-deploy
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -164,6 +164,8 @@ jobs:
             "bash -s -- '${CARGO_BUILD_JOBS}'" <<'REMOTE'
           set -euo pipefail
           CARGO_BUILD_JOBS="$1"
+          exec 9>/tmp/goup-production-deploy.lock
+          flock 9
           cd "${HOME}/goup.vc"
           git fetch origin main
           git checkout main
