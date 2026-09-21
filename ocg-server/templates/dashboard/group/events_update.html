@@ -121,6 +121,18 @@
     {{ dashboard::permission_warning(message = "This event is canceled. Event details are read-only, but attendee and refund review tools remain available.", extra_classes = "") -}}
   {% endif -%}
 
+  {% if can_manage_events && !event.canceled -%}
+    <div class="mt-4"
+         hx-get="/dashboard/group/events/{{ event.event_id }}/custom-domain"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+      <div class="flex items-center gap-2 text-sm text-stone-500">
+        {{ ui::spinner(size = "size-5") -}}
+        Loading custom domain…
+      </div>
+    </div>
+  {% endif -%}
+
   {% if can_move_events && !event.canceled -%}
     <div class="mt-4 rounded-md border border-stone-900/10 bg-stone-50 px-4 py-3">
       <form id="move-event-form"

@@ -254,6 +254,43 @@ mock! {
     }
 
     #[async_trait]
+    impl crate::db::custom_domains::DBCustomDomains for DB {
+        async fn get_custom_domain(
+            &self,
+            group_id: Uuid,
+            event_id: Option<Uuid>,
+        ) -> Result<Option<crate::types::custom_domain::CustomDomain>>;
+        async fn upsert_custom_domain(
+            &self,
+            actor_user_id: Uuid,
+            alliance_id: Uuid,
+            group_id: Uuid,
+            event_id: Option<Uuid>,
+            hostname: &str,
+            verification_token: &str,
+        ) -> Result<crate::types::custom_domain::CustomDomain>;
+        async fn mark_custom_domain_verified(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_id: Option<Uuid>,
+            custom_domain_id: Uuid,
+            hostname: &str,
+            verification_token: &str,
+        ) -> Result<crate::types::custom_domain::CustomDomain>;
+        async fn delete_custom_domain(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_id: Option<Uuid>,
+        ) -> Result<()>;
+        async fn resolve_active_custom_domain(
+            &self,
+            hostname: &str,
+        ) -> Result<Option<crate::types::custom_domain::CustomDomainTarget>>;
+    }
+
+    #[async_trait]
     impl crate::db::alliance::DBAlliance for DB {
         async fn get_alliance_id_by_name(&self, name: &str) -> Result<Option<Uuid>>;
         async fn get_alliance_name_by_id(&self, alliance_id: Uuid) -> Result<Option<String>>;

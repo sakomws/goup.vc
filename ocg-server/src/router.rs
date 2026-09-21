@@ -9,21 +9,28 @@ mod dashboard;
 #[cfg(test)]
 mod tests;
 
+use std::{
+    collections::HashMap,
+    sync::LazyLock,
+    time::{Duration, Instant},
+};
+
 use anyhow::Result;
 use axum::{
     Router,
     extract::{FromRef, Request, State as AxumState},
     http::{
-        HeaderName, HeaderValue, StatusCode, Uri,
+        HeaderName, HeaderValue, Method, StatusCode, Uri,
         header::{CACHE_CONTROL, CONTENT_TYPE, HOST, VARY},
     },
     middleware::{self, Next},
-    response::{IntoResponse, Redirect},
+    response::{IntoResponse, Redirect, Response},
     routing::{delete, get, post, put},
 };
 use axum_login::login_required;
 use axum_messages::MessagesManagerLayer;
 use rust_embed::Embed;
+use tokio::sync::RwLock;
 use tower::ServiceBuilder;
 use tower_http::{set_header::SetResponseHeaderLayer, trace::TraceLayer};
 use tracing::instrument;
@@ -43,7 +50,22 @@ use crate::{
         job_discovery::ManualJobDiscovery, notifications::DynNotificationsManager,
         payments::DynPaymentsManager,
     },
+    types::custom_domain::CustomDomainTarget,
 };
+
+pub(crate) const VERIFIED_CUSTOM_DOMAIN_HEADER: &str = "x-ocg-verified-custom-domain";
+const CUSTOM_DOMAIN_CACHE_TTL: Duration = Duration::from_mins(1);
+const CUSTOM_DOMAIN_NEGATIVE_CACHE_TTL: Duration = Duration::from_secs(5);
+const CUSTOM_DOMAIN_CACHE_MAX_ENTRIES: usize = 1024;
+
+#[derive(Clone)]
+struct CachedCustomDomain {
+    expires_at: Instant,
+    target: Option<CustomDomainTarget>,
+}
+
+static CUSTOM_DOMAIN_CACHE: LazyLock<RwLock<HashMap<String, CachedCustomDomain>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 /// Cache-Control header value for immutable public assets.
 #[cfg(any(not(debug_assertions), test))]
@@ -526,6 +548,10 @@ pub(crate) async fn setup(
             state.clone(),
             redirect_old_hosts,
         ))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            route_custom_domains,
+        ))
         .layer(middleware::from_fn(add_agent_discovery_links))
         .layer(middleware::from_fn(refresh_stale_clients));
 
@@ -602,6 +628,140 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
 }
 
 // Middleware.
+
+async fn cached_custom_domain(db: &DynDB, hostname: &str) -> Result<Option<CustomDomainTarget>> {
+    if let Some(entry) = CUSTOM_DOMAIN_CACHE.read().await.get(hostname)
+        && entry.expires_at > Instant::now()
+    {
+        return Ok(entry.target.clone());
+    }
+
+    let target = db.resolve_active_custom_domain(hostname).await?;
+    let now = Instant::now();
+    let mut cache = CUSTOM_DOMAIN_CACHE.write().await;
+    cache.retain(|_, entry| entry.expires_at > now);
+    if cache.len() >= CUSTOM_DOMAIN_CACHE_MAX_ENTRIES
+        && let Some(oldest_hostname) = cache
+            .iter()
+            .min_by_key(|(_, entry)| entry.expires_at)
+            .map(|(hostname, _)| hostname.clone())
+    {
+        cache.remove(&oldest_hostname);
+    }
+    let ttl = if target.is_some() {
+        CUSTOM_DOMAIN_CACHE_TTL
+    } else {
+        CUSTOM_DOMAIN_NEGATIVE_CACHE_TTL
+    };
+    cache.insert(
+        hostname.to_string(),
+        CachedCustomDomain {
+            expires_at: now + ttl,
+            target: target.clone(),
+        },
+    );
+    Ok(target)
+}
+
+fn request_hostname(request: &Request) -> Option<String> {
+    request
+        .headers()
+        .get(HOST)
+        .and_then(|header| header.to_str().ok())
+        .and_then(|host| host.split(':').next())
+        .map(str::to_ascii_lowercase)
+}
+
+fn requires_canonical_host(method: &Method, path: &str, target: &CustomDomainTarget) -> bool {
+    if !matches!(*method, Method::GET | Method::HEAD) {
+        return true;
+    }
+    if path == "/" || path.starts_with("/static/") || path.starts_with("/images/") {
+        return false;
+    }
+
+    let target_path = target.canonical_path();
+    if path == target_path
+        || (target.event_slug.is_some() && path == format!("{target_path}/availability"))
+    {
+        return false;
+    }
+    true
+}
+
+/// Resolves active group and event hostnames while keeping authenticated flows canonical.
+async fn route_custom_domains(
+    AxumState(state): AxumState<State>,
+    mut request: Request,
+    next: Next,
+) -> Response {
+    request.headers_mut().remove(VERIFIED_CUSTOM_DOMAIN_HEADER);
+
+    let Some(hostname) = request_hostname(&request) else {
+        return next.run(request).await;
+    };
+    #[cfg(test)]
+    if hostname == "example.test" {
+        return next.run(request).await;
+    }
+    let canonical_hostname = reqwest::Url::parse(&state.server_cfg.base_url)
+        .ok()
+        .and_then(|url| url.host_str().map(str::to_ascii_lowercase));
+    if canonical_hostname.as_deref() == Some(hostname.as_str()) {
+        return next.run(request).await;
+    }
+
+    if matches!(
+        request.uri().path(),
+        "/health-check" | "/robots.txt" | "/favicon.ico"
+    ) {
+        return next.run(request).await;
+    }
+
+    let target = match cached_custom_domain(&state.db, &hostname).await {
+        Ok(Some(target)) => target,
+        Ok(None) => return StatusCode::MISDIRECTED_REQUEST.into_response(),
+        Err(error) => {
+            tracing::error!(%error, %hostname, "custom domain lookup failed");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
+
+    if requires_canonical_host(request.method(), request.uri().path(), &target) {
+        let location = format!(
+            "{}{}",
+            state.server_cfg.base_url.trim_end_matches('/'),
+            request
+                .uri()
+                .path_and_query()
+                .map_or("/", axum::http::uri::PathAndQuery::as_str)
+        );
+        return Redirect::temporary(&location).into_response();
+    }
+
+    request.headers_mut().insert(
+        VERIFIED_CUSTOM_DOMAIN_HEADER,
+        HeaderValue::from_static("true"),
+    );
+
+    if request.uri().path() == "/" {
+        let mut path = target.canonical_path();
+        if let Some(query) = request.uri().query() {
+            path.push('?');
+            path.push_str(query);
+        }
+        match path.parse() {
+            Ok(uri) => *request.uri_mut() = uri,
+            Err(error) => {
+                tracing::error!(%error, %hostname, "custom domain path rewrite failed");
+                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            }
+        }
+    }
+
+    request.extensions_mut().insert(target);
+    next.run(request).await
+}
 
 /// Middleware that redirects requests from old hosts to the base URL.
 ///

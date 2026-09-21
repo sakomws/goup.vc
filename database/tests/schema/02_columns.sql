@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(81);
+select plan(82);
 
 -- ============================================================================
 -- TESTS
@@ -224,6 +224,20 @@ select columns_are('custom_notification', array[
     'group_id',
     'subject',
     'body'
+]);
+
+-- Test: custom_domain columns should match expected
+select columns_are('custom_domain', array[
+    'custom_domain_id',
+    'hostname',
+    'group_id',
+    'event_id',
+    'verification_token',
+    'verification_token_created_at',
+    'verified_at',
+    'activated_at',
+    'created_at',
+    'updated_at'
 ]);
 
 -- Test: email_verification_code columns should match expected

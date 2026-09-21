@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(321);
+select plan(329);
 
 -- ============================================================================
 -- VARIABLES
@@ -135,7 +135,9 @@ select has_function('claim_pending_notification', array['integer', 'integer']::n
 select has_function('complete_external_event_purchase', array['uuid', 'uuid', 'uuid', 'uuid', 'text']::name[]);
 select has_function('complete_free_event_purchase', array['uuid']::name[]);
 select has_function('count_user_pending_invitations', array['uuid']::name[]);
+select has_function('custom_domain_json', array['custom_domain']::name[]);
 select has_function('deactivate_group', array['uuid', 'uuid', 'uuid']::name[]);
+select has_function('delete_custom_domain', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('delete_alliance_team_member', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('delete_event', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('delete_event_category', array['uuid', 'uuid', 'uuid']::name[]);
@@ -157,6 +159,7 @@ select has_function('expire_event_purchase_for_checkout_session', array['text', 
 select has_function('generate_slug', array['integer']::name[]);
 select has_function('generate_slug_from_source', array['text', 'integer']::name[]);
 select has_function('get_cfs_submission_notification_data', array['uuid', 'uuid']::name[]);
+select has_function('get_custom_domain', array['uuid', 'uuid']::name[]);
 select has_function('get_alliance_full', array['uuid']::name[]);
 select has_function('get_alliance_id_by_name', array['text']::name[]);
 select has_function('get_alliance_name_by_id', array['uuid']::name[]);
@@ -266,8 +269,11 @@ select has_function('list_user_session_proposals', array['uuid', 'jsonb']::name[
 select has_function('list_user_session_proposals_for_cfs_event', array['uuid', 'uuid']::name[]);
 select has_function('manual_check_in_event', array['uuid', 'uuid', 'uuid', 'uuid']::name[]);
 select has_function('mark_google_meet_recording_published', array['uuid', 'timestamp with time zone', 'text', 'text']::name[]);
+select has_function('mark_custom_domain_active', array['uuid']::name[]);
+select has_function('mark_custom_domain_verified', array['uuid', 'uuid', 'uuid', 'uuid', 'text', 'text']::name[]);
 select has_function('mark_stale_google_meet_recording_publish_claims_unknown', array['bigint']::name[]);
 select has_function('manual_requeue_notifications', array['uuid[]', 'text']::name[]);
+select has_function('normalize_custom_domain_hostname', array['text']::name[]);
 select has_function('mark_stale_meeting_auto_end_checks_unknown', array['bigint']::name[]);
 select has_function('mark_stale_meeting_syncs_unknown', array['bigint']::name[]);
 select has_function('mark_stale_processing_notifications_unknown', array['bigint']::name[]);
@@ -302,6 +308,7 @@ select has_function('release_meeting_sync_claim', array['uuid', 'uuid', 'uuid', 
 select has_function('request_event_refund', array['uuid', 'uuid', 'uuid', 'text', 'jsonb']::name[]);
 select has_function('requeue_notification', array['uuid', 'text', 'bigint', 'bigint', 'integer']::name[]);
 select has_function('resolve_event_custom_notification_recipient_ids', array['uuid', 'uuid', 'text', 'uuid[]']::name[]);
+select has_function('resolve_active_custom_domain', array['text']::name[]);
 select has_function('request_group_member_phone', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('resolve_unique_username', array['text', 'uuid']::name[]);
 select has_function('resubmit_cfs_submission', array['uuid', 'uuid']::name[]);
@@ -353,6 +360,7 @@ select has_function('update_user_details', array['uuid', 'jsonb']::name[]);
 select has_function('update_user_password', array['uuid', 'text']::name[]);
 select has_function('update_user_provider', array['uuid', 'jsonb']::name[]);
 select has_function('upsert_pending_registration_answers', array['uuid', 'uuid', 'jsonb', 'jsonb']::name[]);
+select has_function('upsert_custom_domain', array['uuid', 'uuid', 'uuid', 'uuid', 'text', 'text']::name[]);
 select has_function('user_has_alliance_permission', array['uuid', 'uuid', 'text']::name[]);
 select has_function('user_has_group_permission', array['uuid', 'uuid', 'uuid', 'text']::name[]);
 select has_function('validate_add_event_dates', array['jsonb']::name[]);

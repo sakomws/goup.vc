@@ -30,6 +30,8 @@ use crate::{
 pub(crate) struct Page {
     /// Configured public base URL.
     pub base_url: String,
+    /// Whether this page was reached through its verified custom hostname.
+    pub custom_domain: bool,
     /// Detailed information about the event.
     pub event: EventFull,
     /// Identifier for the current page.
@@ -48,6 +50,9 @@ pub(crate) struct Page {
 impl Page {
     /// Returns the canonical public URL for the event page.
     pub(crate) fn canonical_url(&self) -> String {
+        if self.custom_domain {
+            return helpers::absolute_url(&self.base_url, "/");
+        }
         helpers::absolute_url(
             &self.base_url,
             &format!(
@@ -314,6 +319,7 @@ mod tests {
     fn sample_page(starts_at: Option<DateTime<Utc>>, timezone: Tz) -> Page {
         Page {
             base_url: "https://example.test".to_string(),
+            custom_domain: false,
             event: EventFull {
                 alliance: AllianceSummary {
                     display_name: "Test Alliance".to_string(),
@@ -334,5 +340,14 @@ mod tests {
             user: User::default(),
             viewer_timezone: None,
         }
+    }
+    #[test]
+    fn test_custom_domain_canonical_url_uses_root() {
+        let mut page = sample_page(None, chrono_tz::UTC);
+        page.base_url = "https://events.example.com".to_string();
+        page.custom_domain = true;
+
+        assert_eq!(page.canonical_url(), "https://events.example.com/");
+        assert_ne!(page.path, "/");
     }
 }

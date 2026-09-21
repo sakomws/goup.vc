@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(75);
+select plan(76);
 
 -- ============================================================================
 -- TESTS
@@ -30,6 +30,7 @@ select has_table('alliance_role_group_permission');
 select has_table('alliance_site_layout');
 select has_table('alliance_team');
 select has_table('alliance_views');
+select has_table('custom_domain');
 select has_table('custom_notification');
 select has_table('email_verification_code');
 select has_table('event');

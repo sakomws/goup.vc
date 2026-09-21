@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(73);
+select plan(74);
 
 -- ============================================================================
 -- TESTS
@@ -119,6 +119,14 @@ select indexes_are('custom_notification', array[
     'custom_notification_event_id_idx',
     'custom_notification_group_id_idx',
     'custom_notification_pkey'
+]);
+
+-- Test: custom_domain indexes should match expected
+select indexes_are('custom_domain', array[
+    'custom_domain_pkey',
+    'custom_domain_hostname_key',
+    'custom_domain_group_id_key',
+    'custom_domain_event_id_key'
 ]);
 
 -- Test: email_verification_code indexes should match expected

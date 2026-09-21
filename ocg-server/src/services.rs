@@ -1,5 +1,7 @@
 //! Services modules.
 
+/// Custom hostname DNS verification.
+pub(crate) mod custom_domains;
 /// Scheduled external event discovery.
 pub(crate) mod event_discovery;
 /// Draft-only GTM agents for alliance and group leads.
