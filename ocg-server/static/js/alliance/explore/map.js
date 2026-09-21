@@ -1,5 +1,6 @@
 import { hideLoadingSpinner, showLoadingSpinner, navigateWithHtmx } from "/static/js/common/common.js";
 import { loadScriptOnce } from "/static/js/common/dom.js";
+import { getCartoVoyagerTileUrl } from "/static/js/common/map-tiles.js";
 import { fetchData } from "/static/js/alliance/explore/explore.js";
 import {
   cancelDelayedPopover,
@@ -264,19 +265,14 @@ export class Map {
     this.map.setView([0, 0], 1);
 
     // Adding the base layer to the map
-    L.tileLayer(
-      `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${
-        L.Browser.retina ? "@2x.png" : ".png"
-      }`,
-      {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: "abcd",
-        maxZoom: 20,
-        minZoom: 0,
-        noWrap: true,
-      },
-    ).addTo(this.map);
+    L.tileLayer(getCartoVoyagerTileUrl(L.Browser.retina), {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 20,
+      minZoom: 0,
+      noWrap: true,
+    }).addTo(this.map);
 
     // Adding a listener to the map after setting the position to get the bounds
     // when the map is moved (zoom or pan)
