@@ -767,7 +767,8 @@ describe("event page modules", () => {
 
     // Verify the update page fragment is initialized from the lifecycle event.
     expect(
-      document.querySelector('[data-event-page="update"]').dataset.eventPageReady,
+      document.querySelector('[data-event-page="update"]').dataset
+        .eventPageReady,
     ).to.equal("true");
   });
 
@@ -821,6 +822,30 @@ describe("event page modules", () => {
     expect(htmx.triggerCalls).to.deep.equal([
       ["#update-event-button", "confirmed"],
     ]);
+  });
+
+  it("uses a styled confirmation before moving an event", async () => {
+    mountUpdatePageShell({ canManageEvents: true });
+    const pageRoot = document.getElementById("event-update-page");
+    pageRoot.insertAdjacentHTML(
+      "beforeend",
+      '<form id="move-event-form"><button type="submit">Move</button></form>',
+    );
+
+    initializeEventUpdatePage();
+    const moveEventForm = document.getElementById("move-event-form");
+    moveEventForm.dispatchEvent(
+      new SubmitEvent("submit", { bubbles: true, cancelable: true }),
+    );
+    await waitForMicrotask();
+    await waitForMicrotask();
+
+    expect(swal.calls).to.have.length(1);
+    expect(swal.calls[0].text).to.equal(
+      "Move this event to the selected group? Its public link will change.",
+    );
+    expect(swal.calls[0].confirmButtonText).to.equal("Move event");
+    expect(htmx.triggerCalls).to.deep.equal([[moveEventForm, "confirmed"]]);
   });
 
   it("scopes add page initialization to the provided root", () => {

@@ -117,6 +117,14 @@ describe("dashboard group event update template", () => {
     );
   });
 
+  it("uses the styled confirmation dialog when moving an event", async () => {
+    const template = normalizeWhitespace(await loadTemplate());
+
+    expect(template).to.include('id="move-event-form"');
+    expect(template).to.include('hx-trigger="confirmed"');
+    expect(template).to.not.include("hx-confirm=");
+  });
+
   it("lazy-loads event review tabs from the desktop tab buttons", async () => {
     // Load the event update template before checking lazy tab contracts.
     const template = normalizeWhitespace(await loadTemplate());

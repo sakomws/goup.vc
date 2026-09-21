@@ -123,10 +123,11 @@
 
   {% if can_move_events && !event.canceled -%}
     <div class="mt-4 rounded-md border border-stone-900/10 bg-stone-50 px-4 py-3">
-      <form hx-put="/dashboard/group/events/{{ event.event_id }}/move"
+      <form id="move-event-form"
+            hx-put="/dashboard/group/events/{{ event.event_id }}/move"
+            hx-trigger="confirmed"
             hx-swap="none"
             hx-indicator="#dashboard-spinner"
-            hx-confirm="Move this event to the selected group? Its public link will change."
             class="flex flex-wrap items-end gap-3">
         <div class="min-w-0 flex-1">
           <label for="move-target-group"
