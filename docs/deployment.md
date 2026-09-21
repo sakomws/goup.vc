@@ -36,8 +36,16 @@ Required GitHub Actions secrets on the `production` environment:
 |--------|-------------|
 | `PRODUCTION_HOST` | Production host name or IP |
 | `PRODUCTION_USER` | SSH user on the instance |
-| `PRODUCTION_SSH_KEY` | Private key for that user |
+| `PRODUCTION_SSH_KEY` | Unencrypted OpenSSH or PEM private key for that user |
 | `PRODUCTION_SSH_HOST_KEY` | Host key (`known_hosts` line, public key, or `SHA256:` fingerprint) |
+
+Set `PRODUCTION_SSH_KEY` from the private key file so newlines stay intact:
+
+```sh
+gh secret set PRODUCTION_SSH_KEY --repo sakomws/goup.vc --env production < ~/.ssh/goup_deploy
+```
+
+The value must include the `-----BEGIN ... PRIVATE KEY-----` and `-----END ... PRIVATE KEY-----` lines, use Unix newlines, and have no passphrase. Do not paste the `.pub` file or a one-line key with `\n` escapes. `Load key ... error in libcrypto` means the stored value is not a valid private key file.
 
 The deploy job is limited to `sakomws/goup.vc` and uses the `production` environment. Trigger a manual run from the Actions tab with **workflow_dispatch** if you need to redeploy the current `main` SHA.
 

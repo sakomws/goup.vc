@@ -50,8 +50,89 @@ jobs:
           set -euo pipefail
           mkdir -p "${HOME}/.ssh"
           chmod 700 "${HOME}/.ssh"
-          printf '%s\n' "${PRODUCTION_SSH_KEY}" > "${HOME}/.ssh/deploy_key"
-          chmod 600 "${HOME}/.ssh/deploy_key"
+
+          python3 - <<'PY'
+          import base64
+          import os
+          import pathlib
+          import re
+          import subprocess
+          import sys
+
+          raw = os.environ["PRODUCTION_SSH_KEY"]
+          raw = raw.lstrip("\ufeff").replace("\r\n", "\n").replace("\r", "\n").strip()
+
+          if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "\"'":
+              raw = raw[1:-1].strip()
+
+          if "\n" not in raw and "\\n" in raw:
+              raw = raw.replace("\\n", "\n")
+
+          if "BEGIN " not in raw:
+              try:
+                  decoded = base64.b64decode(re.sub(r"\s+", "", raw), validate=True).decode("utf-8")
+                  if "BEGIN " in decoded:
+                      raw = decoded.replace("\r\n", "\n").replace("\r", "\n").strip()
+              except Exception:
+                  pass
+
+          if "\n" not in raw and "BEGIN " in raw and "END " in raw:
+              raw = re.sub(r"(-----BEGIN [A-Z0-9 ]+-----)\s*", r"\1\n", raw)
+              raw = re.sub(r"\s*(-----END [A-Z0-9 ]+-----)", r"\n\1", raw)
+              raw = re.sub(r"[ \t]+", "\n", raw)
+
+          if not raw.endswith("\n"):
+              raw += "\n"
+
+          dest = pathlib.Path.home() / ".ssh" / "deploy_key"
+          dest.write_text(raw)
+          dest.chmod(0o600)
+
+          lines = [line for line in raw.splitlines() if line]
+          header = lines[0] if lines else ""
+          footer = lines[-1] if lines else ""
+          print(f"deploy_key bytes={len(raw.encode())} lines={len(lines)}")
+          print(f"deploy_key header={header}")
+          print(f"deploy_key footer={footer}")
+
+          if "PUBLIC KEY" in raw or header.startswith(("ssh-rsa ", "ssh-ed25519 ", "ecdsa-sha2-", "ssh-dss ")):
+              print(
+                  "PRODUCTION_SSH_KEY looks like a public key. Store the private key instead.",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+
+          if "BEGIN " not in header or "PRIVATE KEY" not in header:
+              print(
+                  "PRODUCTION_SSH_KEY must start with -----BEGIN ... PRIVATE KEY-----.",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+
+          if "ENCRYPTED" in raw or "Proc-Type: 4,ENCRYPTED" in raw:
+              print(
+                  "PRODUCTION_SSH_KEY is passphrase-protected. Use an unencrypted deploy key.",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+
+          result = subprocess.run(
+              ["ssh-keygen", "-y", "-f", str(dest), "-P", ""],
+              stdout=subprocess.DEVNULL,
+              stderr=subprocess.DEVNULL,
+          )
+          if result.returncode != 0:
+              print("PRODUCTION_SSH_KEY is not a usable OpenSSH private key.", file=sys.stderr)
+              print(
+                  "Re-set it from the key file (keep real newlines, no passphrase):",
+                  file=sys.stderr,
+              )
+              print(
+                  "  gh secret set PRODUCTION_SSH_KEY --repo sakomws/goup.vc --env production < /path/to/private_key",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+          PY
 
           host_key="$(printf '%s\n' "${PRODUCTION_SSH_HOST_KEY}" | tr -d '\r')"
           if [[ "${host_key}" == SHA256:* ]]; then
