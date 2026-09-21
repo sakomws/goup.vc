@@ -28,18 +28,27 @@ Key environment variables that control bootstrap behavior:
 
 ### Updating after a code change
 
+Merges to `main` deploy through `.github/workflows/deploy.yml`. The workflow SSHs into EC2, pulls `origin/main`, runs migrations, builds the release binary, and restarts `ocg-server`.
+
+Required GitHub Actions secrets (repository or `production` environment):
+
+| Secret | Description |
+|--------|-------------|
+| `EC2_HOST` | Production host name or IP |
+| `EC2_USER` | SSH user on the instance |
+| `EC2_SSH_KEY` | Private key for that user |
+| `EC2_PORT` | Optional SSH port. Default: `22` |
+
+The deploy job is limited to `sakomws/goup.vc` and uses the `production` environment. Trigger a manual run from the Actions tab with **workflow_dispatch** if you need to redeploy the current `main` SHA.
+
+To update the instance by hand:
+
 ```sh
 cd ~/goup.vc
-git pull origin main
-cargo build --release -p ocg-server
-sudo systemctl restart ocg-server
-sudo systemctl status ocg-server --no-pager
+./scripts/deploy-ec2.sh
 ```
 
-If database migrations changed:
-```sh
-just db-migrate
-```
+That script pulls `main`, runs `database/migrations/migrate.sh`, builds `ocg-server` in release mode, restarts `ocg-server`, and restarts `goup-mcp` only when `mcp/` changed.
 
 ## MCP server
 

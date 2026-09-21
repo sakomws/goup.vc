@@ -175,19 +175,13 @@ cargo test -p ocg-server handlers::auth::tests::test_sign_up_success
 
 ## Deployment Notes
 
-Production EC2 updates are currently pull-and-rebuild deployments:
+Production EC2 updates run from `.github/workflows/deploy.yml` after a merge to `main`. The workflow SSHs into the instance and runs `scripts/deploy-ec2.sh`.
+
+To update the instance by hand:
 
 ```bash
 cd ~/goup.vc
-git pull origin main
-cd database/migrations
-TERN_CONF="$HOME/.config/ocg/tern.conf" ./migrate.sh
-cd ~/goup.vc
-nohup env CARGO_BUILD_JOBS=1 cargo build --release -p ocg-server > ~/goup-build.log 2>&1 &
-tail -f ~/goup-build.log
-sudo systemctl restart ocg-server
-sudo systemctl status ocg-server --no-pager
-curl -I http://127.0.0.1:9000
+./scripts/deploy-ec2.sh
 ```
 
 Only run the MCP restart when files under `mcp/` changed:

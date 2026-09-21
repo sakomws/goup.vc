@@ -1,0 +1,54 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.repository == 'sakomws/goup.vc'
+    steps:
+      - name: Check deploy secrets
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          missing=""
+          if [ -z "${EC2_HOST}" ]; then missing="${missing} EC2_HOST"; fi
+          if [ -z "${EC2_USER}" ]; then missing="${missing} EC2_USER"; fi
+          if [ -z "${EC2_SSH_KEY}" ]; then missing="${missing} EC2_SSH_KEY"; fi
+          if [ -n "${missing}" ]; then
+            echo "Missing GitHub secrets:${missing}"
+            echo "Add them under Settings > Secrets and variables > Actions, or the production environment."
+            exit 1
+          fi
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || 22 }}
+          script_stop: true
+          command_timeout: 60m
+          script: |
+            set -euo pipefail
+            cd "${HOME}/goup.vc"
+            git fetch origin main
+            git checkout main
+            git pull --ff-only origin main
+            DEPLOY_PULL=false CARGO_BUILD_JOBS=1 ./scripts/deploy-ec2.sh
