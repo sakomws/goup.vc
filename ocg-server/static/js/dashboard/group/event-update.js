@@ -1,4 +1,4 @@
-import { bindHtmxResponseAlert, showConfirmAlert } from "/static/js/common/alerts.js";
+import { bindHtmxResponseAlert, confirmAction, showConfirmAlert } from "/static/js/common/alerts.js";
 import {
   getElementById,
   initializeMatchingRoots,
@@ -32,6 +32,36 @@ const readBooleanDataAttribute = (element, attributeName) => element?.dataset?.[
 
 const canceledEventReviewSections = new Set(["submissions", "attendees", "invitation-requests", "waitlist"]);
 const EVENT_UPDATE_PAGE_SELECTOR = '[data-event-page="update"]';
+
+/**
+ * Replaces HTMX's native confirm prompt with the application's styled dialog.
+ * @param {Document|Element} pageRoot Active event update page
+ * @returns {void}
+ */
+export const initializeMoveEventConfirmation = (pageRoot) => {
+  const moveEventForm = getElementById(pageRoot, "move-event-form");
+  if (!moveEventForm || !markDatasetReady(moveEventForm, "confirmationBound")) {
+    return;
+  }
+
+  moveEventForm.addEventListener(
+    "submit",
+    async (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      const confirmed = await confirmAction({
+        message: "Move this event to the selected group? Its public link will change.",
+        confirmText: "Move event",
+        cancelText: "Cancel",
+      });
+      if (confirmed) {
+        htmx.trigger(moveEventForm, "confirmed");
+      }
+    },
+    true,
+  );
+};
 
 /**
  * Initializes the event update page behavior for the active form fragment.
@@ -185,6 +215,7 @@ export const initializeEventUpdatePage = (root = document) => {
     pageRoot,
     confirmMessage: "You have pending changes. If you continue, unsaved changes will be lost.",
   });
+  initializeMoveEventConfirmation(pageRoot);
 
   initializeEventPreview({
     pageRoot,
