@@ -77,6 +77,18 @@ begin
       and deleted = false
       and canceled = false;
 
+    -- Reusable sponsors stay with their original group. Event-only sponsors
+    -- move with the event and remain scoped to it.
+    delete from event_sponsor es
+    using group_sponsor gs
+    where es.event_id = p_event_id
+      and es.group_sponsor_id = gs.group_sponsor_id
+      and gs.event_id is null;
+
+    update group_sponsor
+    set group_id = p_target_group_id
+    where event_id = p_event_id;
+
     -- Record the move against the target group
     perform insert_audit_log(
         'event_moved',

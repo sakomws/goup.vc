@@ -804,6 +804,8 @@ pub struct EventLeaveOutcome {
 #[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventSponsor {
+    /// Event identifier when this sponsor is scoped to one event.
+    pub event_id: Option<Uuid>,
     /// Group sponsor identifier.
     pub group_sponsor_id: Uuid,
     /// Sponsor level for this event.

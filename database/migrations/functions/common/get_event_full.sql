@@ -334,6 +334,7 @@ returns json as $$
             -- Include event sponsors
             'sponsors', (
                 select coalesce(json_agg(json_strip_nulls(json_build_object(
+                    'event_id', gs.event_id,
                     'group_sponsor_id', gs.group_sponsor_id,
                     'level', es.level,
                     'logo_url', gs.logo_url,

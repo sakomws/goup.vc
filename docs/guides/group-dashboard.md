@@ -220,6 +220,11 @@ Typical flow:
 3. Attach sponsors in event editing (`Hosts & Speakers` section).
 4. Update sponsor details once to keep future events consistent.
 
+For a one-off event partner, use **Add sponsor for this event** in the event's
+`Hosts & Speakers` section. Event-only sponsors are attached to that event,
+remain hidden from the reusable group sponsor catalog and public group page,
+and are removed when detached from the event.
+
 ![Group sponsors area](../screenshots/dashboard-group-sponsors.png)
 
 ## Events: Operations Hub

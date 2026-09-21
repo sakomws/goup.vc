@@ -10,6 +10,8 @@ select plan(4);
 -- ============================================================================
 
 \set allianceID '3a240000-0000-0000-0000-000000000001'
+\set eventCategoryID '3a240000-0000-0000-0000-000000000009'
+\set eventID '3a240000-0000-0000-0000-000000000010'
 \set groupCategoryID '3a240000-0000-0000-0000-000000000002'
 \set groupID '3a240000-0000-0000-0000-000000000003'
 \set missingGroupID '3a240000-0000-0000-0000-000000000004'
@@ -17,6 +19,7 @@ select plan(4);
 \set sponsor1ID '3a240000-0000-0000-0000-000000000006'
 \set sponsor2ID '3a240000-0000-0000-0000-000000000007'
 \set sponsor3ID '3a240000-0000-0000-0000-000000000008'
+\set sponsor4ID '3a240000-0000-0000-0000-000000000011'
 
 -- ============================================================================
 -- SEED DATA
@@ -44,6 +47,9 @@ insert into alliance (
 -- Group category
 insert into group_category (group_category_id, alliance_id, name)
 values (:'groupCategoryID', :'allianceID', 'Tech');
+
+insert into event_category (event_category_id, alliance_id, name)
+values (:'eventCategoryID', :'allianceID', 'Meetup');
 
 -- Groups
 insert into "group" (group_id, alliance_id, group_category_id, name, slug)
@@ -74,6 +80,42 @@ values (
     false,
     'https://example.com/s3.png',
     null
+);
+
+insert into event (
+    event_id,
+    group_id,
+    name,
+    slug,
+    description,
+    timezone,
+    event_category_id,
+    event_kind_id
+) values (
+    :'eventID',
+    :'groupID',
+    'Sponsor Test Event',
+    'sponsor-test-event',
+    'Tests event-only sponsors',
+    'UTC',
+    :'eventCategoryID',
+    'in-person'
+);
+
+insert into group_sponsor (
+    group_sponsor_id,
+    group_id,
+    event_id,
+    name,
+    featured,
+    logo_url
+) values (
+    :'sponsor4ID',
+    :'groupID',
+    :'eventID',
+    'Event Only',
+    false,
+    'https://example.com/event-only.png'
 );
 
 -- ============================================================================

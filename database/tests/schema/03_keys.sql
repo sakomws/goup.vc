@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(171);
+select plan(172);
 
 -- ============================================================================
 -- TESTS
@@ -153,6 +153,7 @@ select col_is_fk('group_member_spotlight', 'group_id', 'group');
 select col_is_fk('group_member_spotlight', 'user_id', 'user');
 select col_is_fk('group_role_group_permission', 'group_permission_id', 'group_permission');
 select col_is_fk('group_role_group_permission', 'group_role_id', 'group_role');
+select col_is_fk('group_sponsor', 'event_id', 'event');
 select col_is_fk('group_sponsor', 'group_id', 'group');
 select col_is_fk('group_store_item', 'created_by', 'user');
 select col_is_fk('group_store_item', 'group_id', 'group');

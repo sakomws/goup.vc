@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(319);
+select plan(321);
 
 -- ============================================================================
 -- VARIABLES
@@ -376,6 +376,7 @@ select has_function('withdraw_cfs_submission', array['uuid', 'uuid']::name[]);
 select has_function('check_event_attendee_waitlist', '{}'::name[]);
 select has_function('check_event_category_alliance', '{}'::name[]);
 select has_function('check_event_sponsor_group', '{}'::name[]);
+select has_function('check_group_sponsor_event_scope', '{}'::name[]);
 select has_function('check_event_ticketing_consistency', '{}'::name[]);
 select has_function('check_event_waitlist_attendee', '{}'::name[]);
 select has_function('check_group_category_alliance', '{}'::name[]);
@@ -392,6 +393,7 @@ select has_trigger('event', 'event_category_alliance_check');
 select has_trigger('event', 'event_ticketing_consistency_on_event');
 select has_trigger('event_discount_code', 'event_ticketing_consistency_on_event_discount_code');
 select has_trigger('event_sponsor', 'event_sponsor_group_check');
+select has_trigger('group_sponsor', 'group_sponsor_event_scope_check');
 select has_trigger('event_ticket_type', 'event_ticketing_consistency_on_event_ticket_type');
 select has_trigger('event_waitlist', 'event_waitlist_attendee_check');
 select has_trigger('group', 'group_category_alliance_check');

@@ -11,7 +11,8 @@ begin
     update group_sponsor set
         featured = p_featured
     where group_id = p_group_id
-    and group_sponsor_id = p_group_sponsor_id;
+    and group_sponsor_id = p_group_sponsor_id
+    and event_id is null;
 
     if found then
         -- Track the sponsor update

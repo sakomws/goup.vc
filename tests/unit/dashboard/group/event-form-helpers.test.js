@@ -72,9 +72,7 @@ describe("event form helpers", () => {
     `;
 
     // Read the gallery and tag fields after applying sanitized values.
-    const gallery = document.querySelector(
-      'gallery-field[field-name="photos_urls"]',
-    );
+    const gallery = document.querySelector('gallery-field[field-name="photos_urls"]');
     const tags = document.querySelector('multiple-inputs[field-name="tags"]');
 
     // Prepare gallery images for updating gallery images and tags with sanitized.
@@ -117,18 +115,10 @@ describe("event form helpers", () => {
     setEventReminderEnabled(false);
 
     // Registration and reminder toggles update their hidden fields.
-    expect(
-      document.getElementById("toggle_registration_required").checked,
-    ).to.equal(true);
-    expect(document.getElementById("registration_required").value).to.equal(
-      "true",
-    );
-    expect(
-      document.getElementById("toggle_event_reminder_enabled").checked,
-    ).to.equal(false);
-    expect(document.getElementById("event_reminder_enabled").value).to.equal(
-      "false",
-    );
+    expect(document.getElementById("toggle_registration_required").checked).to.equal(true);
+    expect(document.getElementById("registration_required").value).to.equal("true");
+    expect(document.getElementById("toggle_event_reminder_enabled").checked).to.equal(false);
+    expect(document.getElementById("event_reminder_enabled").value).to.equal("false");
   });
 
   it("sets normalized hosts and sponsors on their components", () => {
@@ -139,9 +129,7 @@ describe("event form helpers", () => {
     `;
 
     // Read the host and sponsor components after normalization.
-    const hosts = document.querySelector(
-      'user-search-selector[field-name="hosts"]',
-    );
+    const hosts = document.querySelector('user-search-selector[field-name="hosts"]');
     const sponsors = document.querySelector("sponsors-section");
 
     // Prepare hosts updated for sets normalized hosts and sponsors on their.
@@ -160,7 +148,17 @@ describe("event form helpers", () => {
       { user_id: "2", username: "bob" },
       { foo: "bar" },
     ]);
-    setSponsors([{ name: "ACME", level: 2 }, { name: "Alliance" }]);
+    setSponsors([
+      { name: "ACME", level: 2 },
+      { name: "Alliance" },
+      {
+        event_id: "event-1",
+        group_sponsor_id: "scoped-sponsor-1",
+        name: "Event Partner",
+        logo_url: "https://example.com/event-partner.png",
+        level: "Gold",
+      },
+    ]);
 
     // Normalized hosts and sponsors are applied to their components.
     expect(hosts.selectedUsers).to.deep.equal([
@@ -171,6 +169,12 @@ describe("event form helpers", () => {
     expect(sponsors.selectedSponsors).to.deep.equal([
       { name: "ACME", level: "2" },
       { name: "Alliance", level: "" },
+      {
+        client_id: "copied-event-sponsor-2",
+        name: "Event Partner",
+        logo_url: "https://example.com/event-partner.png",
+        level: "Gold",
+      },
     ]);
     expect(sponsorsUpdated).to.equal(1);
   });
@@ -235,9 +239,7 @@ describe("event form helpers", () => {
     setSessions(sessionsData);
 
     // Verify builds and applies normalized sessions for the sessions section.
-    expect(sessionsSection.sessions).to.deep.equal(
-      buildSessionEntries(sessionsData),
-    );
+    expect(sessionsSection.sessions).to.deep.equal(buildSessionEntries(sessionsData));
     expect(initializeCalls).to.equal(1);
     expect(updateCalls).to.equal(1);
   });
@@ -256,9 +258,7 @@ describe("event form helpers", () => {
     const editor = document.querySelector("markdown-editor#description");
     const textarea = editor.querySelector("textarea");
     const codeMirror = editor.querySelector(".CodeMirror");
-    const timezoneSelector = document.querySelector(
-      "timezone-selector[name='timezone']",
-    );
+    const timezoneSelector = document.querySelector("timezone-selector[name='timezone']");
 
     // Prepare input values for updating markdown content and timezone selectors.
     const inputValues = [];
