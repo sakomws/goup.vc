@@ -296,10 +296,18 @@ const setSponsors = (sponsors) => {
     return;
   }
   const normalized = Array.isArray(sponsors)
-    ? sponsors.map((sponsor) => ({
-        ...sponsor,
-        level: toOptionalString(sponsor?.level),
-      }))
+    ? sponsors.map((sponsor, index) => {
+        const normalizedSponsor = {
+          ...sponsor,
+          level: toOptionalString(sponsor?.level),
+        };
+        if (sponsor?.event_id) {
+          delete normalizedSponsor.event_id;
+          delete normalizedSponsor.group_sponsor_id;
+          normalizedSponsor.client_id = `copied-event-sponsor-${index}`;
+        }
+        return normalizedSponsor;
+      })
     : [];
   section.selectedSponsors = normalized;
   section.requestUpdate?.();

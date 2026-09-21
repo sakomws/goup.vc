@@ -123,6 +123,7 @@ returns json as $$
             )
             from group_sponsor gs
             where gs.group_id = g.group_id
+              and gs.event_id is null
         )
     ))::json as json_data
     from "group" g

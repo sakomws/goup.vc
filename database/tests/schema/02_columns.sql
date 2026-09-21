@@ -720,7 +720,8 @@ select columns_are('group_sponsor', array[
     'logo_url',
     'name',
 
-    'website_url'
+    'website_url',
+    'event_id'
 ]);
 
 -- Test: group_store_item columns should match expected

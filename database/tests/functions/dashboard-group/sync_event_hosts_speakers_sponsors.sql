@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(9);
+select plan(13);
 
 -- ============================================================================
 -- VARIABLES
@@ -16,6 +16,8 @@ select plan(9);
 \set groupID '3a330000-0000-0000-0000-000000000005'
 \set otherGroupID '3a330000-0000-0000-0000-000000000006'
 \set otherGroupSponsorID '3a330000-0000-0000-0000-000000000007'
+\set otherEventID '3a330000-0000-0000-0000-000000000014'
+\set otherEventSponsorID '3a330000-0000-0000-0000-000000000015'
 \set sponsor1ID '3a330000-0000-0000-0000-000000000008'
 \set sponsor2ID '3a330000-0000-0000-0000-000000000009'
 \set sponsor3ID '3a330000-0000-0000-0000-000000000010'
@@ -101,6 +103,42 @@ insert into event (
     'UTC',
     :'eventCategoryID',
     'in-person'
+);
+
+insert into event (
+    event_id,
+    group_id,
+    name,
+    slug,
+    description,
+    timezone,
+    event_category_id,
+    event_kind_id
+) values (
+    :'otherEventID',
+    :'groupID',
+    'Other Event',
+    'other-event',
+    'Another event in the same group',
+    'UTC',
+    :'eventCategoryID',
+    'in-person'
+);
+
+insert into group_sponsor (
+    group_sponsor_id,
+    group_id,
+    event_id,
+    name,
+    logo_url,
+    featured
+) values (
+    :'otherEventSponsorID',
+    :'groupID',
+    :'otherEventID',
+    'Other Event Sponsor',
+    'https://e/other-event-sponsor.png',
+    false
 );
 
 -- Existing event associations
@@ -206,8 +244,66 @@ select throws_ok(
         :'eventID',
         :'otherGroupSponsorID'
     ),
-    'sponsor does not belong to event group',
+    'sponsor is not available for this event',
     'Should reject sponsors that belong to a different group'
+);
+
+select throws_ok(
+    format(
+        $$select sync_event_hosts_speakers_sponsors(
+            '%s'::uuid,
+            '{"sponsors": [{"group_sponsor_id": "%s", "level": "Gold"}]}'::jsonb
+        )$$,
+        :'eventID',
+        :'otherEventSponsorID'
+    ),
+    'sponsor is not available for this event',
+    'Should reject event-only sponsors that belong to another event'
+);
+
+select lives_ok(
+    format(
+        $$select sync_event_hosts_speakers_sponsors(
+            '%s'::uuid,
+            '{
+                "sponsors": [{
+                    "name": "Event Only Sponsor",
+                    "logo_url": "https://e/event-only.png",
+                    "website_url": "https://e/event-only",
+                    "level": "Community"
+                }]
+            }'::jsonb
+        )$$,
+        :'eventID'
+    ),
+    'Should create an event-only sponsor while synchronizing the event'
+);
+
+select is(
+    (
+        select jsonb_build_object(
+            'event_id', gs.event_id,
+            'featured', gs.featured,
+            'group_id', gs.group_id,
+            'level', es.level,
+            'logo_url', gs.logo_url,
+            'name', gs.name,
+            'website_url', gs.website_url
+        )
+        from group_sponsor gs
+        join event_sponsor es using (group_sponsor_id)
+        where gs.event_id = :'eventID'::uuid
+    ),
+    jsonb_build_object(
+        'event_id', :'eventID'::uuid,
+        'featured', false,
+        'group_id', :'groupID'::uuid,
+        'level', 'Community',
+        'logo_url', 'https://e/event-only.png',
+        'name', 'Event Only Sponsor',
+        'website_url', 'https://e/event-only'
+    ),
+    'Should scope the inline sponsor to this event'
 );
 
 -- Should clear omitted association sections
@@ -238,6 +334,12 @@ select is(
         'sponsors', 0::bigint
     ),
     'Should leave only supplied hosts when speakers and sponsors are omitted'
+);
+
+select is(
+    (select count(*) from group_sponsor where event_id = :'eventID'::uuid),
+    0::bigint,
+    'Should delete event-only sponsor profiles removed from the event'
 );
 
 -- Should clear all association sections when payload is empty

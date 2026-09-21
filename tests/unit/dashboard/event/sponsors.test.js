@@ -99,6 +99,37 @@ describe("sponsors-section", () => {
     expect(element.querySelector('input[name="sponsors[0][level]"]').value).to.equal("Gold");
   });
 
+  it("adds an event-only sponsor with inline hidden fields", async () => {
+    const element = await mountLitComponent("sponsors-section", { sponsors });
+
+    element._openCreateModal();
+    element.newSponsorName = "Event Partner";
+    element.newSponsorLogoUrl = "https://example.com/event-partner.png";
+    element.newSponsorWebsiteUrl = "https://example.com/event-partner";
+    element.newSponsorLevel = "Community";
+    element._confirmCreateSponsor();
+    await element.updateComplete;
+
+    expect(element.selectedSponsors).to.deep.equal([
+      {
+        client_id: "event-sponsor-1",
+        name: "Event Partner",
+        logo_url: "https://example.com/event-partner.png",
+        website_url: "https://example.com/event-partner",
+        level: "Community",
+      },
+    ]);
+    expect(element.querySelector('input[name="sponsors[0][group_sponsor_id]"]')).to.equal(null);
+    expect(element.querySelector('input[name="sponsors[0][name]"]').value).to.equal("Event Partner");
+    expect(element.querySelector('input[name="sponsors[0][logo_url]"]').value).to.equal(
+      "https://example.com/event-partner.png",
+    );
+    expect(element.querySelector('input[name="sponsors[0][website_url]"]').value).to.equal(
+      "https://example.com/event-partner",
+    );
+    expect(element.querySelector('input[name="sponsors[0][level]"]').value).to.equal("Community");
+  });
+
   it("blocks event submission when a selected sponsor is missing a level", async () => {
     // Prepare a selected sponsor without a level before submitting.
     const addEventButton = document.createElement("button");

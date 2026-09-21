@@ -435,6 +435,16 @@ pub(crate) struct Event {
 impl Event {
     /// Converts the dashboard form payload into the JSON shape used by the database.
     pub(crate) fn to_db_payload(&self) -> anyhow::Result<Value> {
+        if self.sponsors.as_ref().is_some_and(|sponsors| {
+            sponsors.iter().any(|sponsor| {
+                sponsor.group_sponsor_id.is_none()
+                    && (sponsor.name.as_deref().is_none_or(str::is_empty)
+                        || sponsor.logo_url.as_deref().is_none_or(str::is_empty))
+            })
+        }) {
+            anyhow::bail!("event-only sponsor requires name and logo URL");
+        }
+
         // Serialize the full event form into a mutable JSON object
         let mut payload = match serde_json::to_value(self)? {
             Value::Object(map) => map,
@@ -622,12 +632,21 @@ impl EventRecurrencePattern {
 #[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct EventSponsor {
-    /// Group sponsor identifier.
+    /// Existing reusable or event-scoped sponsor identifier.
     #[garde(skip)]
-    pub group_sponsor_id: Uuid,
+    pub group_sponsor_id: Option<Uuid>,
     /// Sponsor level for this event.
     #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_S))]
     pub level: String,
+    /// Logo URL for a new event-only sponsor.
+    #[garde(custom(image_url_opt))]
+    pub logo_url: Option<String>,
+    /// Name for a new event-only sponsor.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_ENTITY_NAME))]
+    pub name: Option<String>,
+    /// Website URL for a new event-only sponsor.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub website_url: Option<String>,
 }
 
 /// Group events separated by status.
@@ -782,6 +801,7 @@ pub(crate) struct TicketType {
 
 #[cfg(test)]
 mod tests {
+    use garde::Validate;
     use serde_json::Value;
 
     use crate::types::{event::EventRegistrationMode, payments::EventDiscountType};
@@ -849,6 +869,51 @@ external_registration_url=https%3A%2F%2Fexample.com%2Fregister",
         assert_eq!(
             event.to_db_payload().unwrap()["registration_mode"],
             "external"
+        );
+    }
+
+    #[test]
+    fn event_deserialization_accepts_event_only_sponsor() {
+        let event: Event = serde_qs::from_str(
+            "\
+category_id=00000000-0000-0000-0000-000000000001&\
+description=Event%20description&\
+kind_id=virtual&\
+name=Sample%20Event&\
+timezone=UTC&\
+sponsors[0][name]=Event%20Partner&\
+sponsors[0][logo_url]=https%3A%2F%2Fexample.com%2Fpartner.png&\
+sponsors[0][website_url]=https%3A%2F%2Fexample.com&\
+sponsors[0][level]=Gold",
+        )
+        .unwrap();
+
+        event.validate().unwrap();
+        let payload = event.to_db_payload().unwrap();
+
+        assert!(payload["sponsors"][0].get("group_sponsor_id").is_none());
+        assert_eq!(payload["sponsors"][0]["name"], "Event Partner");
+        assert_eq!(
+            payload["sponsors"][0]["logo_url"],
+            "https://example.com/partner.png"
+        );
+        assert_eq!(payload["sponsors"][0]["level"], "Gold");
+    }
+
+    #[test]
+    fn to_db_payload_rejects_incomplete_event_only_sponsor() {
+        let mut event = sample_event();
+        event.sponsors = Some(vec![super::EventSponsor {
+            group_sponsor_id: None,
+            level: "Gold".to_string(),
+            logo_url: None,
+            name: Some("Event Partner".to_string()),
+            website_url: None,
+        }]);
+
+        assert_eq!(
+            event.to_db_payload().unwrap_err().to_string(),
+            "event-only sponsor requires name and logo URL"
         );
     }
 

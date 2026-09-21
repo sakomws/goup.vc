@@ -308,6 +308,7 @@ select indexes_are('group_site_layout', array[
 
 -- Test: group_sponsor indexes should match expected
 select indexes_are('group_sponsor', array[
+    'group_sponsor_event_id_idx',
     'group_sponsor_pkey',
     'group_sponsor_group_id_idx'
 ]);

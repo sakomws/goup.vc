@@ -19,6 +19,7 @@ returns json as $$
                 gs.website_url
             from group_sponsor gs
             where gs.group_id = p_group_id
+              and gs.event_id is null
             order by gs.name asc, gs.group_sponsor_id asc
             offset case when p_full_list then 0 else (select offset_value from filters) end
             limit case when p_full_list then null else (select limit_value from filters) end
@@ -28,6 +29,7 @@ returns json as $$
             select count(*)::int as total
             from group_sponsor gs
             where gs.group_id = p_group_id
+              and gs.event_id is null
         ),
         -- Render sponsors as JSON
         sponsors_json as (
