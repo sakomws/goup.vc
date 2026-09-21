@@ -20,7 +20,7 @@ if [ -n "$TERN_CONF" ] && [ -f "$TERN_CONF" ]; then
     db_user=$(tern_db_field user)
     db_password=$(tern_db_field password)
     PGPASSWORD="$db_password" psql -h "$db_host" -p "$db_port" -U "$db_user" -d "$db_name" -v ON_ERROR_STOP=1 -c \
-        "create or replace function user_has_group_permission(uuid, uuid, uuid, text) returns boolean language sql as \$\$ select false; \$\$;"
+        "create or replace function user_has_group_permission(p_alliance_id uuid, p_group_id uuid, p_user_id uuid, p_permission text) returns boolean language sql as \$\$ select false; \$\$;"
     if [ $? -ne 0 ]; then exit 1; fi
     echo "Done"
 fi
