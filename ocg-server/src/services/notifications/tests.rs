@@ -619,8 +619,8 @@ fn test_delivery_worker_prepare_content_event_invitation() {
     assert_eq!(subject, "You have been invited to an event");
     assert!(body.contains("Invitation Event"));
     assert!(body.contains("Review invitation"));
-    assert!(body.contains("LF SSO"));
-    assert!(body.contains("primary email configured on your LF account"));
+    assert!(body.contains("same email address this invitation was sent to"));
+    assert!(body.contains("Linux Foundation"));
     assert!(body.contains("https://example.test/dashboard/user?tab=invitations"));
 }
 

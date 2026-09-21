@@ -273,8 +273,9 @@ Organizer-created event invitations are managed from the event `Attendees` tab:
 
 - Organizers with `group.events.write` can invite a registered platform user or enter an email
   address for someone who has not registered yet.
-- Email invitations are for LF SSO accounts. The invited email must match the invitee's LF account
-  primary email, or the invitee will not be able to accept.
+- Email invitations do not require a Linux Foundation account. The invited email must match the
+  invitee's GOUP sign-in email (GitHub, LinkedIn, or email), or the invitee will not be able to
+  accept.
 - Manual invitations are available for free RSVP events only, not ticketed events.
 - Manual invitations are an organizer override for registration windows and capacity. Invitees can
   accept and answer required registration questions outside the public registration window.
