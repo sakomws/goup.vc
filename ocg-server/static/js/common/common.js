@@ -5,6 +5,7 @@ import {
   loadScriptOnce,
   setElementHidden,
 } from "/static/js/common/dom.js";
+import { getCartoVoyagerTileUrl } from "/static/js/common/map-tiles.js";
 import { toTrimmedString } from "/static/js/common/utils.js";
 
 export const MEETING_RECORDING_URL_LEGEND =
@@ -468,16 +469,11 @@ export const loadMap = async (divId, lat, long, options = {}) => {
 
   const interactive = options.interactive !== false;
 
-  L.tileLayer(
-    `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${
-      L.Browser.retina ? "@2x.png" : ".png"
-    }`,
-    {
-      attribution: "",
-      unloadInvisibleTiles: true,
-      noWrap: true,
-    },
-  ).addTo(map);
+  L.tileLayer(getCartoVoyagerTileUrl(L.Browser.retina), {
+    attribution: "",
+    unloadInvisibleTiles: true,
+    noWrap: true,
+  }).addTo(map);
 
   if (options.marker !== false) {
     const svgIcon = {
