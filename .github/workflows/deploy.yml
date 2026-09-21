@@ -1,6 +1,7 @@
 # Deploys production EC2 after merges to main.
 # Requires production environment secrets:
 # PRODUCTION_HOST, PRODUCTION_USER, PRODUCTION_SSH_KEY, PRODUCTION_SSH_HOST_KEY
+# Optional repository variable: PRODUCTION_CARGO_BUILD_JOBS (defaults to 2)
 name: Deploy
 
 on:
@@ -11,7 +12,7 @@ on:
 
 concurrency:
   group: production-deploy
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -46,8 +47,14 @@ jobs:
           PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
           PRODUCTION_SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
           PRODUCTION_SSH_HOST_KEY: ${{ secrets.PRODUCTION_SSH_HOST_KEY }}
+          CARGO_BUILD_JOBS: ${{ vars.PRODUCTION_CARGO_BUILD_JOBS || '2' }}
         run: |
           set -euo pipefail
+          if [[ ! "${CARGO_BUILD_JOBS}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "PRODUCTION_CARGO_BUILD_JOBS must be a positive integer"
+            exit 1
+          fi
+
           mkdir -p "${HOME}/.ssh"
           chmod 700 "${HOME}/.ssh"
 
@@ -154,9 +161,14 @@ jobs:
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="${HOME}/.ssh/known_hosts" \
             "${PRODUCTION_USER}@${PRODUCTION_HOST}" \
-            'set -euo pipefail
-             cd "${HOME}/goup.vc"
-             git fetch origin main
-             git checkout main
-             git pull --ff-only origin main
-             DEPLOY_PULL=false CARGO_BUILD_JOBS=1 ./scripts/deploy-ec2.sh'
+            "bash -s -- '${CARGO_BUILD_JOBS}'" <<'REMOTE'
+          set -euo pipefail
+          CARGO_BUILD_JOBS="$1"
+          exec 9>/tmp/goup-production-deploy.lock
+          flock 9
+          cd "${HOME}/goup.vc"
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+          DEPLOY_PULL=false CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS}" ./scripts/deploy-ec2.sh
+          REMOTE
