@@ -1,3 +1,6 @@
+# Deploys production EC2 after merges to main.
+# Requires production environment secrets:
+# PRODUCTION_HOST, PRODUCTION_USER, PRODUCTION_SSH_KEY, PRODUCTION_SSH_HOST_KEY
 name: Deploy
 
 on:
