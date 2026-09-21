@@ -74,15 +74,16 @@ impl Page {
 
     /// Returns the Open Graph image URL for the event page.
     pub(crate) fn open_graph_image_url(&self) -> Option<String> {
-        self.event
-            .og_image_url
-            .as_deref()
-            .or(self.event.group.og_image_url.as_deref())
-            .or(self.event.alliance.og_image_url.as_deref())
-            .or(self.event.banner_url.as_deref())
-            .or(self.event.group.banner_url.as_deref())
-            .or(Some(self.event.alliance.banner_url.as_str()))
-            .map(|image_url| helpers::open_graph_image_url(&self.base_url, image_url))
+        helpers::first_open_graph_image_url([
+            self.event.og_image_url.as_deref(),
+            self.event.group.og_image_url.as_deref(),
+            self.event.alliance.og_image_url.as_deref(),
+            Some(self.event.logo_url.as_str()),
+            self.event.banner_url.as_deref(),
+            self.event.group.banner_url.as_deref(),
+            Some(self.event.alliance.banner_url.as_str()),
+        ])
+        .map(|image_url| helpers::open_graph_image_url(&self.base_url, image_url))
     }
 
     /// Returns the preview description for the event page.
@@ -280,6 +281,31 @@ mod tests {
         assert_eq!(
             page.open_graph_image_url().as_deref(),
             Some("https://example.test/images/og/event-banner.png")
+        );
+    }
+
+    #[test]
+    fn test_open_graph_image_url_prefers_event_logo_over_banner() {
+        let mut page = sample_page(None, chrono_tz::UTC);
+        page.event.logo_url = "/images/event-logo.png".to_string();
+        page.event.banner_url = Some("/images/event-banner.png".to_string());
+
+        assert_eq!(
+            page.open_graph_image_url().as_deref(),
+            Some("https://example.test/images/og/event-logo.png")
+        );
+    }
+
+    #[test]
+    fn test_open_graph_image_url_skips_svg_and_uses_event_logo() {
+        let mut page = sample_page(None, chrono_tz::UTC);
+        page.event.logo_url = "/images/event-logo.png".to_string();
+        page.event.banner_url = Some("/images/event-banner.svg".to_string());
+        page.event.alliance.banner_url = "/images/alliance-banner.svg".to_string();
+
+        assert_eq!(
+            page.open_graph_image_url().as_deref(),
+            Some("https://example.test/images/og/event-logo.png")
         );
     }
 

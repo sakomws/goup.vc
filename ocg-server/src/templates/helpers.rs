@@ -34,6 +34,32 @@ pub(crate) fn open_graph_image_url(base_url: &str, image_url: &str) -> String {
     image_url.to_string()
 }
 
+/// Returns the first image URL that social crawlers can use for a link preview.
+pub(crate) fn first_open_graph_image_url<'a>(
+    candidates: impl IntoIterator<Item = Option<&'a str>>,
+) -> Option<&'a str> {
+    candidates
+        .into_iter()
+        .flatten()
+        .map(str::trim)
+        .find(|image_url| is_open_graph_compatible_image_url(image_url))
+}
+
+/// Returns whether a URL is usable as an Open Graph image.
+///
+/// Social crawlers (WhatsApp, Facebook, Slack, LinkedIn) reject SVG previews
+/// and then fall back to the site favicon.
+pub(crate) fn is_open_graph_compatible_image_url(image_url: &str) -> bool {
+    let image_url = image_url.trim();
+    if image_url.is_empty() {
+        return false;
+    }
+
+    let path = image_url.split(['?', '#']).next().unwrap_or(image_url);
+    let extension = path.rsplit('.').next().unwrap_or("");
+    !extension.eq_ignore_ascii_case("svg")
+}
+
 /// Generates initials from a name and username.
 pub(crate) fn user_initials(name: Option<&str>, username: &str) -> String {
     // Helper to split a string into words based on whitespace and non-alphabetic chars
@@ -129,5 +155,35 @@ mod tests {
 
         // Username without letters -> fallback placeholder
         assert_eq!(user_initials(None, "1234"), "?");
+    }
+
+    #[test]
+    fn test_is_open_graph_compatible_image_url() {
+        assert!(is_open_graph_compatible_image_url("/images/event-logo.png"));
+        assert!(is_open_graph_compatible_image_url(
+            "https://cdn.example/event.jpg?v=1"
+        ));
+        assert!(!is_open_graph_compatible_image_url("/images/banner.svg"));
+        assert!(!is_open_graph_compatible_image_url(
+            "https://cdn.example/banner.SVG#preview"
+        ));
+        assert!(!is_open_graph_compatible_image_url(""));
+        assert!(!is_open_graph_compatible_image_url("   "));
+    }
+
+    #[test]
+    fn test_first_open_graph_image_url_skips_svg_and_empty() {
+        assert_eq!(
+            first_open_graph_image_url([
+                Some("/images/banner.svg"),
+                Some(""),
+                Some("/images/event-logo.png"),
+            ]),
+            Some("/images/event-logo.png")
+        );
+        assert_eq!(
+            first_open_graph_image_url([Some("/images/banner.svg"), Some("   ")]),
+            None
+        );
     }
 }
