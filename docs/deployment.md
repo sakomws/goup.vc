@@ -28,18 +28,27 @@ Key environment variables that control bootstrap behavior:
 
 ### Updating after a code change
 
+Merges to `main` deploy through `.github/workflows/deploy.yml`. The workflow SSHs into EC2, pulls `origin/main`, runs migrations, builds the release binary, and restarts `ocg-server`.
+
+Required GitHub Actions secrets on the `production` environment:
+
+| Secret | Description |
+|--------|-------------|
+| `PRODUCTION_HOST` | Production host name or IP |
+| `PRODUCTION_USER` | SSH user on the instance |
+| `PRODUCTION_SSH_KEY` | Private key for that user |
+| `PRODUCTION_SSH_HOST_KEY` | Host key (`known_hosts` line, public key, or `SHA256:` fingerprint) |
+
+The deploy job is limited to `sakomws/goup.vc` and uses the `production` environment. Trigger a manual run from the Actions tab with **workflow_dispatch** if you need to redeploy the current `main` SHA.
+
+To update the instance by hand:
+
 ```sh
 cd ~/goup.vc
-git pull origin main
-cargo build --release -p ocg-server
-sudo systemctl restart ocg-server
-sudo systemctl status ocg-server --no-pager
+./scripts/deploy-ec2.sh
 ```
 
-If database migrations changed:
-```sh
-just db-migrate
-```
+That script pulls `main`, runs `database/migrations/migrate.sh`, builds `ocg-server` in release mode, restarts `ocg-server`, and restarts `goup-mcp` only when `mcp/` changed.
 
 ## MCP server
 
@@ -50,6 +59,7 @@ The MCP service runs as a separate systemd unit (`goup-mcp`). Set it up with:
 ```
 
 Update after `mcp/` changes:
+
 ```sh
 git pull origin main
 sudo systemctl restart goup-mcp
@@ -58,6 +68,7 @@ sudo systemctl restart goup-mcp
 ## nginx configuration
 
 The nginx config template is in `scripts/nginx-goup.conf`. It proxies:
+
 - `/` to `ocg-server` on port 9000
 - `/mcp` to `goup-mcp` on port 8787
 
@@ -86,6 +97,7 @@ A Helm chart lives in `charts/goup/`. Key values in `charts/goup/values.yaml`:
 | `imageTag` | Docker image tag to deploy |
 
 Install with:
+
 ```sh
 helm install goup charts/goup/ -f my-values.yaml
 ```

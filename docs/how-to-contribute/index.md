@@ -17,7 +17,7 @@ Before writing any code, follow the steps in [Development workflow](development-
 - Create a feature or fix branch from `main`, e.g. `feat/my-feature` or `fix/issue-123`.
 - Every commit must carry a DCO sign-off (see `CONTRIBUTING.md`):
 
-  ```
+  ```text
   git commit -s -m "feat: describe the change"
   ```
 

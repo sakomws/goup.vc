@@ -1,7 +1,3 @@
-
-
-
-
 # Background
 
 This section covers the architectural rationale and history behind the GOUP Alliance platform.

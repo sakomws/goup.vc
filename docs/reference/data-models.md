@@ -30,6 +30,7 @@ Defined in `ocg-server/src/types/alliance.rs`. Top-level organization. An allian
 Defined in `ocg-server/src/types/group.rs`.
 
 Three variants exist at different detail levels:
+
 - `GroupMinimal` — ID, name, slug (used in dashboard selectors)
 - `GroupSummary` — adds location, category, member count
 - Full group — adds members list, settings, payment config
@@ -41,6 +42,7 @@ Key fields: `group_id`, `name`, `slug`, `slug_pretty` (admin-customized URL slug
 Defined in `ocg-server/src/types/event.rs`.
 
 Two variants:
+
 - `EventSummary` — card-level data (title, dates, location, RSVP status)
 - Full event — adds description, agenda, CFS questions, attendee list, meeting links, ticket types
 

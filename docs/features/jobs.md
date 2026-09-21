@@ -8,7 +8,7 @@ The jobs feature provides a community jobs board where group organizers can post
 
 ## Directory layout
 
-```
+```text
 ocg-server/src/
 ├── handlers/site/jobs.rs                # public jobs board handler
 ├── handlers/dashboard/jobs.rs           # dashboard: post, edit, delete jobs

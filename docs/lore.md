@@ -57,7 +57,7 @@ The project shifted from a community events platform to a full alliance product.
 
 ## Growth trajectory
 
-```
+```text
 2024-Q3   86 commits   — bootstrapping
 2024-Q4  289 commits   — initial feature build
 2025-Q1    1 commit    — dormant

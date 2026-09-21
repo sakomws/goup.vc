@@ -5,6 +5,7 @@ The project has four distinct test layers, each covering a different scope.
 ## Rust unit and integration tests
 
 Run with:
+
 ```sh
 just server-tests
 # or directly:
@@ -22,6 +23,7 @@ just db-contract-tests
 ```
 
 This recipe:
+
 1. Drops and recreates `ocg_tests_contract`
 2. Runs migrations against it
 3. Loads seed data from `database/tests/data/contract.sql`

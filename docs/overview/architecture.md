@@ -81,6 +81,7 @@ Each domain has its own module (e.g., `db/alliance.rs`, `db/event.rs`). All modu
 **Configuration** (`ocg-server/src/config.rs`)
 
 Configuration is loaded via Figment in `Config::new()`:
+
 1. Compiled-in defaults (e.g., `server.addr = "127.0.0.1:9000"`, `log.format = "json"`)
 2. Optional YAML file (path passed with `-c`)
 3. `OCG_*` environment variables with `__` as nested-key separator

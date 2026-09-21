@@ -8,7 +8,7 @@
 
 ## Directory layout
 
-```
+```text
 ocg-server/
 ├── Cargo.toml
 ├── Dockerfile
