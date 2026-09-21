@@ -101,6 +101,8 @@ pub(crate) struct UpdatePage {
     pub approved_submissions: Vec<ApprovedSubmissionSummary>,
     /// Whether the current user can manage events.
     pub can_manage_events: bool,
+    /// Whether the current user can move events between alliance groups.
+    pub can_move_events: bool,
     /// List of available event categories.
     pub categories: Vec<EventCategory>,
     /// CFS submission status options.

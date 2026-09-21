@@ -42,7 +42,7 @@ use crate::{
         event::EventSummary,
         pagination::{self, NavigationLinks},
         payments::GroupPaymentRecipient,
-        permissions::GroupPermission,
+        permissions::{AlliancePermission, GroupPermission},
     },
 };
 
@@ -180,6 +180,7 @@ pub(crate) async fn update_page(
     let sponsor_filters: GroupSponsorsFilters = serde_qs_config().deserialize_str("")?;
     let (
         can_manage_events,
+        can_move_events,
         event,
         approved_submissions,
         categories,
@@ -197,6 +198,11 @@ pub(crate) async fn update_page(
             &user.user_id,
             GroupPermission::EventsWrite
         ),
+        db.user_has_alliance_permission(
+            &alliance_id,
+            &user.user_id,
+            AlliancePermission::GroupsWrite
+        ),
         db.get_event_full(alliance_id, group_id, event_id),
         db.list_event_approved_cfs_submissions(event_id),
         db.list_event_categories(alliance_id),
@@ -211,6 +217,7 @@ pub(crate) async fn update_page(
     let template = events::UpdatePage {
         approved_submissions,
         can_manage_events,
+        can_move_events,
         categories,
         cfs_submission_statuses: cfs_statuses,
         current_user_id: user.user_id,

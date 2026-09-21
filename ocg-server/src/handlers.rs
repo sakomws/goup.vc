@@ -6,9 +6,16 @@
 use std::str::FromStr;
 
 use anyhow::{Result, anyhow};
-use axum::http::{HeaderMap, HeaderName, HeaderValue, Uri, header::ORIGIN, header::REFERER};
+use axum::http::{
+    HeaderMap, HeaderName, HeaderValue, Uri,
+    header::{CACHE_CONTROL, ORIGIN, REFERER},
+};
 
-use crate::{config::HttpServerConfig, router::PUBLIC_SHARED_CACHE_HEADERS};
+use crate::{
+    config::HttpServerConfig,
+    router::{CACHE_CONTROL_PRIVATE_NO_STORE, PUBLIC_SHARED_CACHE_HEADERS},
+    templates::auth::User,
+};
 
 /// Alliance site handlers.
 pub(crate) mod alliance;
@@ -60,6 +67,20 @@ pub(crate) fn extend_public_shared_cache_headers(
     }
 
     Ok(headers)
+}
+
+/// Returns safe cache headers for public HTML that includes session-aware navigation.
+pub(crate) fn public_page_cache_headers(user: &User) -> HeaderMap {
+    if user.logged_in {
+        return HeaderMap::from_iter([(
+            CACHE_CONTROL,
+            HeaderValue::from_static(CACHE_CONTROL_PRIVATE_NO_STORE),
+        )]);
+    }
+
+    HeaderMap::from_iter(
+        PUBLIC_SHARED_CACHE_HEADERS.map(|(name, value)| (name, HeaderValue::from_static(value))),
+    )
 }
 
 /// Checks whether the request comes from the configured site hostname.
@@ -150,6 +171,31 @@ mod helpers_tests {
         );
         assert_eq!(headers.get(VARY).unwrap(), PUBLIC_SHARED_CACHE_VARY);
         assert_eq!(headers.get("HX-Push-Url").unwrap(), "/explore");
+    }
+
+    #[test]
+    fn test_public_page_cache_headers_are_shared_for_guests() {
+        let headers = public_page_cache_headers(&User::default());
+
+        assert_eq!(
+            headers.get(CACHE_CONTROL).unwrap(),
+            CACHE_CONTROL_PUBLIC_SHARED
+        );
+        assert_eq!(headers.get(VARY).unwrap(), PUBLIC_SHARED_CACHE_VARY);
+    }
+
+    #[test]
+    fn test_public_page_cache_headers_are_private_for_logged_in_users() {
+        let headers = public_page_cache_headers(&User {
+            logged_in: true,
+            ..User::default()
+        });
+
+        assert_eq!(
+            headers.get(CACHE_CONTROL).unwrap(),
+            CACHE_CONTROL_PRIVATE_NO_STORE
+        );
+        assert!(!headers.contains_key(VARY));
     }
 
     #[test]

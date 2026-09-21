@@ -361,6 +361,9 @@ async fn test_page_success() {
     let body = String::from_utf8(bytes.to_vec()).unwrap();
     assert!(body.contains("<title>Test Event - March 5</title>"));
     assert!(body.contains(
+        r#"href="/log-in?next_url=/test-alliance/group/pretty-group/event/test-event""#
+    ));
+    assert!(body.contains(
         r#"<meta name="description" content="Test Group in Test Alliance alliance. Open Alliance Groups, where Open Source alliances thrive.">"#
     ));
     assert!(body.contains(

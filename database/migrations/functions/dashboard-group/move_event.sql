@@ -26,6 +26,16 @@ begin
         raise exception 'event not found or inactive';
     end if;
 
+    -- Moving an event changes alliance-level group ownership. Group-local
+    -- event managers must not be able to transfer events between groups.
+    if not user_has_alliance_permission(
+        v_source_alliance_id,
+        p_actor_user_id,
+        'alliance.groups.write'::text
+    ) then
+        raise exception 'alliance group management permission required';
+    end if;
+
     -- Nothing to do when the event already belongs to the target group
     if p_group_id = p_target_group_id then
         return;
@@ -46,16 +56,6 @@ begin
     -- Events can only move within the same alliance so category and alliance data stay valid
     if v_target_alliance_id <> v_source_alliance_id then
         raise exception 'events can only be moved between groups in the same alliance';
-    end if;
-
-    -- The actor must be allowed to manage events in the target group
-    if not user_has_group_permission(
-        v_target_alliance_id,
-        p_target_group_id,
-        p_actor_user_id,
-        'group.events.write'::text
-    ) then
-        raise exception 'insufficient permissions on the target group';
     end if;
 
     -- Enforce the unique (slug, group_id) constraint before moving

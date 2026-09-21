@@ -15,7 +15,7 @@ use crate::{
     activity_tracker::{Activity, MockActivityTracker},
     db::{dashboard::common::BookExchangeMember, mock::MockDB},
     handlers::tests::*,
-    router::CACHE_CONTROL_PUBLIC_SHARED,
+    router::{CACHE_CONTROL_PRIVATE_NO_STORE, CACHE_CONTROL_PUBLIC_SHARED},
     services::notifications::{MockNotificationsManager, NotificationKind},
     templates::dashboard::group::accelerator::AcceleratorDashboard,
     templates::dashboard::group::members::GroupMembersOutput,
@@ -227,11 +227,21 @@ async fn test_page_temporarily_redirects_generated_slug_to_pretty_slug() {
 }
 
 #[tokio::test]
-async fn test_page_success() {
+async fn test_page_success_for_authenticated_user() {
     // Setup identifiers and data structures
     let alliance_id = Uuid::new_v4();
     let event_id = Uuid::new_v4();
     let group_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(
+        session_id,
+        user_id,
+        &auth_hash,
+        Some(alliance_id),
+        Some(group_id),
+    );
     let mut group = sample_group_full(alliance_id, group_id);
     group.alliance.display_name = "Test Alliance".to_string();
     group.alliance.name = "test-alliance".to_string();
@@ -249,6 +259,14 @@ async fn test_page_success() {
 
     // Setup database mock
     let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_get_alliance_id_by_name()
         .times(1)
         .withf(|name| name == "test-alliance")
@@ -291,6 +309,7 @@ async fn test_page_success() {
     let request = Request::builder()
         .method("GET")
         .uri("/test-alliance/group/pretty-group")
+        .header(COOKIE, format!("id={session_id}"))
         .body(Body::empty())
         .unwrap();
     let response = router.oneshot(request).await.unwrap();
@@ -305,9 +324,11 @@ async fn test_page_success() {
     );
     assert_eq!(
         parts.headers.get(CACHE_CONTROL).unwrap(),
-        &HeaderValue::from_static(CACHE_CONTROL_PUBLIC_SHARED)
+        &HeaderValue::from_static(CACHE_CONTROL_PRIVATE_NO_STORE)
     );
     let body = String::from_utf8(bytes.to_vec()).unwrap();
+    assert!(body.contains("Open dashboard"));
+    assert!(!body.contains(">Join GOUP<"));
     assert!(body.contains("<title>Test Group</title>"));
     assert!(body.contains("Member spotlights"));
     assert!(body.contains("Group store"));

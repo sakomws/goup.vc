@@ -4,7 +4,7 @@ use askama::Template;
 use axum::{
     Json,
     extract::{Path, RawQuery, State},
-    http::{HeaderMap, HeaderValue, StatusCode, Uri, header::CACHE_CONTROL},
+    http::{HeaderMap, StatusCode, Uri},
     response::{Html, IntoResponse, Redirect},
 };
 use garde::Validate;
@@ -20,11 +20,11 @@ use crate::{
     db::DynDB,
     handlers::{
         extractors::{CurrentUser, ValidatedForm, ValidatedFormQs},
-        request_matches_site,
+        public_page_cache_headers, request_matches_site,
         site::not_found,
         trim_public_gallery_images,
     },
-    router::{CACHE_CONTROL_PRIVATE_NO_STORE, PUBLIC_SHARED_CACHE_HEADERS, serde_qs_config},
+    router::{PUBLIC_SHARED_CACHE_HEADERS, serde_qs_config},
     services::notifications::{DynNotificationsManager, NewNotification, NotificationKind},
     templates::{
         PageId,
@@ -68,6 +68,7 @@ pub(crate) struct GroupCfsSubmissionInput {
 /// Handler that renders the group home page.
 #[instrument(skip_all)]
 pub(crate) async fn page(
+    auth_session: AuthSession,
     State(db): State<DynDB>,
     State(server_cfg): State<HttpServerConfig>,
     Path((alliance_name, group_slug)): Path<(String, String)>,
@@ -113,7 +114,10 @@ pub(crate) async fn page(
     let has_accelerator = accelerator.programs.iter().any(|program| program.active)
         || !accelerator.cohorts.is_empty();
 
-    // Prepare the page template
+    // Prepare the page template. Authenticated responses must bypass shared
+    // caches so the navigation reflects the current session.
+    let user = User::from_session(auth_session).await?;
+    let response_headers = public_page_cache_headers(&user);
     let template = Page {
         base_url: server_cfg.base_url,
         group,
@@ -131,10 +135,10 @@ pub(crate) async fn page(
             .into_iter()
             .map(|event| group::UpcomingEventCard { event })
             .collect(),
-        user: User::default(),
+        user,
     };
 
-    Ok((PUBLIC_SHARED_CACHE_HEADERS, Html(template.render()?)).into_response())
+    Ok((response_headers, Html(template.render()?)).into_response())
 }
 
 /// Renders a group's public, date-flexible Call for Speakers.
@@ -223,7 +227,7 @@ pub(crate) async fn accelerator_page(
     let accelerator = db.get_group_accelerator_dashboard(group.group_id).await?;
 
     let user = User::from_session(auth_session).await?;
-    let headers = public_group_page_headers(&user);
+    let headers = public_page_cache_headers(&user);
     let template = AcceleratorPage {
         base_url: server_cfg.base_url,
         accelerator,
@@ -699,25 +703,6 @@ pub(crate) async fn store_page(
 }
 
 // Helpers.
-
-/// Returns cache headers for public group pages, avoiding shared caches for personalized content.
-fn public_group_page_headers(user: &User) -> HeaderMap {
-    let mut headers = HeaderMap::new();
-
-    if user.logged_in {
-        headers.insert(
-            CACHE_CONTROL,
-            HeaderValue::from_static(CACHE_CONTROL_PRIVATE_NO_STORE),
-        );
-        return headers;
-    }
-
-    for (key, value) in PUBLIC_SHARED_CACHE_HEADERS {
-        headers.insert(key, HeaderValue::from_static(value));
-    }
-
-    headers
-}
 
 /// Builds a public group URL with the original query string, if present.
 fn public_group_url(alliance_name: &str, group_slug: &str, uri: &Uri) -> String {
