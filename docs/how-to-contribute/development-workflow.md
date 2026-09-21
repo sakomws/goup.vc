@@ -8,21 +8,27 @@ Work is done on feature branches off `main`. Branch names typically follow the p
 
 1. Pull latest `main` and create a feature branch.
 2. Start the database and run migrations:
+
    ```sh
    just db-migrate
    ```
+
 3. Start the server:
+
    ```sh
    just server
    # or, with auto-reload on source changes:
    just server-watch
    ```
+
 4. Make changes, run the relevant tests (see [testing](testing.md)).
 5. Lint before pushing:
+
    ```sh
    cargo fmt --check
    cargo clippy --all-targets
    ```
+
 6. Open a pull request against `main`.
 
 ## Key `just` recipes

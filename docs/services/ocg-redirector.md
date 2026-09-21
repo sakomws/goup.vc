@@ -8,7 +8,7 @@
 
 ## Directory layout
 
-```
+```text
 ocg-redirector/
 ├── Cargo.toml
 ├── Dockerfile

@@ -8,7 +8,7 @@ The notifications feature sends transactional email messages to users for platfo
 
 ## Directory layout
 
-```
+```text
 ocg-server/src/
 ├── services/notifications.rs              # PgNotificationsManager, LettreEmailSender, delivery worker
 ├── services/notifications/

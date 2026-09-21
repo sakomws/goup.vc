@@ -8,7 +8,7 @@ The payments feature enables ticketed events with paid RSVP flows. It is built o
 
 ## Directory layout
 
-```
+```text
 ocg-server/src/
 ├── handlers/payments.rs / payments/         # webhook receiver, checkout redirect handlers
 ├── services/payments.rs                     # module re-exports

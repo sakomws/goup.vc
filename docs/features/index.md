@@ -21,7 +21,7 @@ GOUP Alliance is a community platform for builders, founders, and open source co
 
 The platform is organized around a three-level hierarchy:
 
-```
+```text
 Alliance  (e.g., GOUP Alliance)
   └── Group  (e.g., AI Builders Baku)
         └── Event  (e.g., Monthly Meetup #12)

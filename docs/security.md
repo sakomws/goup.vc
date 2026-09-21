@@ -1,5 +1,3 @@
-
-
 # Security
 
 ## Authentication model
@@ -7,6 +5,7 @@
 Session authentication is managed by `axum-login` with `tower-sessions`. Sessions are stored in PostgreSQL (not in-memory), so they survive server restarts.
 
 Session cookies are configured in `ocg-server/src/auth.rs` with:
+
 - `HttpOnly: true` — not accessible to JavaScript
 - `SameSite: Lax` — protects against most CSRF vectors
 - `Secure: true` in production (configurable via `server.cookie.secure`)
@@ -42,7 +41,7 @@ API tokens are issued as random bytes, stored hashed in the database, and compar
 
 The MCP server (`mcp/server.mjs`) requires a bearer token for all requests:
 
-```
+```text
 Authorization: Bearer <token>
 ```
 

@@ -8,7 +8,7 @@ The landscape feature provides a directory of startups, open source projects, pa
 
 ## Directory layout
 
-```
+```text
 ocg-server/src/
 ├── handlers/site/landscape.rs      # public landscape directory handler
 ├── handlers/dashboard/             # dashboard handlers for managing landscape entries (admin)

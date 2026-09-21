@@ -13,7 +13,7 @@ The accelerator feature provides group admins with a structured program-manageme
 
 An accelerator is organised as:
 
-```
+```text
 Program
   └── Cohort(s)
         ├── Curriculum weeks

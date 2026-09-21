@@ -1,5 +1,3 @@
-
-
 # Project overview
 
 GOUP Alliance (internal codename **OCG** — Open Community Groups) is a community platform for builders, founders, and open-source contributors. It is live at [https://goup.vc](https://goup.vc).

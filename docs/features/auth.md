@@ -8,7 +8,7 @@ The auth subsystem handles user sign-up, login, session management, and authoriz
 
 ## Directory layout
 
-```
+```text
 ocg-server/src/
 ├── auth.rs                    # AuthnBackend, SessionStore, OAuth/OIDC flows, layer setup
 ├── auth/                      # tests

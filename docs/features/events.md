@@ -8,7 +8,7 @@ The events feature covers the full lifecycle of community events: creation, edit
 
 ## Directory layout
 
-```
+```text
 ocg-server/src/
 ├── handlers/event.rs / event/        # HTTP handlers for event pages and RSVP actions
 ├── handlers/dashboard/               # dashboard handlers for creating/editing events

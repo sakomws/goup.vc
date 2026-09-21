@@ -8,7 +8,7 @@ The groups and alliances feature defines the organizational hierarchy of the pla
 
 ## Directory layout
 
-```
+```text
 ocg-server/src/
 ├── handlers/alliance.rs / alliance/      # alliance public pages
 ├── handlers/group.rs / group/            # group public pages: about, members, events, …
@@ -34,7 +34,7 @@ ocg-server/src/
 
 ## Platform hierarchy
 
-```
+```text
 Alliance
   ├── metadata (name, slug, logo, description, social links)
   ├── categories (event categories scoped to the alliance)

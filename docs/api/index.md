@@ -6,7 +6,7 @@ GOUP Alliance exposes a versioned JSON REST API at `/api/v1/`. It is primarily u
 
 Most endpoints require either a session cookie (obtained via the web login flow) or an API token passed as a bearer token:
 
-```
+```text
 Authorization: Bearer <token>
 ```
 
