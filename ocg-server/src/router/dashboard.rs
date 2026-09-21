@@ -520,6 +520,16 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             put(dashboard::group::events::update),
         )
         .route(
+            "/events/{event_id}/custom-domain",
+            get(dashboard::group::custom_domains::event_card)
+                .post(dashboard::group::custom_domains::set_event)
+                .delete(dashboard::group::custom_domains::remove_event),
+        )
+        .route(
+            "/events/{event_id}/custom-domain/verify",
+            post(dashboard::group::custom_domains::verify_event),
+        )
+        .route(
             "/notifications/{event_id}",
             post(dashboard::group::attendees::send_event_custom_notification),
         )
@@ -611,6 +621,16 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             post(dashboard::group::intentional_dating::add_intro),
         )
         .route("/settings/update", put(dashboard::group::settings::update))
+        .route(
+            "/custom-domain",
+            get(dashboard::group::custom_domains::group_card)
+                .post(dashboard::group::custom_domains::set_group)
+                .delete(dashboard::group::custom_domains::remove_group),
+        )
+        .route(
+            "/custom-domain/verify",
+            post(dashboard::group::custom_domains::verify_group),
+        )
         .route_layer(check_selected_group_permission(
             GroupPermission::SettingsWrite,
         ));

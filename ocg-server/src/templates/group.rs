@@ -32,6 +32,8 @@ use crate::{
 pub(crate) struct Page {
     /// Configured public base URL.
     pub base_url: String,
+    /// Whether this page was reached through its verified custom hostname.
+    pub custom_domain: bool,
     /// Detailed information about the group.
     pub group: GroupFull,
     /// Whether this group has accelerator content to show publicly.
@@ -215,6 +217,9 @@ pub(crate) struct StorePage {
 impl Page {
     /// Returns the canonical public URL for the group page.
     pub(crate) fn canonical_url(&self) -> String {
+        if self.custom_domain {
+            return helpers::absolute_url(&self.base_url, "/");
+        }
         helpers::absolute_url(
             &self.base_url,
             &format!(

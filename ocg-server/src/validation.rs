@@ -78,6 +78,9 @@ pub const MAX_LEN_EVENT_LABELS_PER_SUBMISSION: usize = 10;
 /// Maximum length for group pretty slugs.
 pub const MAX_LEN_GROUP_PRETTY_SLUG: usize = 50;
 
+/// Maximum length for a DNS hostname.
+pub const MAX_LEN_CUSTOM_DOMAIN: usize = 253;
+
 /// Maximum length for link labels in custom link maps.
 pub const MAX_LEN_LINK_LABEL: usize = 80;
 
@@ -149,6 +152,46 @@ pub fn ga4_measurement_id(value: &Option<String>, _ctx: &()) -> garde::Result {
 /// Accepts absolute URLs (with scheme) or relative URLs starting with `/`.
 pub fn image_url(value: &impl AsRef<str>, _ctx: &()) -> garde::Result {
     validate_image_url(value.as_ref())
+}
+
+/// Validates a custom hostname used for a group or event.
+pub fn custom_domain(value: &impl AsRef<str>, _ctx: &()) -> garde::Result {
+    let hostname = value.as_ref();
+    if hostname.is_empty()
+        || hostname.len() > MAX_LEN_CUSTOM_DOMAIN
+        || hostname != hostname.to_ascii_lowercase()
+        || hostname.contains("://")
+        || hostname.contains(['/', ':', '*'])
+        || hostname == "goup.vc"
+        || hostname.ends_with(".goup.vc")
+    {
+        return Err(garde::Error::new("invalid custom domain"));
+    }
+
+    let labels: Vec<_> = hostname.split('.').collect();
+    if labels.len() < 2
+        || labels.iter().any(|label| {
+            label.is_empty()
+                || label.len() > 63
+                || label.starts_with('-')
+                || label.ends_with('-')
+                || !label
+                    .bytes()
+                    .all(|character| character.is_ascii_alphanumeric() || character == b'-')
+        })
+        || !labels.last().is_some_and(|label| {
+            label.bytes().all(|character| character.is_ascii_alphabetic())
+                || (label.starts_with("xn--")
+                    && label.len() > 4
+                    && label
+                        .bytes()
+                        .all(|character| character.is_ascii_alphanumeric() || character == b'-'))
+        })
+    {
+        return Err(garde::Error::new("invalid custom domain"));
+    }
+
+    Ok(())
 }
 
 /// Validates that an optional string is a valid image URL (absolute or relative).
@@ -482,6 +525,38 @@ mod tests {
         assert!(image_url(&"/images/logo.png", &()).is_ok());
         assert!(image_url(&"/logo.svg", &()).is_ok());
         assert!(image_url(&"/path/to/image.jpg", &()).is_ok());
+    }
+
+    #[test]
+    fn test_custom_domain_valid() {
+        assert!(custom_domain(&"events.example.com", &()).is_ok());
+        assert!(custom_domain(&"example.co.uk", &()).is_ok());
+        assert!(custom_domain(&"xn--bcher-kva.example", &()).is_ok());
+        assert!(custom_domain(&"events.xn--p1ai", &()).is_ok());
+    }
+
+    #[test]
+    fn test_custom_domain_invalid() {
+        for value in [
+            "",
+            "localhost",
+            "HTTPS://example.com",
+            "https://example.com",
+            "Example.com",
+            "example.com/path",
+            "example.com:443",
+            "*.example.com",
+            "-event.example.com",
+            "event-.example.com",
+            "goup.vc",
+            "events.goup.vc",
+            "example.123",
+        ] {
+            assert!(
+                custom_domain(&value, &()).is_err(),
+                "{value} should be invalid"
+            );
+        }
     }
 
     #[test]

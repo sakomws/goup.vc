@@ -1,6 +1,7 @@
 //! Type definitions used across the application.
 
 pub mod alliance;
+pub(crate) mod custom_domain;
 pub mod event;
 pub mod group;
 pub(crate) mod gtm;

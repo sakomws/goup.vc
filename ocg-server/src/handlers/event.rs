@@ -20,7 +20,7 @@ use crate::{
     db::{DBExt, DynDB, payments::PrepareEventCheckoutPurchaseInput},
     handlers::{
         extractors::{CurrentUser, ValidatedForm, ValidatedFormQs},
-        request_matches_site,
+        public_request_url, request_matches_site,
         site::not_found,
         trim_public_gallery_images,
     },
@@ -68,6 +68,7 @@ pub(crate) async fn page(
     State(db): State<DynDB>,
     State(server_cfg): State<HttpServerConfig>,
     Path((alliance_name, group_slug, event_slug)): Path<(String, String, String)>,
+    headers: HeaderMap,
     uri: Uri,
 ) -> Result<impl IntoResponse, HandlerError> {
     // Get alliance and site settings
@@ -103,10 +104,12 @@ pub(crate) async fn page(
         .and_then(|timezone| timezone.parse().ok());
     let user = User::from_session(auth_session).await?;
     let is_logged_in = user.logged_in;
+    let (base_url, custom_domain) = public_request_url(&server_cfg, &headers);
 
     // Prepare template
     let template = Page {
-        base_url: server_cfg.base_url,
+        base_url,
+        custom_domain,
         event,
         page_id: PageId::Event,
         path: uri.path().to_string(),

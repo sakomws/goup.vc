@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(69);
+select plan(74);
 
 -- ============================================================================
 -- VARIABLES
@@ -19,6 +19,13 @@ select plan(69);
 
 -- Test: custom_notification table expected constraints exist
 select has_check('custom_notification');
+
+-- Test: custom_domain table expected constraints exist
+select has_check('custom_domain', 'custom_domain_exactly_one_target_chk');
+select has_check('custom_domain', 'custom_domain_hostname_normalized_chk');
+select has_check('custom_domain', 'custom_domain_hostname_valid_chk');
+select has_check('custom_domain', 'custom_domain_verification_token_chk');
+select has_check('custom_domain', 'custom_domain_activation_requires_verification_chk');
 
 -- Test: alliance table expected constraints exist
 select has_check('alliance', 'alliance_og_image_url_check');

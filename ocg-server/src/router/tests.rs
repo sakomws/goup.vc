@@ -429,6 +429,136 @@ async fn test_redirect_old_hosts_redirects_matching_host() {
     );
 }
 
+#[test]
+fn test_custom_domain_authenticated_routes_require_canonical_host() {
+    let target = CustomDomainTarget {
+        alliance_name: "goup".to_string(),
+        event_slug: None,
+        group_slug: "sf".to_string(),
+        hostname: "sf.example.com".to_string(),
+    };
+
+    assert!(requires_canonical_host(
+        &Method::POST,
+        "/events/123/attend",
+        &target
+    ));
+    assert!(requires_canonical_host(&Method::GET, "/log-in", &target));
+    assert!(requires_canonical_host(
+        &Method::GET,
+        "/verify-email/code",
+        &target
+    ));
+    assert!(requires_canonical_host(
+        &Method::GET,
+        "/goup/group/another-group",
+        &target
+    ));
+    assert!(requires_canonical_host(
+        &Method::GET,
+        "/goup/group/sf/event/unrelated-event",
+        &target
+    ));
+    assert!(!requires_canonical_host(
+        &Method::GET,
+        "/goup/group/sf",
+        &target
+    ));
+    assert!(requires_canonical_host(
+        &Method::GET,
+        "/goup/group/group-id/membership",
+        &target
+    ));
+    assert!(!requires_canonical_host(
+        &Method::GET,
+        "/static/app.js",
+        &target
+    ));
+}
+
+#[test]
+fn test_request_hostname_normalizes_case_and_port() {
+    let request = Request::builder()
+        .uri("/")
+        .header(HOST, "Events.Example.COM:443")
+        .body(Body::empty())
+        .unwrap();
+
+    assert_eq!(
+        request_hostname(&request).as_deref(),
+        Some("events.example.com")
+    );
+}
+
+#[tokio::test]
+async fn test_active_custom_domain_redirects_login_to_canonical_host() {
+    let mut db = MockDB::new();
+    db.expect_resolve_active_custom_domain()
+        .withf(|hostname| hostname == "auth-route.example.test")
+        .times(1)
+        .returning(|hostname| {
+            Ok(Some(CustomDomainTarget {
+                alliance_name: "goup".to_string(),
+                event_slug: None,
+                group_slug: "sf".to_string(),
+                hostname: hostname.to_string(),
+            }))
+        });
+    let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
+        .with_server_cfg(HttpServerConfig {
+            base_url: "https://goup.vc".to_string(),
+            ..Default::default()
+        })
+        .build()
+        .await;
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/log-in?next_url=%2Fdashboard")
+                .header(HOST, "auth-route.example.test")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::TEMPORARY_REDIRECT);
+    assert_eq!(
+        response.headers().get(LOCATION).unwrap(),
+        "https://goup.vc/log-in?next_url=%2Fdashboard"
+    );
+}
+
+#[tokio::test]
+async fn test_unknown_custom_host_is_rejected() {
+    let mut db = MockDB::new();
+    db.expect_resolve_active_custom_domain()
+        .withf(|hostname| hostname == "unknown-route.example.test")
+        .times(1)
+        .returning(|_| Ok(None));
+    let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
+        .with_server_cfg(HttpServerConfig {
+            base_url: "https://goup.vc".to_string(),
+            ..Default::default()
+        })
+        .build()
+        .await;
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/")
+                .header(HOST, "unknown-route.example.test")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::MISDIRECTED_REQUEST);
+}
+
 #[tokio::test]
 async fn test_stale_hx_request_refreshes_without_running_handler() {
     // Setup router with commit SHA middleware

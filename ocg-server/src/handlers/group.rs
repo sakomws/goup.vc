@@ -20,7 +20,7 @@ use crate::{
     db::DynDB,
     handlers::{
         extractors::{CurrentUser, ValidatedForm, ValidatedFormQs},
-        public_page_cache_headers, request_matches_site,
+        public_page_cache_headers, public_request_url, request_matches_site,
         site::not_found,
         trim_public_gallery_images,
     },
@@ -72,6 +72,7 @@ pub(crate) async fn page(
     State(db): State<DynDB>,
     State(server_cfg): State<HttpServerConfig>,
     Path((alliance_name, group_slug)): Path<(String, String)>,
+    headers: HeaderMap,
     uri: Uri,
 ) -> Result<impl IntoResponse, HandlerError> {
     // Get alliance and site settings
@@ -118,8 +119,10 @@ pub(crate) async fn page(
     // caches so the navigation reflects the current session.
     let user = User::from_session(auth_session).await?;
     let response_headers = public_page_cache_headers(&user);
+    let (base_url, custom_domain) = public_request_url(&server_cfg, &headers);
     let template = Page {
-        base_url: server_cfg.base_url,
+        base_url,
+        custom_domain,
         group,
         has_accelerator,
         page_id: PageId::Group,

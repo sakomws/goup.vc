@@ -8,12 +8,14 @@ use std::str::FromStr;
 use anyhow::{Result, anyhow};
 use axum::http::{
     HeaderMap, HeaderName, HeaderValue, Uri,
-    header::{CACHE_CONTROL, ORIGIN, REFERER},
+    header::{CACHE_CONTROL, HOST, ORIGIN, REFERER},
 };
 
 use crate::{
     config::HttpServerConfig,
-    router::{CACHE_CONTROL_PRIVATE_NO_STORE, PUBLIC_SHARED_CACHE_HEADERS},
+    router::{
+        CACHE_CONTROL_PRIVATE_NO_STORE, PUBLIC_SHARED_CACHE_HEADERS, VERIFIED_CUSTOM_DOMAIN_HEADER,
+    },
     templates::auth::User,
 };
 
@@ -92,6 +94,12 @@ pub(crate) fn request_matches_site(
     if server_cfg.disable_referer_checks {
         return Ok(true);
     }
+    if headers
+        .get(VERIFIED_CUSTOM_DOMAIN_HEADER)
+        .is_some_and(|value| value == "true")
+    {
+        return Ok(true);
+    }
 
     // Extract the host from the base URL in the config
     let site_host = Uri::from_str(&server_cfg.base_url)
@@ -124,6 +132,24 @@ pub(crate) fn request_matches_site(
         .and_then(|uri| uri.host().map(str::to_ascii_lowercase));
 
     Ok(referer_host.is_some_and(|referer_host| referer_host == site_host))
+}
+
+/// Returns the public base URL and whether it came from a verified custom host.
+pub(crate) fn public_request_url(
+    server_cfg: &HttpServerConfig,
+    headers: &HeaderMap,
+) -> (String, bool) {
+    let custom_hostname = headers
+        .get(VERIFIED_CUSTOM_DOMAIN_HEADER)
+        .filter(|value| *value == "true")
+        .and_then(|_| headers.get(HOST))
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(':').next());
+
+    custom_hostname.map_or_else(
+        || (server_cfg.base_url.clone(), false),
+        |hostname| (format!("https://{hostname}"), true),
+    )
 }
 
 /// Truncates gallery image URLs to the public display limit while preserving order.
@@ -203,6 +229,35 @@ mod helpers_tests {
         let server_cfg = sample_server_cfg("https://example.test", true);
 
         assert!(request_matches_site(&server_cfg, &HeaderMap::new()).unwrap());
+    }
+
+    #[test]
+    fn test_verified_custom_domain_uses_custom_public_url() {
+        let server_cfg = sample_server_cfg("https://goup.vc", false);
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            VERIFIED_CUSTOM_DOMAIN_HEADER,
+            HeaderValue::from_static("true"),
+        );
+        headers.insert(HOST, HeaderValue::from_static("events.example.com"));
+
+        assert_eq!(
+            public_request_url(&server_cfg, &headers),
+            ("https://events.example.com".to_string(), true)
+        );
+        assert!(request_matches_site(&server_cfg, &headers).unwrap());
+    }
+
+    #[test]
+    fn test_unverified_host_cannot_override_public_url() {
+        let server_cfg = sample_server_cfg("https://goup.vc", false);
+        let mut headers = HeaderMap::new();
+        headers.insert(HOST, HeaderValue::from_static("evil.example"));
+
+        assert_eq!(
+            public_request_url(&server_cfg, &headers),
+            ("https://goup.vc".to_string(), false)
+        );
     }
 
     #[test]
