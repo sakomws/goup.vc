@@ -1,5 +1,4 @@
--- Lists groups an event can be moved into: active groups in the same alliance
--- where the actor can manage events, excluding the event's current group.
+-- Lists groups an event can be moved into for alliance group managers.
 create or replace function list_group_move_targets(
     p_actor_user_id uuid,
     p_alliance_id uuid,
@@ -16,5 +15,9 @@ returns json as $$
       and g.deleted = false
       and g.active = true
       and g.group_id <> p_group_id
-      and user_has_group_permission(p_alliance_id, g.group_id, p_actor_user_id, 'group.events.write'::text);
+      and user_has_alliance_permission(
+          p_alliance_id,
+          p_actor_user_id,
+          'alliance.groups.write'::text
+      );
 $$ language sql;

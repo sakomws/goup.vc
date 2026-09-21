@@ -297,6 +297,12 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
 #[allow(clippy::too_many_lines)]
 pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
     // Setup authorization middleware helpers
+    let check_selected_alliance_permission = |permission| {
+        middleware::from_fn_with_state(
+            (state.db.clone(), permission),
+            auth::user_has_selected_alliance_permission,
+        )
+    };
     let check_path_group_permission = |permission| {
         middleware::from_fn_with_state(
             (state.db.clone(), permission),
@@ -348,10 +354,6 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .route(
             "/events/{event_id}/details",
             get(dashboard::group::events::details),
-        )
-        .route(
-            "/events/{event_id}/move-targets",
-            get(dashboard::group::events::move_targets),
         )
         .route(
             "/events/{event_id}/submissions",
@@ -502,10 +504,6 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             put(dashboard::group::events::publish),
         )
         .route(
-            "/events/{event_id}/move",
-            put(dashboard::group::events::move_to_group),
-        )
-        .route(
             "/events/{event_id}/defaults",
             put(dashboard::group::events::set_group_defaults),
         )
@@ -537,6 +535,24 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .route("/users/search", get(common::search_user))
         .route_layer(check_selected_group_permission(
             GroupPermission::EventsWrite,
+        ));
+
+    // Moving an event changes ownership between alliance groups and therefore
+    // requires alliance-level group management, not group-local event access.
+    let event_move_management = Router::new()
+        .route(
+            "/events/{event_id}/move-targets",
+            get(dashboard::group::events::move_targets),
+        )
+        .route(
+            "/events/{event_id}/move",
+            put(dashboard::group::events::move_to_group),
+        )
+        .route_layer(check_selected_group_permission(
+            GroupPermission::EventsWrite,
+        ))
+        .route_layer(check_selected_alliance_permission(
+            AlliancePermission::GroupsWrite,
         ));
 
     // Group member management endpoints
@@ -662,6 +678,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
     Router::new()
         .merge(dashboard_read)
         .merge(events_management)
+        .merge(event_move_management)
         .merge(members_management)
         .merge(gtm_management)
         .merge(settings_management)

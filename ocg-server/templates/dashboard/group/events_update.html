@@ -121,7 +121,7 @@
     {{ dashboard::permission_warning(message = "This event is canceled. Event details are read-only, but attendee and refund review tools remain available.", extra_classes = "") -}}
   {% endif -%}
 
-  {% if can_manage_events && !event.canceled -%}
+  {% if can_move_events && !event.canceled -%}
     <div class="mt-4 rounded-md border border-stone-900/10 bg-stone-50 px-4 py-3">
       <form hx-put="/dashboard/group/events/{{ event.event_id }}/move"
             hx-swap="none"

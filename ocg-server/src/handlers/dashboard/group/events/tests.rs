@@ -30,7 +30,7 @@ use crate::{
     types::{
         event::{EventFull, EventSummary, Speaker},
         payments::{EventTicketType, PaymentMode},
-        permissions::GroupPermission,
+        permissions::{AlliancePermission, GroupPermission},
     },
 };
 
@@ -381,6 +381,12 @@ async fn test_update_page_hides_clear_ticketing_when_event_has_ticket_purchases(
                 && permission == GroupPermission::EventsWrite
         })
         .returning(|_, _, _, _| Ok(true));
+    db.expect_user_has_alliance_permission()
+        .times(1)
+        .withf(move |cid, uid, permission| {
+            *cid == alliance_id && *uid == user_id && permission == AlliancePermission::GroupsWrite
+        })
+        .returning(|_, _, _| Ok(false));
     db.expect_get_event_full()
         .times(1)
         .withf(move |cid, gid, eid| *cid == alliance_id && *gid == group_id && *eid == event_id)
@@ -457,6 +463,7 @@ async fn test_update_page_hides_clear_ticketing_when_event_has_ticket_purchases(
 
     // Check response matches expectations
     assert_html_response(&parts, &bytes, StatusCode::OK);
+    assert!(!String::from_utf8_lossy(&bytes).contains("Change group"));
 }
 
 #[tokio::test]
@@ -513,6 +520,12 @@ async fn test_update_page_success() {
                 && permission == GroupPermission::EventsWrite
         })
         .returning(|_, _, _, _| Ok(true));
+    db.expect_user_has_alliance_permission()
+        .times(1)
+        .withf(move |cid, uid, permission| {
+            *cid == alliance_id && *uid == user_id && permission == AlliancePermission::GroupsWrite
+        })
+        .returning(|_, _, _| Ok(true));
     db.expect_get_event_full()
         .times(1)
         .withf(move |cid, gid, eid| *cid == alliance_id && *gid == group_id && *eid == event_id)
@@ -589,6 +602,7 @@ async fn test_update_page_success() {
 
     // Check response matches expectations
     assert_html_response(&parts, &bytes, StatusCode::OK);
+    assert!(String::from_utf8_lossy(&bytes).contains("Change group"));
 }
 
 #[tokio::test]
@@ -657,6 +671,128 @@ async fn test_details_success() {
         &HeaderValue::from_static("application/json"),
     );
     assert_eq!(to_value(payload).unwrap(), to_value(event_full).unwrap());
+}
+
+#[tokio::test]
+async fn test_move_event_rejects_group_only_admin() {
+    let alliance_id = Uuid::new_v4();
+    let event_id = Uuid::new_v4();
+    let group_id = Uuid::new_v4();
+    let target_group_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(
+        session_id,
+        user_id,
+        &auth_hash,
+        Some(alliance_id),
+        Some(group_id),
+    );
+
+    let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+    db.expect_user_has_alliance_permission()
+        .times(1)
+        .withf(move |cid, uid, permission| {
+            *cid == alliance_id && *uid == user_id && permission == AlliancePermission::Read
+        })
+        .returning(|_, _, _| Ok(true));
+    db.expect_user_has_alliance_permission()
+        .times(1)
+        .withf(move |cid, uid, permission| {
+            *cid == alliance_id && *uid == user_id && permission == AlliancePermission::GroupsWrite
+        })
+        .returning(|_, _, _| Ok(false));
+    db.expect_move_event().times(0);
+
+    let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
+        .build()
+        .await;
+    let request = Request::builder()
+        .method("PUT")
+        .uri(format!("/dashboard/group/events/{event_id}/move"))
+        .header(COOKIE, format!("id={session_id}"))
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(format!("target_group_id={target_group_id}")))
+        .unwrap();
+
+    let response = router.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn test_move_event_allows_alliance_group_manager() {
+    let alliance_id = Uuid::new_v4();
+    let event_id = Uuid::new_v4();
+    let group_id = Uuid::new_v4();
+    let target_group_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(
+        session_id,
+        user_id,
+        &auth_hash,
+        Some(alliance_id),
+        Some(group_id),
+    );
+
+    let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+    db.expect_user_has_alliance_permission()
+        .times(1)
+        .withf(move |cid, uid, permission| {
+            *cid == alliance_id && *uid == user_id && permission == AlliancePermission::GroupsWrite
+        })
+        .returning(|_, _, _| Ok(true));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == alliance_id
+                && *gid == group_id
+                && *uid == user_id
+                && permission == GroupPermission::EventsWrite
+        })
+        .returning(|_, _, _, _| Ok(true));
+    db.expect_move_event().times(1).returning(|_, _, _, _| Ok(()));
+
+    let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
+        .build()
+        .await;
+    let request = Request::builder()
+        .method("PUT")
+        .uri(format!("/dashboard/group/events/{event_id}/move"))
+        .header(COOKIE, format!("id={session_id}"))
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(format!("target_group_id={target_group_id}")))
+        .unwrap();
+
+    let response = router.oneshot(request).await.unwrap();
+    let (parts, body) = response.into_parts();
+    let bytes = to_bytes(body, usize::MAX).await.unwrap();
+
+    assert_eq!(
+        parts.status,
+        StatusCode::NO_CONTENT,
+        "{}",
+        String::from_utf8_lossy(&bytes)
+    );
 }
 
 #[tokio::test]
