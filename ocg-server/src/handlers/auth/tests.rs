@@ -72,8 +72,8 @@ async fn test_log_in_page_success() {
     );
     assert!(!bytes.is_empty());
     let body = String::from_utf8(bytes.to_vec()).unwrap();
-    assert!(body.contains("We use your verified email, name, and photo"));
-    assert!(body.contains("We don't import your profile URL, work history, or connections."));
+    assert!(body.contains("Your LinkedIn profile stays private."));
+    assert!(body.contains("GOUP does not take or use information from your LinkedIn profile."));
 }
 
 #[tokio::test]
@@ -156,8 +156,8 @@ async fn test_sign_up_page_success() {
     let body = String::from_utf8(bytes.to_vec()).unwrap();
     assert!(body.contains("Create your account."));
     assert!(body.contains("Continue with LinkedIn"));
-    assert!(body.contains("We use your verified email, name, and photo"));
-    assert!(body.contains("We don't import your profile URL, work history, or connections."));
+    assert!(body.contains("Your LinkedIn profile stays private."));
+    assert!(body.contains("GOUP does not take or use information from your LinkedIn profile."));
 }
 
 #[tokio::test]
