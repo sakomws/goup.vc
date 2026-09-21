@@ -1,0 +1,78 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.repository == 'sakomws/goup.vc'
+    steps:
+      - name: Check deploy secrets
+        env:
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+          PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
+          PRODUCTION_SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          PRODUCTION_SSH_HOST_KEY: ${{ secrets.PRODUCTION_SSH_HOST_KEY }}
+        run: |
+          missing=""
+          if [ -z "${PRODUCTION_HOST}" ]; then missing="${missing} PRODUCTION_HOST"; fi
+          if [ -z "${PRODUCTION_USER}" ]; then missing="${missing} PRODUCTION_USER"; fi
+          if [ -z "${PRODUCTION_SSH_KEY}" ]; then missing="${missing} PRODUCTION_SSH_KEY"; fi
+          if [ -z "${PRODUCTION_SSH_HOST_KEY}" ]; then missing="${missing} PRODUCTION_SSH_HOST_KEY"; fi
+          if [ -n "${missing}" ]; then
+            echo "Missing production environment secrets:${missing}"
+            exit 1
+          fi
+
+      - name: Deploy via SSH
+        env:
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+          PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
+          PRODUCTION_SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          PRODUCTION_SSH_HOST_KEY: ${{ secrets.PRODUCTION_SSH_HOST_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${HOME}/.ssh"
+          chmod 700 "${HOME}/.ssh"
+          printf '%s\n' "${PRODUCTION_SSH_KEY}" > "${HOME}/.ssh/deploy_key"
+          chmod 600 "${HOME}/.ssh/deploy_key"
+
+          host_key="$(printf '%s\n' "${PRODUCTION_SSH_HOST_KEY}" | tr -d '\r')"
+          if [[ "${host_key}" == SHA256:* ]]; then
+            ssh-keyscan -T 10 -H "${PRODUCTION_HOST}" > "${HOME}/.ssh/known_hosts"
+            observed="$(ssh-keygen -lf "${HOME}/.ssh/known_hosts" | awk '{print $2}' | head -n 1)"
+            if [[ "${observed}" != "${host_key}" ]]; then
+              echo "Host key fingerprint ${observed} did not match PRODUCTION_SSH_HOST_KEY"
+              exit 1
+            fi
+          elif [[ "${host_key}" == *" "* ]]; then
+            printf '%s\n' "${host_key}" > "${HOME}/.ssh/known_hosts"
+          else
+            printf '%s %s\n' "${PRODUCTION_HOST}" "${host_key}" > "${HOME}/.ssh/known_hosts"
+          fi
+          chmod 644 "${HOME}/.ssh/known_hosts"
+
+          ssh -i "${HOME}/.ssh/deploy_key" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="${HOME}/.ssh/known_hosts" \
+            "${PRODUCTION_USER}@${PRODUCTION_HOST}" \
+            'set -euo pipefail
+             cd "${HOME}/goup.vc"
+             git fetch origin main
+             git checkout main
+             git pull --ff-only origin main
+             DEPLOY_PULL=false CARGO_BUILD_JOBS=1 ./scripts/deploy-ec2.sh'
