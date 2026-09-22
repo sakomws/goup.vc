@@ -1,4 +1,6 @@
 -- Tests group-level external-payments settings context without operator config.
+-- Split from get_group_external_payments_context.sql because that file seeds
+-- the singleton external_payments_config row this scenario requires to be absent.
 
 -- ============================================================================
 -- SETUP
