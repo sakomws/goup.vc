@@ -392,6 +392,49 @@
             </div>
           {% endif -%}
           {# End event breakdowns #}
+
+          {# Events by group #}
+          {% if stats.events_by_group.len() > 0 -%}
+            <div class="mt-12 border-0 border-t border-solid border-stone-200 pt-8">
+              <div>
+                <h4 class="font-amethysta text-2xl font-bold text-stone-950 sm:text-3xl">Events by group</h4>
+                <p class="mt-2 max-w-xl text-sm/6 text-stone-600">
+                  Every active group with at least one published event, including its event hosts.
+                </p>
+              </div>
+              <div class="mt-6 grid gap-4 md:grid-cols-2">
+                {% for group in stats.events_by_group -%}
+                  <article class="border border-solid border-stone-200 p-5">
+                    <div class="flex items-start justify-between gap-4">
+                      <a href="/{{ group.alliance_name }}/group/{{ group.group_slug }}"
+                         hx-boost="true"
+                         hx-target="body"
+                         class="font-bold text-stone-950 transition hover:text-primary-700">{{ group.group_name }}</a>
+                      <div class="shrink-0 text-end">
+                        <div class="font-amethysta text-2xl font-bold tabular-nums text-stone-950">
+                          {{ group.event_count|num_fmt }}
+                        </div>
+                        <div class="mt-1 text-[9px] font-bold uppercase tracking-[0.18em] text-stone-500">Events</div>
+                      </div>
+                    </div>
+                    <div class="mt-4 border-0 border-t border-solid border-stone-200 pt-4">
+                      <div class="text-[9px] font-bold uppercase tracking-[0.18em] text-stone-500">Hosts</div>
+                      <p class="mt-2 text-sm/6 text-stone-700">
+                        {% if group.host_names.len() > 0 -%}
+                          {% for host_name in group.host_names -%}
+                            {{ host_name }}{% if !loop.last %}, {% endif %}
+                          {% endfor -%}
+                        {% else -%}
+                          No hosts listed
+                        {% endif -%}
+                      </p>
+                    </div>
+                  </article>
+                {% endfor -%}
+              </div>
+            </div>
+          {% endif -%}
+          {# End events by group #}
         </div>
         {# End events section #}
 

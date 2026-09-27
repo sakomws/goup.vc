@@ -40,6 +40,8 @@ pub struct SiteStats {
     pub engagement: SiteEngagementStats,
     /// Event breakdown metrics.
     pub event_breakdown: SiteEventBreakdown,
+    /// Published event and host totals grouped by the primary hosting group.
+    pub events_by_group: Vec<SiteGroupEventStats>,
     /// Jobs overview metrics.
     pub jobs_overview: SiteJobsOverview,
     /// Mentorship request overview metrics.
@@ -110,6 +112,21 @@ pub struct SiteEventBreakdown {
     pub by_kind: Vec<(String, i64)>,
     /// Published events by event category.
     pub by_category: Vec<(String, i64)>,
+}
+
+/// Published event totals and host names for a group.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SiteGroupEventStats {
+    /// Alliance slug used in the public group URL.
+    pub alliance_name: String,
+    /// Number of published events hosted by the group.
+    pub event_count: i64,
+    /// Display name of the group.
+    pub group_name: String,
+    /// Public group slug.
+    pub group_slug: String,
+    /// Distinct hosts across the group's published events.
+    pub host_names: Vec<String>,
 }
 
 /// Jobs overview metrics for the public stats page.
