@@ -85,6 +85,7 @@
 {{ template "alliance/get_alliance_site_stats.sql" }}
 {{ template "alliance/get_alliance_upcoming_events.sql" }}
 {{ template "alliance/list_alliance_members.sql" }}
+{{ template "alliance/list_alliance_members_for_export.sql" }}
 {{ template "alliance/list_public_partner_integrations.sql" }}
 {{ template "alliance/update_alliance_views.sql" }}
 

@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(329);
+select plan(330);
 
 -- ============================================================================
 -- VARIABLES
@@ -223,6 +223,7 @@ select has_function('leave_group', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('list_cfs_submission_statuses_for_review', '{}'::name[]);
 select has_function('list_alliances', '{}'::name[]);
 select has_function('list_alliance_members', array['uuid', 'jsonb']::name[]);
+select has_function('list_alliance_members_for_export', array['uuid', 'jsonb']::name[]);
 select has_function('list_alliance_audit_logs', array['uuid', 'jsonb']::name[]);
 select has_function('list_alliance_roles', '{}'::name[]);
 select has_function('list_alliance_team_members', array['uuid', 'jsonb']::name[]);
