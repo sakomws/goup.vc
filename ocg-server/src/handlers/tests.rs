@@ -847,6 +847,7 @@ pub(crate) fn sample_group_form(category_id: Uuid) -> Group {
         category_id,
         coffee_meet_enabled: true,
         description: "Group description".to_string(),
+        description_short: Some("Short group description".to_string()),
         mentorship_enabled: true,
         name: "Test Group".to_string(),
         ..Default::default()

@@ -16,10 +16,10 @@ use crate::{
         payments::GroupPaymentRecipient,
     },
     validation::{
-        MAX_LEN_COUNTRY_CODE, MAX_LEN_DESCRIPTION, MAX_LEN_ENTITY_NAME, MAX_LEN_L, MAX_LEN_M,
-        MAX_LEN_S, MAX_PAGINATION_LIMIT, ga4_measurement_id, image_url_opt, image_url_vec,
-        trimmed_non_empty, trimmed_non_empty_opt, trimmed_non_empty_tag_vec, url_map_values,
-        valid_group_pretty_slug, valid_latitude, valid_longitude,
+        MAX_LEN_COUNTRY_CODE, MAX_LEN_DESCRIPTION, MAX_LEN_DESCRIPTION_SHORT, MAX_LEN_ENTITY_NAME,
+        MAX_LEN_L, MAX_LEN_M, MAX_LEN_S, MAX_PAGINATION_LIMIT, ga4_measurement_id, image_url_opt,
+        image_url_vec, trimmed_non_empty, trimmed_non_empty_opt, trimmed_non_empty_tag_vec,
+        url_map_values, valid_group_pretty_slug, valid_latitude, valid_longitude,
     },
 };
 
@@ -104,6 +104,9 @@ pub(crate) struct Group {
     /// Group description.
     #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_DESCRIPTION))]
     pub description: String,
+    /// Short description for group listings and previews.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION_SHORT))]
+    pub description_short: Option<String>,
     /// Group name.
     #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
     pub name: String,

@@ -690,6 +690,7 @@ async fn test_update_success() {
                 && *cid == alliance_id
                 && *gid == group_id
                 && group.category_id == category_id
+                && group.description_short.as_deref() == Some("Short group description")
         })
         .returning(|_, _, _, _| Ok(()));
 
