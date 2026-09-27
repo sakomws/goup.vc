@@ -1,5 +1,8 @@
 -- Co-hosted events let a primary GOUP group promote an event through other
 -- groups without duplicating the event or changing its canonical URL.
+-- Runtime helper functions are loaded after schema migrations on fresh installs.
+set local check_function_bodies = false;
+
 create table if not exists event_cohost (
     event_cohost_id uuid primary key default gen_random_uuid(),
     event_id uuid not null references event (event_id) on delete cascade,
