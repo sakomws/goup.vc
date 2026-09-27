@@ -244,7 +244,7 @@ where
     }
 
     /// [`DBPayments::complete_external_event_purchase`]
-    #[instrument(skip(self), err)]
+    #[instrument(skip(self, details), err)]
     async fn complete_external_event_purchase(
         &self,
         actor_user_id: Uuid,
