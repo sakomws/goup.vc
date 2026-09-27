@@ -79,4 +79,9 @@ async fn test_page_success() {
         &HeaderValue::from_static(CACHE_CONTROL_PRIVATE_NO_STORE)
     );
     assert!(!bytes.is_empty());
+    let body = String::from_utf8(bytes.to_vec()).unwrap();
+    assert!(body.contains("Events by group"));
+    assert!(body.contains("Sample Group"));
+    assert!(body.contains("Host One,"));
+    assert!(body.contains("Host Two"));
 }

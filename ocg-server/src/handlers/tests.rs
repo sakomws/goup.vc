@@ -1308,6 +1308,13 @@ pub(crate) fn sample_site_stats() -> crate::templates::site::stats::SiteStats {
             by_kind: vec![],
             by_category: vec![],
         },
+        events_by_group: vec![crate::templates::site::stats::SiteGroupEventStats {
+            alliance_name: "goup".to_string(),
+            event_count: 2,
+            group_name: "Sample Group".to_string(),
+            group_slug: "sample-group".to_string(),
+            host_names: vec!["Host One".to_string(), "Host Two".to_string()],
+        }],
         jobs_overview: crate::templates::site::stats::SiteJobsOverview {
             active: 0,
             expired: 0,

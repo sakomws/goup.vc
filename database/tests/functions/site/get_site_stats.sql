@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(4);
+select plan(5);
 
 -- ============================================================================
 -- VARIABLES
@@ -103,13 +103,13 @@ values
     (:'eventCategory3ID', :'alliance3ID', 'Meetup');
 
 -- Users
-insert into "user" (user_id, auth_hash, email, email_verified, username)
+insert into "user" (user_id, auth_hash, email, email_verified, name, username)
 values
-    (:'user1ID', 'hash-1', 'site-stats-user1@example.com', true, 'site-stats-user1'),
-    (:'user2ID', 'hash-2', 'site-stats-user2@example.com', true, 'site-stats-user2'),
-    (:'user3ID', 'hash-3', 'site-stats-user3@example.com', true, 'site-stats-user3'),
-    (:'user4ID', 'hash-4', 'site-stats-user4@example.com', true, 'site-stats-user4'),
-    (:'user5ID', 'hash-5', 'site-stats-user5@example.com', true, 'site-stats-user5');
+    (:'user1ID', 'hash-1', 'site-stats-user1@example.com', true, 'Host One', 'site-stats-user1'),
+    (:'user2ID', 'hash-2', 'site-stats-user2@example.com', true, 'Host Two', 'site-stats-user2'),
+    (:'user3ID', 'hash-3', 'site-stats-user3@example.com', true, 'Host Three', 'site-stats-user3'),
+    (:'user4ID', 'hash-4', 'site-stats-user4@example.com', true, 'Excluded Host', 'site-stats-user4'),
+    (:'user5ID', 'hash-5', 'site-stats-user5@example.com', true, 'Inactive Host', 'site-stats-user5');
 
 -- Group
 -- month_5: group1 (active)
@@ -211,6 +211,19 @@ insert into event (
         true, false, false,
         date_trunc('month', current_timestamp at time zone 'UTC')
             - interval '1 month' + interval '9 days');
+
+-- Hosts
+insert into event_host (event_id, user_id)
+values
+    (:'event1ID', :'user1ID'),
+    (:'event1ID', :'user2ID'),
+    (:'event2ID', :'user3ID'),
+    (:'event3ID', :'user1ID'),
+    (:'event4ID', :'user4ID'),
+    (:'event5ID', :'user5ID');
+
+insert into legacy_event_host (event_id, name)
+values (:'event1ID', 'Legacy Host');
 
 -- Event attendees
 -- month_4: attendee1
@@ -315,6 +328,28 @@ select ok(
         from months
     ),
     'Should return correct site stats as JSON'
+);
+
+-- Should list every active group with a published event, its total, and distinct hosts
+select is(
+    get_site_stats()::jsonb->'events_by_group',
+    jsonb_build_array(
+        jsonb_build_object(
+            'alliance_name', 'site-stats-alliance-one',
+            'event_count', 2,
+            'group_name', 'Group One',
+            'group_slug', 'group-one',
+            'host_names', jsonb_build_array('Host One', 'Host Two', 'Legacy Host')
+        ),
+        jsonb_build_object(
+            'alliance_name', 'site-stats-alliance-two',
+            'event_count', 1,
+            'group_name', 'Group Two',
+            'group_slug', 'group-two',
+            'host_names', jsonb_build_array('Host Three')
+        )
+    ),
+    'Should return published event totals and distinct host names by group'
 );
 
 -- Should exclude deleted groups and unpublished events
