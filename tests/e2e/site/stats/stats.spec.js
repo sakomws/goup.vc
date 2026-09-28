@@ -19,17 +19,15 @@ test.describe("site stats page", () => {
     await navigateToPath(page, "/stats");
 
     // Find the main content.
-    const mainContent = page.locator("#main-content");
-
     // Verify renders totals and analytics chart containers.
     await expect(
-      mainContent.getByRole("heading", {
+      page.getByRole("heading", {
         level: 1,
         name: "GOUP momentum at a glance",
       }),
     ).toBeVisible();
     await expect(
-      mainContent.getByText(
+      page.getByText(
         "A live-feeling view of community growth, alliance groups, event activity, and ecosystem signals as they come online.",
         { exact: true },
       ),
@@ -38,7 +36,7 @@ test.describe("site stats page", () => {
     // Assert each expected case.
     for (const sectionName of ["Groups", "Members", "Events", "Attendees"]) {
       await expect(
-        mainContent.getByText(sectionName, { exact: true }).first(),
+        page.getByText(sectionName, { exact: true }).first(),
       ).toBeVisible();
     }
 

@@ -39,9 +39,9 @@ test.describe("site header", () => {
     await expect(browseRolesLink).toHaveAttribute("href", "/jobs");
     await expect(
       navigation
-        .locator('a[href="/jobs?location=remote"]')
+        .locator('a[href="/jobs?remote=true"]')
         .filter({ hasText: "Remote roles" }),
-    ).toHaveCount(0);
+    ).toHaveCount(1);
     await expect(postRoleLink).toHaveAttribute(
       "href",
       "/log-in?next_url=/dashboard/jobs",
@@ -54,50 +54,28 @@ test.describe("site header", () => {
     ).toHaveAttribute("href", "/wiki");
     await expect(
       navigation.getByRole("link", { name: "Join GOUP" }),
-    ).toHaveAttribute("href", "/log-in/oidc/linkedin");
+    ).toHaveAttribute("href", "/log-in");
     await expect(
-      navigation.getByRole("search").getByPlaceholder("Search GOUP"),
+      navigation.getByRole("button", { name: "Open search" }),
     ).toBeVisible();
     await expect(navigation.getByRole("link", { name: "About" })).toHaveCount(
       0,
     );
   });
 
-  test("guest user menu links point to authentication pages", async ({
+  test("guest call to action points to authentication", async ({
     page,
   }) => {
-    // Load a public page before opening the guest user menu.
+    // Load a public page before checking the guest call to action.
     await navigateToPath(page, "/explore?entity=events");
 
-    // Find the user menu button.
-    const userMenuButton = page.locator(
-      '#user-dropdown-button[data-logged-in="false"]',
+    const joinLink = page
+      .getByRole("navigation", { name: "Main navigation" })
+      .getByRole("link", { name: "Join GOUP" });
+    await expect(joinLink).toBeVisible();
+    await expect(joinLink).toHaveAttribute(
+      "href",
+      "/log-in?next_url=/explore",
     );
-
-    // Verify guest user menu links point to authentication pages.
-    await expect(userMenuButton).toBeVisible();
-    await userMenuButton.click();
-
-    // Find the user menu.
-    const userMenu = page.locator("#user-dropdown");
-    await expect(userMenu).toBeVisible();
-    await expect(
-      userMenu.getByRole("menuitem", { name: "Join GOUP" }),
-    ).toHaveAttribute("href", "/log-in/oidc/linkedin");
-    await expect(
-      userMenu.getByRole("menuitem", { name: "Sign up" }),
-    ).toHaveAttribute("href", "/sign-up");
-    await expect(
-      userMenu.getByRole("menuitem", { name: "Log in" }),
-    ).toHaveAttribute("href", "/log-in");
-    await expect(userMenu.getByRole("menuitem", { name: "Jobs" })).toHaveCount(
-      0,
-    );
-    await expect(
-      userMenu.getByRole("menuitem", { name: "Landscape" }),
-    ).toHaveCount(0);
-    await expect(
-      userMenu.getByRole("menuitem", { name: "Resources" }),
-    ).toHaveCount(0);
   });
 });

@@ -125,7 +125,7 @@ describe("dashboard group attendees list template", () => {
       "{# End header actions -#}",
     );
 
-    expect(actionsMenu).to.include('id="open-event-qr-code-modal"');
+    expect(actionsMenu).to.include("data-event-qr-code-modal-trigger");
     expect(actionsMenu).to.include("icon-qr-code");
     expect(actionsMenu).to.include("Show check-in QR code");
     expect(actionsMenu).to.include('id="open-attendee-invitation-modal"');

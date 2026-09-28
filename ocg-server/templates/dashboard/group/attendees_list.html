@@ -159,8 +159,8 @@
     {{ pagination::range_display(offset = refresh_offset , count = attendees.len() , total = total, label = "attendee") }}
   </div>
   <div class="mb-1.5 flex w-full shrink-0 flex-col gap-3 sm:flex-row lg:w-auto">
-    <button id="open-event-qr-code-modal"
-            type="button"
+    <button type="button"
+            data-event-qr-code-modal-trigger
             class="btn-primary-outline w-full lg:w-auto whitespace-nowrap
                    {% if event.canceled -%}
                      opacity-50 cursor-not-allowed
@@ -270,8 +270,8 @@
            class="dropdown absolute hidden z-10 end-0 top-full mt-2 w-[min(22rem,calc(100vw-2rem))] bg-white divide-y divide-stone-100 rounded-lg shadow border border-stone-200">
         <ul class="py-2 text-sm text-stone-700" role="menu">
           <li>
-            <button id="open-event-qr-code-modal"
-                    type="button"
+            <button type="button"
+                    data-event-qr-code-modal-trigger
                     role="menuitem"
                     class="flex items-center w-full px-4 py-2 text-left hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Show check-in QR code"

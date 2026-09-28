@@ -53,6 +53,9 @@
                   <div class="font-metrophobic line-clamp-2 text-base font-semibold leading-snug text-[#1A1510] sm:text-lg">
                     {{ event_card.event.name }}
                   </div>
+                  {% if let Some(ticket_price_badge) = event_card.event.formatted_ticket_price_badge() -%}
+                    <div class="text-sm font-semibold text-[#3D5A8A]">{{ ticket_price_badge }}</div>
+                  {% endif -%}
                 </div>
               </div>
               {# End top row -#} {# Bottom row -#}
@@ -123,6 +126,9 @@
                   <div class="font-metrophobic line-clamp-2 text-base font-semibold leading-snug text-[#1A1510] sm:text-lg">
                     {{ event_card.event.name }}
                   </div>
+                  {% if let Some(ticket_price_badge) = event_card.event.formatted_ticket_price_badge() -%}
+                    <div class="text-sm font-semibold text-[#3D5A8A]">{{ ticket_price_badge }}</div>
+                  {% endif -%}
                 </div>
               </div>
               {# End top row -#} {# Bottom row -#}

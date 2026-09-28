@@ -11,7 +11,6 @@ import {
   getAllianceBanner,
   getSectionLink,
   getStatsContainer,
-  getStatValue,
   navigateToSiteHome,
 } from "../../utils.js";
 
@@ -34,8 +33,9 @@ test.describe("site home page", () => {
       ).toBeVisible();
 
       // Verify the jumbotron description and CTA destination.
-      await expect(page.locator(".jumbotron-description")).toBeVisible();
-      await expect(page.locator(".jumbotron-description")).toContainText(
+      const heroDescription = page.getByText(/GOUP is a warm circle/);
+      await expect(heroDescription).toBeVisible();
+      await expect(heroDescription).toContainText(
         "honest introductions",
       );
 
@@ -49,16 +49,15 @@ test.describe("site home page", () => {
 
     test("hero explains concrete member benefits", async ({ page }) => {
       // Verify the hero answers what members get from joining GOUP.
-      for (const benefit of [
-        "Ask for help",
-        "Share your work",
-        "Meet in real life",
-        "Grow together",
-      ]) {
-        await expect(
-          page.getByText(benefit, { exact: true }).first(),
-        ).toBeVisible();
-      }
+      await expect(
+        page.getByText(/share help, ideas, jobs, projects/),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Meet the community" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Find startups & projects" }),
+      ).toBeVisible();
     });
 
     test("audience section explains who GOUP is for", async ({ page }) => {
@@ -88,7 +87,7 @@ test.describe("site home page", () => {
           name: "Growth through useful progress",
         }),
       ).toBeVisible();
-      await expect(page.getByText("Why GOUP", { exact: true })).toBeVisible();
+      await expect(page.getByText("WHY GOUP", { exact: true })).toBeVisible();
       await expect(
         page.getByText("Growth", { exact: true }).first(),
       ).toBeVisible();
@@ -106,7 +105,7 @@ test.describe("site home page", () => {
     test("latest feed makes the homepage feel live", async ({ page }) => {
       // Verify the homepage surfaces dynamic content from across GOUP.
       await expect(
-        page.getByText("Latest from GOUP", { exact: true }),
+        page.getByText("LATEST FROM GOUP", { exact: true }),
       ).toBeVisible();
       await expect(
         page.getByRole("heading", { name: "What is moving now" }),
@@ -133,7 +132,7 @@ test.describe("site home page", () => {
       page,
     }) => {
       // Verify alliance cards link to their public alliance pages.
-      await expect(page.getByText("Alliance", { exact: true })).toBeVisible();
+      await expect(page.getByText("ALLIANCE", { exact: true })).toBeVisible();
 
       // Target the first alliance card link.
       const alliance1Link = page
@@ -252,13 +251,16 @@ test.describe("site home page", () => {
 
     test("stats strip displays non-empty numeric values", async ({ page }) => {
       // Target the desktop site stats strip.
-      const desktopStats = getStatsContainer(page, "site", "desktop");
+      const desktopStats = page.locator("[data-home-stats]");
       const statLabels = ["Groups", "Members", "Events", "Attendees"];
 
       // Assert each expected case.
       for (const label of statLabels) {
         // Verify the current desktop stat has a numeric value.
-        const valueElement = getStatValue(desktopStats, label);
+        const valueElement = desktopStats
+          .getByText(label, { exact: true })
+          .locator("..")
+          .locator("[data-stat-value]");
         await expect(
           desktopStats.getByText(label, { exact: true }),
         ).toBeVisible();
@@ -272,7 +274,7 @@ test.describe("site home page", () => {
       page,
     }) => {
       // Verify the desktop stats strip is visible at the large breakpoint.
-      const desktopStats = getStatsContainer(page, "site", "desktop");
+      const desktopStats = page.locator("[data-home-stats]");
       await expect(desktopStats).toBeVisible();
     });
 
@@ -338,12 +340,9 @@ test.describe("site home page", () => {
       page,
     }) => {
       // Target the desktop explore link for in-person events.
-      const desktopLink = getSectionLink(
-        page,
-        "upcoming in-person",
-        "Explore all events",
-        "desktop",
-      );
+      const desktopLink = page.getByRole("link", {
+        name: "Explore all events",
+      });
 
       // Verify the desktop events link points to the filtered explore page.
       await expect(desktopLink).toBeVisible();

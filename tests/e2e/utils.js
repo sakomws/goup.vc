@@ -654,8 +654,8 @@ export const restoreSeededWaitlistEvent = async (memberPage, organizerPage) => {
   // Remove member2 from the shared waitlist event before depending on capacity.
   await navigateToEvent(
     memberPage,
-    TEST_COMMUNITY_NAME,
-    TEST_GROUP_SLUGS.community1.alpha,
+    TEST_ALLIANCE_NAME,
+    TEST_GROUP_SLUGS.alliance1.alpha,
     "alpha-waitlist-lab",
   );
   await waitForAttendanceState(memberPage);
@@ -679,8 +679,8 @@ export const restoreSeededWaitlistEvent = async (memberPage, organizerPage) => {
   // Restore organizer attendance so the one-seat event is full again.
   await navigateToEvent(
     organizerPage,
-    TEST_COMMUNITY_NAME,
-    TEST_GROUP_SLUGS.community1.alpha,
+    TEST_ALLIANCE_NAME,
+    TEST_GROUP_SLUGS.alliance1.alpha,
     "alpha-waitlist-lab",
   );
   await waitForAttendanceState(organizerPage);

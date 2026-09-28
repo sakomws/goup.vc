@@ -6,7 +6,8 @@ import { setLinkContent } from "/static/js/common/url-utils.js";
 import { printQrCode } from "/static/js/dashboard/group/qr-code/print.js";
 
 const MODAL_ID = "event-qr-code-modal";
-const OPEN_BUTTON_ID = "open-event-qr-code-modal";
+const OPEN_BUTTON_SELECTOR =
+  "[data-event-qr-code-modal-trigger], #open-event-qr-code-modal";
 const CLOSE_BUTTON_ID = "close-event-qr-code-modal";
 const OVERLAY_ID = "overlay-event-qr-code-modal";
 const PRINT_BUTTON_ID = "print-event-qr-code";
@@ -113,14 +114,14 @@ export const initializeQrCodeModal = (root = document) => {
     link: getElementById(root, LINK_ID),
   };
 
-  const openButton = getElementById(root, OPEN_BUTTON_ID);
+  const openButtons = root.querySelectorAll(OPEN_BUTTON_SELECTOR);
   const closeButton = getElementById(root, CLOSE_BUTTON_ID);
   const overlay = getElementById(root, OVERLAY_ID);
   const printButton = getElementById(root, PRINT_BUTTON_ID);
 
   const toggleModal = () => toggleModalVisibility(MODAL_ID);
 
-  if (openButton) {
+  for (const openButton of openButtons) {
     openButton.addEventListener("click", () => {
       if (updateModalContent(modal, openButton, elements, printButton)) {
         toggleModal();

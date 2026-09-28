@@ -28,7 +28,30 @@
      data-group-banner-mobile-url="{%- if let Some(banner_mobile_url) = &event.group.banner_mobile_url -%}{{ banner_mobile_url }}{%- endif -%}">
   <div class="mb-10 grid min-w-0 grid-cols-1 items-stretch gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:gap-x-8">
     <div class="min-w-0 overflow-x-auto">
-      <ul class="inline-flex min-w-max flex-nowrap gap-1 border-b border-stone-900/10 text-center font-medium [&>li]:w-auto [&>li]:shrink-0 [&>li>div>button]:w-auto [&>li>div>button]:whitespace-nowrap lg:gap-2">
+      <select data-section-select
+              aria-label="Event form section"
+              class="select-primary w-full sm:w-sm xl:hidden">
+        {{ event_form::tab_option(section = "details", label = "Details", active = true) -}}
+        {{ event_form::tab_option(section = "date-venue", label = "Date & Venue") -}}
+        {{ event_form::tab_option(section = "hosts-sponsors", label = "Contributors") -}}
+        {% if can_manage_events -%}
+          {{ event_form::tab_option(section = "cohosts", label = "Co-hosts") -}}
+        {% endif -%}
+        {{ event_form::tab_option(section = "sessions", label = "Sessions") -}}
+        {% if payments_ready -%}
+          {{ event_form::tab_option(section = "payments", label = "Payments") -}}
+        {% endif -%}
+        {{ event_form::tab_option(section = "questions", label = "Questions") -}}
+        {{ event_form::tab_option(section = "cfs", label = "CFS") -}}
+        {{ event_form::tab_option(section = "submissions", label = "Submissions") -}}
+        {{ event_form::tab_option(section = "attendees", label = "Attendees") -}}
+        {% if event.attendee_approval_required -%}
+          {{ event_form::tab_option(section = "invitation-requests", label = "Requests") -}}
+        {% endif -%}
+        {{ event_form::tab_option(section = "waitlist", label = "Waitlist") -}}
+        {{ event_form::tab_option(section = "growth", label = "Growth & Finances") -}}
+      </select>
+      <ul class="hidden min-w-max flex-nowrap gap-1 border-b border-stone-900/10 text-center font-medium xl:inline-flex [&>li]:w-auto [&>li]:shrink-0 [&>li>div>button]:w-auto [&>li>div>button]:whitespace-nowrap lg:gap-2">
         {{ event_form::tab_button(section = "details", icon = "event", label = "Details", active = true) -}}
         {{ event_form::tab_button(section = "date-venue", icon = "calendar", label = "Date & Venue") -}}
         {{ event_form::tab_button(section = "hosts-sponsors", icon = "user-plus", label = "Hosts & Speakers") -}}
