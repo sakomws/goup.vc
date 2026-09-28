@@ -4,8 +4,8 @@
 {% macro image_field(label, name, image_kind, target = "", legend = "", help_prefix_text = "", value_attr = "", field_class = "col-span-full", input_class = "", extra_attrs = "") -%}
   <div class="{{ field_class }}">
     <image-field {% if !input_class.is_empty() %}class="{{ input_class }}"{% endif %} label="{{ label }}" name="{{ name }}" {{ value_attr|safe }} image-kind="{{ image_kind }}" {% if !help_prefix_text.is_empty() %}help-prefix-text="{{ help_prefix_text }}"{% endif %} {% if !target.is_empty() %}target="{{ target }}"{% endif %} {% if !legend.is_empty() %}legend="{{ legend }}"{% endif %} {{ extra_attrs|safe }}>
-  </image-field>
-</div>
+    </image-field>
+  </div>
 {% endmacro image_field -%}
 {# End image upload field -#}
 
@@ -71,9 +71,7 @@
 {# Gallery field -#}
 {% macro gallery_field(legend = "", helper_text = "", images_attr = "", field_name = "photos_urls", max_images = "0", label = "Photos", field_class = "col-span-full") -%}
   <div class="{{ field_class }}">
-    <gallery-field field-name="{{ field_name }}" {{ images_attr|safe }}
-    {% if !legend.is_empty() %}legend="{{ legend }}"{% endif %}
-    max-images="{{ max_images }}" label="{{ label }}"></gallery-field>
+    <gallery-field field-name="{{ field_name }}" {{ images_attr|safe }} {% if !legend.is_empty() %}legend="{{ legend }}"{% endif %} max-images="{{ max_images }}" label="{{ label }}"></gallery-field>
     {% if !helper_text.is_empty() -%}
       <p class="form-legend">{{ helper_text }}</p>
     {% endif -%}
@@ -105,11 +103,11 @@
     <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
       {{ tags_field(legend = tag_legend, items_attr = tags_items) -}}
       {% let photos_attr -%}images="{{ photos_urls|safe }}"{%- endlet %}
-      {{ gallery_field(helper_text = photo_legend, images_attr = photos_attr) -}}
-      {% let extra_links_attr -%}items="{{ extra_links|safe }}"{%- endlet %}
-      {{ key_value_links_field(items_attr = extra_links_attr, helper_text = extra_links_legend) -}}
-    </div>
-  </div>
-  {# End additional content section -#}
+    {{ gallery_field(helper_text = photo_legend, images_attr = photos_attr) -}}
+    {% let extra_links_attr -%}items="{{ extra_links|safe }}"{%- endlet %}
+  {{ key_value_links_field(items_attr = extra_links_attr, helper_text = extra_links_legend) -}}
+</div>
+</div>
+{# End additional content section -#}
 {% endmacro tags_gallery_links_section -%}
 {# End tags, gallery, and links section -#}

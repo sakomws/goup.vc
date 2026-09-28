@@ -43,10 +43,7 @@ function refreshDiscoveryDashboard(scope) {
     return;
   }
 
-  if (
-    scope === "group" &&
-    document.querySelector('form[hx-put="/dashboard/group/integrations"]')
-  ) {
+  if (scope === "group" && document.querySelector('form[hx-put="/dashboard/group/integrations"]')) {
     window.htmx.ajax("GET", "/dashboard/group/integrations", {
       target: "#dashboard-content",
       swap: "innerHTML",

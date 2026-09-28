@@ -44,7 +44,6 @@ met, and evidence links for dashboard and public profile rendering.
 
 ## Migration compatibility
 
-Migration `0124_collaboration_projects.sql` intentionally references only
-objects available through migration 0122. The number 0123 is reserved for the
-opportunity feature, so the collaboration migration can also be validated
-directly against a schema at version 0122 while that feature PR is still open.
+Migration `0123_collaboration_projects.sql` references only objects available
+through migration 0122, preserving a contiguous sequence that Tern can apply
+to both fresh and existing databases.
