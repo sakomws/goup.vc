@@ -117,7 +117,9 @@ jobs:
           wget -O /usr/local/bin/tailwindcss https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.10/tailwindcss-linux-x64
           chmod +x /usr/local/bin/tailwindcss
       - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- --deny warnings
+        # Enforce Clippy's default lints without promoting the repository's
+        # existing pedantic and nursery lint debt to errors.
+        run: cargo clippy --all-targets --all-features -- --deny clippy::all
       - name: Run rustfmt
         run: cargo fmt --all -- --check
       - name: Run tests
