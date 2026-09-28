@@ -5,11 +5,32 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::{
     gtm::{
-        GTM_AGENTS, GTM_KINDS, GTM_LOST_REASONS, GTM_STAGES, GtmLead, GtmLeadFilters,
-        GtmSponsorPackage, GtmTask, stage_label,
+        GTM_AGENTS, GTM_KINDS, GTM_LOST_REASONS, GTM_STAGES, GtmAgentDraft, GtmLead,
+        GtmLeadFilters, GtmSponsorPackage, GtmTask, stage_label,
     },
     pagination::NavigationLinks,
 };
+
+/// Candidate displayed while a lead-generation draft awaits review.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct LeadGenerationCandidate {
+    pub name: String,
+    pub kind: String,
+    pub org_name: Option<String>,
+    pub email: Option<String>,
+    pub website_url: Option<String>,
+    pub linkedin_url: Option<String>,
+    pub source: Option<String>,
+    pub notes: Option<String>,
+}
+
+/// Latest scope-specific lead-generation draft and its candidates.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct LeadGenerationDraft {
+    pub draft: GtmAgentDraft,
+    pub candidates: Vec<LeadGenerationCandidate>,
+    pub older_pending_count: usize,
+}
 
 /// GTM list page used by alliance and group dashboards.
 #[derive(Debug, Clone, Template, Serialize, Deserialize)]
@@ -35,6 +56,8 @@ pub(crate) struct ListPage {
     pub packages: Vec<GtmSponsorPackage>,
     /// Open tasks currently due.
     pub due_tasks: Vec<GtmTask>,
+    /// Latest pending lead-generation draft in this exact scope.
+    pub lead_generation_draft: Option<LeadGenerationDraft>,
 }
 
 #[allow(clippy::unused_self)]
@@ -68,6 +91,10 @@ impl ListPage {
 
     fn query_value(&self) -> &str {
         self.filters.query.as_deref().unwrap_or("")
+    }
+
+    fn has_pending_lead_generation_draft(&self) -> bool {
+        self.lead_generation_draft.is_some()
     }
 }
 
