@@ -1,42 +1,135 @@
 {% import "macros/question_answers.html" as question_answers -%}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="min-h-full">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
     <title>Post-event survey · {{ survey.event.name }}</title>
-    <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
     <script type="module" src="/static/js/event/survey.js"></script>
   </head>
-  <body class="bg-stone-50 text-stone-900">
-    <main class="container mx-auto max-w-2xl px-4 py-10">
-      <div class="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-        <p class="text-sm font-semibold uppercase tracking-wide text-stone-500">{{ survey.audience }} survey</p>
-        <h1 class="mt-2 text-3xl font-bold">{{ survey.event.name }}</h1>
-        <p class="mt-2 text-sm text-stone-500">
-          Responses are available to event organizers. Free-text review is shown without your identity.
-        </p>
-        {% if survey.submitted -%}
-          <div class="mt-6 rounded-md border border-green-200 bg-green-50 p-4 text-green-900">
-            Thank you. Your response has already been submitted.
-          </div>
-        {% else -%}
-          {% if let Some(notice) = notice -%}
-            <div class="mt-6 rounded-md border border-green-200 bg-green-50 p-4 text-green-900">{{ notice }}</div>
-          {% endif -%}
-          <form class="mt-8 space-y-6" method="post" data-event-survey-form>
-            {% let empty_answers = crate::types::questionnaire::QuestionnaireAnswers::default() -%}
-            {{ question_answers::fields(questions = survey.questions,
-                        answers = Some(empty_answers) ,
-            answer_attr = "data-survey-answer",
-            radio_name_prefix = "survey") }}
-            {{ question_answers::required_note() }}
-            <input type="hidden" name="survey_answers" value="" data-survey-answers>
-            <button class="btn-primary" type="submit">Submit response</button>
-          </form>
-        {% endif -%}
+  <body class="public-site-theme min-h-full bg-[#FFFAF5] text-[#1A1510]"
+        data-survey-page>
+    <a href="#survey-content"
+       class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-stone-950 focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white">
+      Skip to survey
+    </a>
+
+    <header class="border-b border-[#E8DED2] bg-[#FFFAF5]/95 backdrop-blur">
+      <div class="mx-auto flex min-h-16 max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <a href="/"
+           class="inline-flex items-center gap-2 rounded-lg text-[#1A1510] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2461D1]"
+           aria-label="GOUP home">
+          <span class="flex size-8 items-center justify-center rounded-xl bg-[#1A1510] text-xs font-black tracking-tight text-white"
+                aria-hidden="true">G</span>
+          <span class="text-lg font-bold tracking-[-0.04em]">GOUP</span>
+        </a>
+        <a href="/{{ survey.event.alliance_name }}/group/{{ survey.event.public_group_slug() }}/event/{{ survey.event.slug }}"
+           class="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#D8CEC2] bg-white px-4 text-sm font-bold text-[#3A2F25] shadow-sm transition hover:border-[#A89989] hover:bg-[#F8F3EC] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2461D1]">
+          <span aria-hidden="true">←</span>
+          <span class="hidden sm:inline">Back to event</span>
+          <span class="sm:hidden">Event</span>
+        </a>
       </div>
+    </header>
+
+    <main id="survey-content"
+          class="relative isolate mx-auto w-full max-w-3xl overflow-hidden px-4 py-8 sm:px-6 sm:py-12 lg:py-16">
+      <div class="pointer-events-none absolute top-10 -left-32 -z-10 size-72 rounded-full bg-[#F2D8B8]/35 blur-3xl"
+           aria-hidden="true"></div>
+      <div class="pointer-events-none absolute top-48 -right-40 -z-10 size-80 rounded-full bg-[#BFD8FF]/35 blur-3xl"
+           aria-hidden="true"></div>
+
+      <section class="overflow-hidden rounded-[2rem] border border-[#E2D5C7] bg-white/95 shadow-[0_24px_70px_-35px_rgba(67,48,30,0.45)]">
+        <div class="border-b border-[#E8DED2] bg-linear-to-br from-[#FFFDF9] to-[#F8F1E8] px-5 py-7 sm:px-9 sm:py-9">
+          <div class="flex items-center gap-3">
+            {% if !survey.event.logo_url.is_empty() -%}
+              <img src="{{ survey.event.logo_url }}"
+                   alt=""
+                   class="size-11 rounded-xl border border-[#E2D5C7] bg-white object-contain p-1 shadow-sm">
+            {% endif -%}
+            <div>
+              <p class="inline-flex rounded-full border border-[#C8BDB3] bg-white/70 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B6058]">
+                {% if survey.audience == "sponsor-contact" -%}
+                  Sponsor survey
+                {% else -%}
+                  {{ survey.audience }} survey
+                {% endif -%}
+              </p>
+              <p class="mt-1 text-xs font-medium text-[#8A7A6E]">{{ survey.event.group_name }}</p>
+            </div>
+          </div>
+          <h1 class="mt-5 text-balance text-3xl font-bold leading-tight text-[#1A1510] sm:text-4xl">
+            {{ survey.event.name }}
+          </h1>
+          <p class="mt-3 max-w-2xl text-sm leading-6 text-[#6B6058] sm:text-base">
+            Your feedback helps the organizers make the next event even better.
+          </p>
+          <div class="mt-5 flex items-start gap-3 rounded-2xl border border-[#D9E5F8] bg-[#F5F8FE] p-4 text-sm leading-6 text-[#4D607B]">
+            <svg class="mt-0.5 size-5 shrink-0 text-[#3D7EFF]"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="1.8"
+                 aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+            <p>
+              Responses are available to event organizers. Free-text feedback is reviewed without your name or identity.
+            </p>
+          </div>
+        </div>
+
+        <div class="px-5 py-7 sm:px-9 sm:py-9">
+          {% if let Some(notice) = notice -%}
+            <div class="py-5 text-center" role="status" data-survey-success>
+              <span class="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-700"
+                    aria-hidden="true">✓</span>
+              <h2 class="mt-5 text-2xl font-bold text-[#1A1510]">Feedback received</h2>
+              <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-[#6B6058]">{{ notice }}</p>
+              <a href="/{{ survey.event.alliance_name }}/group/{{ survey.event.public_group_slug() }}/event/{{ survey.event.slug }}"
+                 class="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-[#1A1510] px-6 text-sm font-bold text-white transition hover:bg-[#3A2F25] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2461D1]">
+                Return to event
+              </a>
+            </div>
+          {% else if survey.submitted -%}
+            <div class="py-5 text-center" role="status" data-survey-submitted>
+              <span class="mx-auto flex size-14 items-center justify-center rounded-full bg-[#F1E8DD] text-2xl text-[#6B6058]"
+                    aria-hidden="true">✓</span>
+              <h2 class="mt-5 text-2xl font-bold text-[#1A1510]">Survey already completed</h2>
+              <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-[#6B6058]">
+                Thank you. Your response has already been submitted.
+              </p>
+              <a href="/{{ survey.event.alliance_name }}/group/{{ survey.event.public_group_slug() }}/event/{{ survey.event.slug }}"
+                 class="mt-6 inline-flex min-h-11 items-center justify-center rounded-full border border-[#D8CEC2] bg-white px-6 text-sm font-bold text-[#3A2F25] transition hover:bg-[#F8F3EC] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2461D1]">
+                Return to event
+              </a>
+            </div>
+          {% else -%}
+            <form class="space-y-7 sm:space-y-8" method="post" data-event-survey-form>
+              <div class="space-y-7 sm:space-y-8">
+                {% let empty_answers = crate::types::questionnaire::QuestionnaireAnswers::default() -%}
+                {{ question_answers::survey_fields(questions = survey.questions,
+                                answers = Some(empty_answers) ,
+                answer_attr = "data-survey-answer",
+                radio_name_prefix = "survey") }}
+              </div>
+              <div class="flex flex-col gap-4 border-t border-[#E8DED2] pt-6 sm:flex-row sm:items-center sm:justify-between">
+                {{ question_answers::required_note() }}
+                <input type="hidden" name="survey_answers" value="" data-survey-answers>
+                <button class="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#1A1510] px-7 text-sm font-bold text-white shadow-[0_10px_25px_-12px_rgba(26,21,16,0.75)] transition enabled:hover:-translate-y-0.5 enabled:hover:bg-[#3A2F25] enabled:hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2461D1] disabled:cursor-wait disabled:opacity-70 sm:w-auto"
+                        type="submit"
+                        data-survey-submit>Submit feedback</button>
+              </div>
+            </form>
+          {% endif -%}
+        </div>
+      </section>
+      <p class="mx-auto mt-6 max-w-xl text-center text-xs leading-5 text-[#8A7A6E]">
+        Please avoid including personal or sensitive information in free-text feedback.
+      </p>
     </main>
   </body>
 </html>

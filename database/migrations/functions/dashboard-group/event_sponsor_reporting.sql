@@ -39,10 +39,134 @@ create or replace function get_event_sponsor_report(
 declare
     v_result jsonb;
 begin
+    if not exists (
+        select 1 from event
+        where event_id = p_event_id and not deleted
+    ) then
+        raise exception 'event not found';
+    end if;
+
+    with target_event as (
+        select event_id, group_id, name, starts_at
+        from event
+        where event_id = p_event_id and not deleted
+    ),
+    registration_users as (
+        select user_id from event_registration_attribution where event_id = p_event_id
+        union
+        select user_id from event_attendee where event_id = p_event_id
+        union
+        select user_id from event_waitlist where event_id = p_event_id
+        union
+        select user_id from event_invitation_request where event_id = p_event_id
+        union
+        select user_id from event_purchase where event_id = p_event_id
+    ),
+    event_outcomes as (
+        select
+            coalesce((select sum(total) from event_views where event_id = p_event_id), 0)::bigint views,
+            (select count(*) from registration_users)::bigint registrations,
+            count(*) filter (where attendee.status = 'confirmed')::bigint confirmed,
+            count(*) filter (
+                where attendee.status = 'confirmed' and attendee.checked_in
+            )::bigint check_ins
+        from event_attendee attendee
+        where attendee.event_id = p_event_id
+    ),
+    sponsor_rows as (
+        select
+            gs.group_sponsor_id,
+            gs.name,
+            es.level,
+            coalesce(metrics.impressions, 0)::bigint impressions,
+            coalesce(metrics.clicks, 0)::bigint clicks,
+            case when coalesce(metrics.impressions, 0) = 0 then 0
+                else round(
+                    coalesce(metrics.clicks, 0)::numeric * 100 / metrics.impressions,
+                    2
+                )
+            end click_through_rate,
+            coalesce(manual.leads_count, 0) leads_count,
+            coalesce(manual.conversations_count, 0) conversations_count,
+            coalesce(manual.meetings_count, 0) meetings_count,
+            manual.notes,
+            coalesce(deliverables.promised, 0)::bigint promised_deliverables,
+            coalesce(deliverables.delivered, 0)::bigint delivered_deliverables,
+            case when coalesce(deliverables.promised, 0) = 0 then 0
+                else round(
+                    coalesce(deliverables.delivered, 0)::numeric
+                    * 100 / deliverables.promised,
+                    2
+                )
+            end deliverable_completion_rate
+        from target_event e
+        join event_sponsor es using (event_id)
+        join group_sponsor gs using (group_sponsor_id)
+        left join lateral (
+            select
+                count(*) filter (where metric = 'impression') impressions,
+                count(*) filter (where metric = 'click') clicks
+            from event_sponsor_engagement_daily metric
+            where metric.event_id = es.event_id
+              and metric.group_sponsor_id = es.group_sponsor_id
+        ) metrics on true
+        left join event_sponsor_manual_engagement manual
+          on manual.event_id = es.event_id
+         and manual.group_sponsor_id = es.group_sponsor_id
+        left join lateral (
+            select
+                count(*) promised,
+                count(*) filter (where deliverable.state = 'delivered') delivered
+            from gtm_lead lead
+            join gtm_sponsor_deliverable deliverable using (gtm_lead_id)
+            where lead.group_sponsor_id = es.group_sponsor_id
+              and lead.group_id = e.group_id
+              and lead.payload->>'event_id' = es.event_id::text
+        ) deliverables on true
+    ),
+    sponsor_totals as (
+        select
+            count(*)::bigint sponsor_count,
+            coalesce(sum(impressions), 0)::bigint total_impressions,
+            coalesce(sum(clicks), 0)::bigint total_clicks,
+            coalesce(sum(leads_count), 0)::bigint total_leads,
+            coalesce(sum(conversations_count), 0)::bigint total_conversations,
+            coalesce(sum(meetings_count), 0)::bigint total_meetings,
+            coalesce(sum(promised_deliverables), 0)::bigint promised_deliverables,
+            coalesce(sum(delivered_deliverables), 0)::bigint delivered_deliverables
+        from sponsor_rows
+    )
     select jsonb_build_object(
         'event_id', e.event_id,
         'event_name', e.name,
         'starts_at', extract(epoch from e.starts_at)::bigint,
+        'sponsor_count', totals.sponsor_count,
+        'total_impressions', totals.total_impressions,
+        'total_clicks', totals.total_clicks,
+        'click_through_rate', case when totals.total_impressions = 0 then 0
+            else round(totals.total_clicks::numeric * 100 / totals.total_impressions, 2)
+        end,
+        'total_leads', totals.total_leads,
+        'total_conversations', totals.total_conversations,
+        'total_meetings', totals.total_meetings,
+        'promised_deliverables', totals.promised_deliverables,
+        'delivered_deliverables', totals.delivered_deliverables,
+        'deliverable_completion_rate', case when totals.promised_deliverables = 0 then 0
+            else round(
+                totals.delivered_deliverables::numeric
+                * 100 / totals.promised_deliverables,
+                2
+            )
+        end,
+        'event_outcomes', jsonb_build_object(
+            'views', outcomes.views,
+            'registrations', outcomes.registrations,
+            'confirmed', outcomes.confirmed,
+            'check_ins', outcomes.check_ins,
+            'conversion_rate', case when outcomes.views = 0 then 0
+                else round(outcomes.confirmed::numeric * 100 / outcomes.views, 2)
+            end
+        ),
         'sponsor_contact_survey', (
             select case when count(*) < 3 then null else jsonb_build_object(
                 'responses', count(*),
@@ -71,49 +195,27 @@ begin
         ),
         'sponsors', coalesce((
             select jsonb_agg(jsonb_build_object(
-                'group_sponsor_id', gs.group_sponsor_id,
-                'name', gs.name,
-                'level', es.level,
-                'impressions', coalesce(metrics.impressions, 0),
-                'clicks', coalesce(metrics.clicks, 0),
-                'leads_count', coalesce(manual.leads_count, 0),
-                'conversations_count', coalesce(manual.conversations_count, 0),
-                'meetings_count', coalesce(manual.meetings_count, 0),
-                'notes', manual.notes,
-                'promised_deliverables', coalesce(deliverables.promised, 0),
-                'delivered_deliverables', coalesce(deliverables.delivered, 0)
-            ) order by gs.name)
-            from event_sponsor es
-            join group_sponsor gs using (group_sponsor_id)
-            left join lateral (
-                select
-                    count(*) filter (where metric = 'impression') as impressions,
-                    count(*) filter (where metric = 'click') as clicks
-                from event_sponsor_engagement_daily metric
-                where metric.event_id = es.event_id
-                  and metric.group_sponsor_id = es.group_sponsor_id
-            ) metrics on true
-            left join event_sponsor_manual_engagement manual
-              on manual.event_id = es.event_id
-             and manual.group_sponsor_id = es.group_sponsor_id
-            left join lateral (
-                select
-                    count(*) as promised,
-                    count(*) filter (where d.state = 'delivered') as delivered
-                from gtm_lead lead
-                join gtm_sponsor_deliverable d using (gtm_lead_id)
-                where lead.group_sponsor_id = es.group_sponsor_id
-                  and lead.group_id = e.group_id
-            ) deliverables on true
-            where es.event_id = e.event_id
+                'group_sponsor_id', sponsor.group_sponsor_id,
+                'name', sponsor.name,
+                'level', sponsor.level,
+                'impressions', sponsor.impressions,
+                'clicks', sponsor.clicks,
+                'click_through_rate', sponsor.click_through_rate,
+                'leads_count', sponsor.leads_count,
+                'conversations_count', sponsor.conversations_count,
+                'meetings_count', sponsor.meetings_count,
+                'notes', sponsor.notes,
+                'promised_deliverables', sponsor.promised_deliverables,
+                'delivered_deliverables', sponsor.delivered_deliverables,
+                'deliverable_completion_rate', sponsor.deliverable_completion_rate
+            ) order by sponsor.name)
+            from sponsor_rows sponsor
         ), '[]'::jsonb)
     ) into v_result
-    from event e
-    where e.event_id = p_event_id and not e.deleted;
+    from target_event e
+    cross join sponsor_totals totals
+    cross join event_outcomes outcomes;
 
-    if v_result is null then
-        raise exception 'event not found';
-    end if;
     return v_result;
 end;
 $$ language plpgsql stable;

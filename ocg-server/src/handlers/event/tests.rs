@@ -26,7 +26,10 @@ use crate::{
         EventWelcome,
     },
     types::{
-        event::{EventAttendanceInfo, EventAttendanceStatus, EventLeaveOutcome},
+        event::{
+            EventAttendanceInfo, EventAttendanceStatus, EventLeaveOutcome, EventSponsorMetrics,
+            EventSponsorReport,
+        },
         payments::{
             EventPurchaseStatus, EventTicketCurrentPrice, EventTicketType, PreparedEventCheckout,
         },
@@ -36,6 +39,53 @@ use crate::{
         },
     },
 };
+
+#[tokio::test]
+async fn public_sponsor_report_is_private_and_hides_organizer_notes() {
+    let token = Uuid::new_v4();
+    let report = EventSponsorReport {
+        event_id: Uuid::new_v4(),
+        event_name: "Community Demo".to_string(),
+        sponsors: vec![EventSponsorMetrics {
+            group_sponsor_id: Uuid::new_v4(),
+            name: "Example Sponsor".to_string(),
+            level: "Gold".to_string(),
+            notes: Some("Private follow-up details".to_string()),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+    let mut db = MockDB::new();
+    db.expect_get_public_event_sponsor_report()
+        .times(1)
+        .withf(move |report_token| *report_token == token)
+        .returning(move |_| Ok(Some(report.clone())));
+
+    let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
+        .build()
+        .await;
+    let response = router
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/sponsor-reports/{token}"))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let (parts, body) = response.into_parts();
+    let html = String::from_utf8(to_bytes(body, usize::MAX).await.unwrap().to_vec()).unwrap();
+
+    assert_eq!(parts.status, StatusCode::OK);
+    assert_eq!(
+        parts.headers.get(CACHE_CONTROL).unwrap(),
+        &HeaderValue::from_static(CACHE_CONTROL_NO_STORE)
+    );
+    assert!(html.contains("noindex,nofollow"));
+    assert!(html.contains("Shared report"));
+    assert!(!html.contains("Private follow-up details"));
+}
 
 #[tokio::test]
 async fn test_availability_success() {

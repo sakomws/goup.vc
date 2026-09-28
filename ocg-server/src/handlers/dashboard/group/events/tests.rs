@@ -85,6 +85,61 @@ fn growth_csv_contains_aggregate_sponsor_metrics() {
     assert!(!csv.contains("email"));
 }
 
+#[tokio::test]
+async fn survey_dashboard_redirects_without_group_read_permission() {
+    let alliance_id = Uuid::new_v4();
+    let event_id = Uuid::new_v4();
+    let group_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(
+        session_id,
+        user_id,
+        &auth_hash,
+        Some(alliance_id),
+        Some(group_id),
+    );
+
+    let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == alliance_id
+                && *gid == group_id
+                && *uid == user_id
+                && permission == GroupPermission::Read
+        })
+        .returning(|_, _, _, _| Ok(false));
+    db.expect_get_event_survey_dashboard().times(0);
+    db.expect_delete_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(|_| Ok(()));
+
+    let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
+        .build()
+        .await;
+    let request = Request::builder()
+        .method("GET")
+        .uri(format!("/dashboard/group/events/{event_id}/surveys"))
+        .header(COOKIE, format!("id={session_id}"))
+        .body(Body::empty())
+        .unwrap();
+
+    let response = router.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+}
+
 #[test]
 fn test_build_meetings_max_participants_includes_google_meet() {
     let cfg = MeetingsConfig {
