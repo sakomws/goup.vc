@@ -15,6 +15,8 @@ directory, wiki, and remote MCP operational tools.
 - GOUP Baku and San Francisco chapters
 - Event discovery and RSVP flows
 - Jobs board with saved-interest applications
+- Unified opportunity board with grants, funding, partnerships, research, jobs,
+  calls for speakers, and saved-search digests
 - Startup and open source landscape directory
 - Wiki with AI, open source, and entrepreneurship reading feeds
 - Public stats page with alliance, jobs, landscape, and engagement metrics
@@ -74,6 +76,14 @@ directory, wiki, and remote MCP operational tools.
 - Dashboard for posting, publishing, unpublishing, and deleting jobs
 - Saved-interest applications with applicant details for job posters
 - Automatic 30-day job expiry with republish support
+
+### Opportunities
+
+- Unified public search for native grants, funding, partnerships, and research
+- Live projections of published jobs and open event/group calls for speakers
+- Creator-owned draft, publish, update, and delete moderation
+- Daily or weekly saved searches with preview-before-activation digests
+- Privacy-aligned CSV export, global search, home feed, and MCP search
 
 ### Landscape and Wiki
 

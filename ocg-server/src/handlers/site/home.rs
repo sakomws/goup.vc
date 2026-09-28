@@ -19,8 +19,8 @@ use crate::{
     templates::{PageId, auth::User, site::home},
     types::{
         event::{EventKind, EventSummary},
-        jobs::{JobsFilters, JobsOutput},
         landscape::{LandscapeFilters, LandscapeOutput},
+        opportunities::{OpportunitiesOutput, OpportunityFilters},
     },
 };
 
@@ -42,7 +42,7 @@ pub(crate) async fn page(
                 (CONTENT_TYPE, "text/markdown; charset=utf-8"),
                 (VARY, "Accept"),
             ],
-            "# GOUP Alliance\n\nGOUP Alliance is a community platform for builders, founders, and open-source contributors.\n\n- [Explore groups and events](/explore)\n- [Browse jobs](/jobs)\n- [Browse the landscape](/landscape)\n- [Read the documentation](/docs)\n- [Public API documentation](/docs/api)\n",
+            "# GOUP Alliance\n\nGOUP Alliance is a community platform for builders, founders, and open-source contributors.\n\n- [Explore groups and events](/explore)\n- [Browse opportunities](/opportunities)\n- [Browse jobs](/jobs)\n- [Browse the landscape](/landscape)\n- [Read the documentation](/docs)\n- [Public API documentation](/docs/api)\n",
         )
             .into_response());
     }
@@ -114,10 +114,10 @@ async fn load_latest_feed(
     upcoming_in_person_events: &[EventSummary],
     upcoming_virtual_events: &[EventSummary],
 ) -> Vec<home::HomeFeedItem> {
-    let jobs_filters = JobsFilters {
+    let opportunity_filters = OpportunityFilters {
         limit: Some(2),
         offset: Some(0),
-        ..JobsFilters::default()
+        ..OpportunityFilters::default()
     };
     let landscape_filters = LandscapeFilters {
         limit: Some(2),
@@ -125,14 +125,14 @@ async fn load_latest_feed(
         ..LandscapeFilters::default()
     };
 
-    let (jobs, landscape, wiki_sections) = tokio::join!(
-        db.search_jobs(&jobs_filters),
+    let (opportunities, landscape, wiki_sections) = tokio::join!(
+        db.search_opportunities(&opportunity_filters),
         db.search_landscape_entries(&landscape_filters),
         load_home_wiki_sections(),
     );
-    let jobs = jobs.unwrap_or_else(|error| {
-        warn!("home latest feed jobs source failed: {error}");
-        JobsOutput::default()
+    let opportunities = opportunities.unwrap_or_else(|error| {
+        warn!("home latest feed opportunities source failed: {error}");
+        OpportunitiesOutput::default()
     });
     let landscape = landscape.unwrap_or_else(|error| {
         warn!("home latest feed landscape source failed: {error}");
@@ -147,13 +147,16 @@ async fn load_latest_feed(
             .map(event_feed_item)
             .take(2),
     );
-    feed.extend(jobs.jobs.into_iter().take(2).map(|job| home::HomeFeedItem {
-        label: "Job".to_string(),
-        title: job.title,
-        summary: job.summary,
-        href: format!("/jobs/{}", job.slug),
-        meta: job.company_name,
-        hx_boost: true,
+    feed.extend(opportunities.opportunities.into_iter().take(2).map(|item| {
+        let href = item.details_url();
+        home::HomeFeedItem {
+            label: item.kind_label().to_string(),
+            title: item.title,
+            summary: item.summary,
+            href,
+            meta: item.organization_name,
+            hx_boost: true,
+        }
     }));
     feed.extend(landscape.entries.into_iter().take(2).map(|entry| {
         home::HomeFeedItem {

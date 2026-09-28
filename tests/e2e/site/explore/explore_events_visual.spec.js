@@ -39,7 +39,7 @@ test.describe("site explore events page visual regression @visual", () => {
       page,
       getExploreControlsRow(page),
       "explore-events-desktop-controls.png",
-      { testInfo },
+      { testInfo, useClippedPageScreenshot: true },
     );
   });
 

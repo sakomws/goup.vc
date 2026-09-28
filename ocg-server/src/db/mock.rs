@@ -1522,6 +1522,67 @@ mock! {
     }
 
     #[async_trait]
+    impl crate::db::opportunities::DBOpportunities for DB {
+        async fn search_opportunities(
+            &self,
+            filters: &crate::types::opportunities::OpportunityFilters,
+        ) -> Result<crate::types::opportunities::OpportunitiesOutput>;
+        async fn get_opportunity(
+            &self,
+            source_kind: &str,
+            source_id: Uuid,
+            include_members_only: bool,
+        ) -> Result<Option<crate::types::opportunities::OpportunitySummary>>;
+        async fn list_user_opportunities(
+            &self,
+            user_id: Uuid,
+            filters: &crate::types::opportunities::DashboardOpportunityFilters,
+        ) -> Result<crate::types::opportunities::OpportunitiesOutput>;
+        async fn add_opportunity(
+            &self,
+            user_id: Uuid,
+            input: &crate::types::opportunities::OpportunityInput,
+        ) -> Result<Uuid>;
+        async fn update_opportunity(
+            &self,
+            user_id: Uuid,
+            opportunity_id: Uuid,
+            input: &crate::types::opportunities::OpportunityInput,
+        ) -> Result<()>;
+        async fn delete_opportunity(
+            &self,
+            user_id: Uuid,
+            opportunity_id: Uuid,
+        ) -> Result<()>;
+        async fn update_opportunity_published(
+            &self,
+            user_id: Uuid,
+            opportunity_id: Uuid,
+            published: bool,
+        ) -> Result<()>;
+        async fn list_opportunity_saved_searches(
+            &self,
+            user_id: Uuid,
+        ) -> Result<Vec<crate::types::opportunities::OpportunitySavedSearch>>;
+        async fn upsert_opportunity_saved_search(
+            &self,
+            user_id: Uuid,
+            saved_search_id: Option<Uuid>,
+            input: &crate::types::opportunities::OpportunitySavedSearchInput,
+        ) -> Result<Uuid>;
+        async fn activate_opportunity_saved_search(
+            &self,
+            user_id: Uuid,
+            saved_search_id: Uuid,
+        ) -> Result<()>;
+        async fn delete_opportunity_saved_search(
+            &self,
+            user_id: Uuid,
+            saved_search_id: Uuid,
+        ) -> Result<()>;
+    }
+
+    #[async_trait]
     impl crate::db::mock_interviews::DBMockInterviews for DB {
         async fn get_mock_interview_dashboard(
             &self,
@@ -1826,6 +1887,10 @@ mock! {
             base_url: &str,
         ) -> Result<usize>;
         async fn enqueue_due_distribution_content_reminders(
+            &self,
+            base_url: &str,
+        ) -> Result<usize>;
+        async fn enqueue_due_opportunity_digests(
             &self,
             base_url: &str,
         ) -> Result<usize>;

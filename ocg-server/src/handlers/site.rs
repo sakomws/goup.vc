@@ -8,6 +8,7 @@ pub(crate) mod home;
 pub(crate) mod jobs;
 pub(crate) mod landscape;
 pub(crate) mod not_found;
+pub(crate) mod opportunities;
 pub(crate) mod privacy;
 pub(crate) mod profile;
 pub(crate) mod search;

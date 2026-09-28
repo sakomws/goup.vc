@@ -75,9 +75,10 @@ export const getImageUploadErrorMessage = (imageLabel, serverMessage = "", targe
   const message = escapedMessage
     ? `${escapedMessage}<br /><br />Something went wrong adding the ${imageLabel}. Please try again later.`
     : `Something went wrong adding the ${imageLabel}. Please try again later.`;
-  const details = target === "logo"
-    ? `${LOGO_IMAGE_UPLOAD_MAX_SIZE_TEXT} ${IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT}`
-    : IMAGE_UPLOAD_ERROR_DETAILS;
+  const details =
+    target === "logo"
+      ? `${LOGO_IMAGE_UPLOAD_MAX_SIZE_TEXT} ${IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT}`
+      : IMAGE_UPLOAD_ERROR_DETAILS;
 
   return `${message}<br /><br /><div class="text-sm text-stone-500">${details}</div>`;
 };

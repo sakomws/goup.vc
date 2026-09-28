@@ -39,7 +39,7 @@ test.describe("site explore groups page visual regression @visual", () => {
       page,
       getExploreControlsRow(page),
       "explore-groups-desktop-controls.png",
-      { testInfo },
+      { testInfo, useClippedPageScreenshot: true },
     );
   });
 

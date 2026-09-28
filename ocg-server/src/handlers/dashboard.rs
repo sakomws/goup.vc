@@ -10,5 +10,7 @@ pub(crate) mod group;
 pub(crate) mod gtm;
 /// Jobs dashboard handlers.
 pub(crate) mod jobs;
+/// Opportunity organizer dashboard handlers.
+pub(crate) mod opportunities;
 /// User dashboard handlers.
 pub(crate) mod user;

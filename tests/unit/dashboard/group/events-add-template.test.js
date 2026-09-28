@@ -18,9 +18,7 @@ describe("dashboard group event add template", () => {
     const template = normalizeWhitespace(await loadTemplate());
 
     // Assert the add event page can fill the group dashboard content area.
-    expect(template).to.include(
-      'class="group/event-page grid h-full min-h-full min-w-0 grow grid-rows-[auto_minmax(0,1fr)] gap-y-8 has-[#pending-changes-alert:not(.hidden)]:grid-rows-[auto_auto_minmax(0,1fr)] lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-x-8"',
-    );
+    expect(template).to.include('class="space-y-12" data-event-page="add"');
     expect(template).to.include('data-event-page="add"');
     expect(template).to.include(
       '<div id="event-preview-modal-root" class="contents"></div>',
@@ -61,55 +59,40 @@ describe("dashboard group event add template", () => {
     const template = normalizeWhitespace(await loadTemplate());
 
     expect(template).to.include(
-      '{# End Event Description -#} </div> </div> {# Additional Information section -#}',
+      "{# End Event Description -#} </div> </div> {# Additional Information section -#}",
     );
     expect(template).to.not.include(
-      '{# End Event Description -#} </div> </div> </div> {# Additional Information section -#}',
+      "{# End Event Description -#} </div> </div> </div> {# Additional Information section -#}",
     );
   });
 
-  it("shows a draft event title header above add tabs and content", async () => {
-    // Load the event add template before checking the draft event reminder.
+  it("shows the event tabs and preview control above the editor", async () => {
+    // Load the event add template before checking the top-level controls.
     const template = normalizeWhitespace(await loadTemplate());
 
-    // Assert the draft reminder starts with clear fallback copy.
-    expect(template).to.include('id="draft-event-title"');
-    expect(template).to.include("Untitled event");
-    expect(template).to.include('id="draft-event-date"');
-    expect(template).to.include("Date not set yet");
-    expect(template).to.include('class="col-span-full min-w-0"');
-    expect(template).to.include('class="min-w-0 flex-1"');
-    expect(template).to.include('class="mt-1 text-xs text-stone-500"');
-    expect(template).to.include(
-      'class="truncate text-xl font-semibold text-stone-900"',
-    );
-    expect(template).to.not.include("overflow-hidden");
-    expect(template).to.include('class="col-span-full min-w-0 xl:col-span-3"');
-    expect(template).to.include(
-      'class="flex shrink-0 flex-row items-center justify-end gap-2 sm:ms-4"',
-    );
+    // Assert the compact top navigation exposes preview before editor content.
+    expect(template).to.include("event_form::tab_button");
+    expect(template).to.include("Hosts & Speakers");
     expect(template).to.include('id="event-preview-button"');
     expect(template).to.include(
-      'class="group btn-primary-outline inline-flex items-center justify-center gap-2 whitespace-nowrap max-2xl:h-7 max-2xl:px-3 max-2xl:py-1 max-2xl:text-xs disabled:cursor-not-allowed disabled:opacity-50"',
+      'class="group btn-primary-outline btn-mini inline-flex h-7 min-w-28 items-center justify-center gap-2 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"',
     );
-    expect(template).to.not.include(
-      'class="mt-8 flex flex-row items-stretch gap-2 lg:flex-col"',
+    expect(template.indexOf('id="event-preview-button"')).to.be.lessThan(
+      template.indexOf('data-content="details"'),
     );
   });
 
-  it("places the pending changes alert under the draft event header", async () => {
+  it("places the pending changes alert under the top controls", async () => {
     // Load the event add template before checking pending alert placement.
     const template = normalizeWhitespace(await loadTemplate());
 
     // Assert the save alert follows the title reminder and uses compact actions.
-    const draftHeaderIndex = template.indexOf('id="draft-event-title"');
+    const previewIndex = template.indexOf('id="event-preview-button"');
     const alertIndex = template.indexOf('id="pending-changes-alert"');
 
-    expect(alertIndex).to.be.greaterThan(draftHeaderIndex);
+    expect(alertIndex).to.be.greaterThan(previewIndex);
     expect(template).to.not.include("icon-clock");
-    expect(template).to.include(
-      'id="pending-changes-alert" class="col-span-full hidden min-w-0"',
-    );
+    expect(template).to.include('id="pending-changes-alert" class="hidden"');
     expect(template).to.include('class="min-w-0 flex-1 break-words text-sm/6"');
     expect(template).to.include(
       'class="btn-primary btn-mini h-7! w-24 text-nowrap ms-auto"',
@@ -160,7 +143,7 @@ describe("dashboard group event add template", () => {
 
     // Prevent horizontal tabs from inheriting the full-width sidebar tab layout.
     expect(template).to.include(
-      '[&>li]:w-auto [&>li]:shrink-0 [&>li>div>button]:w-auto [&>li>div>button]:whitespace-nowrap',
+      "[&>li]:w-auto [&>li]:shrink-0 [&>li>div>button]:w-auto [&>li>div>button]:whitespace-nowrap",
     );
     expect(template).to.include('class="min-w-0 overflow-x-auto"');
   });
