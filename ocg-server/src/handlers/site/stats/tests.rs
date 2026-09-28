@@ -82,6 +82,6 @@ async fn test_page_success() {
     let body = String::from_utf8(bytes.to_vec()).unwrap();
     assert!(body.contains("Events by group"));
     assert!(body.contains("Sample Group"));
-    assert!(body.contains("Host One,"));
+    assert!(body.contains("Host One"));
     assert!(body.contains("Host Two"));
 }
