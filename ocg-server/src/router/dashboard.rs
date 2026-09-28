@@ -422,6 +422,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         )
         .route("/logs", get(dashboard::group::logs::list_page))
         .route("/members", get(dashboard::group::members::list_page))
+        .route("/projects", get(dashboard::group::projects::page))
         .route(
             "/book-exchange",
             get(dashboard::group::book_exchange::list_page),
@@ -676,6 +677,17 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         ));
 
     // Group settings management endpoints
+    let projects_management = Router::new()
+        .route("/projects", post(dashboard::group::projects::create))
+        .route(
+            "/projects/{project_id}/members",
+            post(dashboard::group::projects::invite_member),
+        )
+        .route_layer(check_selected_group_permission(
+            GroupPermission::ProjectsWrite,
+        ));
+
+    // Group settings management endpoints
     let settings_management = Router::new()
         .route(
             "/analytics/report/public",
@@ -803,6 +815,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .merge(events_management)
         .merge(event_move_management)
         .merge(members_management)
+        .merge(projects_management)
         .merge(gtm_management)
         .merge(settings_management)
         .merge(sponsors_management)

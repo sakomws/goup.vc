@@ -83,6 +83,45 @@ mock! {
     }
 
     #[async_trait]
+    impl crate::db::collaboration::DBCollaboration for DB {
+        async fn get_group_collaboration_dashboard(
+            &self,
+            group_id: Uuid,
+        ) -> Result<crate::templates::dashboard::group::projects::CollaborationDashboard>;
+        async fn create_collaboration_project(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            input: &crate::templates::dashboard::group::projects::CollaborationProjectInput,
+        ) -> Result<Uuid>;
+        async fn get_public_collaboration_project(
+            &self,
+            alliance_id: Uuid,
+            group_slug: &str,
+            project_slug: &str,
+        ) -> Result<Option<crate::templates::dashboard::group::projects::PublicCollaborationProject>>;
+        async fn invite_collaboration_project_member(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            project_id: Uuid,
+            input: &crate::templates::dashboard::group::projects::CollaborationInvitationInput,
+        ) -> Result<Uuid>;
+        async fn submit_collaboration_update(
+            &self,
+            user_id: Uuid,
+            project_id: Uuid,
+            input: &crate::templates::dashboard::group::projects::CollaborationUpdateInput,
+        ) -> Result<Uuid>;
+        async fn book_collaboration_office_hour(
+            &self,
+            user_id: Uuid,
+            session_id: Uuid,
+            input: &crate::templates::dashboard::group::projects::CollaborationBookingInput,
+        ) -> Result<Uuid>;
+    }
+
+    #[async_trait]
     impl crate::db::auth::DBAuth for DB {
         async fn activate_pre_registered_user_email_password(
             &self,

@@ -1,0 +1,74 @@
+{% extends "common/base.html" -%}
+
+{% block head_title -%}
+  <title>{{ project.project.name|demoji }} | {{ group.name|demoji }}</title>
+{% endblock head_title -%}
+
+{% block head_description -%}
+  <meta name="description" content="{{ project.project.summary }}">
+{% endblock head_description -%}
+
+{% block content -%}
+  <main class="container mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+    <a href="/{{ group.alliance.name }}/group/{{ group.public_slug() }}"
+       class="text-sm font-semibold text-stone-600 hover:text-stone-950">← Back to {{ group.name|demoji }}</a>
+    <article class="mt-5 overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
+      <header class="bg-linear-to-br from-primary-50 via-white to-stone-50 p-7 sm:p-10">
+        <div class="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+          <span>{{ project.project.lifecycle }}</span>
+          <span>·</span>
+          <span>{{ project.project.visibility }}</span>
+        </div>
+        <h1 class="mt-3 text-4xl font-black tracking-tight text-stone-950">{{ project.project.name|demoji }}</h1>
+        <p class="mt-4 max-w-3xl text-lg text-stone-600">{{ project.project.summary }}</p>
+        {% if let Some(description) = project.project.description -%}
+          <p class="mt-5 max-w-3xl whitespace-pre-line text-stone-700">{{ description }}</p>
+        {% endif -%}
+        <div class="mt-6 flex flex-wrap gap-3">
+          {% if let Some(url) = project.project.website_url -%}
+            <a class="btn-primary-anchor" href="{{ url }}" rel="noopener">Website</a>
+          {% endif -%}
+          {% if let Some(url) = project.project.repository_url -%}
+            <a class="btn-secondary-anchor" href="{{ url }}" rel="noopener">Repository</a>
+          {% endif -%}
+        </div>
+      </header>
+      <div class="grid gap-6 p-7 sm:grid-cols-3 sm:p-10">
+        <div class="rounded-2xl bg-stone-50 p-5">
+          <div class="text-3xl font-black text-stone-950">{{ project.goals.len() }}</div>
+          <div class="mt-1 text-sm text-stone-600">Goals</div>
+        </div>
+        <div class="rounded-2xl bg-stone-50 p-5">
+          <div class="text-3xl font-black text-stone-950">{{ project.updates.len() }}</div>
+          <div class="mt-1 text-sm text-stone-600">Member updates</div>
+        </div>
+        <div class="rounded-2xl bg-stone-50 p-5">
+          <div class="text-sm font-semibold text-stone-900">Evidence-backed outcomes</div>
+          <p class="mt-1 text-sm text-stone-600">Metrics and linked evidence are summarized from the workspace.</p>
+        </div>
+      </div>
+      {% if user.logged_in -%}
+        <form hx-post="/projects/{{ project.project.collaboration_project_id }}/updates"
+              hx-swap="none"
+              class="border-t border-stone-100 p-7 sm:p-10">
+          <h2 class="text-lg font-semibold text-stone-950">Share a project update</h2>
+          <p class="mt-1 text-sm text-stone-600">Available to accepted owners and contributors.</p>
+          <textarea class="input-primary mt-4 w-full"
+                    name="body"
+                    required
+                    maxlength="5000"
+                    placeholder="What changed?"></textarea>
+          <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            <input class="input-primary"
+                   name="blockers"
+                   placeholder="Blockers (optional)">
+            <input class="input-primary"
+                   name="next_steps"
+                   placeholder="Next steps (optional)">
+          </div>
+          <button class="btn-primary mt-4" type="submit">Post update</button>
+        </form>
+      {% endif -%}
+    </article>
+  </main>
+{% endblock content -%}
