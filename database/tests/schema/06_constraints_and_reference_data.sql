@@ -342,6 +342,8 @@ select results_eq(
         ('event-rescheduled', false),
         ('event-series-canceled', false),
         ('event-series-published', true),
+        ('event-survey-reminder', true),
+        ('event-survey-request', true),
         ('event-waitlist-joined', false),
         ('event-waitlist-left', false),
         ('event-waitlist-promoted', false),

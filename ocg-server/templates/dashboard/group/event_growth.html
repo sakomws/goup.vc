@@ -1,0 +1,251 @@
+<div class="space-y-10">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-medium text-stone-900">Event growth funnel</h2>
+      <p class="mt-1 text-sm text-stone-500">First-touch registration attribution and current lifecycle totals.</p>
+    </div>
+    <a class="btn-primary-outline btn-mini"
+       href="/dashboard/group/events/{{ event_id }}/growth.csv">Download CSV</a>
+    <a class="btn-primary-outline btn-mini"
+       href="/dashboard/group/events/{{ event_id }}/surveys">Survey results</a>
+  </div>
+
+  <div class="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
+    <div class="rounded-lg border border-stone-200 bg-white p-4">
+      <div class="text-xs text-stone-500">Views</div>
+      <div class="mt-1 text-2xl font-semibold text-stone-900">{{ growth.funnel.views }}</div>
+    </div>
+    <div class="rounded-lg border border-stone-200 bg-white p-4">
+      <div class="text-xs text-stone-500">Registrations</div>
+      <div class="mt-1 text-2xl font-semibold text-stone-900">{{ growth.funnel.registrations }}</div>
+    </div>
+    <div class="rounded-lg border border-stone-200 bg-white p-4">
+      <div class="text-xs text-stone-500">Waitlisted</div>
+      <div class="mt-1 text-2xl font-semibold text-stone-900">{{ growth.funnel.waitlisted }}</div>
+    </div>
+    <div class="rounded-lg border border-stone-200 bg-white p-4">
+      <div class="text-xs text-stone-500">Pending</div>
+      <div class="mt-1 text-2xl font-semibold text-stone-900">{{ growth.funnel.pending }}</div>
+    </div>
+    <div class="rounded-lg border border-stone-200 bg-white p-4">
+      <div class="text-xs text-stone-500">Confirmed</div>
+      <div class="mt-1 text-2xl font-semibold text-stone-900">{{ growth.funnel.confirmed }}</div>
+    </div>
+    <div class="rounded-lg border border-stone-200 bg-white p-4">
+      <div class="text-xs text-stone-500">Check-ins</div>
+      <div class="mt-1 text-2xl font-semibold text-stone-900">{{ growth.funnel.check_ins }}</div>
+    </div>
+    <div class="rounded-lg border border-stone-200 bg-white p-4">
+      <div class="text-xs text-stone-500">Unique attendees</div>
+      <div class="mt-1 text-2xl font-semibold text-stone-900">{{ growth.funnel.unique_attendees }}</div>
+    </div>
+    <div class="rounded-lg border border-stone-200 bg-white p-4">
+      <div class="text-xs text-stone-500">Repeat attendees</div>
+      <div class="mt-1 text-2xl font-semibold text-stone-900">{{ growth.funnel.repeat_attendees }}</div>
+    </div>
+    <div class="rounded-lg border border-stone-200 bg-white p-4">
+      <div class="text-xs text-stone-500">New members</div>
+      <div class="mt-1 text-2xl font-semibold text-stone-900">{{ growth.funnel.new_members }}</div>
+    </div>
+    <div class="rounded-lg border border-stone-200 bg-white p-4">
+      <div class="text-xs text-stone-500">Follow-up collaborators</div>
+      <div class="mt-1 text-2xl font-semibold text-stone-900">{{ growth.funnel.follow_up_collaborators }}</div>
+    </div>
+    <div class="rounded-lg border border-stone-200 bg-white p-4">
+      <div class="text-xs text-stone-500">View conversion</div>
+      <div class="mt-1 text-2xl font-semibold text-stone-900">{{ growth.funnel.conversion_rate }}%</div>
+    </div>
+  </div>
+
+  <div class="grid gap-8 lg:grid-cols-2">
+    <div>
+      <h3 class="font-medium text-stone-900">Registration sources</h3>
+      <div class="mt-3 divide-y divide-stone-100 rounded-lg border border-stone-200">
+        {% for row in growth.source_breakdown -%}
+          <div class="flex justify-between px-4 py-3 text-sm">
+            <span>{{ row.label }}</span><span>{{ row.total }}</span>
+          </div>
+        {% else -%}
+          <p class="px-4 py-3 text-sm text-stone-500">No attributed registrations yet.</p>
+        {% endfor -%}
+      </div>
+    </div>
+    <div>
+      <h3 class="font-medium text-stone-900">Referral codes</h3>
+      <div class="mt-3 divide-y divide-stone-100 rounded-lg border border-stone-200">
+        {% for row in growth.referral_breakdown -%}
+          <div class="flex justify-between px-4 py-3 text-sm">
+            <span>{{ row.label }}</span><span>{{ row.total }}</span>
+          </div>
+        {% else -%}
+          <p class="px-4 py-3 text-sm text-stone-500">No referral codes yet.</p>
+        {% endfor -%}
+      </div>
+    </div>
+  </div>
+
+  {% if let Some(report) = growth.sponsor_report -%}
+    <div class="border-t border-stone-200 pt-8">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-medium text-stone-900">Sponsor engagement</h2>
+          <p class="mt-1 text-sm text-stone-500">
+            Anonymous unique daily placement metrics, consented manual counts, and linked GTM deliverables.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a class="btn-primary-outline btn-mini"
+             href="/dashboard/group/events/{{ event_id }}/sponsor-report"
+             target="_blank">Preview report</a>
+          {% if can_manage_events -%}
+            <button class="btn-primary btn-mini"
+                    hx-post="/dashboard/group/events/{{ event_id }}/sponsor-report/share"
+                    hx-target="#sponsor-share-link"
+                    hx-swap="innerHTML">Create / rotate share link</button>
+            <button class="btn-primary-outline btn-mini"
+                    hx-delete="/dashboard/group/events/{{ event_id }}/sponsor-report/share"
+                    hx-target="#sponsor-share-link"
+                    hx-swap="innerHTML">Revoke</button>
+          {% endif -%}
+        </div>
+      </div>
+      <div id="sponsor-share-link" class="mt-3 break-all"></div>
+      <div class="mt-4 space-y-4">
+        {% for sponsor in report.sponsors -%}
+          <div class="rounded-lg border border-stone-200 p-4">
+            <div class="flex flex-wrap justify-between gap-2">
+              <div class="font-medium">{{ sponsor.name }} · {{ sponsor.level }}</div>
+              <div class="text-sm text-stone-600">
+                {{ sponsor.impressions }} impressions · {{ sponsor.clicks }} clicks · {{ sponsor.delivered_deliverables }}/{{ sponsor.promised_deliverables }} deliverables
+              </div>
+            </div>
+            {% if can_manage_events -%}
+              <form class="mt-4 grid gap-3 md:grid-cols-4"
+                    hx-put="/dashboard/group/events/{{ event_id }}/sponsors/{{ sponsor.group_sponsor_id }}/engagement"
+                    hx-target="#event-growth-content"
+                    hx-swap="innerHTML">
+                <input class="input-primary"
+                       type="number"
+                       min="0"
+                       name="leads_count"
+                       value="{{ sponsor.leads_count }}"
+                       aria-label="Consented leads">
+                <input class="input-primary"
+                       type="number"
+                       min="0"
+                       name="conversations_count"
+                       value="{{ sponsor.conversations_count }}"
+                       aria-label="Conversations">
+                <input class="input-primary"
+                       type="number"
+                       min="0"
+                       name="meetings_count"
+                       value="{{ sponsor.meetings_count }}"
+                       aria-label="Meetings">
+                <button class="btn-primary" type="submit">Save counts</button>
+                <input class="input-primary md:col-span-4"
+                       name="notes"
+                       maxlength="2000"
+                       value="{% if let Some(notes) = sponsor.notes %}
+                                {{ notes }}
+                              {% endif %}"
+                       placeholder="Aggregate notes only; do not enter attendee personal data">
+              </form>
+            {% endif -%}
+          </div>
+        {% else -%}
+          <p class="text-sm text-stone-500">No event sponsors configured.</p>
+        {% endfor -%}
+      </div>
+    </div>
+  {% endif -%}
+
+  <div class="border-t border-stone-200 pt-8">
+    <h2 class="text-xl font-medium text-stone-900">Finances</h2>
+    <p class="mt-1 text-sm text-stone-500">
+      Completed ticket purchases less completed refunds, plus manual entries. Amounts are stored in minor currency units.
+    </p>
+    <div class="mt-4 overflow-x-auto rounded-lg border border-stone-200">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-stone-50 text-stone-600">
+          <tr>
+            <th class="p-3">Currency</th>
+            <th class="p-3">Gross purchases</th>
+            <th class="p-3">Refunds</th>
+            <th class="p-3">Manual income</th>
+            <th class="p-3">Manual expenses</th>
+            <th class="p-3">Net</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-stone-100">
+          {% for total in growth.finances -%}
+            <tr>
+              <td class="p-3 font-medium">{{ total.currency_code }}</td>
+              <td class="p-3">{{ total.gross_purchases_minor }}</td>
+              <td class="p-3">{{ total.refunds_minor }}</td>
+              <td class="p-3">{{ total.manual_income_minor }}</td>
+              <td class="p-3">{{ total.manual_expense_minor }}</td>
+              <td class="p-3 font-semibold">{{ total.net_total_minor }}</td>
+            </tr>
+          {% else -%}
+            <tr>
+              <td colspan="6" class="p-4 text-stone-500">No financial activity yet.</td>
+            </tr>
+          {% endfor -%}
+        </tbody>
+      </table>
+    </div>
+
+    {% if can_manage_events -%}
+      <form class="mt-6 grid gap-3 md:grid-cols-6"
+            hx-post="/dashboard/group/events/{{ event_id }}/finance-entries"
+            hx-target="#event-growth-content"
+            hx-swap="innerHTML">
+        <select name="kind" class="select-primary" required>
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+        <input name="category"
+               class="input-primary"
+               placeholder="Category"
+               maxlength="255"
+               required>
+        <input name="description"
+               class="input-primary md:col-span-2"
+               placeholder="Description">
+        <input name="amount_minor"
+               class="input-primary"
+               type="number"
+               min="1"
+               placeholder="Minor units"
+               required>
+        <div class="flex gap-2">
+          <input name="currency_code"
+                 class="input-primary"
+                 minlength="3"
+                 maxlength="3"
+                 placeholder="USD"
+                 required>
+          <button class="btn-primary whitespace-nowrap" type="submit">Add entry</button>
+        </div>
+      </form>
+    {% endif -%}
+
+    <div class="mt-5 divide-y divide-stone-100 rounded-lg border border-stone-200">
+      {% for entry in growth.finance_entries -%}
+        <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+          <div>
+            <span class="font-medium">{{ entry.category }}</span> · {{ entry.kind }} · {{ entry.amount_minor }} {{ entry.currency_code }}
+            {% if let Some(description) = entry.description %}· {{ description }}{% endif %}
+          </div>
+          {% if can_manage_events -%}
+            <button class="text-red-700"
+                    hx-delete="/dashboard/group/events/{{ event_id }}/finance-entries/{{ entry.event_finance_entry_id }}"
+                    hx-target="#event-growth-content"
+                    hx-swap="innerHTML">Delete</button>
+          {% endif -%}
+        </div>
+      {% endfor -%}
+    </div>
+  </div>
+</div>

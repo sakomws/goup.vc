@@ -52,6 +52,8 @@
         {% endif -%}
         {% let waitlist_attrs -%}hx-get="/dashboard/group/events/{{ event.event_id }}/waitlist" hx-trigger="click once" hx-target="#waitlist-content" hx-swap="innerHTML" hx-indicator="#waitlist-loading"{%- endlet %}
         {{ event_form::tab_button(section = "waitlist", icon = "waitlist", label = "Waitlist", extra_attrs = waitlist_attrs) -}}
+        {% let growth_attrs -%}hx-get="/dashboard/group/events/{{ event.event_id }}/growth" hx-trigger="click once" hx-target="#event-growth-content" hx-swap="innerHTML" hx-indicator="#event-growth-loading"{%- endlet %}
+        {{ event_form::tab_button(section = "growth", icon = "chart", label = "Growth & Finances", extra_attrs = growth_attrs) -}}
       </ul>
     </div>
     <div class="flex min-w-28 flex-col items-stretch justify-center gap-2">
@@ -1259,6 +1261,20 @@
   </div>
 </div>
 {# End Waitlist Tab -#}
+
+{# Growth & Finances Tab -#}
+<div data-content="growth" class="hidden">
+  <div id="event-growth-content">
+    <div id="event-growth-loading"
+         class="flex items-center justify-center py-12">
+      <div class="flex flex-col items-center space-y-4">
+        {{ ui::spinner(size = "size-10") -}}
+        <div class="text-sm text-stone-500">Loading growth analytics...</div>
+      </div>
+    </div>
+  </div>
+</div>
+{# End Growth & Finances Tab -#}
 
 {# Form buttons -#}
 <div class="flex flex-wrap items-center justify-end gap-3 mt-6">

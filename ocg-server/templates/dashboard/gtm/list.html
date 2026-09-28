@@ -60,6 +60,48 @@
 </div>
 
 {% if can_manage_gtm -%}
+  <section class="mb-8 rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm">
+    <h2 class="text-lg font-black tracking-tight text-stone-950">Sponsor packages</h2>
+    <div class="mt-3 flex flex-wrap gap-2">
+      {% for package in packages -%}
+        <span class="rounded-full bg-stone-100 px-3 py-1 text-sm text-stone-700">
+          {{ package.name }} · {{ package.price_cents }} {{ package.currency }} / {{ package.billing_period }}
+        </span>
+      {% endfor -%}
+    </div>
+    <form class="inert-form mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+          hx-post="{{ dashboard_base }}/gtm/packages"
+          hx-target="#dashboard-content"
+          hx-indicator="#dashboard-spinner">
+      <input name="name" class="input-primary" placeholder="Package name" required />
+      <input name="price_cents"
+             type="number"
+             min="0"
+             class="input-primary"
+             placeholder="Price in cents"
+             required />
+      <input name="currency"
+             class="input-primary"
+             value="USD"
+             maxlength="3"
+             required />
+      <select name="billing_period" class="select-primary">
+        <option value="one_time">One time</option>
+        <option value="monthly">Monthly</option>
+        <option value="quarterly">Quarterly</option>
+        <option value="annual">Annual</option>
+      </select>
+      <input name="description"
+             class="input-primary sm:col-span-2"
+             placeholder="Description" />
+      <textarea name="deliverables"
+                class="input-primary sm:col-span-2"
+                rows="2"
+                placeholder="One included deliverable per line"></textarea>
+      <button type="submit" class="btn-secondary">Add package</button>
+    </form>
+  </section>
+
   <section class="mb-8 overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
     <div class="border-b border-stone-100 px-5 py-4">
       <h2 class="text-lg font-black tracking-tight text-stone-950">Add lead</h2>
@@ -118,6 +160,27 @@
     </form>
   </section>
 {% endif -%}
+
+<section class="mb-8 rounded-[2rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
+  <h2 class="text-lg font-black text-stone-950">Due follow-ups</h2>
+  {% if due_tasks.is_empty() -%}
+    <p class="mt-2 text-sm text-stone-600">No open tasks are due.</p>
+  {% else -%}
+    <ul class="mt-3 space-y-2">
+      {% for task in due_tasks -%}
+        <li class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 text-sm">
+          <span><strong>{{ task.lead_name.as_deref().unwrap_or("") }}</strong> · {{ task.title }}</span>
+          {% if can_manage_gtm -%}
+            <button class="btn-tertiary"
+                    hx-post="{{ dashboard_base }}/gtm/tasks/{{ task.gtm_task_id }}/state"
+                    hx-vals='{"state":"completed"}'
+                    hx-target="#dashboard-content">Complete</button>
+          {% endif -%}
+        </li>
+      {% endfor -%}
+    </ul>
+  {% endif -%}
+</section>
 
 <div class="text-sm text-stone-600 mb-3">
   {{ pagination::range_display(offset = filters.offset.unwrap_or(0) , count = leads.len(), total = total, label = "lead") }}

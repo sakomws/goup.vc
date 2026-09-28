@@ -20,6 +20,7 @@ For scope boundaries and non-event responsibilities, pair this with
 - [Automatic Meeting Creation](#automatic-meeting-creation)
 - [Paid Events, Tickets, Discounts, Refunds](#paid-events-tickets-discounts-refunds)
 - [Attendance, Invitation, and Waitlist Operations](#attendance-invitation-and-waitlist-operations)
+- [Growth Funnel and Finances](#growth-funnel-and-finances)
 - [Publish, Unpublish, Cancel, Delete](#publish-unpublish-cancel-delete)
 - [Public Event Result](#public-event-result)
 - [Event-Day Checklist](#event-day-checklist)
@@ -475,6 +476,45 @@ attendee selected. The email form includes a required `Subject`, defaults it to
 
 ![Event attendees](../screenshots/dashboard-group-event-attendees.png)
 
+### Growth Funnel and Finances
+
+`Event -> Growth & Finances` gives organizers an event-scoped operating report:
+
+- Views, first successful registration touches, current waitlist/pending/confirmed states, check-ins,
+  and view-to-confirmed conversion.
+- Unique attendees (no earlier confirmed event in this group), repeat attendees, and new members
+  whose group membership began at or after their registration touch.
+- A follow-up collaboration indicator counting confirmed attendees who also confirm attendance at a
+  later event in the same group.
+- Registration source and referral-code breakdowns. Built-in registration captures the first touch
+  only, including `source`, `referral_code` (or `ref`), referrer, and
+  `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, and `utm_term`. That touch remains
+  attached while a person moves through pending approval, waitlist, checkout, and confirmation.
+
+Financial reporting is explicit and currency-safe. Ticket revenue includes purchases that completed;
+completed refunds are subtracted from that amount. Organizers with `group.events.write` can add or
+delete categorized manual income and expense entries. Totals are never combined across currencies,
+and the CSV export uses minor currency units (for example, cents).
+
+The growth report and CSV require group read access. Changing manual ledger entries requires event
+write access.
+
+### Sponsor engagement and reports
+
+When an event has sponsors, the growth report also shows aggregate sponsor placement impressions,
+outbound clicks, consented/manual lead, conversation, and meeting counts, plus promised and
+delivered GTM deliverables for linked sponsor leads. The CSV includes the same numeric metrics.
+
+Public event pages count at most one impression and one click per sponsor, browser tab, and day.
+The browser supplies a random tab nonce; OCG stores only a one-way daily hash. It does not store an
+IP address, user agent, account identifier, or attendee identity for sponsor analytics.
+
+Organizers with event write access can enter aggregate counts and notes. Notes must not contain
+attendee personal data. `Preview report` renders exactly the aggregate sponsor-facing report.
+`Create / rotate share link` issues a new unguessable URL and invalidates any previous URL;
+`Revoke` disables it. Shared report responses use `no-store`, are excluded from search indexing,
+and never include attendee-level data.
+
 ## CFS Workflow (End to End)
 
 CFS spans organizer setup, speaker submission, and review loop. Treat it as one connected system.
@@ -618,6 +658,28 @@ series.
 Use the least destructive action that matches your operational goal.
 
 ![Events actions](../screenshots/dashboard-group-events-actions.png)
+
+## Post-event surveys
+
+After a published, non-canceled event ends, authenticated eligible users can submit one response
+for each audience relationship they hold:
+
+- attendees with confirmed attendance or a check-in;
+- event-level or session-level speakers;
+- authenticated contacts attached to an active (`won`, `delivered`, or `renewal`) sponsor
+  relationship for an event sponsor.
+
+Each survey contains a 0–10 NPS question, a 1–5 rating, and an optional free-text prompt. Request
+emails and one reminder are queued automatically and idempotently through the normal notification
+delivery system. Users who disable optional notifications are excluded by the shared queue.
+
+Open **Event growth → Survey results** to filter responses by audience, review NPS distribution,
+score, average rating, and response rate, or export CSV. Response review and exports deliberately
+omit respondent identifiers. Free text is escaped in HTML and normalized before review.
+
+Sponsor reports include sponsor-contact survey aggregates only after at least three responses.
+Comments and respondent data are never included in a shareable report. Survey calculations are
+deterministic SQL aggregates and do not use AI generation.
 
 ## Public Event Result
 

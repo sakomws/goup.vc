@@ -204,6 +204,7 @@ where
         .transpose()
 }
 
+#[allow(clippy::ref_option)]
 fn valid_scheduled_for(value: &Option<String>, _ctx: &()) -> garde::Result {
     let Some(value) = value else {
         return Ok(());

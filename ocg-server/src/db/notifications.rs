@@ -34,6 +34,9 @@ pub(crate) trait DBNotifications {
     /// Enqueues due event reminders and returns the number of notifications created.
     async fn enqueue_due_event_reminders(&self, base_url: &str) -> Result<usize>;
 
+    /// Enqueues due post-event survey requests and reminders.
+    async fn enqueue_due_event_survey_notifications(&self, base_url: &str) -> Result<usize>;
+
     /// Enqueues due `CoffeeMeet` suggestions and returns the number created.
     async fn enqueue_due_coffee_meet_suggestions(&self, base_url: &str) -> Result<usize>;
 
@@ -183,6 +186,18 @@ where
             .map_err(|_| anyhow!("enqueued reminders count cannot be negative"))?;
 
         Ok(count)
+    }
+
+    #[instrument(skip(self), err)]
+    async fn enqueue_due_event_survey_notifications(&self, base_url: &str) -> Result<usize> {
+        let count: i32 = self
+            .fetch_scalar_one(
+                "select enqueue_due_event_survey_notifications($1::text)::int",
+                &[&base_url],
+            )
+            .await?;
+        usize::try_from(count)
+            .map_err(|_| anyhow!("enqueued survey notification count is negative"))
     }
 
     #[instrument(skip(self), err)]

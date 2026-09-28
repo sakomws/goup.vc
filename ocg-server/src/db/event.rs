@@ -11,7 +11,8 @@ use crate::{
     templates::event::SessionProposal,
     types::{
         event::{
-            EventAttendanceInfo, EventAttendanceStatus, EventFull, EventLeaveOutcome, EventSummary,
+            EventAttendanceInfo, EventAttendanceStatus, EventFull, EventLeaveOutcome,
+            EventRegistrationAttribution, EventSummary,
         },
         questionnaire::{QuestionnaireAnswers, QuestionnaireQuestion},
     },
@@ -47,6 +48,23 @@ pub(crate) trait DBEvent {
         user_id: Uuid,
         bypass_window: bool,
     ) -> Result<()>;
+
+    /// Persists registration attribution only when no earlier touch exists.
+    async fn capture_event_registration_attribution(
+        &self,
+        event_id: Uuid,
+        user_id: Uuid,
+        attribution: &EventRegistrationAttribution,
+    ) -> Result<()>;
+
+    /// Records a de-duplicated, anonymous sponsor placement metric.
+    async fn record_event_sponsor_engagement(
+        &self,
+        event_id: Uuid,
+        group_sponsor_id: Uuid,
+        metric: &str,
+        session_nonce: Uuid,
+    ) -> Result<bool>;
 
     /// Ensures the event exists in the alliance and is active.
     async fn ensure_event_is_active(&self, alliance_id: Uuid, event_id: Uuid) -> Result<()>;
@@ -173,6 +191,37 @@ where
         self.execute(
             "select check_in_event($1::uuid, $2::uuid, $3::uuid, $4::bool)",
             &[&alliance_id, &event_id, &user_id, &bypass_window],
+        )
+        .await
+    }
+
+    /// [`DBEvent::capture_event_registration_attribution`]
+    #[instrument(skip(self, attribution), err)]
+    async fn capture_event_registration_attribution(
+        &self,
+        event_id: Uuid,
+        user_id: Uuid,
+        attribution: &EventRegistrationAttribution,
+    ) -> Result<()> {
+        self.execute(
+            "select capture_event_registration_attribution($1::uuid, $2::uuid, $3::jsonb)",
+            &[&event_id, &user_id, &Json(attribution)],
+        )
+        .await
+    }
+
+    /// [`DBEvent::record_event_sponsor_engagement`]
+    #[instrument(skip(self), err)]
+    async fn record_event_sponsor_engagement(
+        &self,
+        event_id: Uuid,
+        group_sponsor_id: Uuid,
+        metric: &str,
+        session_nonce: Uuid,
+    ) -> Result<bool> {
+        self.fetch_scalar_one(
+            "select record_event_sponsor_engagement($1::uuid, $2::uuid, $3::text, $4::uuid)",
+            &[&event_id, &group_sponsor_id, &metric, &session_nonce],
         )
         .await
     }

@@ -218,6 +218,18 @@ pub(crate) struct EventReminder {
     pub dashboard_link: Option<String>,
 }
 
+/// Template for a post-event survey request or reminder.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_survey.html")]
+pub(crate) struct EventSurveyNotification {
+    pub event_name: String,
+    pub group_name: String,
+    pub audience: String,
+    pub link: String,
+    pub reminder: bool,
+    pub theme: Theme,
+}
+
 /// Template for event rescheduled notification.
 #[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "notifications/event_rescheduled.html")]

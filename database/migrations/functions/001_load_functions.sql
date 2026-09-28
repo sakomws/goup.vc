@@ -23,6 +23,7 @@
 {{ template "auth/verify_email.sql" }}
 
 {{ template "common/custom_domain_json.sql" }}
+{{ template "common/collaboration_project_json.sql" }}
 {{ template "common/escape_ilike_pattern.sql" }}
 {{ template "common/generate_slug.sql" }}
 {{ template "common/generate_slug_from_source.sql" }}
@@ -33,6 +34,7 @@
 {{ template "common/list_event_discount_codes.sql" }} -- Dependency for get_event_full and payments
 {{ template "common/list_event_ticket_types.sql" }} -- Dependency for get_event_full and payments
 {{ template "common/get_group_summary.sql" }} -- Do not sort alphabetically, has dependency
+{{ template "common/get_collaboration_outcome_summary.sql" }}
 {{ template "common/questionnaire_answers_exist_for_event.sql" }} -- Do not sort alphabetically, dependency for get_event_full and update_event
 {{ template "common/query_community_analytics.sql" }}
 {{ template "common/stats_label_count_series.sql" }}
@@ -166,12 +168,17 @@
 {{ template "dashboard-group/delete_group_sponsor.sql" }}
 {{ template "dashboard-group/delete_group_team_member.sql" }}
 {{ template "dashboard-group/get_cfs_submission_notification_data.sql" }}
+{{ template "dashboard-group/create_collaboration_project.sql" }}
 {{ template "dashboard-group/get_custom_domain.sql" }}
 {{ template "dashboard-group/get_event_summary_dashboard.sql" }} -- Dependency for list_group_events
+{{ template "dashboard-group/event_sponsor_reporting.sql" }}
+{{ template "dashboard-group/event_growth.sql" }}
 {{ template "dashboard-group/get_group_sponsor.sql" }}
+{{ template "dashboard-group/get_group_collaboration_dashboard.sql" }}
 {{ template "dashboard-group/get_group_stats.sql" }}
 {{ template "dashboard-group/get_distribution_dashboard.sql" }}
 {{ template "dashboard-group/invite_event_attendee.sql" }}
+{{ template "dashboard-group/invite_collaboration_project_member.sql" }}
 {{ template "dashboard-group/list_cfs_submission_statuses_for_review.sql" }}
 {{ template "dashboard-group/list_event_approved_cfs_submissions.sql" }}
 {{ template "dashboard-group/list_event_attendees_ids.sql" }}
@@ -233,6 +240,7 @@
 {{ template "dashboard-gtm/apply_gtm_won_side_effects.sql" }}
 {{ template "dashboard-gtm/review_gtm_agent_draft.sql" }}
 {{ template "dashboard-gtm/suggest_gtm_lead_candidates.sql" }}
+{{ template "dashboard-gtm/sponsor_campaign.sql" }}
 
 {{ template "dashboard-user/accept_alliance_team_invitation.sql" }}
 {{ template "dashboard-user/accept_event_attendee_invitation.sql" }}
@@ -273,6 +281,7 @@
 {{ template "event/get_event_attendance.sql" }}
 {{ template "event/get_event_full_by_slug.sql" }}
 {{ template "event/get_event_summary_by_id.sql" }}
+{{ template "event/event_surveys.sql" }}
 {{ template "event/is_event_check_in_window_open.sql" }}
 {{ template "payments/release_event_discount_code_availability.sql" }} -- Dependency for event and payments flows
 {{ template "payments/release_event_checkout_attendee_hold.sql" }} -- Dependency for checkout expiration flows
@@ -282,12 +291,15 @@
 {{ template "event/update_event_views.sql" }}
 
 {{ template "group/get_group_full_by_slug.sql" }}
+{{ template "group/get_public_collaboration_project.sql" }}
 {{ template "group/get_group_membership_status.sql" }}
 {{ template "group/get_group_past_events.sql" }}
 {{ template "group/get_group_upcoming_events.sql" }}
 {{ template "group/is_group_member.sql" }}
 {{ template "group/join_group.sql" }}
 {{ template "group/leave_group.sql" }}
+{{ template "group/book_collaboration_office_hour.sql" }}
+{{ template "group/submit_collaboration_update.sql" }}
 {{ template "group/update_group_views.sql" }}
 
 {{ template "meetings/get_event_meeting_sync_state_hash.sql" }} -- Dependency for meeting sync completion functions
@@ -314,6 +326,7 @@
 {{ template "notifications/enqueue_due_coffee_meet_suggestions.sql" }}
 {{ template "notifications/enqueue_due_distribution_content_reminders.sql" }}
 {{ template "notifications/enqueue_due_event_reminders.sql" }}
+{{ template "notifications/enqueue_due_collaboration_reminders.sql" }}
 {{ template "notifications/enqueue_notification.sql" }} -- Dependency for tracked custom and auth notification helpers
 {{ template "notifications/manual_requeue_notifications.sql" }}
 {{ template "notifications/mark_stale_processing_notifications_unknown.sql" }}

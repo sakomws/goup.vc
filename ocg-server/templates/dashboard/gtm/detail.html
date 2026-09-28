@@ -51,6 +51,39 @@
           <label class="form-label" for="gtm-update-notes">Notes</label>
           <textarea id="gtm-update-notes" name="notes" class="input-primary" rows="3">{{ notes_value() }}</textarea>
         </div>
+        <div class="space-y-2">
+          <label class="form-label" for="gtm-update-value">Estimated value (cents)</label>
+          <input id="gtm-update-value"
+                 name="estimated_value_cents"
+                 type="number"
+                 min="0"
+                 class="input-primary"
+                 {% if let Some(value) = lead.estimated_value_cents %}value="{{ value }}"{% endif %} />
+        </div>
+        <div class="space-y-2">
+          <label class="form-label" for="gtm-update-currency">Currency</label>
+          <input id="gtm-update-currency"
+                 name="currency"
+                 maxlength="3"
+                 class="input-primary"
+                 value="{{ lead.currency.as_deref().unwrap_or("USD") }}" />
+        </div>
+        <div class="space-y-2">
+          <label class="form-label" for="gtm-update-next-action">Next action (UTC)</label>
+          <input id="gtm-update-next-action"
+                 name="next_action_at"
+                 type="datetime-local"
+                 class="input-primary"
+                 value="{{ next_action_value() }}" />
+        </div>
+        <div class="space-y-2">
+          <label class="form-label" for="gtm-update-renewal">Renewal (UTC)</label>
+          <input id="gtm-update-renewal"
+                 name="renewal_at"
+                 type="datetime-local"
+                 class="input-primary"
+                 value="{{ renewal_value() }}" />
+        </div>
         <div class="flex flex-wrap items-center gap-2">
           <button type="submit" class="btn-primary">Save lead</button>
           <button type="button"
@@ -87,15 +120,119 @@
         </div>
         <div class="space-y-2">
           <label class="form-label" for="gtm-lost-reason">Lost reason</label>
-          <input id="gtm-lost-reason"
-                 name="lost_reason"
-                 class="input-primary"
-                 value="{{ lost_reason_value() }}" />
+          <select id="gtm-lost-reason" name="lost_reason" class="select-primary">
+            <option value="">Select when lost</option>
+            {% for (code, label) in lost_reasons() -%}
+              <option value="{{ code }}" {% if is_lost_reason(code) %}selected{% endif %}>{{ label }}</option>
+            {% endfor -%}
+          </select>
         </div>
         <div>
           <button type="submit" class="btn-secondary">Update stage</button>
         </div>
       </form>
+
+      <section class="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm space-y-5">
+        <h3 class="text-lg font-black">Sponsor campaign</h3>
+        {% if is_lead_kind("sponsor") -%}
+          <form class="inert-form grid gap-3 sm:grid-cols-2"
+                hx-post="{{ dashboard_base }}/gtm/{{ lead.gtm_lead_id }}/contacts"
+                hx-target="#dashboard-content">
+            <input name="name" class="input-primary" placeholder="Contact name" required />
+            <input name="email" type="email" class="input-primary" placeholder="Email" />
+            <input name="title" class="input-primary" placeholder="Title" />
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="is_primary" value="true" />
+              Primary contact
+            </label>
+            <button class="btn-secondary">Add contact</button>
+          </form>
+          <ul class="text-sm text-stone-700">
+            {% for contact in lead.contacts -%}
+              <li>
+                {{ contact.name }} · {{ contact.email.as_deref().unwrap_or("") }}
+                {% if contact.is_primary %}· primary{% endif %}
+              </li>
+            {% endfor -%}
+          </ul>
+
+          {% if !packages.is_empty() -%}
+            <form class="inert-form grid gap-3 sm:grid-cols-2"
+                  hx-post="{{ dashboard_base }}/gtm/{{ lead.gtm_lead_id }}/proposals"
+                  hx-target="#dashboard-content">
+              <input name="title"
+                     class="input-primary"
+                     placeholder="Proposal title"
+                     required />
+              <select name="gtm_sponsor_package_id" class="select-primary">
+                {% for package in packages -%}
+                  <option value="{{ package.gtm_sponsor_package_id }}">{{ package.name }}</option>
+                {% endfor -%}
+              </select>
+              <input name="valid_until" type="date" class="input-primary" />
+              <button class="btn-secondary">Create proposal</button>
+            </form>
+          {% endif -%}
+          <ul class="text-sm text-stone-700">
+            {% for proposal in lead.proposals -%}
+              <li class="flex flex-wrap items-center gap-2">
+                {{ proposal.title }} · {{ proposal.amount_cents }} {{ proposal.currency }} · {{ proposal.status }}
+                <button class="btn-tertiary"
+                        hx-post="{{ dashboard_base }}/gtm/proposals/{{ proposal.gtm_sponsor_proposal_id }}/state"
+                        hx-vals='{"state":"sent"}'
+                        hx-target="#dashboard-content">Sent</button>
+                <button class="btn-tertiary"
+                        hx-post="{{ dashboard_base }}/gtm/proposals/{{ proposal.gtm_sponsor_proposal_id }}/state"
+                        hx-vals='{"state":"accepted"}'
+                        hx-target="#dashboard-content">Accepted</button>
+              </li>
+            {% endfor -%}
+          </ul>
+
+          <form class="inert-form grid gap-3 sm:grid-cols-2"
+                hx-post="{{ dashboard_base }}/gtm/{{ lead.gtm_lead_id }}/deliverables"
+                hx-target="#dashboard-content">
+            <input name="title" class="input-primary" placeholder="Deliverable" required />
+            <input name="due_at" type="datetime-local" class="input-primary" />
+            <input name="notes" class="input-primary" placeholder="Notes" />
+            <button class="btn-secondary">Add deliverable</button>
+          </form>
+          <ul class="space-y-2 text-sm">
+            {% for item in lead.deliverables -%}
+              <li>
+                {{ item.title }} · {{ item.state }}
+                <button class="btn-tertiary"
+                        hx-post="{{ dashboard_base }}/gtm/deliverables/{{ item.gtm_sponsor_deliverable_id }}/state"
+                        hx-vals='{"state":"delivered"}'
+                        hx-target="#dashboard-content">Delivered</button>
+              </li>
+            {% endfor -%}
+          </ul>
+        {% endif -%}
+
+        <form class="inert-form grid gap-3 sm:grid-cols-2"
+              hx-post="{{ dashboard_base }}/gtm/{{ lead.gtm_lead_id }}/tasks"
+              hx-target="#dashboard-content">
+          <input name="title"
+                 class="input-primary"
+                 placeholder="Follow-up task"
+                 required />
+          <input name="due_at" type="datetime-local" class="input-primary" required />
+          <input name="notes" class="input-primary" placeholder="Notes" />
+          <button class="btn-secondary">Add task</button>
+        </form>
+        <ul class="space-y-2 text-sm">
+          {% for task in lead.tasks -%}
+            <li>
+              {{ task.title }} · {{ task.state }}
+              <button class="btn-tertiary"
+                      hx-post="{{ dashboard_base }}/gtm/tasks/{{ task.gtm_task_id }}/state"
+                      hx-vals='{"state":"completed"}'
+                      hx-target="#dashboard-content">Complete</button>
+            </li>
+          {% endfor -%}
+        </ul>
+      </section>
 
       <form class="inert-form rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm grid gap-4"
             hx-post="{{ dashboard_base }}/gtm/{{ lead.gtm_lead_id }}/agents/run"
@@ -192,6 +329,23 @@
         {% endfor -%}
       {% endif -%}
     </ol>
+    {% if can_manage_gtm -%}
+      <form class="inert-form mt-4 flex flex-wrap gap-2"
+            hx-post="{{ dashboard_base }}/gtm/{{ lead.gtm_lead_id }}/activities"
+            hx-target="#dashboard-content">
+        <select name="kind" class="select-primary">
+          <option value="note">Note</option>
+          <option value="call">Call</option>
+          <option value="email">Email</option>
+          <option value="meeting">Meeting</option>
+        </select>
+        <input name="body"
+               class="input-primary flex-1"
+               placeholder="Log a call, email, meeting, or note"
+               required />
+        <button class="btn-secondary">Log activity</button>
+      </form>
+    {% endif -%}
   </section>
 </div>
 </section>

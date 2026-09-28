@@ -29,6 +29,8 @@ pub enum QuestionnaireAnswerValue {
     Many(Vec<Uuid>),
     /// Free-text answer or selected option identifier.
     One(String),
+    /// Integer answer for a numeric scale or NPS question.
+    Number(i32),
 }
 
 /// Full answer payload submitted by an attendee.
@@ -133,6 +135,12 @@ pub struct QuestionnaireQuestion {
     #[garde(skip)]
     pub required: bool,
 
+    /// Inclusive minimum for numeric scale questions.
+    #[garde(skip)]
+    pub min: Option<i32>,
+    /// Inclusive maximum for numeric scale questions.
+    #[garde(skip)]
+    pub max: Option<i32>,
     /// Selectable options for select-style questions.
     #[serde(default)]
     #[garde(dive)]
@@ -164,6 +172,10 @@ impl QuestionnaireQuestion {
                     .collect::<Vec<_>>()
                     .join(", ")
             }
+            (
+                QuestionnaireQuestionKind::NumericScale | QuestionnaireQuestionKind::Nps,
+                QuestionnaireAnswerValue::Number(value),
+            ) => value.to_string(),
             _ => String::new(),
         }
     }
@@ -191,7 +203,7 @@ impl QuestionnaireQuestion {
             Some(QuestionnaireAnswerValue::One(value)) => Uuid::parse_str(value)
                 .is_ok_and(|selected_option_id| selected_option_id == *option_id),
             Some(QuestionnaireAnswerValue::Many(values)) => values.contains(option_id),
-            None => false,
+            Some(QuestionnaireAnswerValue::Number(_)) | None => false,
         }
     }
 
@@ -238,6 +250,19 @@ impl QuestionnaireQuestion {
                     return Err("questionnaire answer references an unknown option".to_string());
                 }
             }
+            (
+                QuestionnaireQuestionKind::NumericScale | QuestionnaireQuestionKind::Nps,
+                QuestionnaireAnswerValue::Number(value),
+            ) => {
+                let (Some(min), Some(max)) = (self.min, self.max) else {
+                    return Err("numeric questionnaire question requires a range".to_string());
+                };
+                if *value < min || *value > max {
+                    return Err(
+                        "numeric questionnaire answer is outside the allowed range".to_string()
+                    );
+                }
+            }
             (QuestionnaireQuestionKind::FreeText, _) => {
                 return Err("free-text questionnaire answer must be a string".to_string());
             }
@@ -248,6 +273,9 @@ impl QuestionnaireQuestion {
                 return Err(
                     "multi-select questionnaire answer must be an option id array".to_string(),
                 );
+            }
+            (QuestionnaireQuestionKind::NumericScale | QuestionnaireQuestionKind::Nps, _) => {
+                return Err("numeric questionnaire answer must be an integer".to_string());
             }
         }
 
@@ -266,6 +294,10 @@ pub enum QuestionnaireQuestionKind {
     MultiSelect,
     /// One option can be selected.
     SingleSelect,
+    /// Integer answer constrained to a configured inclusive range.
+    NumericScale,
+    /// Net Promoter Score answer constrained to zero through ten.
+    Nps,
 }
 
 // Form types.
@@ -460,6 +492,52 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_questionnaire_answers_validate_numeric_scale_and_nps() {
+        for (kind, min, max, value) in [
+            (QuestionnaireQuestionKind::NumericScale, 1, 5, 4),
+            (QuestionnaireQuestionKind::Nps, 0, 10, 10),
+        ] {
+            let question = QuestionnaireQuestion {
+                id: Uuid::new_v4(),
+                kind,
+                prompt: "Rating?".to_string(),
+                required: true,
+                min: Some(min),
+                max: Some(max),
+                options: vec![],
+            };
+            let answers = QuestionnaireAnswers {
+                answers: vec![QuestionnaireAnswer {
+                    question_id: question.id,
+                    value: QuestionnaireAnswerValue::Number(value),
+                }],
+            };
+            assert!(answers.validate_against_questions(&[question]).is_ok());
+        }
+    }
+
+    #[test]
+    fn test_questionnaire_answers_reject_numeric_value_outside_range() {
+        let question = QuestionnaireQuestion {
+            id: Uuid::new_v4(),
+            kind: QuestionnaireQuestionKind::Nps,
+            prompt: "Recommend?".to_string(),
+            required: true,
+            min: Some(0),
+            max: Some(10),
+            options: vec![],
+        };
+        let answers = QuestionnaireAnswers {
+            answers: vec![QuestionnaireAnswer {
+                question_id: question.id,
+                value: QuestionnaireAnswerValue::Number(11),
+            }],
+        };
+
+        assert!(answers.validate_against_questions(&[question]).is_err());
+    }
+
     // Helpers.
 
     fn sample_question(
@@ -472,6 +550,8 @@ mod tests {
             kind,
             prompt: "Question?".to_string(),
             required,
+            min: None,
+            max: None,
 
             options: option_ids
                 .into_iter()

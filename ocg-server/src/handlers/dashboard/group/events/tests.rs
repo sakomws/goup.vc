@@ -12,6 +12,19 @@ use serde_json::{from_slice, from_value, json, to_value};
 use tower::ServiceExt;
 use uuid::Uuid;
 
+#[test]
+fn test_spreadsheet_safe_text_neutralizes_formulas() {
+    assert_eq!(
+        super::spreadsheet_safe_text(Some("=HYPERLINK(\"x\")")),
+        "'=HYPERLINK(\"x\")"
+    );
+    assert_eq!(
+        super::spreadsheet_safe_text(Some("Useful feedback")),
+        "Useful feedback"
+    );
+    assert_eq!(super::spreadsheet_safe_text(None), "");
+}
+
 use crate::{
     config::{MeetingsConfig, MeetingsGoogleMeetConfig, PaymentsConfig, PaymentsStripeConfig},
     db::mock::MockDB,
@@ -28,11 +41,49 @@ use crate::{
         },
     },
     types::{
-        event::{EventFull, EventSummary, Speaker},
+        event::{
+            EventFull, EventGrowth, EventGrowthBreakdown, EventSponsorMetrics, EventSponsorReport,
+            EventSummary, Speaker,
+        },
         payments::{EventTicketType, PaymentMode},
         permissions::{AlliancePermission, GroupPermission},
     },
 };
+
+#[test]
+fn growth_csv_contains_aggregate_sponsor_metrics() {
+    let growth = EventGrowth {
+        source_breakdown: vec![EventGrowthBreakdown {
+            label: "=HYPERLINK(\"https://evil.test\")".to_string(),
+            total: 1,
+        }],
+        sponsor_report: Some(EventSponsorReport {
+            event_id: Uuid::new_v4(),
+            event_name: "Demo".to_string(),
+            sponsors: vec![EventSponsorMetrics {
+                group_sponsor_id: Uuid::new_v4(),
+                name: "Acme".to_string(),
+                level: "Gold".to_string(),
+                impressions: 12,
+                clicks: 3,
+                leads_count: 2,
+                conversations_count: 1,
+                meetings_count: 1,
+                promised_deliverables: 4,
+                delivered_deliverables: 3,
+                ..Default::default()
+            }],
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    let csv = super::build_growth_csv(&growth).expect("CSV");
+    assert!(csv.contains("sponsor,Acme/impressions,,12"));
+    assert!(csv.contains("sponsor,Acme/delivered_deliverables,,3"));
+    assert!(csv.contains("source,\"'=HYPERLINK(\"\"https://evil.test\"\")\",,1"));
+    assert!(!csv.contains("email"));
+}
 
 #[test]
 fn test_build_meetings_max_participants_includes_google_meet() {

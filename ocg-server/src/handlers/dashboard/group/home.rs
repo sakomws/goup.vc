@@ -13,7 +13,7 @@ use tracing::instrument;
 
 use super::{
     accelerator, coffee_meet, cohosts, distribution, events, gtm, integrations, logs, members,
-    sponsors, spotlights, store, team,
+    projects, sponsors, spotlights, store, team,
 };
 
 use crate::{
@@ -164,6 +164,9 @@ pub(crate) async fn page(
             .await?;
             Content::Members(template)
         }
+        Tab::Projects => Content::Projects(
+            projects::prepare_page(&db, alliance_id, group_id, user.user_id).await?,
+        ),
         Tab::Logs => {
             let (_, template) =
                 logs::prepare_list_page(&db, group_id, raw_query.as_deref().unwrap_or_default())

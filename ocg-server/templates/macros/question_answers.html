@@ -23,6 +23,15 @@
                       required
                     {% endif %}>{% if let Some(answer) = question.free_text_answer(*answers) %}{{ answer }}{% endif %}</textarea>
         </div>
+      {% else if question.kind.to_string() == "numeric-scale" || question.kind.to_string() == "nps" -%}
+        <div class="ms-8">
+          <input class="input-primary max-w-32"
+                 type="number"
+                 {% if let Some(min) = question.min %}min="{{ min }}"{% endif %}
+                 {% if let Some(max) = question.max %}max="{{ max }}"{% endif %}
+                 {{ answer_attr|safe }}
+                 {% if question.required %}required{% endif %}>
+        </div>
       {% else if question.kind.to_string() == "single-select" -%}
         <div class="ms-8 space-y-2">
           {% for option in question.options -%}

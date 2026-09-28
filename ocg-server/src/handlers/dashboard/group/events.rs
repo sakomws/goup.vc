@@ -6,13 +6,16 @@ use anyhow::Result;
 use askama::Template;
 use axum::{
     Json,
-    extract::{Path, RawQuery, State},
-    http::{HeaderName, StatusCode},
+    extract::{Path, Query, RawQuery, State},
+    http::{
+        HeaderName, StatusCode,
+        header::{CONTENT_DISPOSITION, CONTENT_TYPE},
+    },
     response::{Html, IntoResponse},
 };
-use chrono::Utc;
+use chrono::{NaiveDate, Utc};
 use garde::Validate;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tracing::instrument;
 use uuid::Uuid;
@@ -38,12 +41,14 @@ use crate::{
         events::{self, Event, EventsListFilters, EventsTab},
         sponsors::GroupSponsorsFilters,
     },
+    templates::event::SponsorReportPage,
     types::{
-        event::EventSummary,
+        event::{EventGrowth, EventSummary},
         pagination::{self, NavigationLinks},
         payments::GroupPaymentRecipient,
         permissions::{AlliancePermission, GroupPermission},
     },
+    validation::{MAX_LEN_DESCRIPTION_SHORT, MAX_LEN_S, trimmed_non_empty, trimmed_non_empty_opt},
 };
 
 mod recurrence;
@@ -250,6 +255,322 @@ pub(crate) async fn details(
     let event = db.get_event_full(alliance_id, group_id, event_id).await?;
 
     Ok(Json(event).into_response())
+}
+
+/// Renders per-event funnel, attribution, collaboration, and finance analytics.
+#[instrument(skip_all, err)]
+pub(crate) async fn growth_page(
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(event_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    render_growth_page(&db, alliance_id, group_id, event_id, user.user_id).await
+}
+
+/// Adds a categorized manual event income or expense.
+#[instrument(skip_all, err)]
+pub(crate) async fn add_finance_entry(
+    CurrentUser(user): CurrentUser,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(event_id): Path<Uuid>,
+    ValidatedFormQs(entry): ValidatedFormQs<EventFinanceEntryInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.add_event_finance_entry(
+        user.user_id,
+        group_id,
+        event_id,
+        &serde_json::to_value(entry)
+            .map_err(|err| HandlerError::Deserialization(err.to_string()))?,
+    )
+    .await?;
+
+    let growth = db.get_event_growth(group_id, event_id).await?;
+    Ok(Html(
+        events::GrowthPage {
+            can_manage_events: true,
+            event_id,
+            growth,
+        }
+        .render()?,
+    ))
+}
+
+/// Deletes a manual event finance entry.
+#[instrument(skip_all, err)]
+pub(crate) async fn delete_finance_entry(
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path((event_id, entry_id)): Path<(Uuid, Uuid)>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.delete_event_finance_entry(group_id, event_id, entry_id).await?;
+    let growth = db.get_event_growth(group_id, event_id).await?;
+    Ok(Html(
+        events::GrowthPage {
+            can_manage_events: true,
+            event_id,
+            growth,
+        }
+        .render()?,
+    ))
+}
+
+/// Updates organizer-entered, consented aggregate sponsor engagement counts.
+#[instrument(skip_all, err)]
+pub(crate) async fn update_sponsor_engagement(
+    CurrentUser(user): CurrentUser,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path((event_id, group_sponsor_id)): Path<(Uuid, Uuid)>,
+    ValidatedFormQs(input): ValidatedFormQs<EventSponsorEngagementInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.update_event_sponsor_manual_engagement(
+        user.user_id,
+        group_id,
+        event_id,
+        group_sponsor_id,
+        &serde_json::to_value(input)
+            .map_err(|err| HandlerError::Deserialization(err.to_string()))?,
+    )
+    .await?;
+    let growth = db.get_event_growth(group_id, event_id).await?;
+    Ok(Html(
+        events::GrowthPage {
+            can_manage_events: true,
+            event_id,
+            growth,
+        }
+        .render()?,
+    ))
+}
+
+/// Renders the organizer-only sponsor report preview.
+#[instrument(skip_all, err)]
+pub(crate) async fn sponsor_report_preview(
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(event_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let growth = db.get_event_growth(group_id, event_id).await?;
+    let report = growth.sponsor_report.ok_or(HandlerError::NotFound)?;
+    Ok((
+        [(axum::http::header::CACHE_CONTROL, "private, no-store")],
+        Html(
+            SponsorReportPage {
+                report,
+                public: false,
+            }
+            .render()?,
+        ),
+    ))
+}
+
+/// Lists aggregate survey metrics and anonymous response review rows.
+#[instrument(skip_all, err)]
+pub(crate) async fn surveys_page(
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(event_id): Path<Uuid>,
+    Query(filters): Query<EventSurveyFilters>,
+) -> Result<impl IntoResponse, HandlerError> {
+    validate_survey_audience(filters.audience.as_deref())?;
+    let dashboard = db
+        .get_event_survey_dashboard(group_id, event_id, filters.audience.clone())
+        .await?;
+    Ok((
+        [(axum::http::header::CACHE_CONTROL, "private, no-store")],
+        Html(
+            events::SurveyDashboardPage {
+                event_id,
+                audience: filters.audience,
+                dashboard,
+            }
+            .render()?,
+        ),
+    ))
+}
+
+/// Exports aggregate survey rows without respondent identity.
+#[instrument(skip_all, err)]
+pub(crate) async fn download_surveys_csv(
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(event_id): Path<Uuid>,
+    Query(filters): Query<EventSurveyFilters>,
+) -> Result<impl IntoResponse, HandlerError> {
+    validate_survey_audience(filters.audience.as_deref())?;
+    let dashboard = db
+        .get_event_survey_dashboard(group_id, event_id, filters.audience.clone())
+        .await?;
+    let csv = (|| -> anyhow::Result<String> {
+        let mut writer = csv::Writer::from_writer(Vec::new());
+        writer.write_record([
+            "row_type",
+            "audience",
+            "submitted_at",
+            "nps",
+            "rating",
+            "anonymous_comment",
+            "eligible",
+            "responses",
+            "response_rate",
+            "promoters",
+            "passives",
+            "detractors",
+            "nps_score",
+            "average_rating",
+        ])?;
+        for metric in dashboard.metrics {
+            writer.write_record([
+                "aggregate".to_string(),
+                metric.audience,
+                String::new(),
+                String::new(),
+                String::new(),
+                String::new(),
+                metric.eligible.to_string(),
+                metric.responses.to_string(),
+                metric.response_rate.to_string(),
+                metric.promoters.to_string(),
+                metric.passives.to_string(),
+                metric.detractors.to_string(),
+                metric.nps_score.map(|value| value.to_string()).unwrap_or_default(),
+                metric
+                    .average_rating
+                    .map(|value| value.to_string())
+                    .unwrap_or_default(),
+            ])?;
+        }
+        for response in dashboard.responses {
+            writer.write_record([
+                "response".to_string(),
+                response.audience,
+                response.submitted_at.to_rfc3339(),
+                response.nps.map(|value| value.to_string()).unwrap_or_default(),
+                response.rating.map(|value| value.to_string()).unwrap_or_default(),
+                spreadsheet_safe_text(response.comment.as_deref()),
+                String::new(),
+                String::new(),
+                String::new(),
+                String::new(),
+                String::new(),
+                String::new(),
+                String::new(),
+                String::new(),
+            ])?;
+        }
+        Ok(String::from_utf8(writer.into_inner()?)?)
+    })()?;
+    Ok((
+        [
+            (CONTENT_TYPE, "text/csv; charset=utf-8".to_string()),
+            (
+                CONTENT_DISPOSITION,
+                format!("attachment; filename=\"event-{event_id}-surveys.csv\""),
+            ),
+            (
+                axum::http::header::CACHE_CONTROL,
+                "private, no-store".to_string(),
+            ),
+        ],
+        csv,
+    ))
+}
+
+/// Optional dashboard audience filter.
+#[derive(Debug, Default, Deserialize)]
+pub(crate) struct EventSurveyFilters {
+    #[serde(default, deserialize_with = "empty_string_as_none")]
+    audience: Option<String>,
+}
+
+fn empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = Option::<String>::deserialize(deserializer)?;
+    Ok(value.filter(|value| !value.trim().is_empty()))
+}
+
+fn validate_survey_audience(audience: Option<&str>) -> Result<(), HandlerError> {
+    if audience.is_none_or(|value| matches!(value, "attendee" | "speaker" | "sponsor-contact")) {
+        Ok(())
+    } else {
+        Err(HandlerError::Deserialization(
+            "invalid survey audience".to_string(),
+        ))
+    }
+}
+
+/// Prevents spreadsheet applications from evaluating anonymous comments as formulas.
+fn spreadsheet_safe_text(value: Option<&str>) -> String {
+    let value = value.unwrap_or_default();
+    if value.starts_with(['=', '+', '-', '@']) {
+        format!("'{value}")
+    } else {
+        value.to_string()
+    }
+}
+
+/// Creates or rotates the public sponsor report link.
+#[instrument(skip_all, err)]
+pub(crate) async fn create_sponsor_report_share(
+    CurrentUser(user): CurrentUser,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    State(server_cfg): State<HttpServerConfig>,
+    Path(event_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let token = db
+        .create_event_sponsor_report_share(user.user_id, group_id, event_id)
+        .await?;
+    let url = format!(
+        "{}/sponsor-reports/{token}",
+        server_cfg.base_url.trim_end_matches('/')
+    );
+    Ok(Html(format!(
+        r#"<a class="text-sm text-primary-700 underline" href="{url}" target="_blank" rel="noopener noreferrer">{url}</a>"#
+    )))
+}
+
+/// Revokes the current public sponsor report link.
+#[instrument(skip_all, err)]
+pub(crate) async fn revoke_sponsor_report_share(
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(event_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.revoke_event_sponsor_report_share(group_id, event_id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Downloads the event growth report as CSV.
+#[instrument(skip_all, err)]
+pub(crate) async fn download_growth_csv(
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(event_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let (event, growth) = tokio::try_join!(
+        db.get_event_summary(alliance_id, group_id, event_id),
+        db.get_event_growth(group_id, event_id)
+    )?;
+    let csv = build_growth_csv(&growth)?;
+    let file_name = format!("event-{}-growth.csv", event.slug);
+
+    Ok((
+        [
+            (CONTENT_TYPE, "text/csv; charset=utf-8".to_string()),
+            (
+                CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{file_name}\""),
+            ),
+        ],
+        csv,
+    ))
 }
 
 /// Stores the current event details as the default template for new group events.
@@ -718,7 +1039,151 @@ enum EventActionScope {
     This,
 }
 
+/// Organizer-provided non-purchase event ledger row.
+#[derive(Debug, Deserialize, Serialize, Validate)]
+pub(crate) struct EventFinanceEntryInput {
+    /// Positive amount in the currency's minor unit.
+    #[garde(range(min = 1))]
+    amount_minor: i64,
+    /// Organizer-defined reporting category.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_S))]
+    category: String,
+    /// ISO 4217 currency code.
+    #[garde(custom(trimmed_non_empty), length(min = 3, max = 3))]
+    currency_code: String,
+    /// Optional ledger detail.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION_SHORT))]
+    description: Option<String>,
+    /// `income` or `expense`.
+    #[garde(custom(validate_finance_kind))]
+    kind: String,
+    /// Business date for the entry.
+    #[garde(skip)]
+    occurred_at: Option<NaiveDate>,
+}
+
+/// Consented/manual aggregate sponsor engagement. No lead identities are accepted.
+#[derive(Debug, Deserialize, Serialize, Validate)]
+pub(crate) struct EventSponsorEngagementInput {
+    #[garde(range(min = 0))]
+    conversations_count: i32,
+    #[garde(range(min = 0))]
+    leads_count: i32,
+    #[garde(range(min = 0))]
+    meetings_count: i32,
+    #[garde(custom(trimmed_non_empty_opt), length(max = 2000))]
+    notes: Option<String>,
+}
+
 // Helpers.
+
+fn validate_finance_kind(value: &str, _context: &()) -> garde::Result {
+    if matches!(value, "income" | "expense") {
+        Ok(())
+    } else {
+        Err(garde::Error::new("must be income or expense"))
+    }
+}
+
+async fn render_growth_page(
+    db: &DynDB,
+    alliance_id: Uuid,
+    group_id: Uuid,
+    event_id: Uuid,
+    user_id: Uuid,
+) -> Result<Html<String>, HandlerError> {
+    let (can_manage_events, growth) = tokio::try_join!(
+        db.user_has_group_permission(
+            &alliance_id,
+            &group_id,
+            &user_id,
+            GroupPermission::EventsWrite
+        ),
+        db.get_event_growth(group_id, event_id)
+    )?;
+    Ok(Html(
+        events::GrowthPage {
+            can_manage_events,
+            event_id,
+            growth,
+        }
+        .render()?,
+    ))
+}
+
+fn build_growth_csv(growth: &EventGrowth) -> Result<String> {
+    let mut writer = csv::Writer::from_writer(Vec::new());
+    writer.write_record(["section", "label", "currency", "value"])?;
+    let funnel = &growth.funnel;
+    for (label, value) in [
+        ("views", funnel.views.to_string()),
+        ("registrations", funnel.registrations.to_string()),
+        ("waitlisted", funnel.waitlisted.to_string()),
+        ("pending", funnel.pending.to_string()),
+        ("confirmed", funnel.confirmed.to_string()),
+        ("check_ins", funnel.check_ins.to_string()),
+        (
+            "conversion_rate_percent",
+            funnel.conversion_rate.to_string(),
+        ),
+        ("unique_attendees", funnel.unique_attendees.to_string()),
+        ("repeat_attendees", funnel.repeat_attendees.to_string()),
+        ("new_members", funnel.new_members.to_string()),
+        (
+            "follow_up_collaborators",
+            funnel.follow_up_collaborators.to_string(),
+        ),
+    ] {
+        writer.write_record(["funnel", label, "", &value])?;
+    }
+    for row in &growth.source_breakdown {
+        let label = spreadsheet_safe_text(Some(&row.label));
+        writer.write_record(["source", &label, "", &row.total.to_string()])?;
+    }
+    for row in &growth.referral_breakdown {
+        let label = spreadsheet_safe_text(Some(&row.label));
+        writer.write_record(["referral", &label, "", &row.total.to_string()])?;
+    }
+    for totals in &growth.finances {
+        for (label, value) in [
+            ("gross_purchases_minor", totals.gross_purchases_minor),
+            ("refunds_minor", totals.refunds_minor),
+            ("net_purchases_minor", totals.net_purchases_minor),
+            ("manual_income_minor", totals.manual_income_minor),
+            ("manual_expense_minor", totals.manual_expense_minor),
+            ("net_total_minor", totals.net_total_minor),
+        ] {
+            writer.write_record(["finance", label, &totals.currency_code, &value.to_string()])?;
+        }
+    }
+    for entry in &growth.finance_entries {
+        let label = spreadsheet_safe_text(Some(&format!("{}/{}", entry.kind, entry.category)));
+        writer.write_record([
+            "manual_entry",
+            &label,
+            &entry.currency_code,
+            &entry.amount_minor.to_string(),
+        ])?;
+    }
+    if let Some(report) = &growth.sponsor_report {
+        for sponsor in &report.sponsors {
+            for (label, value) in [
+                ("impressions", sponsor.impressions),
+                ("clicks", sponsor.clicks),
+                ("leads", i64::from(sponsor.leads_count)),
+                ("conversations", i64::from(sponsor.conversations_count)),
+                ("meetings", i64::from(sponsor.meetings_count)),
+                ("promised_deliverables", sponsor.promised_deliverables),
+                ("delivered_deliverables", sponsor.delivered_deliverables),
+            ] {
+                let label = spreadsheet_safe_text(Some(&format!("{}/{}", sponsor.name, label)));
+                writer.write_record(["sponsor", &label, "", &value.to_string()])?;
+            }
+        }
+    }
+    let bytes = writer.into_inner().map_err(csv::IntoInnerError::into_error)?;
+    Ok(String::from_utf8(bytes)?)
+}
 
 /// Builds the database payload for an event form.
 fn build_event_payload(event: &Event) -> Result<serde_json::Value, HandlerError> {

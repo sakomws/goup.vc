@@ -13,8 +13,8 @@ use crate::{
             audit,
             group::{
                 accelerator, analytics, book_exchange, coffee_meet, cohosts, distribution, events,
-                integrations, intentional_dating, members, settings, sponsors, spotlights, store,
-                team,
+                integrations, intentional_dating, members, projects, settings, sponsors,
+                spotlights, store, team,
             },
             gtm,
         },
@@ -107,6 +107,8 @@ pub(crate) enum Content {
     Logs(audit::ListPage),
     /// Members list page.
     Members(members::ListPage),
+    /// Collaboration projects page.
+    Projects(projects::Page),
     /// Settings management page.
     Settings(Box<settings::UpdatePage>),
     /// Sponsors management page.
@@ -177,6 +179,11 @@ impl Content {
         matches!(self, Content::Members(_))
     }
 
+    /// Check if the content is the projects page.
+    fn is_projects(&self) -> bool {
+        matches!(self, Content::Projects(_))
+    }
+
     /// Check if the content is the settings page.
     fn is_settings(&self) -> bool {
         matches!(self, Content::Settings(_))
@@ -218,6 +225,7 @@ impl std::fmt::Display for Content {
             Content::Integrations(template) => write!(f, "{}", template.render()?),
             Content::Logs(template) => write!(f, "{}", template.render()?),
             Content::Members(template) => write!(f, "{}", template.render()?),
+            Content::Projects(template) => write!(f, "{}", template.render()?),
             Content::Settings(template) => write!(f, "{}", template.render()?),
             Content::Sponsors(template) => write!(f, "{}", template.render()?),
             Content::Spotlights(template) => write!(f, "{}", template.render()?),
@@ -259,6 +267,8 @@ pub(crate) enum Tab {
     Logs,
     /// Members list tab.
     Members,
+    /// Collaboration projects tab.
+    Projects,
     /// Settings management tab.
     Settings,
     /// Sponsors management tab.
