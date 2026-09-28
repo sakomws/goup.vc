@@ -201,6 +201,7 @@ test.describe("group dashboard waitlist tab", () => {
   });
 
   test("organizer can see a waitlist entry on the waitlist tab", async ({
+    member2Page,
     organizerGroupPage,
   }) => {
     // Load the public waitlist event before creating a waitlist entry.
@@ -278,7 +279,6 @@ test.describe("group dashboard waitlist tab", () => {
       [
         "Member Experience Engineer at Platform Ops Lab",
         "Member Two profile for dashboard modal coverage.",
-        "openprofile.dev",
       ],
     );
 
@@ -409,7 +409,9 @@ test.describe("group dashboard waitlist tab", () => {
           response.ok(),
       ),
       waitlistContent
-        .locator('#waitlist-position-filter button[name="title"][value="present"]')
+        .locator(
+          '#waitlist-position-filter button[name="title"][value="present"]',
+        )
         .click(),
     ]);
 
@@ -419,7 +421,9 @@ test.describe("group dashboard waitlist tab", () => {
 
     // Verify the active filter and sort survive the filtered refresh.
     await expect(activeFilters).toContainText("Present");
-    await expect(waitlistContent.getByLabel("Sort by")).toHaveValue("name-desc");
+    await expect(waitlistContent.getByLabel("Sort by")).toHaveValue(
+      "name-desc",
+    );
     await expect(waitlistRow).toBeVisible();
   });
 });

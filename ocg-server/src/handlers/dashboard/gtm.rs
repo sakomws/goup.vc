@@ -23,7 +23,7 @@ use crate::{
         gtm as gtm_service,
         notifications::{DynNotificationsManager, OutboundEmail},
     },
-    templates::dashboard::gtm::{DetailPage, ListPage},
+    templates::dashboard::gtm::{DetailPage, LeadGenerationDraft, ListPage},
     types::{
         gtm::{
             GtmActivityInput, GtmDeliverableInput, GtmLeadFilters, GtmLeadInput,
@@ -284,6 +284,22 @@ pub(crate) async fn run_agent(
     gtm_lead_id: Option<Uuid>,
     ValidatedForm(input): ValidatedForm<GtmRunAgentInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
+    if input.agent_id == "lead_generation" && gtm_lead_id.is_none() {
+        let drafts = db
+            .list_gtm_agent_drafts(
+                alliance_id,
+                &json!({
+                    "agent_id": "lead_generation",
+                    "status": "pending",
+                    "group_id": group_id,
+                    "exact_scope": true
+                }),
+            )
+            .await?;
+        if !drafts.drafts.is_empty() {
+            return Ok((StatusCode::NO_CONTENT, [("HX-Trigger", "refresh-body")]).into_response());
+        }
+    }
     gtm_service::run_agent(
         &db,
         user.user_id,
@@ -305,8 +321,27 @@ pub(crate) async fn review_draft(
     State(notifications_manager): State<DynNotificationsManager>,
     Path(draft_id): Path<Uuid>,
     alliance_id: Uuid,
+    group_id: Option<Uuid>,
     ValidatedForm(input): ValidatedForm<GtmReviewDraftInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
+    let scope_drafts = db
+        .list_gtm_agent_drafts(
+            alliance_id,
+            &json!({
+                "status": "pending",
+                "group_id": group_id,
+                "exact_scope": true
+            }),
+        )
+        .await?;
+    if !scope_drafts
+        .drafts
+        .iter()
+        .any(|draft| draft.gtm_agent_draft_id == draft_id)
+    {
+        return Err(HandlerError::NotFound);
+    }
+
     let mut payload = json!({});
     if input.create_sponsor || input.create_landscape_entry || input.invite_organizer {
         payload["side_effects"] = json!({
@@ -374,12 +409,20 @@ pub(crate) async fn prepare_list_page(
     }
     filters.validate()?;
 
-    let (can_manage_gtm, output, packages, due_tasks) = tokio::try_join!(
+    let lead_generation_filters = json!({
+        "agent_id": "lead_generation",
+        "status": "pending",
+        "group_id": group_id,
+        "exact_scope": true
+    });
+    let (can_manage_gtm, output, packages, due_tasks, lead_generation_drafts) = tokio::try_join!(
         user_can_manage_gtm(db, alliance_id, group_id, user_id, scope),
         db.list_gtm_leads(alliance_id, &filters),
         db.list_gtm_sponsor_packages(alliance_id, group_id),
-        db.list_due_gtm_tasks(alliance_id, group_id)
+        db.list_due_gtm_tasks(alliance_id, group_id),
+        db.list_gtm_agent_drafts(alliance_id, &lead_generation_filters)
     )?;
+    let lead_generation_draft = prepare_lead_generation_draft(lead_generation_drafts.drafts);
     let navigation_links = NavigationLinks::from_filters(
         &filters,
         output.total,
@@ -400,8 +443,29 @@ pub(crate) async fn prepare_list_page(
             navigation_links,
             packages: packages.0,
             due_tasks: due_tasks.0,
+            lead_generation_draft,
         },
     ))
+}
+
+fn prepare_lead_generation_draft(
+    mut drafts: Vec<crate::types::gtm::GtmAgentDraft>,
+) -> Option<LeadGenerationDraft> {
+    let older_pending_count = drafts.len().saturating_sub(1);
+    let draft = drafts.drain(..).next()?;
+    let candidates = draft
+        .payload
+        .get("candidates")
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|candidate| serde_json::from_value(candidate.clone()).ok())
+        .collect();
+    Some(LeadGenerationDraft {
+        draft,
+        candidates,
+        older_pending_count,
+    })
 }
 
 async fn prepare_detail_page(
@@ -461,5 +525,52 @@ async fn user_can_manage_gtm(
             )
             .await
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::Utc;
+    use serde_json::json;
+    use uuid::Uuid;
+
+    use super::prepare_lead_generation_draft;
+    use crate::types::gtm::GtmAgentDraft;
+
+    #[test]
+    fn prepares_latest_lead_generation_draft_candidates() {
+        let latest_id = Uuid::new_v4();
+        let drafts = vec![
+            GtmAgentDraft {
+                gtm_agent_draft_id: latest_id,
+                agent_id: "lead_generation".into(),
+                status: "pending".into(),
+                payload: json!({
+                    "candidates": [{
+                        "name": "Candidate One",
+                        "kind": "startup",
+                        "org_name": "Candidate Co",
+                        "website_url": "https://candidate.example"
+                    }]
+                }),
+                created_at: Utc::now(),
+                ..Default::default()
+            },
+            GtmAgentDraft {
+                gtm_agent_draft_id: Uuid::new_v4(),
+                agent_id: "lead_generation".into(),
+                status: "pending".into(),
+                created_at: Utc::now(),
+                ..Default::default()
+            },
+        ];
+
+        let review = prepare_lead_generation_draft(drafts).expect("latest draft");
+
+        assert_eq!(review.draft.gtm_agent_draft_id, latest_id);
+        assert_eq!(review.older_pending_count, 1);
+        assert_eq!(review.candidates.len(), 1);
+        assert_eq!(review.candidates[0].name, "Candidate One");
+        assert_eq!(review.candidates[0].kind, "startup");
     }
 }

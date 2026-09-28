@@ -179,7 +179,9 @@ const waitForEmailVerificationCode = async (email) => {
 const signUpWithEmail = async (page, user) => {
   await navigateToPath(page, "/sign-up");
 
-  await expect(page.getByRole("heading", { name: "Sign Up" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Create your account." }),
+  ).toBeVisible();
   await page.getByLabel("Full Name").fill(user.name);
   await page.getByLabel("Email Address").fill(user.email);
   await page.getByLabel("Username").fill(user.username);
@@ -190,7 +192,7 @@ const signUpWithEmail = async (page, user) => {
     .getByRole("textbox", { name: "Confirm Password required" })
     .fill(user.password);
 
-  await page.getByRole("button", { name: "Create Account" }).click();
+  await page.getByRole("button", { name: "Create account" }).click();
   await expect(
     page.getByRole("heading", { name: "Welcome back." }),
   ).toBeVisible();
@@ -301,17 +303,17 @@ test.describe("authentication", () => {
     // Log in with a seeded member before using the header menu.
     await logInWithSeededUser(page, TEST_USER_CREDENTIALS.member1);
 
-    // Find the user menu button.
-    const userMenuButton = page.locator(
-      '#user-dropdown-button[data-logged-in="true"]',
-    );
+    // Find the account menu trigger.
+    const userMenuButton = page.getByRole("link", {
+      name: "Open account menu",
+    });
 
     // Verify logged in user can log out from the header menu.
     await expect(userMenuButton).toBeVisible();
-    await userMenuButton.click();
+    await userMenuButton.hover();
 
     // Find the Log out control.
-    const logOutLink = page.getByRole("menuitem", { name: "Log out" });
+    const logOutLink = page.getByRole("link", { name: "Log out" });
     await expect(logOutLink).toBeVisible();
 
     // Submit the action and wait for navigation.

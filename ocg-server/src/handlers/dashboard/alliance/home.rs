@@ -175,7 +175,7 @@ pub(crate) async fn page(
                 raw_query.as_deref().unwrap_or_default(),
             )
             .await?;
-            Content::Gtm(template)
+            Content::Gtm(Box::new(template))
         }
         Tab::Landscape => {
             let (_, template) = landscape::prepare_list_page(

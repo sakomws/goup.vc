@@ -23,13 +23,13 @@ test.describe("site stats page", () => {
 
     // Verify renders totals and analytics chart containers.
     await expect(
-      mainContent.getByRole("heading", {
+      page.getByRole("heading", {
         level: 1,
         name: "GOUP momentum at a glance",
       }),
     ).toBeVisible();
     await expect(
-      mainContent.getByText(
+      page.getByText(
         "A live-feeling view of community growth, alliance groups, event activity, and ecosystem signals as they come online.",
         { exact: true },
       ),
