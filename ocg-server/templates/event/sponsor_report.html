@@ -1,89 +1,265 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="min-h-full">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
     <title>Sponsor report · {{ report.event_name }}</title>
-    <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
   </head>
-  <body class="bg-stone-50 text-stone-900">
-    <main class="container mx-auto max-w-5xl px-4 py-10">
-      <div class="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-        <p class="text-sm font-semibold uppercase tracking-wide text-stone-500">
+  <body class="public-site-theme min-h-full bg-[#FFFAF5] text-[#1A1510]"
+        data-sponsor-report-page>
+    <header class="border-b border-[#E8DED2] bg-[#FFFAF5]/95 backdrop-blur">
+      <div class="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <a href="/"
+           class="inline-flex items-center gap-2 rounded-lg text-[#1A1510] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2461D1]"
+           aria-label="GOUP home">
+          <span class="flex size-8 items-center justify-center rounded-xl bg-[#1A1510] text-xs font-black text-white"
+                aria-hidden="true">G</span>
+          <span class="text-lg font-bold tracking-[-0.04em]">GOUP</span>
+        </a>
+        <span class="rounded-full border border-[#D8CEC2] bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#6B6058]">
           {% if public %}
-            Shared aggregate report
+            Shared report
           {% else %}
             Organizer preview
           {% endif %}
-        </p>
-        <h1 class="mt-2 text-3xl font-bold">{{ report.event_name }} sponsor report</h1>
-        <p class="mt-2 text-sm text-stone-500">
-          Aggregate placement and organizer-entered engagement only. No attendee personal data is included.
-        </p>
-        {% if let Some(survey) = report.sponsor_contact_survey -%}
-          <div class="mt-6 grid grid-cols-2 gap-3 rounded-lg bg-stone-50 p-4 text-sm md:grid-cols-4">
-            <div>
-              <div class="text-stone-500">Sponsor responses</div>
-              <div class="text-xl font-semibold">{{ survey.responses }}</div>
-            </div>
-            <div>
-              <div class="text-stone-500">NPS</div>
-              <div class="text-xl font-semibold">{{ survey.nps_score }}</div>
-            </div>
-            <div>
-              <div class="text-stone-500">Promoter / passive / detractor</div>
-              <div class="text-xl font-semibold">
-                {{ survey.promoters }} / {{ survey.passives }} / {{ survey.detractors }}
-              </div>
-            </div>
-            <div>
-              <div class="text-stone-500">Average rating</div>
-              <div class="text-xl font-semibold">
-                {% if let Some(average) = survey.average_rating %}
-                  {{ average }}
-                {% else %}
-                  —
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        {% endif -%}
-        <div class="mt-8 overflow-x-auto">
-          <table class="w-full text-left text-sm">
-            <thead class="bg-stone-50 text-stone-600">
-              <tr>
-                <th class="p-3">Sponsor</th>
-                <th class="p-3">Impressions</th>
-                <th class="p-3">Clicks</th>
-                <th class="p-3">Leads</th>
-                <th class="p-3">Conversations</th>
-                <th class="p-3">Meetings</th>
-                <th class="p-3">Deliverables</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-stone-100">
-              {% for sponsor in report.sponsors -%}
-                <tr>
-                  <td class="p-3 font-medium">
-                    {{ sponsor.name }} <span class="text-stone-500">· {{ sponsor.level }}</span>
-                  </td>
-                  <td class="p-3">{{ sponsor.impressions }}</td>
-                  <td class="p-3">{{ sponsor.clicks }}</td>
-                  <td class="p-3">{{ sponsor.leads_count }}</td>
-                  <td class="p-3">{{ sponsor.conversations_count }}</td>
-                  <td class="p-3">{{ sponsor.meetings_count }}</td>
-                  <td class="p-3">{{ sponsor.delivered_deliverables }}/{{ sponsor.promised_deliverables }}</td>
-                </tr>
-              {% else -%}
-                <tr>
-                  <td colspan="7" class="p-4 text-stone-500">No event sponsors configured.</td>
-                </tr>
-              {% endfor -%}
-            </tbody>
-          </table>
-        </div>
+        </span>
       </div>
+    </header>
+
+    <main class="relative isolate mx-auto w-full max-w-6xl overflow-hidden px-4 py-8 sm:px-6 sm:py-12"
+          data-sponsor-report-content>
+      <div class="pointer-events-none absolute top-12 -left-40 -z-10 size-96 rounded-full bg-[#F2D8B8]/30 blur-3xl"
+           aria-hidden="true"></div>
+      <div class="pointer-events-none absolute top-64 -right-48 -z-10 size-96 rounded-full bg-[#BFD8FF]/30 blur-3xl"
+           aria-hidden="true"></div>
+
+      <section class="overflow-hidden rounded-[2rem] border border-[#E2D5C7] bg-white/95 shadow-[0_24px_70px_-35px_rgba(67,48,30,0.45)]">
+        <div class="bg-[#1A1510] px-5 py-8 text-[#FAF5EE] sm:px-9 sm:py-10 lg:px-12">
+          <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-white/55">Event sponsor report</p>
+          <h1 class="mt-4 max-w-4xl text-balance text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl">
+            {{ report.event_name }}
+          </h1>
+          <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/65">
+            {% if let Some(starts_at) = report.starts_at -%}
+              <span>{{ starts_at.format("%B %-d, %Y") }}</span>
+            {% endif -%}
+            <span>{{ report.sponsor_count }} sponsor{% if report.sponsor_count != 1 %}s{% endif %}</span>
+            <span>Aggregate results only</span>
+          </div>
+          <p class="mt-5 max-w-2xl text-sm leading-6 text-white/60">
+            Placement, engagement, event outcomes, and thresholded sponsor feedback. No attendee personal data is included.
+          </p>
+        </div>
+
+        <div class="space-y-10 px-5 py-8 sm:px-9 sm:py-10 lg:px-12">
+          <section aria-labelledby="sponsor-overview-heading">
+            <div class="flex items-end justify-between gap-4">
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8A7A6E]">Overview</p>
+                <h2 id="sponsor-overview-heading"
+                    class="mt-1 text-2xl font-bold text-[#1A1510]">Sponsor performance</h2>
+              </div>
+            </div>
+            <div class="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <div class="rounded-2xl border border-[#E8DED2] bg-[#FFFDF9] p-4 sm:p-5">
+                <p class="text-xs font-bold uppercase tracking-wide text-[#8A7A6E]">Impressions</p>
+                <p class="mt-2 text-3xl font-bold text-[#1A1510]">{{ report.total_impressions }}</p>
+                <p class="mt-1 text-xs text-[#8A7A6E]">Across all placements</p>
+              </div>
+              <div class="rounded-2xl border border-[#D9E5F8] bg-[#F5F8FE] p-4 sm:p-5">
+                <p class="text-xs font-bold uppercase tracking-wide text-[#667A99]">Clicks</p>
+                <p class="mt-2 text-3xl font-bold text-[#1A1510]">{{ report.total_clicks }}</p>
+                <p class="mt-1 text-xs text-[#667A99]">{{ report.click_through_rate }}% click-through rate</p>
+              </div>
+              <div class="rounded-2xl border border-[#E8DED2] bg-[#FFFDF9] p-4 sm:p-5">
+                <p class="text-xs font-bold uppercase tracking-wide text-[#8A7A6E]">Leads</p>
+                <p class="mt-2 text-3xl font-bold text-[#1A1510]">{{ report.total_leads }}</p>
+                <p class="mt-1 text-xs text-[#8A7A6E]">{{ report.total_conversations }} conversations</p>
+              </div>
+              <div class="rounded-2xl border border-[#E1D8EE] bg-[#FAF7FE] p-4 sm:p-5">
+                <p class="text-xs font-bold uppercase tracking-wide text-[#76678A]">Meetings</p>
+                <p class="mt-2 text-3xl font-bold text-[#1A1510]">{{ report.total_meetings }}</p>
+                <p class="mt-1 text-xs text-[#76678A]">Organizer-recorded outcomes</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid gap-5 lg:grid-cols-2"
+                   aria-label="Event and deliverable outcomes">
+            <div class="rounded-3xl border border-[#E8DED2] bg-[#FFFDF9] p-5 sm:p-6">
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8A7A6E]">Event outcomes</p>
+              <h2 class="mt-1 text-xl font-bold text-[#1A1510]">From discovery to attendance</h2>
+              <div class="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+                <div>
+                  <p class="text-[#8A7A6E]">Views</p>
+                  <p class="mt-1 text-2xl font-bold">{{ report.event_outcomes.views }}</p>
+                </div>
+                <div>
+                  <p class="text-[#8A7A6E]">Registrations</p>
+                  <p class="mt-1 text-2xl font-bold">{{ report.event_outcomes.registrations }}</p>
+                </div>
+                <div>
+                  <p class="text-[#8A7A6E]">Confirmed</p>
+                  <p class="mt-1 text-2xl font-bold">{{ report.event_outcomes.confirmed }}</p>
+                </div>
+                <div>
+                  <p class="text-[#8A7A6E]">Check-ins</p>
+                  <p class="mt-1 text-2xl font-bold">{{ report.event_outcomes.check_ins }}</p>
+                </div>
+              </div>
+              <p class="mt-5 border-t border-[#E8DED2] pt-4 text-sm text-[#6B6058]">
+                <span class="font-bold text-[#1A1510]">{{ report.event_outcomes.conversion_rate }}%</span>
+                view-to-confirmed conversion
+              </p>
+            </div>
+
+            <div class="rounded-3xl border border-[#D9E5F8] bg-[#F5F8FE] p-5 sm:p-6">
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#667A99]">Deliverables</p>
+              <h2 class="mt-1 text-xl font-bold text-[#1A1510]">Commitment progress</h2>
+              <div class="mt-5 flex items-end justify-between gap-4">
+                <p class="text-3xl font-bold text-[#1A1510]">
+                  {{ report.delivered_deliverables }} <span class="text-lg font-medium text-[#667A99]">/ {{ report.promised_deliverables }}</span>
+                </p>
+                <p class="text-sm font-bold text-[#2461D1]">{{ report.deliverable_completion_rate }}%</p>
+              </div>
+              <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-[#D9E5F8]">
+                <div class="h-full rounded-full bg-[#3D7EFF]"
+                     style="width: {{ report.deliverable_completion_rate }}%"></div>
+              </div>
+              {% if report.promised_deliverables == 0 -%}
+                <p class="mt-4 text-sm leading-6 text-[#667A99]">No event-linked deliverables have been recorded yet.</p>
+              {% else -%}
+                <p class="mt-4 text-sm leading-6 text-[#667A99]">
+                  {{ report.promised_deliverables - report.delivered_deliverables }} deliverables remain.
+                </p>
+              {% endif -%}
+            </div>
+          </section>
+
+          {% if let Some(survey) = report.sponsor_contact_survey -%}
+            <section class="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-5 sm:p-6"
+                     aria-labelledby="sponsor-feedback-heading">
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700">Thresholded feedback</p>
+              <h2 id="sponsor-feedback-heading"
+                  class="mt-1 text-xl font-bold text-[#1A1510]">Sponsor contact sentiment</h2>
+              <div class="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+                <div>
+                  <p class="text-emerald-800/70">Responses</p>
+                  <p class="mt-1 text-2xl font-bold">{{ survey.responses }}</p>
+                </div>
+                <div>
+                  <p class="text-emerald-800/70">NPS</p>
+                  <p class="mt-1 text-2xl font-bold">{{ survey.nps_score }}</p>
+                </div>
+                <div>
+                  <p class="text-emerald-800/70">Promoter / passive / detractor</p>
+                  <p class="mt-1 text-xl font-bold">{{ survey.promoters }} / {{ survey.passives }} / {{ survey.detractors }}</p>
+                </div>
+                <div>
+                  <p class="text-emerald-800/70">Average rating</p>
+                  <p class="mt-1 text-2xl font-bold">
+                    {% if let Some(average) = survey.average_rating %}{{ average }} / 5{% else %}—{% endif %}
+                  </p>
+                </div>
+              </div>
+              <p class="mt-4 text-xs leading-5 text-emerald-800/70">
+                Shown only after at least three sponsor contacts respond.
+              </p>
+            </section>
+          {% endif -%}
+
+          <section aria-labelledby="sponsor-breakdown-heading">
+            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8A7A6E]">Breakdown</p>
+            <h2 id="sponsor-breakdown-heading"
+                class="mt-1 text-2xl font-bold text-[#1A1510]">Performance by sponsor</h2>
+            <div class="mt-5 grid gap-4 lg:grid-cols-2">
+              {% for sponsor in report.sponsors -%}
+                <article class="rounded-3xl border border-[#E8DED2] bg-white p-5 shadow-sm sm:p-6">
+                  <div class="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 class="text-xl font-bold text-[#1A1510]">{{ sponsor.name }}</h3>
+                      <p class="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-[#8A7A6E]">{{ sponsor.level }}</p>
+                    </div>
+                    <p class="rounded-full bg-[#F1E8DD] px-3 py-1 text-xs font-bold text-[#6B6058]">
+                      {{ sponsor.click_through_rate }}% CTR
+                    </p>
+                  </div>
+                  <dl class="mt-5 grid grid-cols-3 gap-3 border-y border-[#E8DED2] py-4 text-sm">
+                    <div>
+                      <dt class="text-xs text-[#8A7A6E]">Impressions</dt>
+                      <dd class="mt-1 text-xl font-bold">
+                        {{ sponsor.impressions }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs text-[#8A7A6E]">Clicks</dt>
+                      <dd class="mt-1 text-xl font-bold">
+                        {{ sponsor.clicks }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs text-[#8A7A6E]">Leads</dt>
+                      <dd class="mt-1 text-xl font-bold">
+                        {{ sponsor.leads_count }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs text-[#8A7A6E]">Conversations</dt>
+                      <dd class="mt-1 text-xl font-bold">
+                        {{ sponsor.conversations_count }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs text-[#8A7A6E]">Meetings</dt>
+                      <dd class="mt-1 text-xl font-bold">
+                        {{ sponsor.meetings_count }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs text-[#8A7A6E]">Delivered</dt>
+                      <dd class="mt-1 text-xl font-bold">
+                        {{ sponsor.delivered_deliverables }}/{{ sponsor.promised_deliverables }}
+                      </dd>
+                    </div>
+                  </dl>
+                  <div class="mt-4">
+                    <div class="flex justify-between gap-3 text-xs font-medium text-[#8A7A6E]">
+                      <span>Deliverable completion</span>
+                      <span>{{ sponsor.deliverable_completion_rate }}%</span>
+                    </div>
+                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-[#F1E8DD]">
+                      <div class="h-full rounded-full bg-[#3D7EFF]"
+                           style="width: {{ sponsor.deliverable_completion_rate }}%"></div>
+                    </div>
+                  </div>
+                  {% if !public -%}
+                    {% if let Some(notes) = sponsor.notes -%}
+                      <div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4"
+                           data-organizer-only-notes>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-800">Organizer-only notes</p>
+                        <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-amber-950">{{ notes }}</p>
+                      </div>
+                    {% endif -%}
+                  {% endif -%}
+                </article>
+              {% else -%}
+                <div class="rounded-3xl border border-dashed border-[#C8BDB3] bg-[#FFFDF9] p-8 text-center lg:col-span-2">
+                  <h3 class="text-lg font-bold text-[#1A1510]">No event sponsors configured</h3>
+                  <p class="mx-auto mt-2 max-w-lg text-sm leading-6 text-[#6B6058]">
+                    Add sponsors to this event to begin tracking placements, engagement, outcomes, and deliverables.
+                  </p>
+                </div>
+              {% endfor -%}
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <p class="mx-auto mt-6 max-w-2xl text-center text-xs leading-5 text-[#8A7A6E]">
+        This report contains aggregate event and sponsor performance only. Shared reports exclude private organizer notes.
+      </p>
     </main>
   </body>
 </html>

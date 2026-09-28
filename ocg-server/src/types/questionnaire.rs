@@ -148,6 +148,14 @@ pub struct QuestionnaireQuestion {
 }
 
 impl QuestionnaireQuestion {
+    /// Returns every selectable value in this question's numeric range.
+    pub fn scale_values(&self) -> Vec<i32> {
+        match (self.min, self.max) {
+            (Some(min), Some(max)) if min <= max => (min..=max).collect(),
+            _ => Vec::new(),
+        }
+    }
+
     /// Formats one answer payload for dashboard display or CSV export.
     pub fn format_answer(&self, answers: Option<&QuestionnaireAnswers>) -> String {
         let Some(value) = answers.and_then(|answers| answers.get(self.id)) else {
@@ -515,6 +523,21 @@ mod tests {
             };
             assert!(answers.validate_against_questions(&[question]).is_ok());
         }
+    }
+
+    #[test]
+    fn test_questionnaire_question_scale_values_include_range_endpoints() {
+        let question = QuestionnaireQuestion {
+            id: Uuid::new_v4(),
+            kind: QuestionnaireQuestionKind::Nps,
+            prompt: "Recommend?".to_string(),
+            required: true,
+            min: Some(0),
+            max: Some(10),
+            options: vec![],
+        };
+
+        assert_eq!(question.scale_values(), (0..=10).collect::<Vec<_>>());
     }
 
     #[test]

@@ -189,6 +189,15 @@ begin
        and p_audience not in ('attendee', 'speaker', 'sponsor-contact') then
         raise exception 'invalid survey audience';
     end if;
+    if not exists (
+        select 1
+        from event
+        where event_id = p_event_id
+          and group_id = p_group_id
+          and not deleted
+    ) then
+        raise exception 'event not found';
+    end if;
     perform ensure_event_surveys(p_event_id);
 
     with audiences as (
@@ -214,42 +223,59 @@ begin
             nullif(btrim(regexp_replace(comment.answer->>'value', '[[:cntrl:]]', ' ', 'g')), '') comment
         from event_survey_response r
         left join lateral (
-            select answer from jsonb_array_elements(r.answers->'answers') answer
-            where answer->>'question_id' = '11111111-1111-4111-8111-111111111111'
+            select item.answer
+            from jsonb_array_elements(r.answers->'answers') item(answer)
+            where item.answer->>'question_id' = '11111111-1111-4111-8111-111111111111'
         ) nps on true
         left join lateral (
-            select answer from jsonb_array_elements(r.answers->'answers') answer
-            where answer->>'question_id' = '22222222-2222-4222-8222-222222222222'
+            select item.answer
+            from jsonb_array_elements(r.answers->'answers') item(answer)
+            where item.answer->>'question_id' = '22222222-2222-4222-8222-222222222222'
         ) rating on true
         left join lateral (
-            select answer from jsonb_array_elements(r.answers->'answers') answer
-            where answer->>'question_id' = '33333333-3333-4333-8333-333333333333'
+            select item.answer
+            from jsonb_array_elements(r.answers->'answers') item(answer)
+            where item.answer->>'question_id' = '33333333-3333-4333-8333-333333333333'
         ) comment on true
         where r.event_id = p_event_id
           and (p_audience is null or r.audience = p_audience)
     ),
-    metrics as (
-        select jsonb_agg(jsonb_build_object(
-            'audience', audiences.audience,
-            'eligible', coalesce(eligible.total, 0),
-            'responses', count(scored.user_id),
-            'response_rate', case when coalesce(eligible.total, 0) = 0 then 0
-                else round(count(scored.user_id)::numeric * 100 / eligible.total, 1) end,
-            'promoters', count(*) filter (where scored.nps >= 9),
-            'passives', count(*) filter (where scored.nps between 7 and 8),
-            'detractors', count(*) filter (where scored.nps <= 6),
-            'nps_score', case when count(scored.nps) = 0 then null else round(
+    metric_rows as (
+        select
+            audiences.audience,
+            coalesce(eligible.total, 0) eligible,
+            count(scored.user_id) responses,
+            case when coalesce(eligible.total, 0) = 0 then 0
+                else round(count(scored.user_id)::numeric * 100 / eligible.total, 1)
+            end response_rate,
+            count(*) filter (where scored.nps >= 9) promoters,
+            count(*) filter (where scored.nps between 7 and 8) passives,
+            count(*) filter (where scored.nps <= 6) detractors,
+            case when count(scored.nps) = 0 then null else round(
                 100.0 * (
                     count(*) filter (where scored.nps >= 9)
                     - count(*) filter (where scored.nps <= 6)
-                ) / count(scored.nps), 1) end,
-            'average_rating', round(avg(scored.rating), 2)
-        ) order by audiences.audience) data
+                ) / count(scored.nps), 1) end nps_score,
+            round(avg(scored.rating), 2) average_rating
         from audiences
         left join eligible using (audience)
         left join scored using (audience)
         where p_audience is null or audiences.audience = p_audience
-        group by ()
+        group by audiences.audience, eligible.total
+    ),
+    metrics as (
+        select jsonb_agg(jsonb_build_object(
+            'audience', audience,
+            'eligible', eligible,
+            'responses', responses,
+            'response_rate', response_rate,
+            'promoters', promoters,
+            'passives', passives,
+            'detractors', detractors,
+            'nps_score', nps_score,
+            'average_rating', average_rating
+        ) order by audience) data
+        from metric_rows
     )
     select jsonb_build_object(
         'metrics', coalesce(metrics.data, '[]'::jsonb),
@@ -265,14 +291,8 @@ begin
             from scored
         ), '[]'::jsonb)
     ) into v_result
-    from metrics
-    where exists (
-        select 1 from event where event_id = p_event_id and group_id = p_group_id and not deleted
-    );
+    from metrics;
 
-    if v_result is null then
-        raise exception 'event not found';
-    end if;
     return v_result;
 end;
 $$ language plpgsql;
