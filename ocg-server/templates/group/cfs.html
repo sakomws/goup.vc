@@ -18,27 +18,39 @@
       {% endif -%}
 
       {% if let Some(notice) = &notice -%}
-        <div class="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">{{ notice }}</div>
+        <div class="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">
+          {{ notice }}
+        </div>
       {% endif -%}
 
       <div class="mt-8 border-t border-stone-200 pt-7">
         {% if !user.logged_in -%}
           <p class="text-stone-700">Sign in to submit a reusable session proposal.</p>
-          <a class="btn-primary mt-4 inline-flex" href="/log-in?next_url=/{{ alliance_name }}/group/{{ cfs.group_slug }}/cfs">Sign in</a>
+          <a class="btn-primary mt-4 inline-flex"
+             href="/log-in?next_url=/{{ alliance_name }}/group/{{ cfs.group_slug }}/cfs">Sign in</a>
         {% else if session_proposals.is_empty() -%}
           <p class="text-stone-700">Create a session proposal first, then return here to submit it.</p>
-          <a class="btn-primary-outline-anchor mt-4 inline-flex" href="/dashboard/user?tab=session-proposals">Manage session proposals</a>
+          <a class="btn-primary-outline-anchor mt-4 inline-flex"
+             href="/dashboard/user?tab=session-proposals">Manage session proposals</a>
         {% else -%}
-          <form method="post" action="/{{ alliance_name }}/group/{{ cfs.group_id }}/cfs-submissions" class="space-y-5">
+          <form method="post"
+                action="/{{ alliance_name }}/group/{{ cfs.group_id }}/cfs-submissions"
+                class="space-y-5">
             <div>
               <label class="form-label" for="session_proposal_id">Session proposal</label>
-              <select id="session_proposal_id" class="select-primary mt-2" name="session_proposal_id" required>
+              <select id="session_proposal_id"
+                      class="select-primary mt-2"
+                      name="session_proposal_id"
+                      required>
                 <option value="">Select a proposal</option>
                 {% for proposal in session_proposals -%}
-                  <option value="{{ proposal.session_proposal_id }}" {% if proposal.is_submitted %}disabled{% endif %}>{{ proposal.title }}</option>
+                  <option value="{{ proposal.session_proposal_id }}"
+                          {% if proposal.is_submitted %}disabled{% endif %}>{{ proposal.title }}</option>
                 {% endfor -%}
               </select>
-              <p class="form-legend">Already submitted proposals are unavailable. Approved proposals can be scheduled for more than one event.</p>
+              <p class="form-legend">
+                Already submitted proposals are unavailable. Approved proposals can be scheduled for more than one event.
+              </p>
             </div>
             {% if !cfs.labels.is_empty() -%}
               <div>

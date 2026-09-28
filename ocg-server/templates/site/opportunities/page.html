@@ -120,8 +120,12 @@
             <div class="mb-3 flex flex-wrap gap-2 text-xs font-semibold">
               <span class="rounded-full bg-stone-950 px-2.5 py-1 text-white">{{ opportunity.kind_label() }}</span>
               <span class="rounded-full bg-stone-100 px-2.5 py-1 text-stone-700">{{ opportunity.organization_name }}</span>
-              {% if opportunity.remote %}<span class="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">Remote</span>{% endif %}
-              {% if opportunity.members_only %}<span class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-800">Members only</span>{% endif %}
+              {% if opportunity.remote %}
+                <span class="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">Remote</span>
+              {% endif %}
+              {% if opportunity.members_only %}
+                <span class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-800">Members only</span>
+              {% endif %}
             </div>
             <h2 class="text-xl font-bold text-stone-950">
               <a href="{{ opportunity.details_url() }}" class="hover:text-stone-600">{{ opportunity.title }}</a>
@@ -129,7 +133,11 @@
             <p class="mt-2 grow text-sm/6 text-stone-600">{{ opportunity.summary }}</p>
             <div class="mt-5 flex items-center justify-between gap-3 text-sm">
               <span class="text-stone-500">
-                {% if let Some(closes_at) = opportunity.closes_at %}Closes {{ closes_at.format("%b %d, %Y") }}{% else %}Open opportunity{% endif %}
+                {% if let Some(closes_at) = opportunity.closes_at %}
+                  Closes {{ closes_at.format("%b %d, %Y") }}
+                {% else %}
+                  Open opportunity
+                {% endif %}
               </span>
               <a class="font-bold text-stone-900"
                  href="{{ opportunity.details_url() }}">View details</a>

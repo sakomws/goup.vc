@@ -21,7 +21,9 @@
     {% let attribution_value %}{% endlet %}
     {% let public_checked %}{% endlet %}
     {% include "dashboard/alliance/partner_integrations_fields.html" -%}
-    <button type="submit" class="btn-primary w-fit" {% if !can_manage_settings %}disabled{% endif %}>Add partner</button>
+    <button type="submit"
+            class="btn-primary w-fit"
+            {% if !can_manage_settings %}disabled{% endif %}>Add partner</button>
   </form>
 </section>
 
@@ -44,19 +46,23 @@
         {% let logo_value %}value="{{ integration.logo_url.as_deref().unwrap_or("") }}"{% endlet %}
         {% let website_value %}value="{{ integration.website_url.as_deref().unwrap_or("") }}"{% endlet %}
         {% let attribution_value %}{{ integration.attribution_copy }}{% endlet %}
-        {% let public_checked %}{% if integration.public %}checked{% endif %}{% endlet %}
-        {% include "dashboard/alliance/partner_integrations_fields.html" -%}
-        <button type="submit" class="btn-primary w-fit" {% if !can_manage_settings %}disabled{% endif %}>Save changes</button>
-      </form>
-      <button class="btn-tertiary mt-4 text-red-700"
-              hx-delete="/dashboard/alliance/partner-integrations/{{ integration.partner_integration_id }}"
-              hx-target="#dashboard-content"
-              hx-trigger="confirmed"
-              hx-disabled-elt="this"
-              data-confirm-action
-              data-confirm-message="Delete {{ integration.name }}?"
-              data-confirm-text="Delete"
-              {% if !can_manage_settings %}disabled{% endif %}>Delete partner</button>
-    </article>
-  {% endfor -%}
+        {% let public_checked %}
+        {% if integration.public %}checked{% endif %}
+      {% endlet %}
+      {% include "dashboard/alliance/partner_integrations_fields.html" -%}
+      <button type="submit"
+              class="btn-primary w-fit"
+              {% if !can_manage_settings %}disabled{% endif %}>Save changes</button>
+    </form>
+    <button class="btn-tertiary mt-4 text-red-700"
+            hx-delete="/dashboard/alliance/partner-integrations/{{ integration.partner_integration_id }}"
+            hx-target="#dashboard-content"
+            hx-trigger="confirmed"
+            hx-disabled-elt="this"
+            data-confirm-action
+            data-confirm-message="Delete {{ integration.name }}?"
+            data-confirm-text="Delete"
+            {% if !can_manage_settings %}disabled{% endif %}>Delete partner</button>
+  </article>
+{% endfor -%}
 </section>

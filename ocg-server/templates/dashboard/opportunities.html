@@ -91,7 +91,10 @@
 
     <section class="mt-8">
       <h2 class="text-xl font-black text-stone-950">Your listings</h2>
-      <p class="mt-1 text-sm text-stone-600">{{ total }} native listing{% if total != 1 %}s{% endif %}</p>
+      <p class="mt-1 text-sm text-stone-600">
+        {{ total }} native listing
+        {% if total != 1 %}s{% endif %}
+      </p>
       <div class="mt-5 grid gap-5">
         {% for opportunity in opportunities -%}
           <article class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
@@ -106,7 +109,11 @@
                            {% else %}
                              bg-stone-100 text-stone-700
                            {% endif %}">
-                {% if opportunity.published %}Published{% else %}Draft{% endif %}
+                {% if opportunity.published %}
+                  Published
+                {% else %}
+                  Draft
+                {% endif %}
               </span>
             </div>
             <form class="grid gap-3 lg:grid-cols-2"
@@ -162,14 +169,20 @@
                             {% endif %}"
                      class="input-primary" />
               <div class="flex flex-wrap items-center gap-4 lg:col-span-2">
-                <label><input type="checkbox"
-       name="remote"
-       value="true"
-       {% if opportunity.remote %}checked{% endif %} /> Remote</label>
-                <label><input type="checkbox"
-       name="members_only"
-       value="true"
-       {% if opportunity.members_only %}checked{% endif %} /> Members only</label>
+                <label>
+                  <input type="checkbox"
+                         name="remote"
+                         value="true"
+                         {% if opportunity.remote %}checked{% endif %} />
+                  Remote
+                </label>
+                <label>
+                  <input type="checkbox"
+                         name="members_only"
+                         value="true"
+                         {% if opportunity.members_only %}checked{% endif %} />
+                  Members only
+                </label>
                 <button class="btn-primary" type="submit">Save</button>
                 {% if opportunity.published -%}
                   <button class="btn-secondary"
@@ -191,7 +204,9 @@
             </form>
           </article>
         {% else -%}
-          <div class="rounded-2xl border border-dashed border-stone-300 bg-white p-10 text-center text-stone-600">No native listings yet.</div>
+          <div class="rounded-2xl border border-dashed border-stone-300 bg-white p-10 text-center text-stone-600">
+            No native listings yet.
+          </div>
         {% endfor -%}
       </div>
       {{ pagination::navigation_links(links = navigation_links, hx_target = "body") }}
@@ -199,23 +214,43 @@
 
     <section class="mt-10 rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm sm:p-7">
       <h2 class="text-xl font-black text-stone-950">Saved searches</h2>
-      <p class="mt-2 text-sm text-stone-600">Previewing is required before activation. Digests respect optional-notification preferences.</p>
+      <p class="mt-2 text-sm text-stone-600">
+        Previewing is required before activation. Digests respect optional-notification preferences.
+      </p>
       {% if let Some(name) = &preview_name -%}
         <div class="mt-5 rounded-2xl border border-sky-200 bg-sky-50 p-4">
           <h3 class="font-bold text-sky-950">Preview: {{ name }}</h3>
-          {% if let Some(results) = &preview %}<p class="mt-1 text-sm text-sky-800">{{ results.total }} current match{% if results.total != 1 %}es{% endif %}.</p>{% endif %}
+          {% if let Some(results) = &preview %}
+            <p class="mt-1 text-sm text-sky-800">
+              {{ results.total }} current match
+              {% if results.total != 1 %}es{% endif %}
+              .
+            </p>
+          {% endif %}
         </div>
       {% endif -%}
       <div class="mt-5 grid gap-3">
         {% for search in saved_searches -%}
           <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-stone-200 p-4">
-            <div><div class="font-bold text-stone-900">{{ search.name }}</div><div class="text-sm text-stone-500">{{ search.frequency }} · {% if search.active %}active{% else %}not active{% endif %}</div></div>
+            <div>
+              <div class="font-bold text-stone-900">{{ search.name }}</div>
+              <div class="text-sm text-stone-500">
+                {{ search.frequency }} ·
+                {% if search.active %}
+                  active
+                {% else %}
+                  not active
+                {% endif %}
+              </div>
+            </div>
             <div class="flex gap-2">
               <a class="btn-secondary"
                  href="/dashboard/opportunities?preview={{ search.opportunity_saved_search_id }}">Preview</a>
-              {% if !search.active %}<button class="btn-primary"
-        hx-post="/dashboard/opportunities/searches/{{ search.opportunity_saved_search_id }}/activate"
-        hx-target="body">Activate</button>{% endif %}
+              {% if !search.active %}
+                <button class="btn-primary"
+                        hx-post="/dashboard/opportunities/searches/{{ search.opportunity_saved_search_id }}/activate"
+                        hx-target="body">Activate</button>
+              {% endif %}
               <button class="btn-tertiary"
                       hx-delete="/dashboard/opportunities/searches/{{ search.opportunity_saved_search_id }}"
                       hx-confirm="Delete this saved search?"

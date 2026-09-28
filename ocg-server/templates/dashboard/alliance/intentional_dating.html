@@ -46,7 +46,9 @@
         <span class="form-label">First member</span>
         <select name="first_user_id" class="select-primary mt-2" required>
           {% for opt_in in opt_ins -%}
-            <option value="{{ opt_in.user_id }}">{{ opt_in.name.as_deref().unwrap_or(opt_in.username.as_str()) }} · {{ opt_in.group_name }}</option>
+            <option value="{{ opt_in.user_id }}">
+              {{ opt_in.name.as_deref().unwrap_or(opt_in.username.as_str()) }} · {{ opt_in.group_name }}
+            </option>
           {% endfor -%}
         </select>
       </label>
@@ -54,7 +56,9 @@
         <span class="form-label">Second member</span>
         <select name="second_user_id" class="select-primary mt-2" required>
           {% for opt_in in opt_ins -%}
-            <option value="{{ opt_in.user_id }}">{{ opt_in.name.as_deref().unwrap_or(opt_in.username.as_str()) }} · {{ opt_in.group_name }}</option>
+            <option value="{{ opt_in.user_id }}">
+              {{ opt_in.name.as_deref().unwrap_or(opt_in.username.as_str()) }} · {{ opt_in.group_name }}
+            </option>
           {% endfor -%}
         </select>
       </label>
@@ -85,18 +89,28 @@
         <div class="flex items-start justify-between gap-4">
           <div>
             <h2 class="font-black text-stone-950">{{ opt_in.name.as_deref().unwrap_or(opt_in.username.as_str()) }}</h2>
-            <p class="mt-1 text-sm text-stone-600">{{ opt_in.group_name }} · {{ opt_in.email.as_deref().unwrap_or("No email") }}</p>
+            <p class="mt-1 text-sm text-stone-600">
+              {{ opt_in.group_name }} · {{ opt_in.email.as_deref().unwrap_or("No email") }}
+            </p>
           </div>
           <span class="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-bold text-primary-700">Private opt-in</span>
         </div>
         <div class="mt-4 grid gap-3 text-sm/6 text-stone-700">
           {% if let Some(goals) = &opt_in.intentional_dating_goals -%}
-            <p><span class="font-semibold text-stone-950">Goals:</span> {{ goals }}</p>
+            <p>
+              <span class="font-semibold text-stone-950">Goals:</span> {{ goals }}
+            </p>
           {% endif -%}
           {% if let Some(preferences) = &opt_in.intentional_dating_preferences -%}
-            <p><span class="font-semibold text-stone-950">Preferences:</span> {{ preferences }}</p>
+            <p>
+              <span class="font-semibold text-stone-950">Preferences:</span> {{ preferences }}
+            </p>
           {% endif -%}
-          <p class="text-stone-500">{{ opt_in.title.as_deref().unwrap_or("") }}{% if opt_in.company.is_some() %} · {{ opt_in.company.as_deref().unwrap_or("") }}{% endif %}{% if opt_in.city.is_some() %} · {{ opt_in.city.as_deref().unwrap_or("") }}{% endif %}</p>
+          <p class="text-stone-500">
+            {{ opt_in.title.as_deref().unwrap_or("") }}
+            {% if opt_in.company.is_some() %}· {{ opt_in.company.as_deref().unwrap_or("") }}{% endif %}
+            {% if opt_in.city.is_some() %}· {{ opt_in.city.as_deref().unwrap_or("") }}{% endif %}
+          </p>
         </div>
       </article>
     {% endfor -%}

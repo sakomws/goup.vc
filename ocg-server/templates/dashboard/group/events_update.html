@@ -32,6 +32,10 @@
         {{ event_form::tab_button(section = "details", icon = "event", label = "Details", active = true) -}}
         {{ event_form::tab_button(section = "date-venue", icon = "calendar", label = "Date & Venue") -}}
         {{ event_form::tab_button(section = "hosts-sponsors", icon = "user-plus", label = "Hosts & Speakers") -}}
+        {% if can_manage_events -%}
+          {% let cohosts_attrs -%}hx-get="/dashboard/group/events/{{ event.event_id }}/cohosts" hx-trigger="click once" hx-target="#event-cohosts-content" hx-swap="innerHTML" hx-indicator="#event-cohosts-loading"{%- endlet %}
+          {{ event_form::tab_button(section = "cohosts", icon = "team", label = "Co-hosts", extra_attrs = cohosts_attrs) -}}
+        {% endif -%}
         {{ event_form::tab_button(section = "sessions", icon = "presentation", label = "Sessions") -}}
         {% if payments_ready -%}
           {{ event_form::tab_button(section = "payments", icon = "ticket", label = "Payments") -}}
@@ -1195,6 +1199,22 @@
       </form>
     </div>
     {# End Hosts & Speakers Tab -#}
+
+    {% if can_manage_events -%}
+      {# Co-hosts Tab -#}
+      <div data-content="cohosts" class="hidden">
+        <div id="event-cohosts-content">
+          <div id="event-cohosts-loading"
+               class="flex items-center justify-center py-12">
+            <div class="flex flex-col items-center space-y-4">
+              {{ ui::spinner(size = "size-10") -}}
+              <div class="text-sm text-stone-500">Loading co-host groups...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {# End Co-hosts Tab -#}
+    {% endif -%}
 
   </div>
 </div>

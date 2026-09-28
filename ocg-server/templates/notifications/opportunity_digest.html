@@ -1,19 +1,33 @@
 {% extends "notifications/base.html" -%}
 
-{% block preheader %}{{ match_count }} new match{% if match_count != 1 %}es{% endif %} for {{ search_name }}{% endblock preheader %}
+{% block preheader %}
+  {{ match_count }} new match
+  {% if match_count != 1 %}es{% endif %}
+  for {{ search_name }}
+{% endblock preheader %}
 
 {% block content -%}
   <h1>Your {{ frequency }} opportunity digest</h1>
-  <p><strong>{{ match_count }} new match{% if match_count != 1 %}es{% endif %}</strong> for “{{ search_name }}”.</p>
+  <p>
+    <strong>{{ match_count }} new match
+      {% if match_count != 1 %}es{% endif %}
+    </strong> for “{{ search_name }}”.
+  </p>
   {% for opportunity in opportunities -%}
     <div style="margin: 18px 0;
                 padding: 16px;
                 border: 1px solid #e7e5e4;
                 border-radius: 12px">
-      <div style="font-size: 12px; text-transform: uppercase;">{{ opportunity.kind_label() }} · {{ opportunity.organization_name }}</div>
-      <h2 style="margin: 6px 0;"><a href="{{ board_link }}{{ opportunity.details_url() }}">{{ opportunity.title }}</a></h2>
+      <div style="font-size: 12px; text-transform: uppercase;">
+        {{ opportunity.kind_label() }} · {{ opportunity.organization_name }}
+      </div>
+      <h2 style="margin: 6px 0;">
+        <a href="{{ board_link }}{{ opportunity.details_url() }}">{{ opportunity.title }}</a>
+      </h2>
       <p style="margin: 0;">{{ opportunity.summary }}</p>
     </div>
   {% endfor -%}
-  <p><a href="{{ board_link }}/opportunities">Browse all opportunities</a> · <a href="{{ manage_link }}">Manage saved searches</a></p>
+  <p>
+    <a href="{{ board_link }}/opportunities">Browse all opportunities</a> · <a href="{{ manage_link }}">Manage saved searches</a>
+  </p>
 {% endblock content -%}

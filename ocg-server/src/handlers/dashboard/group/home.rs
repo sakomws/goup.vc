@@ -12,8 +12,8 @@ use axum_messages::Messages;
 use tracing::instrument;
 
 use super::{
-    accelerator, coffee_meet, events, gtm, integrations, logs, members, sponsors, spotlights,
-    store, team,
+    accelerator, coffee_meet, cohosts, events, gtm, integrations, logs, members, sponsors,
+    spotlights, store, team,
 };
 
 use crate::{
@@ -108,6 +108,9 @@ pub(crate) async fn page(
             let template =
                 coffee_meet::prepare_list_page(&db, alliance_id, group_id, user.user_id).await?;
             Content::CoffeeMeet(template)
+        }
+        Tab::Cohosts => {
+            Content::Cohosts(cohosts::prepare_inbox(&db, user.user_id, group_id).await?)
         }
         Tab::BookExchange => {
             let can_manage_book_exchange = db

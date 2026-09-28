@@ -5,7 +5,7 @@
   <section class="relative isolate overflow-hidden bg-[#1A1510]">
     {# Background hairlines -#}
     <div class="pointer-events-none absolute inset-0 opacity-[0.06]"
-         style="background-image: repeating-linear-gradient(115deg, transparent 0, transparent 78px, #ffffff 78px, #ffffff 79px);">
+         style="background-image: repeating-linear-gradient(115deg, transparent 0, transparent 78px, #ffffff 78px, #ffffff 79px)">
     </div>
     {# End background hairlines -#}
 
@@ -145,9 +145,7 @@
             For teams that want steady visibility and community touchpoints.
           </p>
           <ul class="mt-6 flex flex-col divide-y divide-[#E2DDD8] border-t border-[#E2DDD8]">
-            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
-              Everything in Community
-            </li>
+            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">Everything in Community</li>
             <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
               Featured member, job, project, or event spotlights
             </li>
@@ -165,9 +163,7 @@
             For organizations investing deeply in the builder network.
           </p>
           <ul class="mt-6 flex flex-col divide-y divide-[#ddd0bd] border-t border-[#ddd0bd]">
-            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
-              Everything in Builder
-            </li>
+            <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">Everything in Builder</li>
             <li class="font-metrophobic py-3.5 text-[14.5px] leading-[1.55] text-[#3a2f25]">
               Custom partnership around events, hiring, landscape visibility, or community programs
             </li>
@@ -182,7 +178,8 @@
   {# End memberships -#}
 
   {# Contact -#}
-  <section id="sponsor-form" class="relative overflow-hidden border-t border-[#E2DDD8]">
+  <section id="sponsor-form"
+           class="relative overflow-hidden border-t border-[#E2DDD8]">
     <div class="absolute inset-0 -z-10"
          style="background: radial-gradient(170% 170% at 12% 88%, #E5D8C580 0%, #FAFAF780 70%)"></div>
 
@@ -224,109 +221,109 @@
 
         <div class="rounded-[2rem] border border-[#eadcc9] bg-[#fffaf5]/95 p-6 shadow-lg shadow-[#d8c7b2]/20 backdrop-blur sm:p-8 lg:p-10">
           {% if submitted -%}
-          <h2 class="font-amethysta text-2xl font-bold text-[#1A1510]">Thanks for reaching out.</h2>
-          <p class="font-metrophobic mt-3 text-base/7 text-[#6B6058]">
-            Your sponsorship inquiry was sent to the GOUP team. We'll follow up soon.
-          </p>
-          <a href="/"
-             hx-boost="true"
-             hx-target="body"
-             class="mt-6 inline-flex rounded-full border border-[#2461D1] bg-[#3D7EFF] px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_0_2px_#90BBFF80,0_7px_18px_-2px_#3D7EFF45]">Back to GOUP</a>
-        {% elif !user.logged_in -%}
-          <h2 class="font-amethysta text-2xl font-bold text-[#1A1510]">Log in to send a sponsor inquiry</h2>
-          <p class="font-metrophobic mt-3 text-base/7 text-[#6B6058]">
-            Please log in first so the GOUP team can follow up with a trusted account.
-          </p>
-          <a href="/log-in?next_url=/sponsor"
-             hx-boost="false"
-             class="mt-6 inline-flex rounded-full border border-[#2461D1] bg-[#3D7EFF] px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_0_2px_#90BBFF80,0_7px_18px_-2px_#3D7EFF45]">Log in to continue</a>
-        {% else -%}
-          <div>
-            <h2 class="font-amethysta text-2xl font-bold text-[#1A1510]">Tell us about your sponsorship idea</h2>
-            <p class="font-metrophobic mt-2 text-sm/6 text-[#6B6058]">
-              Share enough context for us to understand fit, timing, and how you would like to support GOUP.
+            <h2 class="font-amethysta text-2xl font-bold text-[#1A1510]">Thanks for reaching out.</h2>
+            <p class="font-metrophobic mt-3 text-base/7 text-[#6B6058]">
+              Your sponsorship inquiry was sent to the GOUP team. We'll follow up soon.
             </p>
-          </div>
-
-          <form method="post"
-                action="/sponsor"
-                hx-post="/sponsor"
-                hx-target="body"
-                hx-disabled-elt="button[type='submit']"
-                class="mt-8 grid gap-6">
-            <div class="grid gap-5 lg:grid-cols-12">
-              <div class="space-y-2 lg:col-span-6">
-                <label for="sponsor-name" class="form-label">Name</label>
-                <input id="sponsor-name"
-                       name="name"
-                       required
-                       maxlength="{{ crate::validation::MAX_LEN_S }}"
-                       autocomplete="name"
-                       class="input-primary"
-                       placeholder="Your name" />
-              </div>
-              <div class="space-y-2 lg:col-span-6">
-                <label for="sponsor-email" class="form-label">Email</label>
-                <input id="sponsor-email"
-                       name="email"
-                       type="email"
-                       required
-                       maxlength="{{ crate::validation::MAX_LEN_M }}"
-                       autocomplete="email"
-                       class="input-primary"
-                       placeholder="you@example.com" />
-              </div>
-              <div class="space-y-2 lg:col-span-6">
-                <label for="sponsor-company" class="form-label">Company / organization</label>
-                <input id="sponsor-company"
-                       name="company"
-                       required
-                       maxlength="{{ crate::validation::MAX_LEN_S }}"
-                       autocomplete="organization"
-                       class="input-primary"
-                       placeholder="Company name" />
-              </div>
-              <div class="space-y-2 lg:col-span-6">
-                <label for="sponsor-website" class="form-label">Website</label>
-                <input id="sponsor-website"
-                       name="website"
-                       maxlength="{{ crate::validation::MAX_LEN_M }}"
-                       autocomplete="url"
-                       class="input-primary"
-                       placeholder="https://example.com" />
-              </div>
-              <div class="space-y-2 lg:col-span-12">
-                <label for="sponsor-budget" class="form-label">Budget or sponsorship range</label>
-                <input id="sponsor-budget"
-                       name="budget"
-                       maxlength="{{ crate::validation::MAX_LEN_S }}"
-                       class="input-primary"
-                       placeholder="Optional" />
-              </div>
-              <div class="space-y-2 lg:col-span-12">
-                <label for="sponsor-message" class="form-label">Message</label>
-                <textarea id="sponsor-message"
-                          name="message"
-                          required
-                          maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION }}"
-                          rows="7"
-                          class="input-primary min-h-48 resize-y"
-                          placeholder="What would you like to sponsor? What goals, audience, timing, or package are you considering?"></textarea>
-              </div>
+            <a href="/"
+               hx-boost="true"
+               hx-target="body"
+               class="mt-6 inline-flex rounded-full border border-[#2461D1] bg-[#3D7EFF] px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_0_2px_#90BBFF80,0_7px_18px_-2px_#3D7EFF45]">Back to GOUP</a>
+          {% elif !user.logged_in -%}
+            <h2 class="font-amethysta text-2xl font-bold text-[#1A1510]">Log in to send a sponsor inquiry</h2>
+            <p class="font-metrophobic mt-3 text-base/7 text-[#6B6058]">
+              Please log in first so the GOUP team can follow up with a trusted account.
+            </p>
+            <a href="/log-in?next_url=/sponsor"
+               hx-boost="false"
+               class="mt-6 inline-flex rounded-full border border-[#2461D1] bg-[#3D7EFF] px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_0_2px_#90BBFF80,0_7px_18px_-2px_#3D7EFF45]">Log in to continue</a>
+          {% else -%}
+            <div>
+              <h2 class="font-amethysta text-2xl font-bold text-[#1A1510]">Tell us about your sponsorship idea</h2>
+              <p class="font-metrophobic mt-2 text-sm/6 text-[#6B6058]">
+                Share enough context for us to understand fit, timing, and how you would like to support GOUP.
+              </p>
             </div>
 
-            <div class="flex flex-col gap-4 rounded-3xl border border-[#f0e8dc] bg-[#fbf7f1] p-4 sm:flex-row sm:items-center sm:justify-end">
-              <a href="/"
-                 hx-boost="true"
-                 hx-target="body"
-                 class="inline-flex h-10 items-center justify-center rounded-full border border-[#eadcc9] bg-white px-5 text-sm font-bold text-[#3a2f25] shadow-sm transition hover:border-[#c9b291] hover:bg-[#f5efe7]">Cancel</a>
-              <button type="submit"
-                      class="inline-flex h-10 items-center justify-center rounded-full border border-[#2461D1] bg-[#3D7EFF] px-5 text-sm font-bold text-white shadow-[0_0_0_2px_#90BBFF80,0_7px_18px_-2px_#3D7EFF45]">
-                Send sponsor inquiry
-              </button>
-            </div>
-          </form>
-        {% endif -%}
+            <form method="post"
+                  action="/sponsor"
+                  hx-post="/sponsor"
+                  hx-target="body"
+                  hx-disabled-elt="button[type='submit']"
+                  class="mt-8 grid gap-6">
+              <div class="grid gap-5 lg:grid-cols-12">
+                <div class="space-y-2 lg:col-span-6">
+                  <label for="sponsor-name" class="form-label">Name</label>
+                  <input id="sponsor-name"
+                         name="name"
+                         required
+                         maxlength="{{ crate::validation::MAX_LEN_S }}"
+                         autocomplete="name"
+                         class="input-primary"
+                         placeholder="Your name" />
+                </div>
+                <div class="space-y-2 lg:col-span-6">
+                  <label for="sponsor-email" class="form-label">Email</label>
+                  <input id="sponsor-email"
+                         name="email"
+                         type="email"
+                         required
+                         maxlength="{{ crate::validation::MAX_LEN_M }}"
+                         autocomplete="email"
+                         class="input-primary"
+                         placeholder="you@example.com" />
+                </div>
+                <div class="space-y-2 lg:col-span-6">
+                  <label for="sponsor-company" class="form-label">Company / organization</label>
+                  <input id="sponsor-company"
+                         name="company"
+                         required
+                         maxlength="{{ crate::validation::MAX_LEN_S }}"
+                         autocomplete="organization"
+                         class="input-primary"
+                         placeholder="Company name" />
+                </div>
+                <div class="space-y-2 lg:col-span-6">
+                  <label for="sponsor-website" class="form-label">Website</label>
+                  <input id="sponsor-website"
+                         name="website"
+                         maxlength="{{ crate::validation::MAX_LEN_M }}"
+                         autocomplete="url"
+                         class="input-primary"
+                         placeholder="https://example.com" />
+                </div>
+                <div class="space-y-2 lg:col-span-12">
+                  <label for="sponsor-budget" class="form-label">Budget or sponsorship range</label>
+                  <input id="sponsor-budget"
+                         name="budget"
+                         maxlength="{{ crate::validation::MAX_LEN_S }}"
+                         class="input-primary"
+                         placeholder="Optional" />
+                </div>
+                <div class="space-y-2 lg:col-span-12">
+                  <label for="sponsor-message" class="form-label">Message</label>
+                  <textarea id="sponsor-message"
+                            name="message"
+                            required
+                            maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION }}"
+                            rows="7"
+                            class="input-primary min-h-48 resize-y"
+                            placeholder="What would you like to sponsor? What goals, audience, timing, or package are you considering?"></textarea>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-4 rounded-3xl border border-[#f0e8dc] bg-[#fbf7f1] p-4 sm:flex-row sm:items-center sm:justify-end">
+                <a href="/"
+                   hx-boost="true"
+                   hx-target="body"
+                   class="inline-flex h-10 items-center justify-center rounded-full border border-[#eadcc9] bg-white px-5 text-sm font-bold text-[#3a2f25] shadow-sm transition hover:border-[#c9b291] hover:bg-[#f5efe7]">Cancel</a>
+                <button type="submit"
+                        class="inline-flex h-10 items-center justify-center rounded-full border border-[#2461D1] bg-[#3D7EFF] px-5 text-sm font-bold text-white shadow-[0_0_0_2px_#90BBFF80,0_7px_18px_-2px_#3D7EFF45]">
+                  Send sponsor inquiry
+                </button>
+              </div>
+            </form>
+          {% endif -%}
         </div>
       </div>
     </div>
