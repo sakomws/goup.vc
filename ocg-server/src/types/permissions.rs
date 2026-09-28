@@ -40,6 +40,8 @@ impl PartialEq<AlliancePermission> for &AlliancePermission {
 /// Group-scoped permission identifiers.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum GroupPermission {
+    /// Permission to manage distribution planning.
+    DistributionWrite,
     /// Permission to manage events in a group.
     EventsWrite,
     /// Permission to manage the group GTM pipeline.
@@ -62,6 +64,7 @@ impl GroupPermission {
     /// Returns the canonical string identifier used in SQL checks.
     pub(crate) const fn as_str(self) -> &'static str {
         match self {
+            Self::DistributionWrite => "group.distribution.write",
             Self::EventsWrite => "group.events.write",
             Self::GtmWrite => "group.gtm.write",
             Self::MembersWrite => "group.members.write",

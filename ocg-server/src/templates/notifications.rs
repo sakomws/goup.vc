@@ -7,6 +7,16 @@ use crate::types::{
     event::EventSummary, group::GroupSummary, opportunities::OpportunitySummary, site::Theme,
 };
 
+/// Optional reminder that manually published social content is due.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/distribution_content_due.html")]
+pub(crate) struct DistributionContentDue {
+    pub channel: String,
+    pub group_name: String,
+    pub title: String,
+    pub link: String,
+}
+
 // Emails templates.
 
 /// Template for CFS submission update notification.

@@ -366,6 +366,11 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             get(dashboard::group::attendees::generate_check_in_qr_code),
         )
         .route("/events", get(dashboard::group::events::list_page))
+        .route("/distribution", get(dashboard::group::distribution::page))
+        .route(
+            "/distribution.csv",
+            get(dashboard::group::distribution::download_csv),
+        )
         .route("/rolling-cfs", get(dashboard::group::rolling_cfs::page))
         .route("/integrations", get(dashboard::group::integrations::page))
         .route("/events/add", get(dashboard::group::events::add_page))
@@ -791,6 +796,36 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         )
         .route_layer(check_selected_group_permission(GroupPermission::GtmWrite));
 
+    // Planning and manual execution only; no social provider APIs are called.
+    let distribution_management = Router::new()
+        .route(
+            "/distribution/campaigns",
+            post(dashboard::group::distribution::add_campaign),
+        )
+        .route(
+            "/distribution/partners",
+            post(dashboard::group::distribution::add_partner),
+        )
+        .route(
+            "/distribution/links",
+            post(dashboard::group::distribution::add_link),
+        )
+        .route(
+            "/distribution/content",
+            post(dashboard::group::distribution::add_content),
+        )
+        .route(
+            "/distribution/content/{content_id}/state",
+            put(dashboard::group::distribution::update_content_state),
+        )
+        .route(
+            "/distribution/library",
+            post(dashboard::group::distribution::add_library_item),
+        )
+        .route_layer(check_selected_group_permission(
+            GroupPermission::DistributionWrite,
+        ));
+
     // Group sponsor management endpoints
     let sponsors_management = Router::new()
         .route("/sponsors/add", post(dashboard::group::sponsors::add))
@@ -836,6 +871,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .merge(members_management)
         .merge(projects_management)
         .merge(gtm_management)
+        .merge(distribution_management)
         .merge(settings_management)
         .merge(sponsors_management)
         .merge(team_management)

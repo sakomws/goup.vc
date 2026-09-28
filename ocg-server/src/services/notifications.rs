@@ -28,9 +28,9 @@ use crate::{
     config::EmailConfig,
     db::DynDB,
     templates::notifications::{
-        AllianceTeamInvitation, CfsSubmissionUpdated, CoffeeMeetSuggestion, EmailVerification,
-        EventAttendanceCanceled, EventCanceled, EventCohostInvitation, EventCustom,
-        EventInvitation, EventPublished, EventRefundApproved, EventRefundRejected,
+        AllianceTeamInvitation, CfsSubmissionUpdated, CoffeeMeetSuggestion, DistributionContentDue,
+        EmailVerification, EventAttendanceCanceled, EventCanceled, EventCohostInvitation,
+        EventCustom, EventInvitation, EventPublished, EventRefundApproved, EventRefundRejected,
         EventRefundRequested, EventReminder, EventRescheduled, EventSeriesCanceled,
         EventSeriesPublished, EventSurveyNotification, EventWaitlistJoined, EventWaitlistLeft,
         EventWaitlistPromoted, EventWelcome, GroupCustom, GroupTeamInvitation, GroupWelcome,
@@ -227,6 +227,10 @@ impl EnqueueWorker {
         let event_surveys = self.db.enqueue_due_event_survey_notifications(&self.base_url).await?;
         let coffee_meet_suggestions =
             self.db.enqueue_due_coffee_meet_suggestions(&self.base_url).await?;
+        let distribution_reminders = self
+            .db
+            .enqueue_due_distribution_content_reminders(&self.base_url)
+            .await?;
         let opportunity_digests = self.db.enqueue_due_opportunity_digests(&self.base_url).await?;
         let scheduled_event_attendee_emails =
             self.db.enqueue_due_scheduled_event_attendee_emails().await?;
@@ -234,6 +238,7 @@ impl EnqueueWorker {
         Ok(event_reminders
             + event_surveys
             + coffee_meet_suggestions
+            + distribution_reminders
             + opportunity_digests
             + scheduled_event_attendee_emails)
     }
@@ -423,6 +428,12 @@ impl DeliveryWorker {
             NotificationKind::EventCustom => {
                 let template: EventCustom = serde_json::from_value(template_data)?;
                 let subject = template.subject.clone();
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::DistributionContentDue => {
+                let template: DistributionContentDue = serde_json::from_value(template_data)?;
+                let subject = format!("Distribution content due: {}", template.title);
                 let body = template.render()?;
                 (subject, body)
             }
@@ -800,6 +811,9 @@ pub(crate) enum NotificationKind {
     CfsSubmissionUpdated,
     /// Notification for a `CoffeeMeet` member suggestion.
     CoffeeMeetSuggestion,
+    /// Optional reminder for due manually published content.
+    DistributionContentDue,
+
     /// Notification for saved opportunity search matches.
     OpportunityDigest,
     /// Notification for a alliance team invitation.

@@ -12,8 +12,9 @@ use crate::{
         dashboard::{
             audit,
             group::{
-                accelerator, analytics, book_exchange, coffee_meet, cohosts, events, integrations,
-                intentional_dating, members, projects, settings, sponsors, spotlights, store, team,
+                accelerator, analytics, book_exchange, coffee_meet, cohosts, distribution, events,
+                integrations, intentional_dating, members, projects, settings, sponsors,
+                spotlights, store, team,
             },
             gtm,
         },
@@ -86,6 +87,8 @@ pub(crate) enum Content {
     Accelerator(accelerator::Page),
     /// Analytics page.
     Analytics(Box<analytics::Page>),
+    /// Distribution planning page.
+    Distribution(distribution::Page),
     /// Events management page.
     Events(Box<events::ListPage>),
     /// GTM pipeline page.
@@ -127,6 +130,10 @@ impl Content {
     /// Check if the content is the analytics page.
     fn is_analytics(&self) -> bool {
         matches!(self, Content::Analytics(_))
+    }
+
+    fn is_distribution(&self) -> bool {
+        matches!(self, Content::Distribution(_))
     }
 
     /// Check if the content is the events page.
@@ -211,6 +218,7 @@ impl std::fmt::Display for Content {
             Content::BookExchange(template) => write!(f, "{}", template.render()?),
             Content::CoffeeMeet(template) => write!(f, "{}", template.render()?),
             Content::Cohosts(template) => write!(f, "{}", template.render()?),
+            Content::Distribution(template) => write!(f, "{}", template.render()?),
             Content::Events(template) => write!(f, "{}", template.render()?),
             Content::Gtm(template) => write!(f, "{}", template.render()?),
             Content::IntentionalDating(template) => write!(f, "{}", template.render()?),
@@ -239,6 +247,8 @@ pub(crate) enum Tab {
     /// Analytics tab (default).
     #[default]
     Analytics,
+    /// Distribution planning tab.
+    Distribution,
     /// Events management tab.
     Events,
     /// GTM pipeline tab.

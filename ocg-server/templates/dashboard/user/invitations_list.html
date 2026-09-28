@@ -226,7 +226,9 @@ description = "Review event co-host requests for every group you can manage.") -
                     data-confirm-action
                     data-confirm-message="Reject this co-host invitation?"
                     data-confirm-text="Yes"
-                    data-error-message="Something went wrong rejecting this invitation. Please try again later.">Reject</button>
+                    data-error-message="Something went wrong rejecting this invitation. Please try again later.">
+              Reject
+            </button>
             <button type="button"
                     class="btn-primary px-3 py-1.5 text-xs"
                     hx-put="/dashboard/user/invitations/cohost/{{ invitation.event_cohost_id }}/accept"

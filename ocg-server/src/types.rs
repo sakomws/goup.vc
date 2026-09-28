@@ -2,6 +2,7 @@
 
 pub mod alliance;
 pub(crate) mod custom_domain;
+pub(crate) mod distribution;
 pub mod event;
 pub mod group;
 pub(crate) mod gtm;
