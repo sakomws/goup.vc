@@ -269,6 +269,7 @@ select is(
         "github_url": null,
         "group_team_management_restricted": true,
         "instagram_url": null,
+        "intentional_dating_enabled": true,
         "linkedin_url": null,
         "mentorship_enabled": false,
         "mock_interviews_enabled": false,

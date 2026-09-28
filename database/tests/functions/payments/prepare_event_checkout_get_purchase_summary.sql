@@ -194,11 +194,13 @@ select is(
     prepare_event_checkout_get_purchase_summary(:'purchaseID'::uuid),
     jsonb_build_object(
         'amount_minor', 2500,
+        'charge_model', 'stripe',
         'currency_code', 'USD',
         'discount_amount_minor', 0,
         'event_purchase_id', :'purchaseID'::uuid,
         'event_ticket_type_id', :'ticketTypeID'::uuid,
         'hold_expires_at', 1893492000,
+        'platform_fee_amount_minor', 0,
         'status', 'pending',
         'ticket_title', 'General admission'
     ),
@@ -210,6 +212,7 @@ select is(
     prepare_event_checkout_get_purchase_summary(:'purchaseWithProviderFieldsID'::uuid),
     jsonb_build_object(
         'amount_minor', 2000,
+        'charge_model', 'stripe',
         'completed_at', 1893579300,
         'currency_code', 'USD',
         'discount_amount_minor', 500,
@@ -217,6 +220,7 @@ select is(
         'event_purchase_id', :'purchaseWithProviderFieldsID'::uuid,
         'event_ticket_type_id', :'ticketTypeID'::uuid,
         'hold_expires_at', 1893501000,
+        'platform_fee_amount_minor', 0,
         'provider_checkout_url', 'https://example.com/checkout/cs_get_summary',
         'provider_payment_reference', 'pi_get_summary',
         'provider_session_id', 'cs_get_summary',

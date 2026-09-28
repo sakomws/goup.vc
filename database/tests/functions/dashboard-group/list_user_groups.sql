@@ -229,6 +229,7 @@ select is(
                 "logo_url": "https://example.com/logo.png",
                 "mentorship_enabled": true,
                 "mock_interviews_enabled": true,
+                "intentional_dating_enabled": false,
                 "name": "cloud-native-seattle",
                 "og_image_url": "https://example.com/alliance-og.png"
             },
@@ -267,6 +268,7 @@ select is(
                 "logo_url": "https://example.com/logo.png",
                 "mentorship_enabled": true,
                 "mock_interviews_enabled": true,
+                "intentional_dating_enabled": false,
                 "name": "cloud-native-seattle",
                 "og_image_url": "https://example.com/alliance-og.png"
             },
@@ -311,6 +313,7 @@ select is(
                 "logo_url": "https://example.com/logo.png",
                 "mentorship_enabled": true,
                 "mock_interviews_enabled": true,
+                "intentional_dating_enabled": false,
                 "name": "cloud-native-seattle",
                 "og_image_url": "https://example.com/alliance-og.png"
             },
@@ -355,6 +358,7 @@ select is(
                 "logo_url": "https://example.com/logo.png",
                 "mentorship_enabled": true,
                 "mock_interviews_enabled": true,
+                "intentional_dating_enabled": false,
                 "name": "cloud-native-seattle",
                 "og_image_url": "https://example.com/alliance-og.png"
             },
@@ -379,6 +383,7 @@ select is(
                 "logo_url": "https://example.com/logo2.png",
                 "mentorship_enabled": true,
                 "mock_interviews_enabled": true,
+                "intentional_dating_enabled": false,
                 "name": "devops-nyc",
                 "og_image_url": "https://example.com/alliance-og2.png"
             },

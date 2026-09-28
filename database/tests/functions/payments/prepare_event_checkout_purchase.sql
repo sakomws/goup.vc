@@ -602,6 +602,7 @@ select is(
     jsonb_build_object(
         'amount_minor', 2500,
         'alliance_name', 'prepare-alliance',
+        'charge_model', 'stripe',
         'currency_code', 'USD',
         'discount_amount_minor', 0,
         'event_id', :'mainEventID'::uuid,
@@ -610,6 +611,7 @@ select is(
         'event_ticket_type_id', :'ticketTypeAID'::uuid,
         'group_slug', 'prepare-group',
         'group_slug_pretty', 'prepare-group-pretty',
+        'platform_fee_amount_minor', 0,
         'recipient', jsonb_build_object('provider', 'stripe', 'recipient_id', 'acct_prepare'),
         'status', 'completed',
         'ticket_title', 'General admission'

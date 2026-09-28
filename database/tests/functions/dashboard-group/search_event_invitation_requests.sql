@@ -209,7 +209,7 @@ select is(
         'invitation_requests', '[
             {"created_at": 1704240000, "invitation_request_status": "rejected", "user": {"user_id": "3a2f0000-0000-0000-0000-000000000011", "username": "carol", "name": "Carol", "title": "Designer"}, "reviewed_at": 1704243600},
             {"created_at": 1704153600, "invitation_request_status": "pending", "user": {"user_id": "3a2f0000-0000-0000-0000-000000000010", "username": "bob", "photo_url": "https://example.com/bob.png"}, "reviewed_at": null},
-            {"created_at": 1704067200, "invitation_request_status": "accepted", "user": {"user_id": "3a2f0000-0000-0000-0000-000000000009", "username": "alice", "bio": "Reviews invitation requests", "company": "Cloud Corp", "github_url": "https://github.com/alice", "name": "Alice", "photo_url": "https://example.com/alice.png", "provider": {"github": {"username": "alice-gh"}, "linuxfoundation": {"username": "alice-lf"}}, "title": "Principal Engineer", "website_url": "https://example.com/alice"}, "reviewed_at": 1704070800}
+            {"created_at": 1704067200, "invitation_request_status": "accepted", "user": {"user_id": "3a2f0000-0000-0000-0000-000000000009", "username": "alice", "bio": "Reviews invitation requests", "company": "Cloud Corp", "github_url": "https://github.com/alice", "name": "Alice", "photo_url": "https://example.com/alice.png", "provider": {"github": {"private": "secret", "username": "alice-gh"}}, "title": "Principal Engineer", "website_url": "https://example.com/alice"}, "reviewed_at": 1704070800}
         ]'::jsonb,
         'total', 3
     ),

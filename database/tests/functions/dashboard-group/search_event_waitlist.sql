@@ -150,7 +150,7 @@ select is(
     )::jsonb,
     jsonb_build_object(
         'waitlist', '[
-            {"created_at": 1704067200, "user": {"user_id": "3a300000-0000-0000-0000-000000000008", "username": "alice", "bio": "Waits for event capacity", "company": "Cloud Corp", "github_url": "https://github.com/alice", "name": "Alice", "photo_url": "https://example.com/alice.png", "provider": {"github": {"username": "alice-gh"}, "linuxfoundation": {"username": "alice-lf"}}, "title": "Principal Engineer", "website_url": "https://example.com/alice"}, "waitlist_position": 1},
+            {"created_at": 1704067200, "user": {"user_id": "3a300000-0000-0000-0000-000000000008", "username": "alice", "bio": "Waits for event capacity", "company": "Cloud Corp", "github_url": "https://github.com/alice", "name": "Alice", "photo_url": "https://example.com/alice.png", "provider": {"github": {"private": "secret", "username": "alice-gh"}}, "title": "Principal Engineer", "website_url": "https://example.com/alice"}, "waitlist_position": 1},
             {"created_at": 1704153600, "user": {"user_id": "3a300000-0000-0000-0000-000000000009", "username": "bob", "photo_url": "https://example.com/bob.png"}, "waitlist_position": 2}
         ]'::jsonb,
         'total', 2

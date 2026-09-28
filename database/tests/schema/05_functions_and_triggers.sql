@@ -281,7 +281,7 @@ select has_function('prepare_event_checkout_expire_previous_hold', array['uuid']
 select has_function('prepare_event_checkout_expire_stale_holds', array['uuid']::name[]);
 select has_function('prepare_event_checkout_find_existing_purchase', array['uuid', 'uuid', 'uuid', 'text']::name[]);
 select has_function('prepare_event_checkout_get_purchase_summary', array['uuid']::name[]);
-select has_function('prepare_event_checkout_purchase', array['uuid', 'uuid', 'uuid', 'uuid', 'text', 'text', 'jsonb']::name[]);
+select has_function('prepare_event_checkout_purchase', array['uuid', 'uuid', 'uuid', 'uuid', 'text', 'text', 'jsonb', 'integer']::name[]);
 select has_function('prepare_event_checkout_reserve_discount_code_availability', array['uuid']::name[]);
 select has_function('prepare_event_checkout_validate_and_resolve_pricing', array['uuid', 'uuid', 'uuid', 'text']::name[]);
 select has_function('prepare_event_checkout_validate_attendee_state', array['uuid', 'uuid']::name[]);

@@ -330,6 +330,7 @@ select is(
             "book_exchange_enabled": false,
             "coffee_meet_enabled": true,
             "display_name": "Cloud Native Seattle",
+            "intentional_dating_enabled": false,
             "logo_url": "https://example.com/logo.png",
             "mentorship_enabled": true,
             "mock_interviews_enabled": true,
@@ -354,6 +355,8 @@ select is(
         "membership_approval_required": false,
         "mentorship_enabled": false,
         "mock_interviews_enabled": false,
+        "external_payments_enabled": false,
+        "intentional_dating_enabled": false,
         "organizers": [],
         "report_public_enabled": false,
         "sponsors": []
@@ -517,6 +520,8 @@ select is(
     '{
         "book_exchange_enabled": false,
         "coffee_meet_enabled": false,
+        "external_payments_enabled": false,
+        "intentional_dating_enabled": false,
         "mentorship_enabled": false,
         "mock_interviews_enabled": false,
         "name": "Updated Group Empty Strings",
@@ -572,6 +577,8 @@ select is(
     '{
         "book_exchange_enabled": false,
         "coffee_meet_enabled": false,
+        "external_payments_enabled": false,
+        "intentional_dating_enabled": false,
         "mentorship_enabled": false,
         "mock_interviews_enabled": false,
         "name": "Updated Group Null Arrays",

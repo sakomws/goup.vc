@@ -240,6 +240,7 @@ select is(
             "book_exchange_enabled": false,
             "coffee_meet_enabled": true,
             "display_name": "Cloud Native Seattle",
+            "intentional_dating_enabled": false,
             "logo_url": "https://example.com/logo.png",
             "mentorship_enabled": true,
             "mock_interviews_enabled": true,
@@ -290,6 +291,8 @@ select is(
         "members_count": 3,
         "mentorship_enabled": true,
         "mock_interviews_enabled": true,
+        "external_payments_enabled": false,
+        "intentional_dating_enabled": false,
         "membership_approval_required": false,
         "report_public_enabled": false
     }
