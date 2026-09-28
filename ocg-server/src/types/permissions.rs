@@ -46,6 +46,8 @@ pub(crate) enum GroupPermission {
     GtmWrite,
     /// Permission to manage group members.
     MembersWrite,
+    /// Permission to manage group collaboration projects.
+    ProjectsWrite,
     /// Permission to read the group dashboard.
     Read,
     /// Permission to manage group settings.
@@ -63,6 +65,7 @@ impl GroupPermission {
             Self::EventsWrite => "group.events.write",
             Self::GtmWrite => "group.gtm.write",
             Self::MembersWrite => "group.members.write",
+            Self::ProjectsWrite => "group.projects.write",
             Self::Read => "group.read",
             Self::SettingsWrite => "group.settings.write",
             Self::SponsorsWrite => "group.sponsors.write",
