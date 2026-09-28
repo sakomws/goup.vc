@@ -15,6 +15,8 @@ returns jsonb language sql stable as $$
         'tags', p.tags,
         'published', p.published,
         'created_at', extract(epoch from p.created_at),
+        'opens_at', case when p.opens_at is null then null
+            else extract(epoch from p.opens_at) end,
         'closes_at', case when p.closes_at is null then null
             else extract(epoch from p.closes_at) end,
         'posted_by_user_id', p.posted_by_user_id,
@@ -28,18 +30,20 @@ returns setof opportunity_board_row language sql stable as $$
     select o.opportunity_id, 'native'::text, o.kind, o.title,
         o.organization_name, o.summary, o.description, o.apply_url,
         o.location, o.remote, o.members_only, o.tags, o.published,
-        o.created_at, o.closes_at, o.posted_by_user_id, u.username, u.name
+        o.created_at, o.opens_at, o.closes_at,
+        o.posted_by_user_id, u.username, u.name
     from opportunity o
     join "user" u on u.user_id = o.posted_by_user_id
     where o.published
       and (o.closes_at is null or o.closes_at > current_timestamp)
+      and (o.opens_at is null or o.opens_at <= current_timestamp)
       and (p_include_members_only or not o.members_only)
 
     union all
 
     select j.job_id, 'job', 'job', j.title, j.company_name, j.summary,
         j.description, j.apply_url, j.location, j.remote, j.members_only,
-        j.tags, j.published, j.created_at, j.expires_at,
+        j.tags, j.published, j.created_at, null::timestamptz, j.expires_at,
         j.posted_by_user_id, u.username, u.name
     from jobs_job j
     join "user" u on u.user_id = j.posted_by_user_id
@@ -55,7 +59,7 @@ returns setof opportunity_board_row language sql stable as $$
         format('/%s/group/%s/event/%s', a.name, coalesce(g.slug_pretty, g.slug), e.slug),
         nullif(concat_ws(', ', e.venue_city, e.venue_country_name), ''),
         e.event_kind_id in ('virtual', 'hybrid'), false, coalesce(e.tags, '{}'),
-        true, coalesce(e.published_at, e.created_at), e.cfs_ends_at,
+        true, coalesce(e.published_at, e.created_at), e.cfs_starts_at, e.cfs_ends_at,
         null::uuid, null::text, null::text
     from event e
     join "group" g using (group_id)
@@ -75,7 +79,7 @@ returns setof opportunity_board_row language sql stable as $$
         null::text, true, false,
         coalesce((select array_agg(l.name order by l.name)
             from group_cfs_label l where l.group_id = g.group_id), '{}'),
-        true, gc.created_at, null::timestamptz,
+        true, gc.created_at, null::timestamptz, null::timestamptz,
         null::uuid, null::text, null::text
     from group_cfs gc
     join "group" g using (group_id)
@@ -160,6 +164,8 @@ returns jsonb language sql stable as $$
                 'location', location, 'remote', remote,
                 'members_only', members_only, 'tags', tags,
                 'published', published, 'created_at', extract(epoch from created_at),
+                'opens_at', case when opens_at is null then null
+                    else extract(epoch from opens_at) end,
                 'closes_at', case when closes_at is null then null
                     else extract(epoch from closes_at) end,
                 'posted_by_user_id', posted_by_user_id,

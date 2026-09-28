@@ -6,6 +6,7 @@ returns int language plpgsql as $$
 declare
     v_due record;
     v_scheduled_for timestamptz;
+    v_evaluated_through timestamptz;
     v_matches jsonb;
     v_match_count int;
     v_inserted int;
@@ -25,6 +26,9 @@ begin
         for update of s skip locked
     loop
         v_scheduled_for := v_due.next_run_at;
+        -- Keep a small overlap behind wall-clock time so a row committed after
+        -- this statement's snapshot cannot fall permanently behind the cursor.
+        v_evaluated_through := clock_timestamp() - interval '1 minute';
 
         select coalesce(jsonb_agg(opportunity_row_json(r)
                     order by r.created_at desc), '[]'::jsonb)
@@ -33,21 +37,28 @@ begin
             select row_source.*
             from opportunity_rows(true) row_source
             where row_source.created_at > coalesce(v_due.last_run_at, v_due.created_at)
-              and (nullif(v_due.filters->>'kind', '') is null
-                   or row_source.kind = v_due.filters->>'kind')
+              and row_source.created_at <= v_evaluated_through
+              and (nullif(btrim(v_due.filters->>'kind'), '') is null
+                   or row_source.kind = btrim(v_due.filters->>'kind'))
               and ((v_due.filters->>'remote') is null
                    or row_source.remote = (v_due.filters->>'remote')::boolean)
-              and (nullif(v_due.filters->>'location', '') is null
+              and (nullif(btrim(v_due.filters->>'location'), '') is null
                    or row_source.location ilike '%' ||
-                       escape_ilike_pattern(v_due.filters->>'location') || '%' escape '\')
+                       escape_ilike_pattern(btrim(v_due.filters->>'location')) || '%' escape '\')
               and (
-                nullif(v_due.filters->>'query', '') is null
+                nullif(btrim(v_due.filters->>'query'), '') is null
                 or row_source.title ilike '%' ||
-                    escape_ilike_pattern(v_due.filters->>'query') || '%' escape '\'
+                    escape_ilike_pattern(btrim(v_due.filters->>'query')) || '%' escape '\'
                 or row_source.organization_name ilike '%' ||
-                    escape_ilike_pattern(v_due.filters->>'query') || '%' escape '\'
+                    escape_ilike_pattern(btrim(v_due.filters->>'query')) || '%' escape '\'
                 or row_source.summary ilike '%' ||
-                    escape_ilike_pattern(v_due.filters->>'query') || '%' escape '\'
+                    escape_ilike_pattern(btrim(v_due.filters->>'query')) || '%' escape '\'
+                or exists (
+                    select 1
+                    from unnest(row_source.tags) tag
+                    where tag ilike '%' ||
+                        escape_ilike_pattern(btrim(v_due.filters->>'query')) || '%' escape '\'
+                )
               )
             limit 20
         ) r;
@@ -84,8 +95,8 @@ begin
         end if;
 
         update opportunity_saved_search set
-            last_run_at = current_timestamp,
-            next_run_at = current_timestamp + case v_due.frequency
+            last_run_at = v_evaluated_through,
+            next_run_at = v_scheduled_for + case v_due.frequency
                 when 'daily' then interval '1 day' else interval '7 days' end,
             updated_at = current_timestamp
         where opportunity_saved_search_id = v_due.opportunity_saved_search_id;

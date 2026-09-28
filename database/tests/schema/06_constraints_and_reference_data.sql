@@ -351,6 +351,7 @@ select results_eq(
         ('group-team-invitation', false),
         ('group-welcome', false),
         ('intentional-dating-introduction', true),
+        ('opportunity-digest', true),
         ('session-proposal-co-speaker-invitation', false),
         ('site-onboarding', false),
         ('speaker-series-welcome', false),

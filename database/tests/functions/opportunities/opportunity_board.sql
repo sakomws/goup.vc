@@ -1,5 +1,5 @@
 begin;
-select plan(34);
+select plan(47);
 
 select has_table('opportunity');
 select has_table('opportunity_saved_search');
@@ -45,6 +45,63 @@ select lives_ok(
         'https://example.test/apply', true
     )$$,
     'native opportunity can be created'
+);
+
+select throws_like(
+    $$insert into opportunity (
+        posted_by_user_id, kind, title, slug, organization_name,
+        summary, description, apply_url
+    ) values (
+        'b9230000-0000-0000-0000-000000000001',
+        'grant', 'Unsafe grant', 'opp-unsafe', 'GOUP',
+        'Unsafe link.', 'Unsafe link.', 'javascript:alert(1)'
+    )$$,
+    '%opportunity_apply_url_check%',
+    'native application URLs reject unsafe schemes'
+);
+
+select lives_ok(
+    $$insert into opportunity (
+        opportunity_id, posted_by_user_id, kind, title, slug,
+        organization_name, summary, description, apply_url,
+        published, opens_at
+    ) values (
+        'b9230000-0000-0000-0000-000000000006',
+        'b9230000-0000-0000-0000-000000000001',
+        'grant', 'Future grant', 'opp1237', 'GOUP',
+        'Not open yet.', 'Future details.',
+        'https://example.test/future', true,
+        current_timestamp + interval '1 day'
+    )$$,
+    'a scheduled native opportunity can be created'
+);
+select is(
+    get_opportunity(
+        'native', 'b9230000-0000-0000-0000-000000000006', false
+    ),
+    null,
+    'native opportunities remain private until opens_at'
+);
+
+select lives_ok(
+    $$insert into jobs_job (
+        job_id, posted_by_user_id, title, slug, company_name,
+        summary, description, apply_url, tags
+    ) values (
+        'b9230000-0000-0000-0000-000000000007',
+        'b9230000-0000-0000-0000-000000000001',
+        'Rust engineer', 'rust-engineer', 'GOUP',
+        'Build community software.', 'Full job details.',
+        'https://example.test/jobs/rust', array['rust']
+    )$$,
+    'a published job projection can be created'
+);
+select is(
+    get_opportunity(
+        'job', 'b9230000-0000-0000-0000-000000000007', false
+    )->>'title',
+    'Rust engineer',
+    'published jobs are projected into the opportunity board'
 );
 
 select is(
@@ -106,6 +163,73 @@ select is(
 );
 
 select lives_ok(
+    $$update "user"
+      set optional_notifications_enabled = true
+      where user_id = 'b9230000-0000-0000-0000-000000000001'$$,
+    'the owner can opt in to optional notifications'
+);
+select lives_ok(
+    $$insert into opportunity (
+        opportunity_id, posted_by_user_id, kind, title, slug,
+        organization_name, summary, description, apply_url, tags,
+        published, created_at
+    ) values (
+        'b9230000-0000-0000-0000-000000000008',
+        'b9230000-0000-0000-0000-000000000001',
+        'research', 'Compiler research', 'opp1238', 'GOUP',
+        'Research opportunity.', 'Research details.',
+        'https://example.test/research', array['compilers'], true,
+        current_timestamp - interval '2 minutes'
+    )$$,
+    'a digest match can be created before the safe watermark'
+);
+select lives_ok(
+    $$insert into opportunity_saved_search (
+        opportunity_saved_search_id, user_id, name, filters,
+        frequency, active, next_run_at, created_at
+    ) values (
+        'b9230000-0000-0000-0000-000000000009',
+        'b9230000-0000-0000-0000-000000000001',
+        'Compiler tags', '{"query":"compilers"}',
+        'daily', true, current_timestamp - interval '2 minutes',
+        current_timestamp - interval '3 minutes'
+    )$$,
+    'a tag-filtered digest can become due'
+);
+select is(
+    enqueue_due_opportunity_digests('https://example.test'),
+    1,
+    'tag matches enqueue an opted-in digest'
+);
+select is(
+    (select count(*)::int from notification
+     where kind = 'opportunity-digest'
+       and user_id = 'b9230000-0000-0000-0000-000000000001'),
+    1,
+    'one digest notification is created'
+);
+select lives_ok(
+    $$update opportunity_saved_search
+      set next_run_at = current_timestamp - interval '2 minutes',
+          last_run_at = null
+      where opportunity_saved_search_id =
+          'b9230000-0000-0000-0000-000000000009'$$,
+    'the same scheduled run can be retried'
+);
+select is(
+    enqueue_due_opportunity_digests('https://example.test'),
+    0,
+    'a retried schedule does not enqueue twice'
+);
+select is(
+    (select count(*)::int from notification
+     where kind = 'opportunity-digest'
+       and user_id = 'b9230000-0000-0000-0000-000000000001'),
+    1,
+    'digest idempotency leaves one notification'
+);
+
+select lives_ok(
     $$insert into opportunity (
         opportunity_id, posted_by_user_id, kind, title, slug,
         organization_name, summary, description, apply_url,
@@ -130,12 +254,12 @@ select lives_ok(
 );
 select is(
     search_opportunities('{}'::jsonb)->>'total',
-    '1',
+    '3',
     'anonymous search excludes member-only and expired records'
 );
 select is(
     search_opportunities('{"include_members_only":true}'::jsonb)->>'total',
-    '2',
+    '4',
     'member search includes member-only but not expired records'
 );
 select is(

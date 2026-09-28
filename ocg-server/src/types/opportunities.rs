@@ -2,6 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use garde::Validate;
+use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use serde_with::skip_serializing_none;
@@ -96,7 +97,7 @@ pub(crate) struct OpportunityInput {
     pub summary: String,
     #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_DESCRIPTION))]
     pub description: String,
-    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
+    #[garde(custom(application_url), length(max = MAX_LEN_M))]
     pub apply_url: String,
     #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_M))]
     pub location: Option<String>,
@@ -183,6 +184,8 @@ pub(crate) struct OpportunitySummary {
     #[serde(with = "chrono::serde::ts_seconds")]
     pub created_at: DateTime<Utc>,
     #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub opens_at: Option<DateTime<Utc>>,
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub closes_at: Option<DateTime<Utc>>,
     pub posted_by_user_id: Option<Uuid>,
     pub poster_username: Option<String>,
@@ -227,6 +230,16 @@ pub(crate) fn parse_tags(input: Option<&str>) -> Vec<String> {
         .take(12)
         .map(|tag| tag.chars().take(MAX_LEN_TAG).collect())
         .collect()
+}
+
+fn application_url(value: &(impl AsRef<str> + ?Sized), _ctx: &()) -> garde::Result {
+    let url = Url::parse(value.as_ref().trim())
+        .map_err(|_| garde::Error::new("invalid application URL"))?;
+    if matches!(url.scheme(), "http" | "https") {
+        Ok(())
+    } else {
+        Err(garde::Error::new("application URL must use http or https"))
+    }
 }
 
 #[cfg(test)]
@@ -277,5 +290,12 @@ mod tests {
     fn parse_tags_trims_drops_empty_and_limits_count() {
         let tags = parse_tags(Some(" Rust, , AI,Climate "));
         assert_eq!(tags, ["Rust", "AI", "Climate"]);
+    }
+
+    #[test]
+    fn application_url_rejects_unsafe_schemes() {
+        assert!(application_url("https://example.test/apply", &()).is_ok());
+        assert!(application_url("javascript:alert(1)", &()).is_err());
+        assert!(application_url("/relative", &()).is_err());
     }
 }

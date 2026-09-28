@@ -149,7 +149,12 @@
                      value="{{ opportunity.tags.join(", ") }}"
                      class="input-primary"
                      placeholder="Tags" />
-              <input name="opens_at" type="datetime-local" class="input-primary" />
+              <input name="opens_at"
+                     type="datetime-local"
+                     value="{% if let Some(date) = opportunity.opens_at %}
+                              {{ date.format("%Y-%m-%dT%H:%M") }}
+                            {% endif %}"
+                     class="input-primary" />
               <input name="closes_at"
                      type="datetime-local"
                      value="{% if let Some(date) = opportunity.closes_at %}
