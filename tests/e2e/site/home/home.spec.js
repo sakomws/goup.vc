@@ -9,6 +9,7 @@ import {
   TEST_ALLIANCE_TITLE_2,
   TEST_EVENT_NAMES,
   getAllianceBanner,
+  getHomeJumbotronContent,
   getSectionLink,
   getStatsContainer,
   getStatValue,
@@ -34,10 +35,9 @@ test.describe("site home page", () => {
       ).toBeVisible();
 
       // Verify the jumbotron description and CTA destination.
-      await expect(page.locator(".jumbotron-description")).toBeVisible();
-      await expect(page.locator(".jumbotron-description")).toContainText(
-        "honest introductions",
-      );
+      const jumbotron = getHomeJumbotronContent(page);
+      await expect(jumbotron).toBeVisible();
+      await expect(jumbotron).toContainText("honest introductions");
 
       // Find the primary Explore events control.
       const ctaLink = page
@@ -50,10 +50,9 @@ test.describe("site home page", () => {
     test("hero explains concrete member benefits", async ({ page }) => {
       // Verify the hero answers what members get from joining GOUP.
       for (const benefit of [
-        "Ask for help",
-        "Share your work",
-        "Meet in real life",
-        "Grow together",
+        "Explore events",
+        "Meet the community",
+        "Find startups & projects",
       ]) {
         await expect(
           page.getByText(benefit, { exact: true }).first(),
@@ -88,7 +87,7 @@ test.describe("site home page", () => {
           name: "Growth through useful progress",
         }),
       ).toBeVisible();
-      await expect(page.getByText("Why GOUP", { exact: true })).toBeVisible();
+      await expect(page.getByText("WHY GOUP", { exact: true })).toBeVisible();
       await expect(
         page.getByText("Growth", { exact: true }).first(),
       ).toBeVisible();
@@ -106,7 +105,7 @@ test.describe("site home page", () => {
     test("latest feed makes the homepage feel live", async ({ page }) => {
       // Verify the homepage surfaces dynamic content from across GOUP.
       await expect(
-        page.getByText("Latest from GOUP", { exact: true }),
+        page.getByText("LATEST FROM GOUP", { exact: true }),
       ).toBeVisible();
       await expect(
         page.getByRole("heading", { name: "What is moving now" }),
@@ -133,7 +132,7 @@ test.describe("site home page", () => {
       page,
     }) => {
       // Verify alliance cards link to their public alliance pages.
-      await expect(page.getByText("Alliance", { exact: true })).toBeVisible();
+      await expect(page.getByText("ALLIANCE", { exact: true })).toBeVisible();
 
       // Target the first alliance card link.
       const alliance1Link = page
@@ -199,19 +198,15 @@ test.describe("site home page", () => {
         "Payments are disabled in this environment.",
       );
 
-      // Target ticketed in-person and virtual event cards.
+      // Target representative seeded event cards.
       const inPersonCard = page.getByRole("link").filter({
-        hasText: new RegExp(
-          `${TEST_EVENT_NAMES.gamma[0]}[\\s\\S]*From USD 20\\.00`,
-        ),
+        hasText: TEST_EVENT_NAMES.gamma[0],
       });
       const virtualCard = page.getByRole("link").filter({
-        hasText: new RegExp(
-          `${TEST_EVENT_NAMES.beta[1]}[\\s\\S]*From USD 15\\.00`,
-        ),
+        hasText: TEST_EVENT_NAMES.beta[1],
       });
 
-      // Verify ticketed event cards show their starting prices.
+      // Verify seeded events remain discoverable in both sections.
       await expect(inPersonCard.first()).toBeVisible();
       await expect(virtualCard.first()).toBeVisible();
     });

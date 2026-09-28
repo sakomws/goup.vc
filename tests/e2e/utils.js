@@ -436,6 +436,10 @@ export const buildE2eUrl = (path) => buildUrl(path);
  * Selects a site or alliance stats container.
  */
 export const getStatsContainer = (page, pageKind, viewport) => {
+  if (pageKind === "site") {
+    return page.locator("div.mt-4.grid.grid-cols-2").first();
+  }
+
   const selector =
     viewport === "desktop" ? "div.hidden.lg\\:flex" : "div.grid.lg\\:hidden";
 
@@ -452,7 +456,7 @@ export const getStatValue = (statsContainer, statLabel) => {
   const labelElement = statsContainer.getByText(statLabel, { exact: true });
   const statBlock = labelElement.locator("..");
 
-  return statBlock.locator(".lg\\:text-4xl");
+  return statBlock.locator("div").first();
 };
 
 /**
@@ -466,6 +470,10 @@ export const getSectionByHeading = (page, heading) =>
  */
 export const getSectionLink = (page, heading, linkName, viewport) => {
   const section = getSectionByHeading(page, heading);
+
+  if (heading.toLowerCase() === "upcoming in-person") {
+    return page.getByRole("link", { name: linkName }).first();
+  }
 
   return viewport === "desktop"
     ? section
@@ -544,7 +552,9 @@ export const getIntroSection = (page) =>
     .or(
       page
         .getByRole("heading", { level: 1 })
-        .locator("xpath=ancestor::div[parent::div[contains(@class,'gap-y-6')]][1]"),
+        .locator(
+          "xpath=ancestor::div[parent::div[contains(@class,'gap-y-6')]][1]",
+        ),
     )
     .first();
 
@@ -654,8 +664,8 @@ export const restoreSeededWaitlistEvent = async (memberPage, organizerPage) => {
   // Remove member2 from the shared waitlist event before depending on capacity.
   await navigateToEvent(
     memberPage,
-    TEST_COMMUNITY_NAME,
-    TEST_GROUP_SLUGS.community1.alpha,
+    TEST_ALLIANCE_NAME,
+    TEST_GROUP_SLUGS.alliance1.alpha,
     "alpha-waitlist-lab",
   );
   await waitForAttendanceState(memberPage);
@@ -679,8 +689,8 @@ export const restoreSeededWaitlistEvent = async (memberPage, organizerPage) => {
   // Restore organizer attendance so the one-seat event is full again.
   await navigateToEvent(
     organizerPage,
-    TEST_COMMUNITY_NAME,
-    TEST_GROUP_SLUGS.community1.alpha,
+    TEST_ALLIANCE_NAME,
+    TEST_GROUP_SLUGS.alliance1.alpha,
     "alpha-waitlist-lab",
   );
   await waitForAttendanceState(organizerPage);
