@@ -99,6 +99,8 @@ select is(
         "membership_approval_required": false,
         "mentorship_enabled": true,
         "mock_interviews_enabled": true,
+        "external_payments_enabled": false,
+        "intentional_dating_enabled": false,
         "organizers": [],
         "report_public_enabled": false,
         "sponsors": []
@@ -220,6 +222,8 @@ select is(
         "coffee_meet_enabled": true,
         "mentorship_enabled": true,
         "mock_interviews_enabled": true,
+        "external_payments_enabled": false,
+        "intentional_dating_enabled": false,
         "state": "CA",
         "region": {
             "region_id": "%s",

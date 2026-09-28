@@ -45,19 +45,21 @@ values (:'groupID', :'allianceID', :'groupCategoryID', 'GTM Group', 'gtm-group')
 -- TESTS
 -- ============================================================================
 
+select add_gtm_lead(null::uuid, :'allianceID'::uuid, jsonb_build_object(
+    'name', 'Ada Example',
+    'kind', 'sponsor',
+    'org_name', 'Example Co',
+    'email', 'ada@example.com',
+    'website_url', 'https://example.com',
+    'group_id', :'groupID',
+    'source', 'manual'
+)) as "leadID" \gset
+
 select is(
     (
         select (get_gtm_lead(
             :'allianceID'::uuid,
-            add_gtm_lead(null::uuid, :'allianceID'::uuid, jsonb_build_object(
-                'name', 'Ada Example',
-                'kind', 'sponsor',
-                'org_name', 'Example Co',
-                'email', 'ada@example.com',
-                'website_url', 'https://example.com',
-                'group_id', :'groupID',
-                'source', 'manual'
-            ))
+            :'leadID'::uuid
         )::jsonb)->>'name'
     ),
     'Ada Example',

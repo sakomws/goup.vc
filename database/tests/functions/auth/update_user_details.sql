@@ -187,6 +187,7 @@ select is(
     ) || '{
         "belongs_to_any_group_team": false,
         "belongs_to_alliance_team": false,
+        "book_exchange_enabled": false,
         "email": "test@example.com",
         "email_verified": true,
         "optional_notifications_enabled": false,
@@ -202,6 +203,7 @@ select is(
         "facebook_url": "https://facebook.com/updateduser",
         "github_url": "https://github.com/updateduser",
         "interests": ["programming", "music", "sports"],
+        "intentional_dating_enabled": false,
         "linkedin_url": "https://linkedin.com/in/updateduser",
         "mentorship_businesses": true,
         "mentorship_individuals": true,
@@ -262,8 +264,10 @@ select is(
     ) || '{
         "belongs_to_any_group_team": false,
         "belongs_to_alliance_team": false,
+        "book_exchange_enabled": false,
         "email": "test2@example.com",
         "email_verified": true,
+        "intentional_dating_enabled": false,
         "coffee_meet_enabled": false,
         "mentorship_businesses": false,
         "mentorship_individuals": false,
@@ -314,8 +318,10 @@ select is(
     ) || '{
         "belongs_to_any_group_team": false,
         "belongs_to_alliance_team": false,
+        "book_exchange_enabled": false,
         "email": "test3@example.com",
         "email_verified": true,
+        "intentional_dating_enabled": false,
         "coffee_meet_enabled": false,
         "mentorship_businesses": false,
         "mentorship_individuals": false,

@@ -332,6 +332,8 @@ select is(
         "longitude": -74.006,
         "mentorship_enabled": true,
         "mock_interviews_enabled": true,
+        "external_payments_enabled": false,
+        "intentional_dating_enabled": false,
         "og_image_url": "https://example.com/group-og.png",
         "payment_recipient": {
             "provider": "stripe",
@@ -358,6 +360,7 @@ select is(
             "book_exchange_enabled": false,
             "coffee_meet_enabled": true,
             "display_name": "Cloud Native Seattle",
+            "intentional_dating_enabled": false,
             "logo_url": "https://example.com/logo.png",
             "mentorship_enabled": true,
             "mock_interviews_enabled": true,

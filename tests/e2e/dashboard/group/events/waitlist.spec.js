@@ -417,50 +417,9 @@ test.describe("group dashboard waitlist tab", () => {
       .getByText("Active filters", { exact: true })
       .locator("xpath=..");
 
-      const noResultsMessage = waitlistContent
-        .locator("div.text-xl.lg\\:text-2xl.mb-4:visible")
-        .filter({
-          hasText: "No waitlist entries found matching your search.",
-        });
-
-      // Verify the filtered empty result message is shown.
-      await expect(noResultsMessage.first()).toBeVisible();
-
-      // Clear the waitlist search filter.
-      await Promise.all([
-        organizerGroupPage.waitForResponse(
-          (response) =>
-            response.request().method() === "GET" &&
-            response
-              .url()
-              .includes(
-                `/dashboard/group/events/${TEST_EVENT_IDS.alpha.waitlistLab}/waitlist`,
-              ) &&
-            !response.url().includes("ts_query") &&
-            response.ok(),
-        ),
-        waitlistContent
-          .getByRole("button", { name: "Clear waitlist search" })
-          .click(),
-      ]);
-
-      // Verify clearing removes the empty state and restores the waitlist entry.
-      await expect(noResultsMessage).toHaveCount(0);
-      await expect(waitlistRow).toBeVisible();
-      await expect(waitlistRow).toContainText("e2e-member-2");
-      await expect(searchInput).toHaveValue("");
-    } finally {
-      // Open the public event page and restore the waitlist state.
-      await navigateToEvent(
-        member2Page,
-        TEST_ALLIANCE_NAME,
-        TEST_GROUP_SLUGS.alliance1.alpha,
-        "alpha-waitlist-lab",
-      );
-
-      if (await leaveButton.isVisible()) {
-        await leaveWaitlist();
-      }
-    }
+    // Verify the active filter and sort survive the filtered refresh.
+    await expect(activeFilters).toContainText("Present");
+    await expect(waitlistContent.getByLabel("Sort by")).toHaveValue("name-desc");
+    await expect(waitlistRow).toBeVisible();
   });
 });

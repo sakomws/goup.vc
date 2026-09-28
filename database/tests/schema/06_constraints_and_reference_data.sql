@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(74);
+select plan(72);
 
 -- ============================================================================
 -- VARIABLES
@@ -329,6 +329,9 @@ select results_eq(
         ('event-attendance-canceled', false),
         ('event-canceled', false),
         ('event-custom', true),
+        ('event-external-payment-expired', false),
+        ('event-external-payment-pending', false),
+        ('event-external-payment-reminder', false),
         ('event-invitation', false),
         ('event-published', true),
         ('event-refund-approved', false),

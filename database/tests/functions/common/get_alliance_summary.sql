@@ -58,6 +58,7 @@ select is(
         "coffee_meet_enabled": true,
         "display_name": "Cloud Native Seattle",
         "logo_url": "https://example.com/logo.png",
+        "intentional_dating_enabled": false,
         "mentorship_enabled": true,
         "mock_interviews_enabled": true,
         "name": "cloud-native-seattle",
