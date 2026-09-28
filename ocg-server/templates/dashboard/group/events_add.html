@@ -12,7 +12,20 @@
        class="hidden rounded-md border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-900">
     Group event defaults have been applied. You can still edit any field before saving.
   </div>
-  <div class="mb-10 flex min-w-0 justify-end">
+  <div class="mb-10 grid min-w-0 grid-cols-1 items-stretch gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:gap-x-8 xl:hidden">
+    <div class="min-w-0 overflow-x-auto">
+      <ul class="inline-flex min-w-max flex-nowrap gap-1 border-b border-stone-900/10 text-center font-medium [&>li]:w-auto [&>li]:shrink-0 [&>li>div>button]:w-auto [&>li>div>button]:whitespace-nowrap lg:gap-2">
+        {{ event_form::tab_button(section = "details", icon = "event", label = "Details", active = true) -}}
+        {{ event_form::tab_button(section = "date-venue", icon = "calendar", label = "Date & Venue") -}}
+        {{ event_form::tab_button(section = "hosts-sponsors", icon = "user-plus", label = "Hosts & Speakers") -}}
+        {{ event_form::tab_button(section = "sessions", icon = "presentation", label = "Sessions") -}}
+        {% if payments_ready -%}
+          {{ event_form::tab_button(section = "payments", icon = "ticket", label = "Payments") -}}
+        {% endif -%}
+        {{ event_form::tab_button(section = "questions", icon = "list-check", label = "Questions") -}}
+        {{ event_form::tab_button(section = "cfs", icon = "megaphone", label = "CFS") -}}
+      </ul>
+    </div>
     <div class="flex min-w-28 flex-col items-stretch justify-center gap-2">
       <button id="event-preview-button"
               type="button"
