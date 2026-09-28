@@ -1,0 +1,198 @@
+{# Platform -#}
+<section id="platform"
+         class="relative overflow-hidden border-t border-[#E2DDD8] bg-[#1A1510] px-4 py-16 text-white sm:px-10 sm:py-24 lg:px-[max(2.5rem,calc((100vw-1180px)/2))]">
+  <div class="pointer-events-none absolute -left-48 top-8 h-96 w-96 rounded-full bg-[#3D7EFF]/15 blur-3xl"
+       aria-hidden="true"></div>
+  <div class="pointer-events-none absolute -right-40 bottom-0 h-[30rem] w-[30rem] rounded-full bg-[#C8A870]/15 blur-3xl"
+       aria-hidden="true"></div>
+
+  <div class="relative mx-auto max-w-[1180px]">
+    <div class="mb-12 flex max-w-3xl flex-col gap-5 sm:mb-16">
+      <div class="w-fit rounded-full border border-white/20 px-4 py-2 text-[11px] font-semibold tracking-[2.5px] text-[#EADCC9]">
+        THE GOUP PLATFORM
+      </div>
+      <h2 class="font-amethysta text-[42px] font-bold leading-[1.08] tracking-[-0.03em] sm:text-6xl">
+        From finding the opening to showing the outcome
+      </h2>
+      <p class="max-w-2xl text-lg leading-[1.7] text-white/65">
+        Discover opportunities, organize the people doing the work, and understand how your
+        community grows—all in one shared system.
+      </p>
+    </div>
+
+    <div class="grid gap-5 lg:grid-cols-3">
+      {# Opportunity board -#}
+      <article class="group flex min-h-[580px] flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-[#24201C] transition duration-300 hover:-translate-y-1 hover:border-[#90BBFF]/50">
+        <div class="flex items-start justify-between px-6 pb-5 pt-7 sm:px-7">
+          <div>
+            <div class="mb-3 text-[10px] font-semibold tracking-[0.22em] text-[#90BBFF] uppercase">01 · Discover</div>
+            <h3 class="font-amethysta text-3xl font-bold">Opportunity board</h3>
+          </div>
+          <div class="flex size-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl"
+               aria-hidden="true">↗</div>
+        </div>
+
+        <div class="mx-4 rounded-2xl border border-white/10 bg-[#161310] p-4 sm:mx-5">
+          <div class="mb-4 flex items-center gap-2">
+            <div class="flex h-9 flex-1 items-center rounded-xl border border-white/10 bg-white/[.04] px-3 text-xs text-white/40">
+              Search opportunities
+            </div>
+            <div class="flex size-9 items-center justify-center rounded-xl bg-[#3D7EFF] text-sm font-bold"
+                 aria-hidden="true">⌕</div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span class="rounded-full bg-[#3D7EFF]/20 px-3 py-1.5 text-[11px] font-semibold text-[#B8D1FF]">Jobs</span>
+            <span class="rounded-full border border-white/10 px-3 py-1.5 text-[11px] text-white/55">Grants</span>
+            <span class="rounded-full border border-white/10 px-3 py-1.5 text-[11px] text-white/55">Research</span>
+            <span class="rounded-full border border-white/10 px-3 py-1.5 text-[11px] text-white/55">Speaking</span>
+          </div>
+          <div class="mt-4 space-y-2.5">
+            <div class="rounded-xl border border-white/10 bg-white/[.04] p-3.5">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-sm font-semibold">AI research residency</span>
+                <span class="rounded-full bg-[#C7F5D8]/10 px-2 py-1 text-[9px] font-bold tracking-wide text-[#C7F5D8] uppercase">New</span>
+              </div>
+              <div class="mt-1.5 text-[11px] text-white/40">Research · Remote · Closes Oct 18</div>
+            </div>
+            <div class="rounded-xl border border-white/10 bg-white/[.04] p-3.5">
+              <div class="text-sm font-semibold">Open source community grant</div>
+              <div class="mt-1.5 text-[11px] text-white/40">Funding · Up to $25k · Rolling</div>
+            </div>
+          </div>
+        </div>
+
+        <ul class="flex flex-col gap-3 px-7 py-6 text-sm text-white/65">
+          <li class="flex gap-3"><span class="text-[#90BBFF]">•</span> Jobs, grants, funding, partnerships, speaking and research</li>
+          <li class="flex gap-3"><span class="text-[#90BBFF]">•</span> Saved searches and relevant notifications</li>
+        </ul>
+
+        <a href="/jobs"
+           hx-boost="true"
+           hx-target="body"
+           class="mx-7 mb-7 mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#B8D1FF]">
+          Explore opportunities <span aria-hidden="true">→</span>
+        </a>
+      </article>
+      {# End opportunity board -#}
+
+      {# Collaboration spaces -#}
+      <article class="group flex min-h-[580px] flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-[#24201C] transition duration-300 hover:-translate-y-1 hover:border-[#E9C98B]/50">
+        <div class="flex items-start justify-between px-6 pb-5 pt-7 sm:px-7">
+          <div>
+            <div class="mb-3 text-[10px] font-semibold tracking-[0.22em] text-[#E9C98B] uppercase">02 · Collaborate</div>
+            <h3 class="font-amethysta text-3xl font-bold">Community spaces</h3>
+          </div>
+          <div class="flex size-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl"
+               aria-hidden="true">◎</div>
+        </div>
+
+        <div class="mx-4 rounded-2xl border border-white/10 bg-[#F6F0E7] p-4 text-[#1A1510] sm:mx-5">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold">Community AI map</div>
+              <div class="mt-1 text-[10px] text-[#6B6058]">12 contributors · 3 goals</div>
+            </div>
+            <div class="flex -space-x-2" aria-label="Three active contributors">
+              <span class="flex size-7 items-center justify-center rounded-full border-2 border-[#F6F0E7] bg-[#3D5A8A] text-[9px] font-bold text-white">AM</span>
+              <span class="flex size-7 items-center justify-center rounded-full border-2 border-[#F6F0E7] bg-[#A46B48] text-[9px] font-bold text-white">JL</span>
+              <span class="flex size-7 items-center justify-center rounded-full border-2 border-[#F6F0E7] bg-[#5B7F62] text-[9px] font-bold text-white">SK</span>
+            </div>
+          </div>
+          <div class="mb-4 h-1.5 overflow-hidden rounded-full bg-[#DED6CB]">
+            <div class="h-full w-[68%] rounded-full bg-[#3D5A8A]"></div>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-sm">
+              <span class="size-2 rounded-full bg-[#5B7F62]"></span>
+              <span class="flex-1 text-[11px] font-semibold">Interview 20 maintainers</span>
+              <span class="text-[10px] text-[#8A7A6E]">18/20</span>
+            </div>
+            <div class="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-sm">
+              <span class="size-2 rounded-full bg-[#E2B657]"></span>
+              <span class="flex-1 text-[11px] font-semibold">Publish landscape v1</span>
+              <span class="text-[10px] text-[#8A7A6E]">Oct 4</span>
+            </div>
+            <div class="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-sm">
+              <span class="size-2 rounded-full bg-[#3D7EFF]"></span>
+              <span class="flex-1 text-[11px] font-semibold">Expert office hours</span>
+              <span class="text-[10px] text-[#8A7A6E]">Fri 10am</span>
+            </div>
+          </div>
+        </div>
+
+        <ul class="flex flex-col gap-3 px-7 py-6 text-sm text-white/65">
+          <li class="flex gap-3"><span class="text-[#E9C98B]">•</span> Project teams, goals, tasks and updates</li>
+          <li class="flex gap-3"><span class="text-[#E9C98B]">•</span> Expert office hours and outcome tracking</li>
+        </ul>
+
+        <a href="{% if user.logged_in -%}/dashboard/group{%- else -%}/log-in?next_url=/dashboard/group{%- endif %}"
+           hx-boost="{% if user.logged_in -%}
+                       true{%- else -%}false{%- endif %}"
+           class="mx-7 mb-7 mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#F1D9AA]">
+          Open collaboration spaces <span aria-hidden="true">→</span>
+        </a>
+      </article>
+      {# End collaboration spaces -#}
+
+      {# Distribution dashboard -#}
+      <article class="group flex min-h-[580px] flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-[#24201C] transition duration-300 hover:-translate-y-1 hover:border-[#A6D9B2]/50">
+        <div class="flex items-start justify-between px-6 pb-5 pt-7 sm:px-7">
+          <div>
+            <div class="mb-3 text-[10px] font-semibold tracking-[0.22em] text-[#A6D9B2] uppercase">03 · Grow</div>
+            <h3 class="font-amethysta text-3xl font-bold">Distribution dashboard</h3>
+          </div>
+          <div class="flex size-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl"
+               aria-hidden="true">⌁</div>
+        </div>
+
+        <div class="mx-4 rounded-2xl border border-white/10 bg-[#161310] p-4 sm:mx-5">
+          <div class="flex items-end justify-between">
+            <div>
+              <div class="text-[10px] tracking-wider text-white/40 uppercase">Attributed visits</div>
+              <div class="mt-1 text-3xl font-bold tracking-tight">4,281</div>
+            </div>
+            <div class="rounded-full bg-[#A6D9B2]/10 px-2.5 py-1 text-[10px] font-bold text-[#A6D9B2]">+24.6%</div>
+          </div>
+          <div class="mt-5 flex h-28 items-end gap-2"
+               aria-label="Visits trending upward">
+            <div class="h-[28%] flex-1 rounded-t bg-[#A6D9B2]/25"></div>
+            <div class="h-[42%] flex-1 rounded-t bg-[#A6D9B2]/30"></div>
+            <div class="h-[36%] flex-1 rounded-t bg-[#A6D9B2]/35"></div>
+            <div class="h-[58%] flex-1 rounded-t bg-[#A6D9B2]/45"></div>
+            <div class="h-[52%] flex-1 rounded-t bg-[#A6D9B2]/55"></div>
+            <div class="h-[74%] flex-1 rounded-t bg-[#A6D9B2]/70"></div>
+            <div class="h-[92%] flex-1 rounded-t bg-[#A6D9B2]"></div>
+          </div>
+          <div class="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4">
+            <div>
+              <div class="text-[9px] text-white/35">LinkedIn</div>
+              <div class="mt-1 text-xs font-bold">51%</div>
+            </div>
+            <div>
+              <div class="text-[9px] text-white/35">Partners</div>
+              <div class="mt-1 text-xs font-bold">32%</div>
+            </div>
+            <div>
+              <div class="text-[9px] text-white/35">Events</div>
+              <div class="mt-1 text-xs font-bold">17%</div>
+            </div>
+          </div>
+        </div>
+
+        <ul class="flex flex-col gap-3 px-7 py-6 text-sm text-white/65">
+          <li class="flex gap-3"><span class="text-[#A6D9B2]">•</span> Campaign links, UTM attribution and partner referrals</li>
+          <li class="flex gap-3"><span class="text-[#A6D9B2]">•</span> Social planning and a reusable event content library</li>
+        </ul>
+
+        <a href="{% if user.logged_in -%}/dashboard/alliance?tab=gtm{%- else -%}/log-in?next_url=/dashboard/alliance%3Ftab%3Dgtm{%- endif %}"
+           hx-boost="{% if user.logged_in -%}
+                       true{%- else -%}false{%- endif %}"
+           class="mx-7 mb-7 mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#BDE8C7]">
+          View distribution tools <span aria-hidden="true">→</span>
+        </a>
+      </article>
+      {# End distribution dashboard -#}
+    </div>
+  </div>
+</section>
+{# End platform -#}

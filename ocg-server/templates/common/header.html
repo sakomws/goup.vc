@@ -12,13 +12,18 @@
        class="inline-flex shrink-0 items-center gap-2 text-[#1A1510]"
        aria-label="GOUP home">
       {% if let Some(logo_url) = &site_settings.favicon_url -%}
-        <img class="h-8 w-8 min-w-8 max-w-8 rounded-lg object-contain" src="{{ logo_url }}" alt="" aria-hidden="true">
+        <img class="h-8 w-8 min-w-8 max-w-8 rounded-lg object-contain"
+             src="{{ logo_url }}"
+             alt=""
+             aria-hidden="true">
       {% endif -%}
       <span class="font-metrophobic text-lg font-semibold tracking-[-0.04em]">GOUP</span>
     </a>
     {# Centered nav links -#}
     <div class="pointer-events-none absolute inset-0 hidden items-center justify-center lg:flex">
       <div class="pointer-events-auto flex items-center gap-7">
+        <a href="/#platform"
+           class="text-[15px] text-[#3a2f25]/75 transition hover:text-[#1A1510]">Platform</a>
         <a href="{{ explore_events }}"
            hx-boost="true"
            hx-target="body"
@@ -38,7 +43,8 @@
                hx-target="body"
                class="block rounded-xl px-3 py-2.5 text-[#3a2f25] hover:bg-[#f8f3ec]">Remote roles</a>
             <a href="{% if user.logged_in -%}/dashboard/jobs{%- else -%}/log-in?next_url=/dashboard/jobs{%- endif %}"
-               hx-boost="{% if user.logged_in -%}true{%- else -%}false{%- endif %}"
+               hx-boost="{% if user.logged_in -%}
+                           true{%- else -%}false{%- endif %}"
                class="block rounded-xl px-3 py-2.5 text-[#3a2f25] hover:bg-[#f8f3ec]">Post a role</a>
           </div>
         </div>
@@ -121,6 +127,9 @@
            hx-target="body"
            class="block px-4 py-2.5 hover:bg-[#f8f3ec]"
            role="menuitem">Home</a>
+        <a href="/#platform"
+           class="block px-4 py-2.5 hover:bg-[#f8f3ec]"
+           role="menuitem">Platform</a>
         <a href="/search"
            hx-boost="true"
            hx-target="body"
