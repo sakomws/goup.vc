@@ -14,11 +14,11 @@ returns jsonb language sql stable as $$
         'members_only', p.members_only,
         'tags', p.tags,
         'published', p.published,
-        'created_at', extract(epoch from p.created_at),
+        'created_at', extract(epoch from p.created_at)::bigint,
         'opens_at', case when p.opens_at is null then null
-            else extract(epoch from p.opens_at) end,
+            else extract(epoch from p.opens_at)::bigint end,
         'closes_at', case when p.closes_at is null then null
-            else extract(epoch from p.closes_at) end,
+            else extract(epoch from p.closes_at)::bigint end,
         'posted_by_user_id', p.posted_by_user_id,
         'poster_username', p.poster_username,
         'poster_name', p.poster_name
@@ -163,11 +163,11 @@ returns jsonb language sql stable as $$
                 'description', description, 'apply_url', apply_url,
                 'location', location, 'remote', remote,
                 'members_only', members_only, 'tags', tags,
-                'published', published, 'created_at', extract(epoch from created_at),
+                'published', published, 'created_at', extract(epoch from created_at)::bigint,
                 'opens_at', case when opens_at is null then null
-                    else extract(epoch from opens_at) end,
+                    else extract(epoch from opens_at)::bigint end,
                 'closes_at', case when closes_at is null then null
-                    else extract(epoch from closes_at) end,
+                    else extract(epoch from closes_at)::bigint end,
                 'posted_by_user_id', posted_by_user_id,
                 'poster_username', poster_username, 'poster_name', poster_name
             )) order by created_at desc) from paged
@@ -270,7 +270,7 @@ returns jsonb language sql stable as $$
         'name', name, 'filters', filters, 'frequency', frequency,
         'active', active,
         'next_run_at', case when next_run_at is null then null
-            else extract(epoch from next_run_at) end
+            else extract(epoch from next_run_at)::bigint end
     ) order by created_at desc), '[]'::jsonb)
     from opportunity_saved_search where user_id = p_user_id
 $$;

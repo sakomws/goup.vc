@@ -113,20 +113,20 @@ export const initializeQrCodeModal = (root = document) => {
     link: getElementById(root, LINK_ID),
   };
 
-  const openButton = getElementById(root, OPEN_BUTTON_ID);
+  const openButtons = root.querySelectorAll(`#${OPEN_BUTTON_ID}`);
   const closeButton = getElementById(root, CLOSE_BUTTON_ID);
   const overlay = getElementById(root, OVERLAY_ID);
   const printButton = getElementById(root, PRINT_BUTTON_ID);
 
   const toggleModal = () => toggleModalVisibility(MODAL_ID);
 
-  if (openButton) {
+  openButtons.forEach((openButton) => {
     openButton.addEventListener("click", () => {
       if (updateModalContent(modal, openButton, elements, printButton)) {
         toggleModal();
       }
     });
-  }
+  });
 
   bindModalControlClicks([closeButton, overlay], toggleModal);
 

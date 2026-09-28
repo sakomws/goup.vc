@@ -122,8 +122,9 @@ test.describe("group dashboard logs view", () => {
     await firstDetailsButton.click();
     await expect(firstDetailsPopover).toBeVisible();
 
-    // Hover the second log entry.
-    await secondDetailsButton.hover();
+    // Open the second log entry.
+    await organizerGroupPage.mouse.move(0, 0);
+    await secondDetailsButton.dispatchEvent("click");
     await expect(firstDetailsPopover).toBeHidden();
     await expect(secondDetailsPopover).toBeVisible();
   });

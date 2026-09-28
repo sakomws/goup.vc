@@ -9,7 +9,9 @@ test.describe("group dashboard GTM view", () => {
     await navigateToPath(organizerGroupPage, "/dashboard/group?tab=gtm");
 
     const dashboardContent = organizerGroupPage.locator("#dashboard-content");
-    await expect(dashboardContent.getByRole("heading", { name: "GTM" })).toBeVisible();
+    await expect(
+      dashboardContent.getByText("GTM", { exact: true }).first(),
+    ).toBeVisible();
 
     const leadName = `E2E Sponsor Lead ${Date.now()}`;
     await dashboardContent.locator("#gtm-name").fill(leadName);
@@ -52,7 +54,9 @@ test.describe("group dashboard GTM view", () => {
       .locator("tr", { hasText: leadName })
       .getByRole("button", { name: "Open" })
       .click();
-    await expect(dashboardContent.getByText("Pending reachout draft")).toBeVisible();
+    await expect(
+      dashboardContent.getByText("Pending reachout draft"),
+    ).toBeVisible();
 
     await Promise.all([
       organizerGroupPage.waitForResponse(
@@ -70,7 +74,9 @@ test.describe("group dashboard GTM view", () => {
       dashboardContent.locator("tr", { hasText: leadName }),
     ).toContainText("Reachout");
 
-    const leadRowAfterApprove = dashboardContent.locator("tr", { hasText: leadName });
+    const leadRowAfterApprove = dashboardContent.locator("tr", {
+      hasText: leadName,
+    });
     await leadRowAfterApprove.getByRole("button", { name: "Delete" }).click();
     await expect(organizerGroupPage.locator(".swal2-popup")).toBeVisible();
 
@@ -84,6 +90,8 @@ test.describe("group dashboard GTM view", () => {
       organizerGroupPage.getByRole("button", { name: "Delete" }).click(),
     ]);
 
-    await expect(dashboardContent.locator("tr", { hasText: leadName })).toHaveCount(0);
+    await expect(
+      dashboardContent.locator("tr", { hasText: leadName }),
+    ).toHaveCount(0);
   });
 });

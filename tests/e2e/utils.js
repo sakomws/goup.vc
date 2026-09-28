@@ -456,7 +456,10 @@ export const getStatValue = (statsContainer, statLabel) => {
   const labelElement = statsContainer.getByText(statLabel, { exact: true });
   const statBlock = labelElement.locator("..");
 
-  return statBlock.locator("div").first();
+  return statBlock
+    .locator(":scope > div")
+    .filter({ hasText: /^\d[\d,]*$/ })
+    .first();
 };
 
 /**

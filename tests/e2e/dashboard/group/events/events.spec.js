@@ -25,9 +25,9 @@ import {
 
 // Open the payments section and retry until the tab state is active.
 const openPaymentsSection = async (page) => {
-  const paymentsSectionButton = page.locator(
-    'button[data-section="payments"]:visible',
-  );
+  const paymentsSectionButton = page
+    .locator('button[data-section="payments"]:visible')
+    .first();
 
   await paymentsSectionButton.scrollIntoViewIfNeeded();
   await expect(paymentsSectionButton).toBeVisible();
@@ -354,7 +354,9 @@ test.describe("group dashboard events view", () => {
 
     await organizerGroupPage.locator("button[data-section-next]").click();
     await expect(
-      organizerGroupPage.locator('button[data-section="date-venue"]:visible'),
+      organizerGroupPage
+        .locator('button[data-section="date-venue"]:visible')
+        .first(),
     ).toHaveAttribute("data-active", "true");
     await expect(organizerGroupPage.locator("#name")).toBeHidden();
     await expect(organizerGroupPage.locator("#starts_at")).toBeVisible();
@@ -367,14 +369,11 @@ test.describe("group dashboard events view", () => {
       TEST_EVENT_IDS.alpha.waitlistLab,
     );
 
-    const editSectionSelect = organizerGroupPage.locator(
-      'select[aria-label="Event form section"]',
-    );
     await expect(
-      editSectionSelect.locator('option[value="attendees"]'),
+      organizerGroupPage.locator('button[data-section="attendees"]').first(),
     ).toHaveText("Attendees");
     await expect(
-      editSectionSelect.locator('option[value="waitlist"]'),
+      organizerGroupPage.locator('button[data-section="waitlist"]').first(),
     ).toHaveText("Waitlist");
     await expect(organizerGroupPage.locator("#waitlist-loading")).toHaveCount(
       1,
@@ -445,7 +444,9 @@ test.describe("group dashboard events view", () => {
     // Fill schedule and online meeting details.
     await organizerGroupPage.locator("button[data-section-next]").click();
     await expect(
-      organizerGroupPage.locator('button[data-section="date-venue"]:visible'),
+      organizerGroupPage
+        .locator('button[data-section="date-venue"]:visible')
+        .first(),
     ).toHaveAttribute("data-active", "true");
     await selectTimezone(organizerGroupPage, "UTC");
     await expect(organizerGroupPage.locator("#starts_at")).toBeVisible();
@@ -487,6 +488,7 @@ test.describe("group dashboard events view", () => {
     await openEventUpdateFormByName(organizerGroupPage, eventName);
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
 
     // Verify the correct online meeting state persisted.
@@ -575,7 +577,9 @@ test.describe("group dashboard events view", () => {
     // Fill schedule and online meeting details.
     await organizerGroupPage.locator("button[data-section-next]").click();
     await expect(
-      organizerGroupPage.locator('button[data-section="date-venue"]:visible'),
+      organizerGroupPage
+        .locator('button[data-section="date-venue"]:visible')
+        .first(),
     ).toHaveAttribute("data-active", "true");
     await selectTimezone(organizerGroupPage, "UTC");
     await expect(organizerGroupPage.locator("#starts_at")).toBeVisible();
@@ -704,6 +708,7 @@ test.describe("group dashboard events view", () => {
     // Fill the recurring schedule and occurrence count.
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
     await selectTimezone(organizerGroupPage, "UTC");
     await expect(organizerGroupPage.locator("#starts_at")).toBeVisible();
@@ -821,6 +826,7 @@ test.describe("group dashboard events view", () => {
     // Fill the recurring schedule and occurrence count.
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
     await selectTimezone(organizerGroupPage, "UTC");
     await expect(organizerGroupPage.locator("#starts_at")).toBeVisible();
@@ -993,6 +999,7 @@ test.describe("group dashboard events view", () => {
     await organizerGroupPage.locator("#luma_url").fill(lumaUrl);
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
     await selectTimezone(organizerGroupPage, "UTC");
     await organizerGroupPage.locator("#starts_at").fill("2030-07-10T10:00");
@@ -1061,6 +1068,7 @@ test.describe("group dashboard events view", () => {
     );
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
     await expect(organizerGroupPage.locator("#starts_at")).toHaveValue("");
     await expect(organizerGroupPage.locator("#ends_at")).toHaveValue("");
@@ -1117,6 +1125,7 @@ test.describe("group dashboard events view", () => {
     // Fill the event schedule before configuring online recording.
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
     await selectTimezone(organizerGroupPage, "UTC");
     await organizerGroupPage.locator("#starts_at").fill("2030-06-10T10:00");
@@ -1176,6 +1185,7 @@ test.describe("group dashboard events view", () => {
     // Add a session with its own automatic recording override.
     await organizerGroupPage
       .locator('button[data-section="sessions"]:visible')
+      .first()
       .click();
     const sessionsSection = organizerGroupPage.locator("sessions-section");
     const addSessionButton = sessionsSection.getByRole("button", {
@@ -1267,6 +1277,7 @@ test.describe("group dashboard events view", () => {
     // Open date and venue details before checking event recording fields.
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
     await expect(
       eventOnlineDetails.locator(
@@ -1281,6 +1292,7 @@ test.describe("group dashboard events view", () => {
     // Reopen the session and verify session recording values persisted.
     await organizerGroupPage
       .locator('button[data-section="sessions"]:visible')
+      .first()
       .click();
     const sessionCard = organizerGroupPage.locator("session-card").filter({
       hasText: sessionName,
@@ -1326,9 +1338,9 @@ test.describe("group dashboard events view", () => {
 
     // Verify the create form hides unavailable payment controls.
     await expect(
-      organizerGroupWithoutPaymentsPage.locator(
-        'button[data-section="payments"]:visible',
-      ),
+      organizerGroupWithoutPaymentsPage
+        .locator('button[data-section="payments"]:visible')
+        .first(),
     ).toHaveCount(0);
     await expect(
       organizerGroupWithoutPaymentsPage.locator('[data-content="payments"]'),
@@ -1360,9 +1372,9 @@ test.describe("group dashboard events view", () => {
 
     // Verify the update form hides unavailable payment controls.
     await expect(
-      organizerGroupWithoutPaymentsPage.locator(
-        'button[data-section="payments"]:visible',
-      ),
+      organizerGroupWithoutPaymentsPage
+        .locator('button[data-section="payments"]:visible')
+        .first(),
     ).toHaveCount(0);
     await expect(
       organizerGroupWithoutPaymentsPage.locator('[data-content="payments"]'),
@@ -1387,7 +1399,9 @@ test.describe("group dashboard events view", () => {
 
     // Verify the create form exposes ticketing controls.
     await expect(
-      organizerGroupPage.locator('button[data-section="payments"]:visible'),
+      organizerGroupPage
+        .locator('button[data-section="payments"]:visible')
+        .first(),
     ).toBeVisible();
     await openPaymentsSection(organizerGroupPage);
     await expect(
@@ -1410,7 +1424,9 @@ test.describe("group dashboard events view", () => {
 
     // Verify the update form keeps seeded payment values.
     await expect(
-      organizerGroupPage.locator('button[data-section="payments"]:visible'),
+      organizerGroupPage
+        .locator('button[data-section="payments"]:visible')
+        .first(),
     ).toBeVisible();
     await openPaymentsSection(organizerGroupPage);
     await expect(
@@ -1459,6 +1475,7 @@ test.describe("group dashboard events view", () => {
     // Fill schedule and online meeting details.
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
     await selectTimezone(organizerGroupPage, "UTC");
     await organizerGroupPage.locator("#starts_at").fill("2030-11-12T18:00");
@@ -1564,6 +1581,7 @@ test.describe("group dashboard events view", () => {
     await openEventUpdateFormByName(organizerGroupPage, eventName);
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
 
     // Verify the reopened event keeps online meeting details.
@@ -1946,6 +1964,7 @@ test.describe("group dashboard events view", () => {
       // Fill registration questions for this values set.
       await organizerGroupPage
         .locator('button[data-section="questions"]:visible')
+        .first()
         .click({ force: true });
       await setRegistrationQuestions(
         organizerGroupPage,
@@ -1955,12 +1974,14 @@ test.describe("group dashboard events view", () => {
       // Fill hosts and speakers for this values set.
       await organizerGroupPage
         .locator('button[data-section="hosts-sponsors"]:visible')
+        .first()
         .click({ force: true });
       await setEventPeople(organizerGroupPage, values);
 
       // Fill date, venue, and meeting details for this values set.
       await organizerGroupPage
         .locator('button[data-section="date-venue"]:visible')
+        .first()
         .click({
           force: true,
         });
@@ -1992,9 +2013,9 @@ test.describe("group dashboard events view", () => {
         .fill(values.meetingRecordingUrl);
 
       // Fill CFS fields for this values set.
-      const cfsSectionButton = organizerGroupPage.locator(
-        'button[data-section="cfs"]:visible',
-      );
+      const cfsSectionButton = organizerGroupPage
+        .locator('button[data-section="cfs"]:visible')
+        .first();
       await cfsSectionButton.scrollIntoViewIfNeeded();
       await cfsSectionButton.click({ force: true });
       await organizerGroupPage
@@ -2150,6 +2171,7 @@ test.describe("group dashboard events view", () => {
     ).toHaveCount(updatedValues.tags.length);
     await organizerGroupPage
       .locator('button[data-section="questions"]:visible')
+      .first()
       .click();
     await expect(
       organizerGroupPage.locator(
@@ -2163,6 +2185,7 @@ test.describe("group dashboard events view", () => {
     ).toHaveValue(updatedValues.registrationQuestions[0].options[0].label);
     await organizerGroupPage
       .locator('button[data-section="hosts-sponsors"]:visible')
+      .first()
       .click();
     await expect(
       organizerGroupPage.locator(
@@ -2181,6 +2204,7 @@ test.describe("group dashboard events view", () => {
     ).toHaveValue(String(updatedValues.speakers[0].featured));
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
     await expect(
       organizerGroupPage.locator('input[name="timezone"]'),
@@ -2211,6 +2235,7 @@ test.describe("group dashboard events view", () => {
     ).toHaveValue(updatedValues.meetingRecordingUrl);
     await organizerGroupPage
       .locator('button[data-section="cfs"]:visible')
+      .first()
       .click();
     await expect(organizerGroupPage.locator("#cfs_enabled")).toHaveValue(
       "true",
@@ -2414,7 +2439,9 @@ test.describe("group dashboard events view", () => {
       // Fill date values in the date and venue tab.
       await organizerGroupPage.locator("button[data-section-next]").click();
       await expect(
-        organizerGroupPage.locator('button[data-section="date-venue"]:visible'),
+        organizerGroupPage
+          .locator('button[data-section="date-venue"]:visible')
+          .first(),
       ).toHaveAttribute("data-active", "true");
       await expect(organizerGroupPage.locator("#starts_at")).toBeVisible();
       await organizerGroupPage.locator("#starts_at").fill(values.startsAt);
@@ -2423,6 +2450,7 @@ test.describe("group dashboard events view", () => {
       // Fill CFS values in the CFS tab.
       await organizerGroupPage
         .locator('button[data-section="cfs"]:visible')
+        .first()
         .click();
       await expect(organizerGroupPage.locator("#cfs_starts_at")).toBeVisible();
       await organizerGroupPage
@@ -2475,6 +2503,7 @@ test.describe("group dashboard events view", () => {
     );
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
     await expect(organizerGroupPage.locator("#starts_at")).toHaveValue(
       updatedValues.startsAt,
@@ -2484,6 +2513,7 @@ test.describe("group dashboard events view", () => {
     );
     await organizerGroupPage
       .locator('button[data-section="cfs"]:visible')
+      .first()
       .click();
     await expect(organizerGroupPage.locator("#cfs_starts_at")).toHaveValue(
       updatedValues.cfsStartsAt,
@@ -2533,6 +2563,7 @@ test.describe("group dashboard events view", () => {
     // Remove dates from the event to trigger the sessions warning.
     await organizerGroupPage
       .locator('button[data-section="date-venue"]:visible')
+      .first()
       .click();
     await expect(organizerGroupPage.locator("#starts_at")).toBeVisible();
     await organizerGroupPage.locator("#starts_at").fill("");

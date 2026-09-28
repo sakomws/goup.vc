@@ -97,7 +97,7 @@ const createApprovalRequiredEvent = async (page, eventName) => {
 
   await page.locator("button[data-section-next]").click();
   await expect(
-    page.locator('button[data-section="date-venue"]:visible'),
+    page.locator('button[data-section="date-venue"]:visible').first(),
   ).toHaveAttribute("data-active", "true");
   await selectTimezone(page, "UTC");
   await page.locator("#starts_at").fill("2030-06-20T10:00");
@@ -1247,7 +1247,7 @@ test.describe("group dashboard attendees tab", () => {
       ).toHaveCount(0);
     });
 
-    test("organizer sees rejected refunds with disabled attendance cancellation", async ({
+    test("organizer can cancel attendance after a refund is rejected", async ({
       organizerGroupPage,
     }) => {
       // Load the attendees tab for the seeded refund review event.
@@ -1269,19 +1269,19 @@ test.describe("group dashboard attendees tab", () => {
       ).toBeVisible();
       await expect(rowActionsMenu).toBeVisible();
 
-      // Verify rejected paid attendees cannot be canceled manually.
+      // Verify rejected refunds restore the organizer cancellation action.
       await rowActionsMenu.locator("summary").click();
       const cancelAttendance = rowActionsMenu.getByRole("menuitem", {
         name: "Cancel attendance",
       });
-      await expect(cancelAttendance).toBeDisabled();
+      await expect(cancelAttendance).toBeEnabled();
       await expect(cancelAttendance).toHaveAttribute(
-        "title",
-        "Paid attendee attendance cannot be canceled from attendee actions.",
+        "hx-delete",
+        /\/attendance$/,
       );
     });
 
-    test("organizer sees approved refunds with disabled attendance cancellation", async ({
+    test("organizer can cancel attendance after a refund is approved", async ({
       organizerGroupPage,
     }) => {
       // Load the attendees tab for the seeded refund review event.
@@ -1303,15 +1303,15 @@ test.describe("group dashboard attendees tab", () => {
       ).toBeVisible();
       await expect(rowActionsMenu).toBeVisible();
 
-      // Verify approved paid attendees cannot be canceled manually.
+      // Verify approved refunds keep the organizer cancellation action available.
       await rowActionsMenu.locator("summary").click();
       const cancelAttendance = rowActionsMenu.getByRole("menuitem", {
         name: "Cancel attendance",
       });
-      await expect(cancelAttendance).toBeDisabled();
+      await expect(cancelAttendance).toBeEnabled();
       await expect(cancelAttendance).toHaveAttribute(
-        "title",
-        "Paid attendee attendance cannot be canceled from attendee actions.",
+        "hx-delete",
+        /\/attendance$/,
       );
     });
 

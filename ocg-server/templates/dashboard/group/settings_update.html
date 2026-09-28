@@ -556,6 +556,7 @@
   <div class="mt-10"
        hx-get="/dashboard/group/custom-domain"
        hx-trigger="load"
+       hx-target="this"
        hx-swap="innerHTML">
     <div class="flex items-center gap-2 text-sm text-stone-500">
       {{ ui::spinner(size = "size-5") -}}
