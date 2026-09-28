@@ -9,8 +9,8 @@ use uuid::Uuid;
 use crate::{
     db::PgExecutor,
     types::gtm::{
-        GtmAgentDraftList, GtmLead, GtmLeadCandidates, GtmLeadFilters, GtmLeadInput, GtmLeadList,
-        GtmReviewDraftResult,
+        GtmAgentDraftList, GtmDueTasks, GtmLead, GtmLeadCandidates, GtmLeadFilters, GtmLeadInput,
+        GtmLeadList, GtmReviewDraftResult, GtmSponsorPackages,
     },
 };
 
@@ -95,6 +95,51 @@ pub(crate) trait DBGtm {
         group_id: Option<Uuid>,
         limit: i32,
     ) -> Result<GtmLeadCandidates>;
+
+    /// List sponsor packages available in a scope.
+    async fn list_gtm_sponsor_packages(
+        &self,
+        alliance_id: Uuid,
+        group_id: Option<Uuid>,
+    ) -> Result<GtmSponsorPackages>;
+
+    /// List due open campaign tasks.
+    async fn list_due_gtm_tasks(
+        &self,
+        alliance_id: Uuid,
+        group_id: Option<Uuid>,
+    ) -> Result<GtmDueTasks>;
+
+    /// Execute a sponsor campaign create command returning its identifier.
+    async fn add_gtm_campaign_record(
+        &self,
+        function: &'static str,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        lead_id: Option<Uuid>,
+        input: &serde_json::Value,
+    ) -> Result<Uuid>;
+
+    /// Set task or deliverable workflow state.
+    async fn set_gtm_campaign_state(
+        &self,
+        function: &'static str,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        group_id: Option<Uuid>,
+        record_id: Uuid,
+        state: &str,
+    ) -> Result<()>;
+
+    /// Add a manual contact-history entry.
+    async fn add_gtm_lead_activity(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        lead_id: Uuid,
+        kind: &str,
+        body: &str,
+    ) -> Result<Uuid>;
 }
 
 #[async_trait]
@@ -244,6 +289,110 @@ where
         self.fetch_json_one(
             "select suggest_gtm_lead_candidates($1::uuid, $2::uuid, $3::int)",
             &[&alliance_id, &group_id, &limit],
+        )
+        .await
+    }
+
+    #[instrument(skip(self), err)]
+    async fn list_gtm_sponsor_packages(
+        &self,
+        alliance_id: Uuid,
+        group_id: Option<Uuid>,
+    ) -> Result<GtmSponsorPackages> {
+        self.fetch_json_one(
+            "select list_gtm_sponsor_packages($1::uuid, $2::uuid)",
+            &[&alliance_id, &group_id],
+        )
+        .await
+    }
+
+    #[instrument(skip(self), err)]
+    async fn list_due_gtm_tasks(
+        &self,
+        alliance_id: Uuid,
+        group_id: Option<Uuid>,
+    ) -> Result<GtmDueTasks> {
+        self.fetch_json_one(
+            "select list_due_gtm_tasks($1::uuid, $2::uuid)",
+            &[&alliance_id, &group_id],
+        )
+        .await
+    }
+
+    #[instrument(skip(self, input), err)]
+    async fn add_gtm_campaign_record(
+        &self,
+        function: &'static str,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        lead_id: Option<Uuid>,
+        input: &serde_json::Value,
+    ) -> Result<Uuid> {
+        let query = match function {
+            "package" => {
+                return self
+                    .fetch_scalar_one(
+                        "select add_gtm_sponsor_package($1::uuid, $2::uuid, $3::jsonb)",
+                        &[&actor_user_id, &alliance_id, &Json(input)],
+                    )
+                    .await;
+            }
+            "contact" => "select add_gtm_sponsor_contact($1::uuid, $2::uuid, $3::uuid, $4::jsonb)",
+            "proposal" => {
+                "select add_gtm_sponsor_proposal($1::uuid, $2::uuid, $3::uuid, $4::jsonb)"
+            }
+            "task" => "select add_gtm_task($1::uuid, $2::uuid, $3::uuid, $4::jsonb)",
+            "deliverable" => {
+                "select add_gtm_sponsor_deliverable($1::uuid, $2::uuid, $3::uuid, $4::jsonb)"
+            }
+            _ => anyhow::bail!("unknown GTM campaign record"),
+        };
+        self.fetch_scalar_one(
+            query,
+            &[&actor_user_id, &alliance_id, &lead_id, &Json(input)],
+        )
+        .await
+    }
+
+    #[instrument(skip(self), err)]
+    async fn set_gtm_campaign_state(
+        &self,
+        function: &'static str,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        group_id: Option<Uuid>,
+        record_id: Uuid,
+        state: &str,
+    ) -> Result<()> {
+        let query = match function {
+            "proposal" => {
+                "select set_gtm_sponsor_proposal_status($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::text)"
+            }
+            "task" => "select set_gtm_task_state($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::text)",
+            "deliverable" => {
+                "select set_gtm_sponsor_deliverable_state($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::text)"
+            }
+            _ => anyhow::bail!("unknown GTM campaign state"),
+        };
+        self.execute(
+            query,
+            &[&actor_user_id, &alliance_id, &group_id, &record_id, &state],
+        )
+        .await
+    }
+
+    #[instrument(skip(self), err)]
+    async fn add_gtm_lead_activity(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        lead_id: Uuid,
+        kind: &str,
+        body: &str,
+    ) -> Result<Uuid> {
+        self.fetch_scalar_one(
+            "select add_manual_gtm_lead_activity($1::uuid, $2::uuid, $3::uuid, $4::text, $5::text)",
+            &[&actor_user_id, &alliance_id, &lead_id, &kind, &body],
         )
         .await
     }

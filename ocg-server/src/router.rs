@@ -239,6 +239,10 @@ pub(crate) async fn setup(
             post(event::request_refund),
         )
         .route(
+            "/{alliance}/event/{event_id}/survey/{audience}",
+            get(event::survey_page).post(event::submit_survey),
+        )
+        .route(
             "/{alliance}/event/{event_id}/cfs-submissions",
             post(event::submit_cfs_submission),
         )
@@ -454,6 +458,14 @@ pub(crate) async fn setup(
         .route("/landscape", get(site::landscape::page))
         .route("/privacy", get(site::privacy::page))
         .route("/profiles/{username}", get(site::profile::page))
+        .route(
+            "/event-sponsors/{event_id}/{group_sponsor_id}/engagement",
+            post(event::sponsor_engagement),
+        )
+        .route(
+            "/sponsor-reports/{token}",
+            get(event::public_sponsor_report),
+        )
         .route("/search", get(site::search::page))
         .route(
             "/sponsor",

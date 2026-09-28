@@ -66,13 +66,13 @@ begin
         end,
         next_action_at = case
             when p_input ? 'next_action_at' and nullif(p_input->>'next_action_at', '') is not null
-                then to_timestamp((p_input->>'next_action_at')::bigint)
+                then (p_input->>'next_action_at')::timestamptz
             when p_input ? 'next_action_at' then null
             else next_action_at
         end,
         renewal_at = case
             when p_input ? 'renewal_at' and nullif(p_input->>'renewal_at', '') is not null
-                then to_timestamp((p_input->>'renewal_at')::bigint)
+                then (p_input->>'renewal_at')::timestamptz
             when p_input ? 'renewal_at' then null
             else renewal_at
         end,

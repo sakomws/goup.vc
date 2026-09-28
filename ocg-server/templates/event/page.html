@@ -33,10 +33,14 @@
 
 {% block scripts -%}
   {% if let Some(measurement_id) = &event.group.web_analytics_measurement_id -%}
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ measurement_id }}"></script>
+    <script async
+            src="https://www.googletagmanager.com/gtag/js?id={{ measurement_id }}"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
+
+      function gtag() {
+        dataLayer.push(arguments);
+      }
       gtag("js", new Date());
       gtag("config", "{{ measurement_id }}");
     </script>
@@ -49,6 +53,8 @@
   <script type="module" src="/static/js/common/modals/user-info-modal.js"></script>
   <script type="module" src="/static/js/common/modals/share-modal.js"></script>
   <script type="module" src="/static/js/common/cfs-label-selector.js"></script>
+  <script type="module" src="/static/js/event/registration-attribution.js"></script>
+  <script type="module" src="/static/js/event/sponsor-engagement.js"></script>
   <script type="module" src="/static/js/event/attendance.js"></script>
   <script type="module" src="/static/js/event/agenda-tabs.js"></script>
   <script type="module" src="/static/js/event/cfs.js"></script>
@@ -232,7 +238,10 @@
                     <p class="mt-1 whitespace-pre-line">{{ instructions }}</p>
                   {% endif -%}
                   {% if let Some(url) = &event.external_payment_url -%}
-                    <a href="{{ url }}" class="mt-2 inline-flex text-amber-900 underline" target="_blank" rel="noopener noreferrer">Open payment instructions</a>
+                    <a href="{{ url }}"
+                       class="mt-2 inline-flex text-amber-900 underline"
+                       target="_blank"
+                       rel="noopener noreferrer">Open payment instructions</a>
                   {% endif -%}
                   <p class="mt-2 text-amber-800">After you pay, an organizer will confirm your ticket.</p>
                 </div>
@@ -727,7 +736,11 @@
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for sponsor in event.sponsors -%}
-              {{ badges::sponsor_badge(name = sponsor.name, logo_url = sponsor.logo_url, website_url = sponsor.website_url, level = sponsor.level, with_level = true) -}}
+              <div data-sponsor-placement
+                   data-event-id="{{ event.event_id }}"
+                   data-sponsor-id="{{ sponsor.group_sponsor_id }}">
+                {{ badges::sponsor_badge(name = sponsor.name, logo_url = sponsor.logo_url, website_url = sponsor.website_url, level = sponsor.level, with_level = true) -}}
+              </div>
             {% endfor -%}
           </div>
         </div>

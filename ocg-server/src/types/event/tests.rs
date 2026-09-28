@@ -7,6 +7,22 @@ use crate::types::payments::{EventTicketCurrentPrice, EventTicketType};
 use super::*;
 
 #[test]
+fn registration_attribution_is_optional_and_preserves_campaign_fields() {
+    let empty = EventRegistrationAttribution::default();
+    assert!(empty.is_empty());
+
+    let attribution: EventRegistrationAttribution = serde_urlencoded::from_str(
+        "source=newsletter&referral_code=AMB42&utm_source=linkedin&utm_medium=social&utm_campaign=launch",
+    )
+    .unwrap();
+    assert!(!attribution.is_empty());
+    assert_eq!(attribution.source.as_deref(), Some("newsletter"));
+    assert_eq!(attribution.referral_code.as_deref(), Some("AMB42"));
+    assert_eq!(attribution.utm_source.as_deref(), Some("linkedin"));
+    assert!(attribution.validate().is_ok());
+}
+
+#[test]
 fn event_attendance_info_can_request_refund_allows_tbd_events() {
     let attendance = EventAttendanceInfo {
         is_checked_in: false,

@@ -4,7 +4,10 @@ use askama::Template;
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
-    gtm::{GTM_AGENTS, GTM_KINDS, GTM_STAGES, GtmLead, GtmLeadFilters, stage_label},
+    gtm::{
+        GTM_AGENTS, GTM_KINDS, GTM_LOST_REASONS, GTM_STAGES, GtmLead, GtmLeadFilters,
+        GtmSponsorPackage, GtmTask, stage_label,
+    },
     pagination::NavigationLinks,
 };
 
@@ -28,6 +31,10 @@ pub(crate) struct ListPage {
     pub stage_counts: serde_json::Map<String, serde_json::Value>,
     /// Pagination links.
     pub navigation_links: NavigationLinks,
+    /// Sponsor packages available in this scope.
+    pub packages: Vec<GtmSponsorPackage>,
+    /// Open tasks currently due.
+    pub due_tasks: Vec<GtmTask>,
 }
 
 #[allow(clippy::unused_self)]
@@ -76,6 +83,8 @@ pub(crate) struct DetailPage {
     pub dashboard_tab_url: String,
     /// Lead plus activity and drafts.
     pub lead: GtmLead,
+    /// Sponsor packages available for proposal creation.
+    pub packages: Vec<GtmSponsorPackage>,
 }
 
 #[allow(clippy::unused_self)]
@@ -112,8 +121,26 @@ impl DetailPage {
         self.lead.notes.as_deref().unwrap_or("")
     }
 
-    fn lost_reason_value(&self) -> &str {
-        self.lead.lost_reason.as_deref().unwrap_or("")
+    fn next_action_value(&self) -> String {
+        self.lead
+            .next_action_at
+            .map(|value| value.format("%Y-%m-%dT%H:%M").to_string())
+            .unwrap_or_default()
+    }
+
+    fn renewal_value(&self) -> String {
+        self.lead
+            .renewal_at
+            .map(|value| value.format("%Y-%m-%dT%H:%M").to_string())
+            .unwrap_or_default()
+    }
+
+    fn lost_reasons(&self) -> &'static [(&'static str, &'static str)] {
+        &GTM_LOST_REASONS
+    }
+
+    fn is_lost_reason(&self, code: &str) -> bool {
+        self.lead.lost_reason.as_deref() == Some(code)
     }
 
     fn is_suggested_stage(&self, stage: &str) -> bool {

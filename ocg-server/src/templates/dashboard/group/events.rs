@@ -15,13 +15,14 @@ use crate::{
     templates::{dashboard, filters, helpers::DATE_FORMAT},
     types::{
         event::{
-            EventCategory, EventCfsLabel, EventFull, EventKindSummary, EventRegistrationMode,
-            EventSummary, SessionKind, SessionKindSummary,
+            EventCategory, EventCfsLabel, EventFull, EventGrowth, EventKindSummary,
+            EventRegistrationMode, EventSummary, SessionKind, SessionKindSummary,
         },
         group::{GroupParentOption, GroupSponsor},
         pagination::{self, Pagination, ToRawQuery},
         payments::EventDiscountType,
         questionnaire::QuestionnaireQuestion,
+        survey::EventSurveyDashboard,
     },
     validation::{
         MAX_LEN_COUNTRY_CODE, MAX_LEN_DESCRIPTION, MAX_LEN_DESCRIPTION_SHORT, MAX_LEN_ENTITY_NAME,
@@ -131,6 +132,27 @@ pub(crate) struct UpdatePage {
     pub sponsors: Vec<GroupSponsor>,
     /// List of available timezones.
     pub timezones: Vec<String>,
+}
+
+/// Event growth and finances partial.
+#[derive(Debug, Clone, Template)]
+#[template(path = "dashboard/group/event_growth.html")]
+pub(crate) struct GrowthPage {
+    /// Whether manual finance entries can be changed.
+    pub can_manage_events: bool,
+    /// Event identifier used by finance actions.
+    pub event_id: Uuid,
+    /// Funnel, attribution, collaboration, and finance data.
+    pub growth: EventGrowth,
+}
+
+/// Aggregate and anonymous event survey results.
+#[derive(Debug, Clone, Template)]
+#[template(path = "dashboard/group/event_surveys.html")]
+pub(crate) struct SurveyDashboardPage {
+    pub event_id: Uuid,
+    pub audience: Option<String>,
+    pub dashboard: EventSurveyDashboard,
 }
 
 impl UpdatePage {

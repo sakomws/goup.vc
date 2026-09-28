@@ -42,8 +42,8 @@ use crate::{
     },
     types::{
         event::{
-            EventCategory, EventKindSummary as EventKind, EventLeaveOutcome,
-            SessionKindSummary as SessionKind,
+            EventCategory, EventGrowth, EventKindSummary as EventKind, EventLeaveOutcome,
+            EventSponsorReport, SessionKindSummary as SessionKind,
         },
         group::{GroupParentOption, GroupRole, GroupRoleSummary, GroupSponsor},
         payments::{GroupPaymentRecipient, PaymentProvider},
@@ -78,6 +78,15 @@ pub(crate) trait DBDashboardGroup {
         group_id: Uuid,
         event: &serde_json::Value,
         cfg_max_participants: &HashMap<MeetingProvider, i32>,
+    ) -> Result<Uuid>;
+
+    /// Adds a categorized manual event income or expense entry.
+    async fn add_event_finance_entry(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        entry: &serde_json::Value,
     ) -> Result<Uuid>;
 
     /// Adds a linked recurring event series to the database.
@@ -193,6 +202,14 @@ pub(crate) trait DBDashboardGroup {
     async fn delete_event(&self, actor_user_id: Uuid, group_id: Uuid, event_id: Uuid)
     -> Result<()>;
 
+    /// Deletes a manual event finance entry.
+    async fn delete_event_finance_entry(
+        &self,
+        group_id: Uuid,
+        event_id: Uuid,
+        event_finance_entry_id: Uuid,
+    ) -> Result<()>;
+
     /// Deletes a regular group member from the group.
     async fn delete_group_member(
         &self,
@@ -254,6 +271,27 @@ pub(crate) trait DBDashboardGroup {
         alliance_id: Uuid,
         group_id: Uuid,
     ) -> Result<Option<GroupPaymentRecipient>>;
+
+    /// Retrieves per-event growth and finance analytics.
+    async fn get_event_growth(&self, group_id: Uuid, event_id: Uuid) -> Result<EventGrowth>;
+
+    /// Retrieves an active public sponsor report by its unguessable token.
+    async fn get_public_event_sponsor_report(
+        &self,
+        token: Uuid,
+    ) -> Result<Option<EventSponsorReport>>;
+
+    /// Creates or rotates an event sponsor report share token.
+    async fn create_event_sponsor_report_share(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Uuid>;
+
+    /// Revokes an event sponsor report share token.
+    async fn revoke_event_sponsor_report_share(&self, group_id: Uuid, event_id: Uuid)
+    -> Result<()>;
 
     /// Retrieves default event payload for a group.
     async fn get_group_event_defaults(
@@ -656,6 +694,16 @@ pub(crate) trait DBDashboardGroup {
         event_defaults: Option<serde_json::Value>,
     ) -> Result<()>;
 
+    /// Updates organizer-entered, consented aggregate sponsor counts.
+    async fn update_event_sponsor_manual_engagement(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        group_sponsor_id: Uuid,
+        input: &serde_json::Value,
+    ) -> Result<()>;
+
     /// Updates the featured flag for an existing sponsor.
     async fn update_group_sponsor_featured(
         &self,
@@ -896,6 +944,22 @@ where
         .await
     }
 
+    /// [`DBDashboardGroup::add_event_finance_entry`]
+    #[instrument(skip(self, entry), err)]
+    async fn add_event_finance_entry(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        entry: &serde_json::Value,
+    ) -> Result<Uuid> {
+        self.fetch_scalar_one(
+            "select add_event_finance_entry($1::uuid, $2::uuid, $3::uuid, $4::jsonb)",
+            &[&actor_user_id, &group_id, &event_id, &Json(entry)],
+        )
+        .await
+    }
+
     /// [`DBDashboardGroup::add_event_series`]
     #[instrument(skip(self, events, recurrence, cfg_max_participants), err)]
     async fn add_event_series(
@@ -1072,6 +1136,21 @@ where
         .await
     }
 
+    /// [`DBDashboardGroup::delete_event_finance_entry`]
+    #[instrument(skip(self), err)]
+    async fn delete_event_finance_entry(
+        &self,
+        group_id: Uuid,
+        event_id: Uuid,
+        event_finance_entry_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select delete_event_finance_entry($1::uuid, $2::uuid, $3::uuid)",
+            &[&group_id, &event_id, &event_finance_entry_id],
+        )
+        .await
+    }
+
     /// [`DBDashboardGroup::delete_group_member`]
     #[instrument(skip(self), err)]
     async fn delete_group_member(
@@ -1201,6 +1280,58 @@ where
             )
             ",
             &[&alliance_id, &group_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::get_event_growth`]
+    #[instrument(skip(self), err)]
+    async fn get_event_growth(&self, group_id: Uuid, event_id: Uuid) -> Result<EventGrowth> {
+        self.fetch_json_one(
+            "select get_event_growth($1::uuid, $2::uuid)",
+            &[&group_id, &event_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::get_public_event_sponsor_report`]
+    #[instrument(skip(self), err)]
+    async fn get_public_event_sponsor_report(
+        &self,
+        token: Uuid,
+    ) -> Result<Option<EventSponsorReport>> {
+        self.fetch_json_opt(
+            "select get_public_event_sponsor_report($1::uuid)",
+            &[&token],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::create_event_sponsor_report_share`]
+    #[instrument(skip(self), err)]
+    async fn create_event_sponsor_report_share(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Uuid> {
+        self.fetch_scalar_one(
+            "select create_event_sponsor_report_share($1::uuid, $2::uuid, $3::uuid)",
+            &[&actor_user_id, &group_id, &event_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::revoke_event_sponsor_report_share`]
+    #[instrument(skip(self), err)]
+    async fn revoke_event_sponsor_report_share(
+        &self,
+        group_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select revoke_event_sponsor_report_share($1::uuid, $2::uuid)",
+            &[&group_id, &event_id],
         )
         .await
     }
@@ -2213,6 +2344,29 @@ where
         self.execute(
             "select update_group_event_defaults($1::uuid, $2::uuid, $3::jsonb)",
             &[&actor_user_id, &group_id, &Json(&event_defaults)],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::update_event_sponsor_manual_engagement`]
+    #[instrument(skip(self, input), err)]
+    async fn update_event_sponsor_manual_engagement(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        group_sponsor_id: Uuid,
+        input: &serde_json::Value,
+    ) -> Result<()> {
+        self.execute(
+            "select update_event_sponsor_manual_engagement($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::jsonb)",
+            &[
+                &actor_user_id,
+                &group_id,
+                &event_id,
+                &group_sponsor_id,
+                &Json(input),
+            ],
         )
         .await
     }
