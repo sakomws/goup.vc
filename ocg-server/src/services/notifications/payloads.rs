@@ -5,10 +5,12 @@ use uuid::Uuid;
 
 use crate::{
     config::HttpServerConfig,
+    templates::dashboard::group::cohosts::EventCohostNotificationData,
     templates::notifications::{
-        EventAttendanceCanceled, EventCanceled, EventInvitation, EventPublished,
-        EventRefundApproved, EventRefundRejected, EventRescheduled, EventWaitlistJoined,
-        EventWaitlistLeft, EventWaitlistPromoted, EventWelcome, SpeakerWelcome,
+        EventAttendanceCanceled, EventCanceled, EventCohostInvitation, EventInvitation,
+        EventPublished, EventRefundApproved, EventRefundRejected, EventRescheduled,
+        EventWaitlistJoined, EventWaitlistLeft, EventWaitlistPromoted, EventWelcome,
+        SpeakerWelcome,
     },
     types::{event::EventSummary, site::SiteSettings},
     util::{
@@ -17,6 +19,31 @@ use crate::{
 };
 
 use super::{NewNotification, NotificationKind};
+
+/// Builds a pending event co-host invitation notification.
+pub(crate) fn build_event_cohost_invitation_notification(
+    data: &EventCohostNotificationData,
+    recipients: Vec<Uuid>,
+    server_cfg: &HttpServerConfig,
+    site_settings: &SiteSettings,
+) -> Result<NewNotification> {
+    let base_url = notification_base_url(server_cfg);
+    let template_data = EventCohostInvitation {
+        cohost_group_name: data.cohost_group_name.clone(),
+        event_name: data.event_name.clone(),
+        link: format!("{base_url}/dashboard/user?tab=invitations"),
+        message: data.message.clone(),
+        primary_group_name: data.primary_group_name.clone(),
+        theme: site_settings.theme.clone(),
+    };
+
+    Ok(NewNotification {
+        attachments: vec![],
+        kind: NotificationKind::EventCohostInvitation,
+        recipients,
+        template_data: Some(serde_json::to_value(&template_data)?),
+    })
+}
 
 /// Builds an event attendance cancellation notification.
 pub(crate) fn build_event_attendance_canceled_notification(
@@ -332,6 +359,43 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn test_build_event_cohost_invitation_notification_returns_expected_payload() {
+        let recipient_user_id = Uuid::new_v4();
+        let data = EventCohostNotificationData {
+            cohost_group_name: "Peer Group".to_string(),
+            event_name: "Community Summit".to_string(),
+            message: Some("Let's collaborate".to_string()),
+            primary_group_name: "Primary Group".to_string(),
+        };
+        let site_settings = sample_site_settings();
+        let server_cfg = sample_server_cfg();
+
+        let notification = build_event_cohost_invitation_notification(
+            &data,
+            vec![recipient_user_id],
+            &server_cfg,
+            &site_settings,
+        )
+        .expect("notification to be built");
+
+        assert!(notification.attachments.is_empty());
+        assert!(matches!(
+            notification.kind,
+            NotificationKind::EventCohostInvitation
+        ));
+        assert_eq!(notification.recipients, vec![recipient_user_id]);
+        let template: EventCohostInvitation =
+            serde_json::from_value(notification.template_data.expect("template data"))
+                .expect("template data to deserialize");
+        assert_eq!(template.event_name, "Community Summit");
+        assert_eq!(
+            template.link,
+            "https://example.test/dashboard/user?tab=invitations"
+        );
+        assert_eq!(template.message.as_deref(), Some("Let's collaborate"));
+    }
 
     #[test]
     fn test_build_event_attendance_canceled_notification_returns_expected_payload() {

@@ -47,6 +47,19 @@ pub(crate) struct EventCohostCandidate {
     pub same_alliance: bool,
 }
 
+/// Display data used to compose a co-host invitation notification.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct EventCohostNotificationData {
+    /// Invited peer group display name.
+    pub cohost_group_name: String,
+    /// Event display name.
+    pub event_name: String,
+    /// Optional note supplied by the inviting organizer.
+    pub message: Option<String>,
+    /// Primary host group display name.
+    pub primary_group_name: String,
+}
+
 /// A pending co-host invitation shown to the invited group.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct EventCohostInvitation {

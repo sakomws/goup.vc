@@ -232,6 +232,13 @@ and are removed when detached from the event.
 Most organizer time is spent in [Events](/dashboard/group?tab=events ':ignore'): creating drafts,
 publishing, managing CFS, reviewing submissions, and running attendance/check-in flows.
 
+Event organizers with `group.events.write` can invite a peer group to co-host.
+If the requester cannot manage the peer group, the request remains pending and
+appears both in that group's existing co-host inbox and in every eligible
+organizer's [personal Invitations tab](/dashboard/user?tab=invitations ':ignore').
+Approval and rejection use the same target-group permission check in both
+places, and repeated submissions or decisions are handled safely.
+
 List classification is based on event start time:
 
 - `Upcoming events` includes items whose start time has not yet passed.

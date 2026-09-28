@@ -329,6 +329,7 @@ select results_eq(
         ('email-verification', false),
         ('event-attendance-canceled', false),
         ('event-canceled', false),
+        ('event-cohost-invitation', true),
         ('event-custom', true),
         ('event-external-payment-expired', false),
         ('event-external-payment-pending', false),

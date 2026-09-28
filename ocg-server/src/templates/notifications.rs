@@ -158,6 +158,24 @@ pub(crate) struct EventInvitation {
     pub theme: Theme,
 }
 
+/// Template for an event co-host invitation sent to eligible organizers.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_cohost_invitation.html")]
+pub(crate) struct EventCohostInvitation {
+    /// Invited peer group display name.
+    pub cohost_group_name: String,
+    /// Event display name.
+    pub event_name: String,
+    /// Link to the personal invitations dashboard.
+    pub link: String,
+    /// Optional note supplied by the primary organizer.
+    pub message: Option<String>,
+    /// Primary host group display name.
+    pub primary_group_name: String,
+    /// Theme configuration for the site.
+    pub theme: Theme,
+}
+
 /// Template for event published notification.
 #[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "notifications/event_published.html")]

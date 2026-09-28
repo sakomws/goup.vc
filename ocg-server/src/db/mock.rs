@@ -838,6 +838,14 @@ mock! {
             cohost_group_id: Uuid,
             message: Option<String>,
         ) -> Result<Uuid>;
+        async fn claim_event_cohost_invitation_recipients(
+            &self,
+            event_cohost_id: Uuid,
+        ) -> Result<Vec<Uuid>>;
+        async fn get_event_cohost_notification_data(
+            &self,
+            event_cohost_id: Uuid,
+        ) -> Result<crate::templates::dashboard::group::cohosts::EventCohostNotificationData>;
         async fn decide_event_cohost(
             &self,
             actor_user_id: Uuid,
@@ -1140,6 +1148,12 @@ mock! {
             actor_user_id: Uuid,
             session_proposal_id: Uuid,
         ) -> Result<()>;
+        async fn decide_user_event_cohost(
+            &self,
+            actor_user_id: Uuid,
+            event_cohost_id: Uuid,
+            approve: bool,
+        ) -> Result<()>;
         async fn count_user_pending_invitations(&self, user_id: Uuid) -> Result<i64>;
         async fn add_session_proposal(
             &self,
@@ -1168,6 +1182,10 @@ mock! {
             &self,
             user_id: Uuid,
         ) -> Result<Vec<crate::templates::dashboard::user::affiliations::UserAffiliation>>;
+        async fn list_user_event_cohost_invitations(
+            &self,
+            user_id: Uuid,
+        ) -> Result<Vec<crate::templates::dashboard::user::invitations::EventCohostInvitation>>;
         async fn reject_alliance_team_invitation(
             &self,
             actor_user_id: Uuid,

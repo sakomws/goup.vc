@@ -18,7 +18,10 @@ use crate::{
             analytics::GroupDashboardStats,
             attendees::{AttendeesOutput, SearchEventAttendeesFilters},
             coffee_meet::CoffeeMeetSubscriber,
-            cohosts::{EventCohostCandidate, EventCohostInvitation, EventCohostRequest},
+            cohosts::{
+                EventCohostCandidate, EventCohostInvitation, EventCohostNotificationData,
+                EventCohostRequest,
+            },
             events::{
                 ApprovedSubmissionSummary, CfsSubmissionStatus, EventsListFilters, GroupEvents,
             },
@@ -387,6 +390,18 @@ pub(crate) trait DBDashboardGroup {
         cohost_group_id: Uuid,
         message: Option<String>,
     ) -> Result<Uuid>;
+
+    /// Claims organizer recipients for a pending co-host invitation email.
+    async fn claim_event_cohost_invitation_recipients(
+        &self,
+        event_cohost_id: Uuid,
+    ) -> Result<Vec<Uuid>>;
+
+    /// Gets the display data for a co-host invitation email.
+    async fn get_event_cohost_notification_data(
+        &self,
+        event_cohost_id: Uuid,
+    ) -> Result<EventCohostNotificationData>;
 
     /// Accepts or rejects a co-host invitation for the selected group.
     async fn decide_event_cohost(
@@ -1662,6 +1677,32 @@ where
                 &cohost_group_id,
                 &message,
             ],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::claim_event_cohost_invitation_recipients`]
+    #[instrument(skip(self), err)]
+    async fn claim_event_cohost_invitation_recipients(
+        &self,
+        event_cohost_id: Uuid,
+    ) -> Result<Vec<Uuid>> {
+        self.fetch_scalar_one(
+            "select claim_event_cohost_invitation_recipients($1::uuid)",
+            &[&event_cohost_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::get_event_cohost_notification_data`]
+    #[instrument(skip(self), err)]
+    async fn get_event_cohost_notification_data(
+        &self,
+        event_cohost_id: Uuid,
+    ) -> Result<EventCohostNotificationData> {
+        self.fetch_json_one(
+            "select get_event_cohost_notification_data($1::uuid)",
+            &[&event_cohost_id],
         )
         .await
     }

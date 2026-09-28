@@ -29,5 +29,21 @@ returns bigint as $$
             from group_team gt
             where gt.user_id = p_user_id
               and gt.accepted = false
+        ) +
+        (
+            select count(*)
+            from event_cohost ec
+            join event e using (event_id)
+            join "group" g on g.group_id = ec.cohost_group_id
+            where ec.status = 'pending'
+              and e.deleted = false
+              and g.active = true
+              and g.deleted = false
+              and user_has_group_permission(
+                  g.alliance_id,
+                  g.group_id,
+                  p_user_id,
+                  'group.events.write'
+              )
         );
 $$ language sql;

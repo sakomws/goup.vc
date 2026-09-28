@@ -177,6 +177,71 @@ description = "Manage invitations to join groups.") -}}
 </div>
 {# End Groups Invitations -#}
 
+{# Co-host Invitations -#}
+{{ dashboard::form_title(title = "Co-host Invitations",
+description = "Review event co-host requests for every group you can manage.") -}}
+
+<div class="mt-10">
+  {% if event_cohost_invitations.is_empty() -%}
+    <div class="mb-10 rounded-xl border border-stone-200 bg-white px-8 py-12 text-center">
+      <div class="mx-auto mb-4 svg-icon size-10 icon-calendar bg-stone-300"></div>
+      <h3 class="font-semibold text-stone-900">No pending co-host invitations</h3>
+      <p class="mt-1 text-sm text-stone-500">New requests for your groups will appear here.</p>
+    </div>
+  {% else -%}
+    <div class="mb-10 grid grid-cols-1 gap-4 xl:grid-cols-2">
+      {% for invitation in event_cohost_invitations -%}
+        <article class="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <h3 class="truncate font-semibold text-stone-950">{{ invitation.event_name }}</h3>
+              <p class="mt-1 text-sm text-stone-600">
+                <span class="font-medium text-stone-900">{{ invitation.primary_group_name }}</span>
+                invited
+                <span class="font-medium text-stone-900">{{ invitation.cohost_group_name }}</span>
+              </p>
+              <p class="mt-1 text-xs text-stone-500">
+                Requested {{ invitation.requested_at.format(DATE_FORMAT_2) }}
+                {% if let Some(starts_at) = invitation.event_starts_at -%}
+                  · Event starts {{ starts_at.format(DATE_FORMAT_2) }}
+                {% endif -%}
+              </p>
+            </div>
+            <a href="{{ invitation.event_url() }}"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="btn-primary-outline btn-mini whitespace-nowrap">View event</a>
+          </div>
+          {% if let Some(message) = &invitation.message -%}
+            <p class="mt-4 rounded-lg bg-stone-50 p-3 text-sm text-stone-700">{{ message }}</p>
+          {% endif -%}
+          <div class="mt-5 flex justify-end gap-2 border-t border-stone-100 pt-4">
+            <button id="reject-cohost-{{ invitation.event_cohost_id }}"
+                    type="button"
+                    class="btn-tertiary px-3 py-1.5 text-xs"
+                    hx-put="/dashboard/user/invitations/cohost/{{ invitation.event_cohost_id }}/reject"
+                    hx-indicator="#dashboard-spinner"
+                    hx-trigger="confirmed"
+                    hx-disabled-elt="this"
+                    data-confirm-action
+                    data-confirm-message="Reject this co-host invitation?"
+                    data-confirm-text="Yes"
+                    data-error-message="Something went wrong rejecting this invitation. Please try again later.">
+              Reject
+            </button>
+            <button type="button"
+                    class="btn-primary px-3 py-1.5 text-xs"
+                    hx-put="/dashboard/user/invitations/cohost/{{ invitation.event_cohost_id }}/accept"
+                    hx-indicator="#dashboard-spinner"
+                    hx-disabled-elt="this">Accept</button>
+          </div>
+        </article>
+      {% endfor -%}
+    </div>
+  {% endif -%}
+</div>
+{# End Co-host Invitations -#}
+
 {# Event Invitations -#}
 {{ dashboard::form_title(title = "Event Invitations",
 description = "Manage invitations to attend events.") -}}

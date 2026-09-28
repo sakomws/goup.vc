@@ -90,27 +90,33 @@ Notification preferences:
 
 - `Receive optional notifications` controls broader announcements such as new event
   announcements, event reminders, and custom messages from organizers.
-- Turning this off does not disable account, invitation, registration, speaker, refund, waitlist,
-  cancellation, or reschedule updates.
+- Turning this off suppresses co-host request email but not the in-dashboard
+  request. It does not disable account, direct team/event invitation,
+  registration, speaker, refund, waitlist, cancellation, or reschedule updates.
 
 ![User profile area](../screenshots/dashboard-user-profile.png)
 
 ## Invitations: Unlock Organizer Access
 
-When a alliance or group invites you to help run operations, or an organizer
-invites you to attend an event, the invitation appears here. Accepting an
-invitation updates your access or confirms your event attendance.
+When an alliance or group invites you to help run operations, an organizer
+invites you to attend an event, or another group asks one of your groups to
+co-host, the invitation appears here. Accepting an invitation updates your
+access, confirms event attendance, or approves the co-host relationship.
 
 Invitation statuses:
 
 - Alliance and group team invites: Invitation sent, accepted, rejected.
 - Event invitations: Invitation sent, accepted, rejected.
+- Co-host invitations: Pending requests appear across every group where you
+  hold `group.events.write`; no selected-group switch is required.
 - Pending team invites do not grant dashboard access until accepted.
 - Invitation rows include the role that will be assigned on acceptance.
 - Pending event invitations do not make you an attendee until accepted.
 
 When someone invites you to a team, you receive an in-app and email invitation with a direct path
-to accept or decline.
+to accept or decline. Eligible organizers also receive an optional email for a pending co-host
+request. A single organizer receives only one copy even when both alliance and group roles grant
+the permission.
 
 When someone invites you to an event by email, sign in with GitHub, LinkedIn, or email using the
 same address the invitation was sent to. A Linux Foundation account is not required. If the email
@@ -122,8 +128,9 @@ Typical post-accept behavior:
 1. Access is granted to the related scope.
 2. The assigned alliance/group role becomes active for permission checks.
 3. Event invitations become confirmed attendance and send the normal event confirmation.
-4. Pending invitation state clears.
-5. A refresh or re-login may be needed before navigation updates.
+4. Co-host approval adds the event to the invited group's co-hosted event surfaces.
+5. Pending invitation state clears.
+6. A refresh or re-login may be needed before navigation updates.
 
 If organizer dashboards still do not appear, see
 [Choose Your Dashboard](../getting-started/choose-dashboard.md) and

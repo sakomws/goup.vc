@@ -945,6 +945,14 @@ pub(super) fn setup_user_dashboard_router() -> Router<State> {
             put(dashboard::user::invitations::reject_event_attendee_invitation),
         )
         .route(
+            "/invitations/cohost/{event_cohost_id}/accept",
+            put(dashboard::user::invitations::accept_event_cohost_invitation),
+        )
+        .route(
+            "/invitations/cohost/{event_cohost_id}/reject",
+            put(dashboard::user::invitations::reject_event_cohost_invitation),
+        )
+        .route(
             "/invitations/group/{group_id}/accept",
             put(dashboard::user::invitations::accept_group_team_invitation),
         )

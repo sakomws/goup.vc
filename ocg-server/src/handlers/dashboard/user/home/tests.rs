@@ -299,6 +299,10 @@ async fn test_page_invitations_tab_success() {
         .times(1)
         .withf(move |uid| *uid == user_id)
         .returning(move |_| Ok(event_invitations.clone()));
+    db.expect_list_user_event_cohost_invitations()
+        .times(1)
+        .withf(move |uid| *uid == user_id)
+        .returning(move |_| Ok(Vec::new()));
     db.expect_list_user_group_team_invitations()
         .times(1)
         .withf(move |uid| *uid == user_id)

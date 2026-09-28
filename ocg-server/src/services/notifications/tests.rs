@@ -649,6 +649,32 @@ fn test_delivery_worker_prepare_content_event_invitation() {
 }
 
 #[test]
+fn test_delivery_worker_prepare_content_event_cohost_invitation() {
+    let notification = Notification {
+        attachments: vec![],
+        email: "organizer@example.test".to_string(),
+        kind: NotificationKind::EventCohostInvitation,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(json!({
+            "cohost_group_name": "Peer Group",
+            "event_name": "Community Summit",
+            "link": "https://example.test/dashboard/user?tab=invitations",
+            "message": "Let's collaborate",
+            "primary_group_name": "Primary Group",
+            "theme": { "primary_color": "#000000" }
+        })),
+    };
+
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    assert_eq!(subject, "Co-host invitation: Community Summit");
+    assert!(body.contains("Primary Group"));
+    assert!(body.contains("Peer Group"));
+    assert!(body.contains("collaborate"));
+    assert!(body.contains("https://example.test/dashboard/user?tab=invitations"));
+}
+
+#[test]
 fn test_delivery_worker_prepare_content_event_published() {
     // Setup notification
     let notification = Notification {

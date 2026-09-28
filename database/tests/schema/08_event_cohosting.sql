@@ -1,5 +1,5 @@
 begin;
-select plan(13);
+select plan(20);
 
 \set primaryAlliance '71000000-0000-0000-0000-000000000001'
 \set cohostAlliance '71000000-0000-0000-0000-000000000002'
@@ -12,9 +12,9 @@ select plan(13);
 \set cohostUser '74000000-0000-0000-0000-000000000002'
 \set eventID '75000000-0000-0000-0000-000000000001'
 
-insert into "user" (user_id, auth_hash, email, username) values
-    (:'primaryUser', 'cohost-primary', 'cohost-primary@example.com', 'cohost-primary'),
-    (:'cohostUser', 'cohost-target', 'cohost-target@example.com', 'cohost-target');
+insert into "user" (user_id, auth_hash, email, email_verified, username) values
+    (:'primaryUser', 'cohost-primary', 'cohost-primary@example.com', true, 'cohost-primary'),
+    (:'cohostUser', 'cohost-target', 'cohost-target@example.com', true, 'cohost-target');
 
 insert into alliance (alliance_id, name, display_name, description, logo_url, banner_url, banner_mobile_url) values
     (:'primaryAlliance', 'cohost-primary', 'Co-host primary', 'Primary test alliance', 'https://example.com/logo.png', 'https://example.com/banner.png', 'https://example.com/mobile.png'),
@@ -49,6 +49,8 @@ select has_table('group_cohost_notification_preference', 'co-host notification p
 select has_table('event_cohost_delivery', 'calendar delivery idempotency is persisted');
 select has_function('request_event_cohost', array['uuid', 'uuid', 'uuid', 'text']::name[]);
 select has_function('claim_event_cohost_delivery', array['uuid', 'uuid', 'uuid', 'text']::name[]);
+select has_function('claim_event_cohost_invitation_recipients', array['uuid']::name[]);
+select has_function('list_user_event_cohost_invitations', array['uuid']::name[]);
 
 select ok(
     (list_event_cohost_candidates(:'primaryUser', :'eventID', 20)::jsonb @> jsonb_build_array(jsonb_build_object('group_id', :'cohostGroup'::uuid))),
@@ -64,6 +66,33 @@ select is(
     (select event_cohost_id from event_cohost where event_id = :'eventID' and cohost_group_id = :'cohostGroup'),
     'repeated invitation requests are idempotent'
 );
+select ok(
+    list_user_event_cohost_invitations(:'cohostUser')::jsonb
+        @> jsonb_build_array(jsonb_build_object(
+            'event_id', :'eventID'::uuid,
+            'cohost_group_id', :'cohostGroup'::uuid
+        )),
+    'an eligible organizer sees pending invitations across their groups'
+);
+select is(
+    count_user_pending_invitations(:'cohostUser'),
+    1::bigint,
+    'co-host requests contribute to the personal pending invitation count'
+);
+select is(
+    claim_event_cohost_invitation_recipients(
+        (select event_cohost_id from event_cohost where event_id = :'eventID')
+    ),
+    array[:'cohostUser'::uuid],
+    'the verified opted-in organizer is claimed for invitation delivery'
+);
+select is(
+    claim_event_cohost_invitation_recipients(
+        (select event_cohost_id from event_cohost where event_id = :'eventID')
+    ),
+    array[]::uuid[],
+    'a retried invitation delivery claim is idempotently suppressed'
+);
 select lives_ok(
     $$select decide_event_cohost(
         '74000000-0000-0000-0000-000000000002',
@@ -71,6 +100,14 @@ select lives_ok(
         true
     )$$,
     'a target organizer can approve its invitation'
+);
+select lives_ok(
+    $$select decide_event_cohost(
+        '74000000-0000-0000-0000-000000000002',
+        (select event_cohost_id from event_cohost where event_id = '75000000-0000-0000-0000-000000000001'),
+        true
+    )$$,
+    'repeating the same co-host decision is idempotent'
 );
 select ok(
     event_is_visible_to_group(:'eventID', :'cohostGroup'),

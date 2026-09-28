@@ -1,0 +1,33 @@
+{% extends "notifications/base.html" -%}
+{% import "macros/email.html" as email -%}
+
+{% block subject -%}
+  Co-host invitation: {{ event_name }}
+{% endblock subject -%}
+
+{% block preheader -%}
+  {{ primary_group_name }} invited {{ cohost_group_name }} to co-host {{ event_name }}.
+{% endblock preheader -%}
+
+{% block content -%}
+  <p class="default mb-30" style="margin-bottom: 30px">
+    <strong>{{ primary_group_name }}</strong> invited
+    <strong>{{ cohost_group_name }}</strong> to co-host
+    <strong>{{ event_name }}</strong>.
+    {% if let Some(message) = message -%}
+      <br />
+      <br />
+      Message from the inviting organizer: {{ message }}
+    {% endif -%}
+    <br />
+    <br />
+    Review and approve or reject this invitation from your personal dashboard.
+  </p>
+
+  {{ email::button(link = link, text = "Review invitation", color = theme.primary_color) }}
+{% endblock content -%}
+
+{% block footer -%}
+  You received this optional notification because you can manage events for
+  {{ cohost_group_name }}.
+{% endblock footer -%}

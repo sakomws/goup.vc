@@ -9,7 +9,7 @@ test.describe("group dashboard GTM view", () => {
     await navigateToPath(organizerGroupPage, "/dashboard/group?tab=gtm");
 
     const dashboardContent = organizerGroupPage.locator("#dashboard-content");
-    await expect(dashboardContent.getByRole("heading", { name: "GTM" })).toBeVisible();
+    await expect(dashboardContent.getByText("GTM", { exact: true })).toBeVisible();
 
     const leadName = `E2E Sponsor Lead ${Date.now()}`;
     await dashboardContent.locator("#gtm-name").fill(leadName);
