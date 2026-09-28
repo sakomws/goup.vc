@@ -28,6 +28,7 @@ pub(crate) mod book_exchange;
 pub(crate) mod coffee_meet;
 pub(crate) mod cohosts;
 pub(crate) mod custom_domains;
+pub(crate) mod distribution;
 pub(crate) mod events;
 pub(crate) mod gtm;
 pub(crate) mod home;

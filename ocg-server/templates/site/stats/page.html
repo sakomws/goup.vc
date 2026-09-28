@@ -423,7 +423,9 @@
                         {% if group.host_names.len() > 0 -%}
                           {% for host_name in group.host_names -%}
                             {{ host_name -}}
-                            {% if !loop.last %}, {% endif -%}
+                            {% if !loop.last %}
+                              ,
+                            {% endif -%}
                           {% endfor -%}
                         {% else -%}
                           No hosts listed

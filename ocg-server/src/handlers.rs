@@ -27,6 +27,7 @@ pub(crate) mod api;
 pub(crate) mod auth;
 /// Dashboards handlers.
 pub(crate) mod dashboard;
+pub(crate) mod distribution;
 /// Error handling utilities for HTTP handlers.
 pub(crate) mod error;
 /// Event page handlers.

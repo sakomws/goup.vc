@@ -11,10 +11,11 @@ use tokio_postgres::types::{FromSql, Json, ToSql};
 use crate::db::{
     accelerator::DBAccelerator, activity_tracker::DBActivityTracker, alliance::DBAlliance,
     auth::DBAuth, collaboration::DBCollaboration, common::DBCommon,
-    custom_domains::DBCustomDomains, dashboard::DBDashboard, event::DBEvent, group::DBGroup,
-    gtm::DBGtm, images::DBImages, jobs::DBJobs, landscape::DBLandscape, meetings::DBMeetings,
-    mock_interviews::DBMockInterviews, notifications::DBNotifications,
-    opportunities::DBOpportunities, payments::DBPayments, site::DBSite, survey::DBSurvey,
+    custom_domains::DBCustomDomains, dashboard::DBDashboard, distribution::DBDistribution,
+    event::DBEvent, group::DBGroup, gtm::DBGtm, images::DBImages, jobs::DBJobs,
+    landscape::DBLandscape, meetings::DBMeetings, mock_interviews::DBMockInterviews,
+    notifications::DBNotifications, opportunities::DBOpportunities, payments::DBPayments,
+    site::DBSite, survey::DBSurvey,
 };
 
 /// Module containing database functionality for accelerator management.
@@ -31,6 +32,9 @@ pub(crate) mod collaboration;
 
 /// Module containing custom hostname operations.
 pub(crate) mod custom_domains;
+
+/// Module containing group distribution planning operations.
+pub(crate) mod distribution;
 
 /// Module containing database contract tests.
 #[cfg(test)]
@@ -100,6 +104,7 @@ pub(crate) trait DBOperations:
     + DBCustomDomains
     + DBAlliance
     + DBDashboard
+    + DBDistribution
     + DBEvent
     + DBGroup
     + DBGtm
@@ -127,6 +132,7 @@ impl<T> DBOperations for T where
         + DBCustomDomains
         + DBAlliance
         + DBDashboard
+        + DBDistribution
         + DBEvent
         + DBGroup
         + DBGtm

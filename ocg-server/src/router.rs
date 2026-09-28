@@ -43,7 +43,7 @@ use crate::{
     handlers::{
         alliance,
         auth::{self, LOG_IN_URL},
-        event, group, images, meetings, payments, site,
+        distribution, event, group, images, meetings, payments, site,
     },
     services::{
         event_discovery::ManualEventDiscovery, images::DynImageStorage,
@@ -502,6 +502,7 @@ pub(crate) async fn setup(
         .route("/landscape", get(site::landscape::page))
         .route("/privacy", get(site::privacy::page))
         .route("/profiles/{username}", get(site::profile::page))
+        .route("/r/{code}", get(distribution::redirect))
         .route(
             "/event-sponsors/{event_id}/{group_sponsor_id}/engagement",
             post(event::sponsor_engagement),
