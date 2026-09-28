@@ -103,54 +103,54 @@
         {% if active_checked_in -%}
           {% call dashboard::active_table_filter_badge("Checked in") -%}
           {{ dashboard::active_table_filter_remove_button(label = "Remove check-in filter") -}}
-          {% endcall -%}
-        {% else -%}
-          {% call dashboard::active_table_filter_badge("Not checked in") -%}
-          {{ dashboard::active_table_filter_remove_button(label = "Remove check-in filter") -}}
-          {% endcall -%}
-        {% endif -%}
-      </form>
-    {% endif -%}
-    {% if let Some(active_title) = title -%}
-      <form class="inline-flex"
-            hx-get="/dashboard/group/events/{{ event.event_id }}/attendees"
-            hx-target="#attendees-content"
-            hx-swap="innerHTML"
-            hx-indicator="#dashboard-spinner">
-        {{ attendee_table_state_inputs(checked_in, event_ticket_type_ids, limit, sort, title, ts_query, include_title = false) -}}
-        {% if *active_title == crate::templates::dashboard::group::PresenceFilter::Present -%}
-          {% call dashboard::active_table_filter_badge("Present") -%}
-          {{ dashboard::active_table_filter_remove_button(label = "Remove title filter") -}}
-          {% endcall -%}
-        {% else -%}
-          {% call dashboard::active_table_filter_badge("Missing") -%}
-          {{ dashboard::active_table_filter_remove_button(label = "Remove title filter") -}}
-          {% endcall -%}
-        {% endif -%}
-      </form>
-    {% endif -%}
-    {% if event_ticket_type_ids.is_some() -%}
-      <form class="inline-flex"
-            hx-get="/dashboard/group/events/{{ event.event_id }}/attendees"
-            hx-target="#attendees-content"
-            hx-swap="innerHTML"
-            hx-indicator="#dashboard-spinner">
-        {{ attendee_table_state_inputs(checked_in, event_ticket_type_ids, limit, sort, title, ts_query, include_ticket_type_ids = false) -}}
-        {% call dashboard::active_table_filter_badge("Ticket type") -%}
-        {{ dashboard::active_table_filter_remove_button(label = "Remove ticket type filter") -}}
         {% endcall -%}
-      </form>
+      {% else -%}
+        {% call dashboard::active_table_filter_badge("Not checked in") -%}
+        {{ dashboard::active_table_filter_remove_button(label = "Remove check-in filter") -}}
+      {% endcall -%}
     {% endif -%}
-    <form class="inline-flex"
-          hx-get="/dashboard/group/events/{{ event.event_id }}/attendees"
-          hx-target="#attendees-content"
-          hx-swap="innerHTML"
-          hx-indicator="#dashboard-spinner">
-      {{ attendee_table_state_inputs(checked_in, event_ticket_type_ids, limit, sort, title, ts_query, include_checked_in = false, include_ticket_type_ids = false, include_title = false) -}}
-      <button type="submit" class="btn-primary-outline btn-mini h-7!">Reset all</button>
-    </form>
-  </div>
-  {# End active filters -#}
+  </form>
+{% endif -%}
+{% if let Some(active_title) = title -%}
+  <form class="inline-flex"
+        hx-get="/dashboard/group/events/{{ event.event_id }}/attendees"
+        hx-target="#attendees-content"
+        hx-swap="innerHTML"
+        hx-indicator="#dashboard-spinner">
+    {{ attendee_table_state_inputs(checked_in, event_ticket_type_ids, limit, sort, title, ts_query, include_title = false) -}}
+    {% if *active_title == crate::templates::dashboard::group::PresenceFilter::Present -%}
+      {% call dashboard::active_table_filter_badge("Present") -%}
+      {{ dashboard::active_table_filter_remove_button(label = "Remove title filter") -}}
+    {% endcall -%}
+  {% else -%}
+    {% call dashboard::active_table_filter_badge("Missing") -%}
+    {{ dashboard::active_table_filter_remove_button(label = "Remove title filter") -}}
+  {% endcall -%}
+{% endif -%}
+</form>
+{% endif -%}
+{% if event_ticket_type_ids.is_some() -%}
+  <form class="inline-flex"
+        hx-get="/dashboard/group/events/{{ event.event_id }}/attendees"
+        hx-target="#attendees-content"
+        hx-swap="innerHTML"
+        hx-indicator="#dashboard-spinner">
+    {{ attendee_table_state_inputs(checked_in, event_ticket_type_ids, limit, sort, title, ts_query, include_ticket_type_ids = false) -}}
+    {% call dashboard::active_table_filter_badge("Ticket type") -%}
+    {{ dashboard::active_table_filter_remove_button(label = "Remove ticket type filter") -}}
+  {% endcall -%}
+</form>
+{% endif -%}
+<form class="inline-flex"
+      hx-get="/dashboard/group/events/{{ event.event_id }}/attendees"
+      hx-target="#attendees-content"
+      hx-swap="innerHTML"
+      hx-indicator="#dashboard-spinner">
+  {{ attendee_table_state_inputs(checked_in, event_ticket_type_ids, limit, sort, title, ts_query, include_checked_in = false, include_ticket_type_ids = false, include_title = false) -}}
+  <button type="submit" class="btn-primary-outline btn-mini h-7!">Reset all</button>
+</form>
+</div>
+{# End active filters -#}
 {% endif -%}
 
 {# Header actions -#}
@@ -352,7 +352,8 @@
             <div class="font-medium text-stone-900">{{ scheduled_email.subject }}</div>
             <div class="text-sm text-stone-600">
               {{ scheduled_email.scheduled_at.format("%b %e, %Y %H:%M UTC") }}
-              · {{ scheduled_email.recipient_count }} recipient{% if scheduled_email.recipient_count != 1 %}s{% endif %}
+              · {{ scheduled_email.recipient_count }} recipient
+              {% if scheduled_email.recipient_count != 1 %}s{% endif %}
               · {{ scheduled_email.recipient_scope }}
               · {{ scheduled_email.status }}
             </div>
@@ -367,7 +368,12 @@
                       data-recipient-scope="{{ scheduled_email.recipient_scope }}"
                       data-subject="{{ scheduled_email.subject }}"
                       data-body="{{ scheduled_email.body }}"
-                      data-recipient-ids="{% if let Some(recipient_user_ids) = &scheduled_email.recipient_user_ids %}{% for recipient_user_id in recipient_user_ids %}{{ recipient_user_id }}{% if !loop.last %},{% endif %}{% endfor %}{% endif %}">Edit</button>
+                      data-recipient-ids="{% if let Some(recipient_user_ids) = &scheduled_email.recipient_user_ids %}
+                                            {% for recipient_user_id in recipient_user_ids %}
+                                              {{ recipient_user_id }}
+                                              {% if !loop.last %},{% endif %}
+                                            {% endfor %}
+                                          {% endif %}">Edit</button>
               <button type="button"
                       class="btn-primary-outline btn-mini"
                       hx-delete="/dashboard/group/notifications/{{ event.event_id }}/scheduled/{{ scheduled_email.scheduled_event_attendee_email_id }}"
@@ -443,408 +449,421 @@
               {{ dashboard::table_filter_option_button(label = "Missing", name = "title", value = "missing", is_active = title == Some(crate::templates::dashboard::group::PresenceFilter::Missing) ) -}}
             </form>
           </div>
-          {% endcall -%}
-        </th>
-        <th scope="col" class="hidden 2xl:table-cell px-3 xl:px-5 py-1.5 w-40">
-          <span class="whitespace-nowrap">RSVP Date</span>
-        </th>
-        <th scope="col" class="hidden xl:table-cell px-3 xl:px-5 py-1.5 w-48">
-          {% if let Some(ticket_types) = &event.ticket_types -%}
-            {% if !ticket_types.is_empty() -%}
-              {% call dashboard::table_filter_menu(id = "attendees-ticket-filter", label = "Ticket type", is_active = event_ticket_type_ids.is_some()) -%}
-              <form class="max-h-80 overflow-y-auto py-2"
-                    hx-get="/dashboard/group/events/{{ event.event_id }}/attendees"
-                    hx-trigger="change"
-                    hx-target="#attendees-content"
-                    hx-swap="innerHTML"
-                    hx-indicator="#dashboard-spinner">
-                {{ attendee_table_state_inputs(checked_in, event_ticket_type_ids, limit, sort, title, ts_query, include_ticket_type_ids = false) -}}
-                {% for ticket_type in ticket_types -%}
-                  <label class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-stone-100 hover:text-stone-900"
-                         title="{{ ticket_type.title }}">
-                    <input type="checkbox"
-                           class="checkbox-primary"
-                           name="event_ticket_type_ids[]"
-                           value="{{ ticket_type.event_ticket_type_id }}"
-                           {% if event_ticket_type_ids.is_some() && event_ticket_type_ids.as_ref().unwrap().contains(&ticket_type.event_ticket_type_id) -%}
-                             checked
-                           {% endif -%}>
-                    <span class="min-w-0 flex-1 truncate">{{ ticket_type.title }}</span>
-                  </label>
-                {% endfor -%}
-              </form>
-              {% endcall -%}
-            {% else -%}
-              <span class="whitespace-nowrap">Ticket type</span>
-            {% endif -%}
-          {% else -%}
-            <span class="whitespace-nowrap">Ticket type</span>
-          {% endif -%}
-        </th>
-        <th scope="col" class="px-3 xl:px-5 py-1.5 w-30">
-          {% call dashboard::table_filter_menu(id = "attendees-check-in-filter", label = "Checked In", is_active = checked_in.is_some(), extra_classes = "float-right", dropdown_classes = "end-0") -%}
-          <div class="py-2">
-            <form hx-get="/dashboard/group/events/{{ event.event_id }}/attendees"
+        {% endcall -%}
+      </th>
+      <th scope="col" class="hidden 2xl:table-cell px-3 xl:px-5 py-1.5 w-40">
+        <span class="whitespace-nowrap">RSVP Date</span>
+      </th>
+      <th scope="col" class="hidden xl:table-cell px-3 xl:px-5 py-1.5 w-48">
+        {% if let Some(ticket_types) = &event.ticket_types -%}
+          {% if !ticket_types.is_empty() -%}
+            {% call dashboard::table_filter_menu(id = "attendees-ticket-filter", label = "Ticket type", is_active = event_ticket_type_ids.is_some()) -%}
+            <form class="max-h-80 overflow-y-auto py-2"
+                  hx-get="/dashboard/group/events/{{ event.event_id }}/attendees"
+                  hx-trigger="change"
                   hx-target="#attendees-content"
                   hx-swap="innerHTML"
                   hx-indicator="#dashboard-spinner">
-              {{ attendee_table_state_inputs(checked_in, event_ticket_type_ids, limit, sort, title, ts_query, include_checked_in = false) -}}
-              {{ dashboard::table_filter_option_button(label = "All attendees", name = "checked_in", value = "", is_active = checked_in.is_none() , is_clear_option = true) -}}
-              {{ dashboard::table_filter_option_button(label = "Checked in", name = "checked_in", value = "true", is_active = checked_in == Some(true) ) -}}
-              {{ dashboard::table_filter_option_button(label = "Not checked in", name = "checked_in", value = "false", is_active = checked_in == Some(false) ) -}}
+              {{ attendee_table_state_inputs(checked_in, event_ticket_type_ids, limit, sort, title, ts_query, include_ticket_type_ids = false) -}}
+              {% for ticket_type in ticket_types -%}
+                <label class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-stone-100 hover:text-stone-900"
+                       title="{{ ticket_type.title }}">
+                  <input type="checkbox"
+                         class="checkbox-primary"
+                         name="event_ticket_type_ids[]"
+                         value="{{ ticket_type.event_ticket_type_id }}"
+                         {% if event_ticket_type_ids.is_some() && event_ticket_type_ids.as_ref().unwrap().contains(&ticket_type.event_ticket_type_id) -%}
+                           checked
+                         {% endif -%}>
+                  <span class="min-w-0 flex-1 truncate">{{ ticket_type.title }}</span>
+                </label>
+              {% endfor -%}
             </form>
-          </div>
           {% endcall -%}
-        </th>
-        <th scope="col" class="px-3 xl:px-5 py-1.5 w-[72px]">
-          <span class="sr-only">Actions</span>
-        </th>
-      </tr>
-    </thead>
-    {# End table header -#}
-    <tbody id="attendees-list" role="rowgroup">
-      {% if attendees.is_empty() -%}
-        {# Empty state -#}
-        <tr class="bg-white border-b border-stone-200">
-          <td class="xl:hidden px-8 py-12 text-center" colspan="3">
-            {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
-              {% include "dashboard/placeholders/group_attendees_no_results.html" -%}
-            {% else -%}
-              {% include "dashboard/placeholders/group_attendees_empty.html" -%}
-            {% endif -%}
-          </td>
-          <td class="hidden xl:table-cell 2xl:hidden px-8 py-12 text-center"
-              colspan="4">
-            {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
-              {% include "dashboard/placeholders/group_attendees_no_results.html" -%}
-            {% else -%}
-              {% include "dashboard/placeholders/group_attendees_empty.html" -%}
-            {% endif -%}
-          </td>
-          <td class="hidden 2xl:table-cell px-8 py-12 text-center" colspan="6">
-            {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
-              {% include "dashboard/placeholders/group_attendees_no_results.html" -%}
-            {% else -%}
-              {% include "dashboard/placeholders/group_attendees_empty.html" -%}
-            {% endif -%}
-          </td>
-        </tr>
-        {# End empty state -#}
+        {% else -%}
+          <span class="whitespace-nowrap">Ticket type</span>
+        {% endif -%}
       {% else -%}
-        {% for attendee in attendees -%}
-          {# Attendee row -#}
-          <tr class="odd:bg-white even:bg-stone-50/50 border-b border-stone-200">
-            {# Email selection -#}
-            <td class="hidden px-3 xl:px-5 py-4 w-12"
-                data-attendee-email-selection-column>
-              {% if can_manage_events && !event.canceled && attendee.can_receive_attendee_email -%}
-                <input type="checkbox"
-                       class="checkbox-primary"
-                       aria-label="Select {{ attendee.user.name.as_deref() |assigned_or(attendee.user.username) }} for email"
-                       data-attendee-email-selection-checkbox
-                       data-recipient-email="{{ attendee.email }}"
-                       data-recipient-id="{{ attendee.user.user_id }}"
-                       data-recipient-name="{{ attendee.user.name.as_deref() |assigned_or(attendee.user.username) }}"
-                       data-recipient-username="{{ attendee.user.username }}"
-                       value="{{ attendee.user.user_id }}">
-              {% endif -%}
-            </td>
-            {# End email selection -#}
-
-            {# Attendee -#}
-            <td class="px-3 xl:px-5 py-4 max-w-0">
-              {% call dashboard::user_profile_modal_trigger(attendee.user, self::user_initials(attendee.user.name.as_deref() , attendee.user.username.as_str())) -%}
-              <div class="flex items-center space-x-3 mb-1 min-w-0">
-                <div class="font-medium text-stone-900 truncate min-w-0 group-hover:text-primary-600">
-                  {% if (attendee.status == "invitation-pending" || attendee.status == "registration-questions-pending") && attendee.user.name.is_none() -%}
-                    {{ attendee.email }}
-                  {% else -%}
-                    {{ attendee.user.name.as_deref() |assigned_or(attendee.user.username) }}
-                  {% endif -%}
-                </div>
-                {% if attendee.status == "invitation-pending" -%}
-                  {{ badges::invitation_badge(label = "Invitation sent") -}}
-                {% else if attendee.status == "confirmed" && attendee.manually_invited -%}
-                  {{ badges::invitation_badge(label = "Invited", tone = "success") -}}
-                {% else if attendee.status == "invitation-rejected" -%}
-                  {{ badges::invitation_badge(label = "Invitation rejected", tone = "danger") -}}
-                {% endif -%}
-              </div>
-              {% endcall -%}
-            </td>
-            {# End attendee -#}
-
-            {# Position -#}
-            <td class="hidden 2xl:table-cell px-3 xl:px-5 py-4 max-w-0">
-              <div class="flex flex-col space-y-1">
-                <div class="font-medium text-stone-900 truncate">{{ attendee.user.company.as_deref() |assigned_or("-") }}</div>
-                {% if let Some(title) = &attendee.user.title -%}
-                  <div class="text-xs text-stone-600 truncate">{{ title }}</div>
-                {% endif -%}
-              </div>
-            </td>
-            {# End position -#}
-
-            {# RSVP Date -#}
-            <td class="hidden 2xl:table-cell px-3 xl:px-5 py-4 whitespace-nowrap w-40">
-              {% if attendee.status == "confirmed" -%}
-                <div>{{ attendee.created_at.format("%b %d, %Y") }}</div>
-              {% else if attendee.status == "invitation-pending" -%}
-                <div>{{ attendee.created_at.format("%b %d, %Y") }}</div>
-              {% else if attendee.status == "invitation-rejected" -%}
-                <div>{{ attendee.created_at.format("%b %d, %Y") }}</div>
-              {% endif -%}
-            </td>
-            {# End RSVP date -#}
-
-            {# Payment -#}
-            <td class="hidden xl:table-cell px-3 xl:px-5 py-4 align-middle">
-              {% if attendee.status == "registration-questions-pending" && event.is_ticketed() -%}
-                {{ badges::invitation_badge(label = "Pending checkout", with_border = true) -}}
-              {% else if attendee.status != "confirmed" -%}
-                <div class="text-stone-500">-</div>
-              {% else if attendee.ticket_title.is_some() || attendee.amount_minor.is_some() || attendee.event_purchase_id.is_some() -%}
-                <div class="mx-auto flex max-w-[260px] min-w-0 flex-col gap-2">
-                  <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                    <div class="max-w-full truncate font-semibold text-stone-900"
-                         title="{{ attendee.ticket_title|assigned_or("Paid RSVP") }}">
-                      {{ attendee.ticket_title|assigned_or("Paid RSVP") }}
-                    </div>
-                    {% if let Some(amount_label) = self::format_payment_amount(attendee.amount_minor, attendee.currency_code.as_deref()) -%}
-                      <div class="text-sm font-medium text-stone-600">({{ amount_label }})</div>
-                    {% endif -%}
-                    {% if attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Pending) -%}
-                      {{ badges::invitation_badge(label = "Refund requested", with_border = true) -}}
-                    {% else if attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Approving) -%}
-                      {{ badges::invitation_badge(label = "Refund processing", with_border = true) -}}
-                    {% else if attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Rejected) -%}
-                      {{ badges::invitation_badge(label = "Refund rejected", tone = "danger", with_border = true) -}}
-                    {% else if attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Approved) -%}
-                      {{ badges::invitation_badge(label = "Refund approved", tone = "success", with_border = true) -}}
-                    {% endif -%}
-                  </div>
-                </div>
-              {% else -%}
-                <div class="text-stone-500">Free RSVP</div>
-              {% endif -%}
-            </td>
-            {# End Payment -#}
-
-            {# Checked In Toggle -#}
-            <td class="px-3 xl:px-5 py-4 w-30">
-              <label class="inline-flex items-center
-                            {% if attendee.status != "confirmed" || attendee.checked_in || !can_manage_events || event.canceled %}
-                              cursor-not-allowed
-                            {% else %}
-                              cursor-pointer
-                            {% endif %}">
-                <input type="checkbox"
-                       class="sr-only peer check-in-toggle"
-                       aria-label="{% if attendee.status != "confirmed" %}
-                                     Pending invitation cannot be checked in
-                                   {% else if attendee.checked_in %}
-                                     Checked in
-                                   {% else if event.canceled %}
-                                     Canceled event check-in unavailable
-                                   {% else %}
-                                     Check in attendee
-                                   {% endif %}"
-                       data-url="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/check-in"
-                       {% if attendee.checked_in %}checked{% endif %}
-                       {% if attendee.status != "confirmed" || attendee.checked_in || !can_manage_events || event.canceled %}
-                         disabled
-                       {% endif %}>
-                <div class="relative w-11 h-6 bg-stone-200 rounded-full peer peer-checked:bg-primary-500 peer-disabled:opacity-70 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white">
-                </div>
-              </label>
-            </td>
-            {# End checked in toggle -#}
-
-            {# Actions -#}
-            <td class="px-3 xl:px-5 py-4 w-[72px] text-right">
-              <div class="relative inline-flex justify-end">
-                {% if (attendee.registration_answers.is_some() && !registration_questions.is_empty())
-                  || (can_manage_events
-                  && (attendee.status == "confirmed"
-                  || (attendee.registration_answers.is_some() && !registration_questions.is_empty())
-                  || attendee.status == "invitation-pending"
-                  || (attendee.status == "registration-questions-pending" && attendee.manually_invited)
-                  || (!event.canceled && attendee.can_receive_attendee_email)
-                  || attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Pending)
-                  || attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Approving))) -%}
-                  <details data-attendee-row-actions-menu class="group relative">
-                    <summary class="btn-actions btn-tertiary flex cursor-pointer list-none items-center justify-center p-2 group-open:bg-stone-50 [&::-webkit-details-marker]:hidden"
-                             aria-label="Open attendee actions"
-                             title="Open attendee actions">
-                      <div class="svg-icon size-4 icon-vertical-dots"></div>
-                    </summary>
-                    <div class="dropdown absolute z-10 end-0 top-8 w-[220px] bg-white divide-y divide-stone-100 rounded-lg shadow border border-stone-200">
-                      <ul class="py-2 text-sm text-stone-700" role="menu">
-                        {% if attendee.registration_answers.is_some() && !registration_questions.is_empty() -%}
-                          <li>
-                            <button type="button"
-                                    data-attendee-answers-open
-                                    data-attendee-answers-source="attendee-answers-{{ attendee.user.user_id }}"
-                                    data-attendee-name="{{ attendee.user.name.as_deref() |assigned_or(attendee.user.username) }}"
-                                    role="menuitem"
-                                    class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left">
-                              <div class="svg-icon size-4 icon-list-check shrink-0 bg-stone-500"></div>
-                              <span>View answers</span>
-                            </button>
-                            <div id="attendee-answers-{{ attendee.user.user_id }}" hidden>
-                              <ol class="space-y-3">
-                                {% for question in registration_questions -%}
-                                  <li class="rounded-md border border-stone-200 bg-white p-4">
-                                    <h4 class="flex items-start gap-3 text-base font-semibold leading-6 text-stone-900">
-                                      <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-stone-100 text-xs font-semibold leading-6 text-stone-700">
-                                        {{ loop.index }}
-                                      </span>
-                                      <span class="min-w-0 flex-1">{{ question.prompt }}</span>
-                                    </h4>
-                                    <div class="ms-9 min-w-0">
-                                      {% let answer = question.format_answer(attendee.registration_answers.as_ref()) -%}
-                                      {% if answer.is_empty() -%}
-                                        <div class="mt-3 text-sm italic text-stone-500">No answer provided</div>
-                                      {% else if question.kind.to_string() == "free-text" -%}
-                                        <div class="mt-3 rounded-lg bg-stone-50 px-4 py-3 text-sm leading-6 text-stone-700 whitespace-pre-wrap">
-                                          {{- answer -}}
-                                        </div>
-                                      {% else -%}
-                                        <div class="mt-3 flex flex-wrap gap-2">
-                                          {% if question.kind.to_string() == "single-select" -%}
-                                            <span class="inline-flex rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-sm font-medium text-stone-700">{{ answer }}</span>
-                                          {% else -%}
-                                            {% for option in question.options -%}
-                                              {% if question.is_option_selected(attendee.registration_answers.as_ref(), option.id) -%}
-                                                <span class="inline-flex rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-sm font-medium text-stone-700">{{ option.label }}</span>
-                                              {% endif -%}
-                                            {% endfor -%}
-                                          {% endif -%}
-                                        </div>
-                                      {% endif -%}
-                                    </div>
-                                  </li>
-                                {% endfor -%}
-                              </ol>
-                            </div>
-                          </li>
-                        {% endif -%}
-                        {% if can_manage_events
-                          && (attendee.status == "invitation-pending"
-                          || (attendee.status == "registration-questions-pending" && attendee.manually_invited)) -%}
-                          <li>
-                            <button id="cancel-invitation-{{ attendee.user.user_id }}"
-                                    hx-put="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/invitation/cancel"
-                                    hx-indicator="#dashboard-spinner"
-                                    hx-trigger="confirmed"
-                                    hx-disabled-elt="this"
-                                    data-confirm-action
-                                    data-confirm-message="Are you sure you would like to cancel this invitation?"
-                                    data-confirm-text="Yes"
-                                    data-success-message="Invitation canceled."
-                                    data-error-message="Something went wrong canceling this invitation. Please try again later."
-                                    role="menuitem"
-                                    class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left"
-                                    type="button">
-                              <div class="svg-icon size-4 icon-cancel shrink-0 bg-stone-500"></div>
-                              <span>Cancel invitation</span>
-                            </button>
-                          </li>
-                        {% endif -%}
-                        {% if can_manage_events && !event.canceled && attendee.can_receive_attendee_email -%}
-                          <li>
-                            <button type="button"
-                                    data-attendee-notification-open
-                                    data-event-id="{{ event.event_id }}"
-                                    data-notification-scope="selected"
-                                    data-recipient-email="{{ attendee.email }}"
-                                    data-recipient-id="{{ attendee.user.user_id }}"
-                                    data-recipient-name="{{ attendee.user.name.as_deref() |assigned_or(attendee.user.username) }}"
-                                    data-recipient-username="{{ attendee.user.username }}"
-                                    role="menuitem"
-                                    class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left">
-                              <div class="svg-icon size-4 icon-email shrink-0 bg-stone-500"></div>
-                              <span>Send email</span>
-                            </button>
-                          </li>
-                        {% endif -%}
-                        {% if can_manage_events && attendee.status == "confirmed" -%}
-                          <li>
-                            <button id="cancel-attendance-{{ attendee.user.user_id }}"
-                                    {% if !event.canceled && !event.is_past() -%}
-                                      hx-delete="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/attendance" hx-indicator="#dashboard-spinner" hx-trigger="confirmed" hx-disabled-elt="this" data-confirm-action data-confirm-message="{% if self::is_paid_attendee(attendee.amount_minor) %}Cancel this paid attendance and refund the ticket?{% else %}Are you sure you want to cancel this attendance?{% endif %}" data-confirm-text="Yes" data-success-message="Attendance canceled." data-error-message="Something went wrong canceling this attendance. Please try again later."
-                                    {% else if event.canceled -%}
-                                      disabled title="Canceled event attendance cannot be canceled."
-                                    {% else -%}
-                                      disabled title="Past event attendance cannot be canceled."
-                                    {% endif -%}
-                                    role="menuitem"
-                                    class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-stone-700"
-                                    type="button">
-                              <div class="svg-icon size-4 icon-cancel shrink-0 bg-stone-500"></div>
-                              <span>Cancel attendance</span>
-                            </button>
-                          </li>
-                        {% endif -%}
-                        {% if can_manage_events
-                          && attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Pending) -%}
-                          <li>
-                            <button id="approve-refund-{{ attendee.user.user_id }}"
-                                    hx-put="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/refund/approve"
-                                    hx-indicator="#dashboard-spinner"
-                                    hx-disabled-elt="this"
-                                    role="menuitem"
-                                    class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left"
-                                    type="button">
-                              <div class="svg-icon size-4 icon-check shrink-0 bg-stone-500"></div>
-                              <span>Approve refund</span>
-                            </button>
-                          </li>
-                          <li>
-                            <button id="reject-refund-{{ attendee.user.user_id }}"
-                                    hx-put="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/refund/reject"
-                                    hx-indicator="#dashboard-spinner"
-                                    hx-trigger="confirmed"
-                                    hx-disabled-elt="this"
-                                    data-confirm-action
-                                    data-confirm-message="Are you sure you want to reject this refund request?"
-                                    data-confirm-text="Yes"
-                                    data-error-message="Something went wrong rejecting this refund request. Please try again later."
-                                    role="menuitem"
-                                    class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left"
-                                    type="button">
-                              <div class="svg-icon size-4 icon-cancel shrink-0 bg-stone-500"></div>
-                              <span>Reject refund</span>
-                            </button>
-                          </li>
-                        {% else if can_manage_events
-                          && attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Approving) -%}
-                          <li>
-                            <button id="retry-refund-{{ attendee.user.user_id }}"
-                                    hx-put="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/refund/approve"
-                                    hx-indicator="#dashboard-spinner"
-                                    hx-disabled-elt="this"
-                                    role="menuitem"
-                                    class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left"
-                                    type="button">
-                              <div class="svg-icon size-4 icon-refresh shrink-0 bg-stone-500"></div>
-                              <span>Retry refund finalization</span>
-                            </button>
-                          </li>
-                        {% endif -%}
-                      </ul>
-                    </div>
-                  </details>
-                {% endif -%}
-              </div>
-            </td>
-            {# End actions -#}
-          </tr>
-          {# End attendee row -#}
-        {% endfor -%}
+        <span class="whitespace-nowrap">Ticket type</span>
       {% endif -%}
-    </tbody>
-  </table>
+    </th>
+    <th scope="col" class="px-3 xl:px-5 py-1.5 w-30">
+      {% call dashboard::table_filter_menu(id = "attendees-check-in-filter", label = "Checked In", is_active = checked_in.is_some(), extra_classes = "float-right", dropdown_classes = "end-0") -%}
+      <div class="py-2">
+        <form hx-get="/dashboard/group/events/{{ event.event_id }}/attendees"
+              hx-target="#attendees-content"
+              hx-swap="innerHTML"
+              hx-indicator="#dashboard-spinner">
+          {{ attendee_table_state_inputs(checked_in, event_ticket_type_ids, limit, sort, title, ts_query, include_checked_in = false) -}}
+          {{ dashboard::table_filter_option_button(label = "All attendees", name = "checked_in", value = "", is_active = checked_in.is_none() , is_clear_option = true) -}}
+          {{ dashboard::table_filter_option_button(label = "Checked in", name = "checked_in", value = "true", is_active = checked_in == Some(true) ) -}}
+          {{ dashboard::table_filter_option_button(label = "Not checked in", name = "checked_in", value = "false", is_active = checked_in == Some(false) ) -}}
+        </form>
+      </div>
+    {% endcall -%}
+  </th>
+  <th scope="col" class="px-3 xl:px-5 py-1.5 w-[72px]">
+    <span class="sr-only">Actions</span>
+  </th>
+</tr>
+</thead>
+{# End table header -#}
+<tbody id="attendees-list" role="rowgroup">
+  {% if attendees.is_empty() -%}
+    {# Empty state -#}
+    <tr class="bg-white border-b border-stone-200">
+      <td class="xl:hidden px-8 py-12 text-center" colspan="3">
+        {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
+          {% include "dashboard/placeholders/group_attendees_no_results.html" -%}
+        {% else -%}
+          {% include "dashboard/placeholders/group_attendees_empty.html" -%}
+        {% endif -%}
+      </td>
+      <td class="hidden xl:table-cell 2xl:hidden px-8 py-12 text-center"
+          colspan="4">
+        {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
+          {% include "dashboard/placeholders/group_attendees_no_results.html" -%}
+        {% else -%}
+          {% include "dashboard/placeholders/group_attendees_empty.html" -%}
+        {% endif -%}
+      </td>
+      <td class="hidden 2xl:table-cell px-8 py-12 text-center" colspan="6">
+        {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
+          {% include "dashboard/placeholders/group_attendees_no_results.html" -%}
+        {% else -%}
+          {% include "dashboard/placeholders/group_attendees_empty.html" -%}
+        {% endif -%}
+      </td>
+    </tr>
+    {# End empty state -#}
+  {% else -%}
+    {% for attendee in attendees -%}
+      {# Attendee row -#}
+      <tr class="odd:bg-white even:bg-stone-50/50 border-b border-stone-200">
+        {# Email selection -#}
+        <td class="hidden px-3 xl:px-5 py-4 w-12"
+            data-attendee-email-selection-column>
+          {% if can_manage_events && !event.canceled && attendee.can_receive_attendee_email -%}
+            <input type="checkbox"
+                   class="checkbox-primary"
+                   aria-label="Select {{ attendee.user.name.as_deref() |assigned_or(attendee.user.username) }} for email"
+                   data-attendee-email-selection-checkbox
+                   data-recipient-email="{{ attendee.email }}"
+                   data-recipient-id="{{ attendee.user.user_id }}"
+                   data-recipient-name="{{ attendee.user.name.as_deref() |assigned_or(attendee.user.username) }}"
+                   data-recipient-username="{{ attendee.user.username }}"
+                   value="{{ attendee.user.user_id }}">
+          {% endif -%}
+        </td>
+        {# End email selection -#}
+
+        {# Attendee -#}
+        <td class="px-3 xl:px-5 py-4 max-w-0">
+          {% call dashboard::user_profile_modal_trigger(attendee.user, self::user_initials(attendee.user.name.as_deref() , attendee.user.username.as_str())) -%}
+          <div class="flex items-center space-x-3 mb-1 min-w-0">
+            <div class="font-medium text-stone-900 truncate min-w-0 group-hover:text-primary-600">
+              {% if (attendee.status == "invitation-pending" || attendee.status == "registration-questions-pending") && attendee.user.name.is_none() -%}
+                {{ attendee.email }}
+              {% else -%}
+                {{ attendee.user.name.as_deref() |assigned_or(attendee.user.username) }}
+              {% endif -%}
+            </div>
+            {% if attendee.status == "invitation-pending" -%}
+              {{ badges::invitation_badge(label = "Invitation sent") -}}
+            {% else if attendee.status == "confirmed" && attendee.manually_invited -%}
+              {{ badges::invitation_badge(label = "Invited", tone = "success") -}}
+            {% else if attendee.status == "invitation-rejected" -%}
+              {{ badges::invitation_badge(label = "Invitation rejected", tone = "danger") -}}
+            {% endif -%}
+          </div>
+        {% endcall -%}
+      </td>
+      {# End attendee -#}
+
+      {# Position -#}
+      <td class="hidden 2xl:table-cell px-3 xl:px-5 py-4 max-w-0">
+        <div class="flex flex-col space-y-1">
+          <div class="font-medium text-stone-900 truncate">
+            {{ attendee.user.company.as_deref() |assigned_or("-") }}
+          </div>
+          {% if let Some(title) = &attendee.user.title -%}
+            <div class="text-xs text-stone-600 truncate">{{ title }}</div>
+          {% endif -%}
+        </div>
+      </td>
+      {# End position -#}
+
+      {# RSVP Date -#}
+      <td class="hidden 2xl:table-cell px-3 xl:px-5 py-4 whitespace-nowrap w-40">
+        {% if attendee.status == "confirmed" -%}
+          <div>{{ attendee.created_at.format("%b %d, %Y") }}</div>
+        {% else if attendee.status == "invitation-pending" -%}
+          <div>{{ attendee.created_at.format("%b %d, %Y") }}</div>
+        {% else if attendee.status == "invitation-rejected" -%}
+          <div>{{ attendee.created_at.format("%b %d, %Y") }}</div>
+        {% endif -%}
+      </td>
+      {# End RSVP date -#}
+
+      {# Payment -#}
+      <td class="hidden xl:table-cell px-3 xl:px-5 py-4 align-middle">
+        {% if attendee.status == "registration-questions-pending" && event.is_ticketed() -%}
+          {{ badges::invitation_badge(label = "Pending checkout", with_border = true) -}}
+        {% else if attendee.status != "confirmed" -%}
+          <div class="text-stone-500">-</div>
+        {% else if attendee.ticket_title.is_some() || attendee.amount_minor.is_some() || attendee.event_purchase_id.is_some() -%}
+          <div class="mx-auto flex max-w-[260px] min-w-0 flex-col gap-2">
+            <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+              <div class="max-w-full truncate font-semibold text-stone-900"
+                   title="{{ attendee.ticket_title|assigned_or("Paid RSVP") }}">
+                {{ attendee.ticket_title|assigned_or("Paid RSVP") }}
+              </div>
+              {% if let Some(amount_label) = self::format_payment_amount(attendee.amount_minor, attendee.currency_code.as_deref()) -%}
+                <div class="text-sm font-medium text-stone-600">({{ amount_label }})</div>
+              {% endif -%}
+              {% if attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Pending) -%}
+                {{ badges::invitation_badge(label = "Refund requested", with_border = true) -}}
+              {% else if attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Approving) -%}
+                {{ badges::invitation_badge(label = "Refund processing", with_border = true) -}}
+              {% else if attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Rejected) -%}
+                {{ badges::invitation_badge(label = "Refund rejected", tone = "danger", with_border = true) -}}
+              {% else if attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Approved) -%}
+                {{ badges::invitation_badge(label = "Refund approved", tone = "success", with_border = true) -}}
+              {% endif -%}
+            </div>
+          </div>
+        {% else -%}
+          <div class="text-stone-500">Free RSVP</div>
+        {% endif -%}
+      </td>
+      {# End Payment -#}
+
+      {# Checked In Toggle -#}
+      <td class="px-3 xl:px-5 py-4 w-30">
+        <label class="inline-flex items-center
+                      {% if attendee.status != "confirmed" || attendee.checked_in || !can_manage_events || event.canceled %}
+                        cursor-not-allowed
+                      {% else %}
+                        cursor-pointer
+                      {% endif %}">
+          <input type="checkbox"
+                 class="sr-only peer check-in-toggle"
+                 aria-label="{% if attendee.status != "confirmed" %}
+                               Pending invitation cannot be checked in
+                             {% else if attendee.checked_in %}
+                               Checked in
+                             {% else if event.canceled %}
+                               Canceled event check-in unavailable
+                             {% else %}
+                               Check in attendee
+                             {% endif %}"
+                 data-url="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/check-in"
+                 {% if attendee.checked_in %}checked{% endif %}
+                 {% if attendee.status != "confirmed" || attendee.checked_in || !can_manage_events || event.canceled %}
+                   disabled
+                 {% endif %}>
+          <div class="relative w-11 h-6 bg-stone-200 rounded-full peer peer-checked:bg-primary-500 peer-disabled:opacity-70 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white">
+          </div>
+        </label>
+      </td>
+      {# End checked in toggle -#}
+
+      {# Actions -#}
+      <td class="px-3 xl:px-5 py-4 w-[72px] text-right">
+        <div class="relative inline-flex justify-end">
+          {% if (attendee.registration_answers.is_some() && !registration_questions.is_empty())
+            || (can_manage_events
+            && (attendee.status == "confirmed"
+            || (attendee.registration_answers.is_some() && !registration_questions.is_empty())
+            || attendee.status == "invitation-pending"
+            || (attendee.status == "registration-questions-pending" && attendee.manually_invited)
+            || (!event.canceled && attendee.can_receive_attendee_email)
+            || attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Pending)
+            || attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Approving))) -%}
+            <details data-attendee-row-actions-menu class="group relative">
+              <summary class="btn-actions btn-tertiary flex cursor-pointer list-none items-center justify-center p-2 group-open:bg-stone-50 [&::-webkit-details-marker]:hidden"
+                       aria-label="Open attendee actions"
+                       title="Open attendee actions">
+                <div class="svg-icon size-4 icon-vertical-dots"></div>
+              </summary>
+              <div class="dropdown absolute z-10 end-0 top-8 w-[220px] bg-white divide-y divide-stone-100 rounded-lg shadow border border-stone-200">
+                <ul class="py-2 text-sm text-stone-700" role="menu">
+                  {% if attendee.registration_answers.is_some() && !registration_questions.is_empty() -%}
+                    <li>
+                      <button type="button"
+                              data-attendee-answers-open
+                              data-attendee-answers-source="attendee-answers-{{ attendee.user.user_id }}"
+                              data-attendee-name="{{ attendee.user.name.as_deref() |assigned_or(attendee.user.username) }}"
+                              role="menuitem"
+                              class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left">
+                        <div class="svg-icon size-4 icon-list-check shrink-0 bg-stone-500"></div>
+                        <span>View answers</span>
+                      </button>
+                      <div id="attendee-answers-{{ attendee.user.user_id }}" hidden>
+                        <ol class="space-y-3">
+                          {% for question in registration_questions -%}
+                            <li class="rounded-md border border-stone-200 bg-white p-4">
+                              <h4 class="flex items-start gap-3 text-base font-semibold leading-6 text-stone-900">
+                                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-stone-100 text-xs font-semibold leading-6 text-stone-700">
+                                  {{ loop.index }}
+                                </span>
+                                <span class="min-w-0 flex-1">{{ question.prompt }}</span>
+                              </h4>
+                              <div class="ms-9 min-w-0">
+                                {% let answer = question.format_answer(attendee.registration_answers.as_ref()) -%}
+                                {% if answer.is_empty() -%}
+                                  <div class="mt-3 text-sm italic text-stone-500">No answer provided</div>
+                                {% else if question.kind.to_string() == "free-text" -%}
+                                  <div class="mt-3 rounded-lg bg-stone-50 px-4 py-3 text-sm leading-6 text-stone-700 whitespace-pre-wrap">
+                                    {{- answer -}}
+                                  </div>
+                                {% else -%}
+                                  <div class="mt-3 flex flex-wrap gap-2">
+                                    {% if question.kind.to_string() == "single-select" -%}
+                                      <span class="inline-flex rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-sm font-medium text-stone-700">{{ answer }}</span>
+                                    {% else -%}
+                                      {% for option in question.options -%}
+                                        {% if question.is_option_selected(attendee.registration_answers.as_ref(), option.id) -%}
+                                          <span class="inline-flex rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-sm font-medium text-stone-700">{{ option.label }}</span>
+                                        {% endif -%}
+                                      {% endfor -%}
+                                    {% endif -%}
+                                  </div>
+                                {% endif -%}
+                              </div>
+                            </li>
+                          {% endfor -%}
+                        </ol>
+                      </div>
+                    </li>
+                  {% endif -%}
+                  {% if can_manage_events
+                    && (attendee.status == "invitation-pending"
+                    || (attendee.status == "registration-questions-pending" && attendee.manually_invited)) -%}
+                    <li>
+                      <button id="cancel-invitation-{{ attendee.user.user_id }}"
+                              hx-put="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/invitation/cancel"
+                              hx-indicator="#dashboard-spinner"
+                              hx-trigger="confirmed"
+                              hx-disabled-elt="this"
+                              data-confirm-action
+                              data-confirm-message="Are you sure you would like to cancel this invitation?"
+                              data-confirm-text="Yes"
+                              data-success-message="Invitation canceled."
+                              data-error-message="Something went wrong canceling this invitation. Please try again later."
+                              role="menuitem"
+                              class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left"
+                              type="button">
+                        <div class="svg-icon size-4 icon-cancel shrink-0 bg-stone-500"></div>
+                        <span>Cancel invitation</span>
+                      </button>
+                    </li>
+                  {% endif -%}
+                  {% if can_manage_events && !event.canceled && attendee.can_receive_attendee_email -%}
+                    <li>
+                      <button type="button"
+                              data-attendee-notification-open
+                              data-event-id="{{ event.event_id }}"
+                              data-notification-scope="selected"
+                              data-recipient-email="{{ attendee.email }}"
+                              data-recipient-id="{{ attendee.user.user_id }}"
+                              data-recipient-name="{{ attendee.user.name.as_deref() |assigned_or(attendee.user.username) }}"
+                              data-recipient-username="{{ attendee.user.username }}"
+                              role="menuitem"
+                              class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left">
+                        <div class="svg-icon size-4 icon-email shrink-0 bg-stone-500"></div>
+                        <span>Send email</span>
+                      </button>
+                    </li>
+                  {% endif -%}
+                  {% if can_manage_events && attendee.status == "confirmed" -%}
+                    <li>
+                      <button id="cancel-attendance-{{ attendee.user.user_id }}"
+                              {% if !event.canceled && !event.is_past() -%}
+                                hx-delete="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/attendance" hx-indicator="#dashboard-spinner" hx-trigger="confirmed" hx-disabled-elt="this" data-confirm-action data-confirm-message="
+                                {% if self::is_paid_attendee(attendee.amount_minor) %}
+                                  Cancel this paid attendance and refund the ticket?
+                                {% else %}
+                                  Are you sure you want to cancel this attendance?
+                                {% endif %}
+                              "
+                              data-confirm-text="Yes"
+                              data-success-message="Attendance canceled."
+                              data-error-message="Something went wrong canceling this attendance. Please try again later."
+                              {% else if event.canceled -%}
+                              disabled
+                              title="Canceled event attendance cannot be canceled."
+                              {% else -%}
+                              disabled
+                              title="Past event attendance cannot be canceled."
+                              {% endif -%}
+                              role="menuitem"
+                              class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-stone-700"
+                              type="button">
+                        <div class="svg-icon size-4 icon-cancel shrink-0 bg-stone-500"></div>
+                        <span>Cancel attendance</span>
+                      </button>
+                    </li>
+                  {% endif -%}
+                  {% if can_manage_events
+                    && attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Pending) -%}
+                    <li>
+                      <button id="approve-refund-{{ attendee.user.user_id }}"
+                              hx-put="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/refund/approve"
+                              hx-indicator="#dashboard-spinner"
+                              hx-disabled-elt="this"
+                              role="menuitem"
+                              class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left"
+                              type="button">
+                        <div class="svg-icon size-4 icon-check shrink-0 bg-stone-500"></div>
+                        <span>Approve refund</span>
+                      </button>
+                    </li>
+                    <li>
+                      <button id="reject-refund-{{ attendee.user.user_id }}"
+                              hx-put="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/refund/reject"
+                              hx-indicator="#dashboard-spinner"
+                              hx-trigger="confirmed"
+                              hx-disabled-elt="this"
+                              data-confirm-action
+                              data-confirm-message="Are you sure you want to reject this refund request?"
+                              data-confirm-text="Yes"
+                              data-error-message="Something went wrong rejecting this refund request. Please try again later."
+                              role="menuitem"
+                              class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left"
+                              type="button">
+                        <div class="svg-icon size-4 icon-cancel shrink-0 bg-stone-500"></div>
+                        <span>Reject refund</span>
+                      </button>
+                    </li>
+                  {% else if can_manage_events
+                    && attendee.refund_request_status == Some(crate::types::payments::EventRefundRequestStatus::Approving) -%}
+                    <li>
+                      <button id="retry-refund-{{ attendee.user.user_id }}"
+                              hx-put="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/refund/approve"
+                              hx-indicator="#dashboard-spinner"
+                              hx-disabled-elt="this"
+                              role="menuitem"
+                              class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left"
+                              type="button">
+                        <div class="svg-icon size-4 icon-refresh shrink-0 bg-stone-500"></div>
+                        <span>Retry refund finalization</span>
+                      </button>
+                    </li>
+                  {% endif -%}
+                </ul>
+              </div>
+            </details>
+          {% endif -%}
+        </div>
+      </td>
+      {# End actions -#}
+    </tr>
+    {# End attendee row -#}
+  {% endfor -%}
+{% endif -%}
+</tbody>
+</table>
 </div>
 {# End attendees table -#}
 
@@ -1027,7 +1046,9 @@
                  name="recipient_scope"
                  value="all">
           <div id="attendee-notification-selected-fields"></div>
-          <input type="hidden" id="attendee-notification-scheduled-at" name="scheduled_at">
+          <input type="hidden"
+                 id="attendee-notification-scheduled-at"
+                 name="scheduled_at">
 
           <div class="mb-4">
             <label for="attendee-subject" class="form-label">

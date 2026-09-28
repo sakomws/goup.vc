@@ -31,7 +31,7 @@ test.describe("site explore groups page visual regression @visual", () => {
       page,
       getExploreSearchRow(page, "Search groups"),
       "explore-groups-desktop.png",
-      { testInfo },
+      { testInfo, useClippedPageScreenshot: true },
     );
 
     // Capture the desktop controls row snapshot.

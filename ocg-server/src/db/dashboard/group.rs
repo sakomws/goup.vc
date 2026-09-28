@@ -18,6 +18,7 @@ use crate::{
             analytics::GroupDashboardStats,
             attendees::{AttendeesOutput, SearchEventAttendeesFilters},
             coffee_meet::CoffeeMeetSubscriber,
+            cohosts::{EventCohostCandidate, EventCohostInvitation, EventCohostRequest},
             events::{
                 ApprovedSubmissionSummary, CfsSubmissionStatus, EventsListFilters, GroupEvents,
             },
@@ -339,6 +340,33 @@ pub(crate) trait DBDashboardGroup {
         email: Option<String>,
     ) -> Result<Uuid>;
 
+    /// Invites another group to co-host an event owned by the selected group.
+    async fn request_event_cohost(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        cohost_group_id: Uuid,
+        message: Option<String>,
+    ) -> Result<Uuid>;
+
+    /// Accepts or rejects a co-host invitation for the selected group.
+    async fn decide_event_cohost(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_cohost_id: Uuid,
+        approve: bool,
+    ) -> Result<()>;
+
+    /// Revokes an active co-host relationship for the selected group.
+    async fn revoke_event_cohost(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_cohost_id: Uuid,
+    ) -> Result<()>;
+
     /// Lists reviewer-available CFS submission statuses.
     async fn list_cfs_submission_statuses_for_review(&self) -> Result<Vec<CfsSubmissionStatus>>;
 
@@ -376,6 +404,21 @@ pub(crate) trait DBDashboardGroup {
     /// Lists all verified attendees user ids for an event.
     async fn list_event_attendees_ids(&self, group_id: Uuid, event_id: Uuid) -> Result<Vec<Uuid>>;
 
+    /// Lists groups available to co-host an event.
+    async fn list_event_cohost_candidates(
+        &self,
+        actor_user_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Vec<EventCohostCandidate>>;
+
+    /// Lists co-host requests for an event owned by the selected group.
+    async fn list_event_cohost_requests(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Vec<EventCohostRequest>>;
+
     /// Lists all event categories for a alliance.
     async fn list_event_categories(&self, alliance_id: Uuid) -> Result<Vec<EventCategory>>;
 
@@ -412,6 +455,13 @@ pub(crate) trait DBDashboardGroup {
         group_id: Uuid,
         filters: &EventsListFilters,
     ) -> Result<GroupEvents>;
+
+    /// Lists pending co-host invitations for the selected group.
+    async fn list_group_event_cohost_inbox(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<Vec<EventCohostInvitation>>;
 
     /// Lists all group members.
     async fn list_group_members(
@@ -1456,6 +1506,77 @@ where
         .await
     }
 
+    /// [`DBDashboardGroup::request_event_cohost`]
+    #[instrument(skip(self, message), err)]
+    async fn request_event_cohost(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        cohost_group_id: Uuid,
+        message: Option<String>,
+    ) -> Result<Uuid> {
+        self.fetch_scalar_one(
+            "
+            select request_event_cohost($1::uuid, $3::uuid, $4::uuid, $5::text)
+            from event
+            where event_id = $3::uuid
+              and group_id = $2::uuid
+              and deleted = false
+            ",
+            &[
+                &actor_user_id,
+                &group_id,
+                &event_id,
+                &cohost_group_id,
+                &message,
+            ],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::decide_event_cohost`]
+    #[instrument(skip(self), err)]
+    async fn decide_event_cohost(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_cohost_id: Uuid,
+        approve: bool,
+    ) -> Result<()> {
+        self.execute(
+            "
+            select decide_event_cohost($1::uuid, $3::uuid, $4::boolean)
+            from event_cohost
+            where event_cohost_id = $3::uuid
+              and cohost_group_id = $2::uuid
+            ",
+            &[&actor_user_id, &group_id, &event_cohost_id, &approve],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::revoke_event_cohost`]
+    #[instrument(skip(self), err)]
+    async fn revoke_event_cohost(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_cohost_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "
+            select revoke_event_cohost($1::uuid, $3::uuid)
+            from event_cohost ec
+            join event e using (event_id)
+            where ec.event_cohost_id = $3::uuid
+              and (ec.cohost_group_id = $2::uuid or e.group_id = $2::uuid)
+            ",
+            &[&actor_user_id, &group_id, &event_cohost_id],
+        )
+        .await
+    }
+
     /// [`DBDashboardGroup::list_cfs_submission_statuses_for_review`]
     #[instrument(skip(self), err)]
     async fn list_cfs_submission_statuses_for_review(&self) -> Result<Vec<CfsSubmissionStatus>> {
@@ -1496,6 +1617,64 @@ where
         self.fetch_scalar_one(
             "select list_event_attendees_ids($1::uuid, $2::uuid)",
             &[&group_id, &event_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::list_event_cohost_candidates`]
+    #[instrument(skip(self), err)]
+    async fn list_event_cohost_candidates(
+        &self,
+        actor_user_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Vec<EventCohostCandidate>> {
+        self.fetch_json_one(
+            "select list_event_cohost_candidates($1::uuid, $2::uuid)",
+            &[&actor_user_id, &event_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::list_event_cohost_requests`]
+    #[instrument(skip(self), err)]
+    async fn list_event_cohost_requests(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Vec<EventCohostRequest>> {
+        self.fetch_json_one(
+            "
+            with authorized_event as (
+                select e.event_id
+                from event e
+                join \"group\" primary_group using (group_id)
+                where e.event_id = $3::uuid
+                  and e.group_id = $2::uuid
+                  and e.deleted = false
+                  and user_has_group_permission(
+                      primary_group.alliance_id,
+                      primary_group.group_id,
+                      $1::uuid,
+                      'group.events.write'
+                  )
+            )
+            select coalesce(json_agg(json_build_object(
+                'event_cohost_id', ec.event_cohost_id,
+                'cohost_group_id', ec.cohost_group_id,
+                'alliance_name', alliance.name,
+                'group_name', cohost_group.name,
+                'group_slug', coalesce(cohost_group.slug_pretty, cohost_group.slug),
+                'message', ec.message,
+                'requested_at', floor(extract(epoch from ec.requested_at)),
+                'status', ec.status
+            ) order by ec.requested_at desc), '[]'::json)
+            from event_cohost ec
+            join authorized_event using (event_id)
+            join \"group\" cohost_group on cohost_group.group_id = ec.cohost_group_id
+            join alliance on alliance.alliance_id = cohost_group.alliance_id
+            ",
+            &[&actor_user_id, &group_id, &event_id],
         )
         .await
     }
@@ -1589,6 +1768,20 @@ where
         self.fetch_json_one(
             "select list_group_events($1::uuid, $2::jsonb)",
             &[&group_id, &Json(filters)],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::list_group_event_cohost_inbox`]
+    #[instrument(skip(self), err)]
+    async fn list_group_event_cohost_inbox(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<Vec<EventCohostInvitation>> {
+        self.fetch_json_one(
+            "select get_event_cohost_inbox($1::uuid, $2::uuid)",
+            &[&actor_user_id, &group_id],
         )
         .await
     }

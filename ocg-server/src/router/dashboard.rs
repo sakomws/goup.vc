@@ -327,6 +327,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             "/coffee-meet",
             get(dashboard::group::coffee_meet::list_page),
         )
+        .route("/cohosts", get(dashboard::group::cohosts::list_page))
         .route(
             "/check-in/{event_id}/qr-code",
             get(dashboard::group::attendees::generate_check_in_qr_code),
@@ -455,6 +456,22 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             post(dashboard::group::rolling_cfs::assign_submission),
         )
         .route("/events/preview", post(dashboard::group::events::preview))
+        .route(
+            "/events/{event_id}/cohosts",
+            get(dashboard::group::cohosts::event_page).post(dashboard::group::cohosts::request),
+        )
+        .route(
+            "/events/{event_id}/cohosts/{event_cohost_id}/revoke",
+            put(dashboard::group::cohosts::revoke),
+        )
+        .route(
+            "/cohosts/{event_cohost_id}/accept",
+            put(dashboard::group::cohosts::accept),
+        )
+        .route(
+            "/cohosts/{event_cohost_id}/reject",
+            put(dashboard::group::cohosts::reject),
+        )
         .route(
             "/events/{event_id}/attendees/invite",
             post(dashboard::group::attendees::invite_event_attendee),

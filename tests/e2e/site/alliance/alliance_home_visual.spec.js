@@ -24,7 +24,7 @@ test.describe("alliance home page visual regression @visual", () => {
       page,
       getAllianceAboutSection(page),
       "alliance-home-desktop.png",
-      { testInfo },
+      { testInfo, useClippedPageScreenshot: true },
     );
   });
 

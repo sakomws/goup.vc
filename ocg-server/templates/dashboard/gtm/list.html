@@ -15,7 +15,9 @@
               {% else -%}
                 border-stone-200 bg-white
               {% endif -%}">
-      <div class="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-stone-500">{{ stage_label(stage) }}</div>
+      <div class="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-stone-500">
+        {{ stage_label(stage) }}
+      </div>
       <div class="mt-1 text-2xl font-black text-stone-950">{{ stage_count(stage) }}</div>
     </a>
   {% endfor -%}
@@ -52,9 +54,8 @@
             hx-target="#dashboard-content"
             hx-indicator="#dashboard-spinner"
             {% if !can_manage_gtm %}disabled{% endif %}
-            class="btn-secondary {% if !can_manage_gtm %}opacity-50 cursor-not-allowed{% endif %}">
-      Run lead-gen agent
-    </button>
+            class="btn-secondary
+                   {% if !can_manage_gtm %}opacity-50 cursor-not-allowed{% endif %}">Run lead-gen agent</button>
   </div>
 </div>
 
@@ -69,7 +70,11 @@
           hx-indicator="#dashboard-spinner">
       <div class="space-y-2">
         <label class="form-label" for="gtm-name">Name</label>
-        <input id="gtm-name" name="name" class="input-primary" required maxlength="100" />
+        <input id="gtm-name"
+               name="name"
+               class="input-primary"
+               required
+               maxlength="100" />
       </div>
       <div class="space-y-2">
         <label class="form-label" for="gtm-kind">Kind</label>
@@ -89,11 +94,19 @@
       </div>
       <div class="space-y-2">
         <label class="form-label" for="gtm-website">Website</label>
-        <input id="gtm-website" name="website_url" type="url" class="input-primary" placeholder="https://" />
+        <input id="gtm-website"
+               name="website_url"
+               type="url"
+               class="input-primary"
+               placeholder="https://" />
       </div>
       <div class="space-y-2">
         <label class="form-label" for="gtm-linkedin">LinkedIn</label>
-        <input id="gtm-linkedin" name="linkedin_url" type="url" class="input-primary" placeholder="https://" />
+        <input id="gtm-linkedin"
+               name="linkedin_url"
+               type="url"
+               class="input-primary"
+               placeholder="https://" />
       </div>
       <div class="space-y-2 sm:col-span-2 lg:col-span-3">
         <label class="form-label" for="gtm-notes">Notes</label>
@@ -107,7 +120,7 @@
 {% endif -%}
 
 <div class="text-sm text-stone-600 mb-3">
-  {{ pagination::range_display(offset = filters.offset.unwrap_or(0), count = leads.len(), total = total, label = "lead") }}
+  {{ pagination::range_display(offset = filters.offset.unwrap_or(0) , count = leads.len(), total = total, label = "lead") }}
 </div>
 
 <div class="dashboard-table-scroll relative overflow-x-auto">
@@ -120,13 +133,17 @@
         <th class="px-3 xl:px-5 py-3">Kind</th>
         <th class="px-3 xl:px-5 py-3">Stage</th>
         <th class="hidden md:table-cell px-3 xl:px-5 py-3">Score</th>
-        <th class="px-3 xl:px-5 py-3"><span class="sr-only">Actions</span></th>
+        <th class="px-3 xl:px-5 py-3">
+          <span class="sr-only">Actions</span>
+        </th>
       </tr>
     </thead>
     <tbody>
       {% if leads.is_empty() -%}
         <tr class="bg-white border-b border-stone-200">
-          <td colspan="5" class="px-5 py-8 text-stone-500">No leads yet. Add one manually or run the lead-generation agent.</td>
+          <td colspan="5" class="px-5 py-8 text-stone-500">
+            No leads yet. Add one manually or run the lead-generation agent.
+          </td>
         </tr>
       {% else -%}
         {% for lead in leads -%}
@@ -164,7 +181,9 @@
                           data-confirm-message="Are you sure you want to delete this lead? This cannot be undone."
                           data-confirm-text="Delete"
                           data-success-message="Lead deleted."
-                          data-error-message="Something went wrong deleting this lead. Please try again later.">Delete</button>
+                          data-error-message="Something went wrong deleting this lead. Please try again later.">
+                    Delete
+                  </button>
                 {% endif -%}
               </div>
             </td>

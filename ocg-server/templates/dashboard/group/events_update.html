@@ -32,6 +32,10 @@
         {{ event_form::tab_button(section = "details", icon = "event", label = "Details", active = true) -}}
         {{ event_form::tab_button(section = "date-venue", icon = "calendar", label = "Date & Venue") -}}
         {{ event_form::tab_button(section = "hosts-sponsors", icon = "user-plus", label = "Hosts & Speakers") -}}
+        {% if can_manage_events -%}
+          {% let cohosts_attrs -%}hx-get="/dashboard/group/events/{{ event.event_id }}/cohosts" hx-trigger="click once" hx-target="#event-cohosts-content" hx-swap="innerHTML" hx-indicator="#event-cohosts-loading"{%- endlet %}
+          {{ event_form::tab_button(section = "cohosts", icon = "team", label = "Co-hosts", extra_attrs = cohosts_attrs) -}}
+        {% endif -%}
         {{ event_form::tab_button(section = "sessions", icon = "presentation", label = "Sessions") -}}
         {% if payments_ready -%}
           {{ event_form::tab_button(section = "payments", icon = "ticket", label = "Payments") -}}
@@ -382,7 +386,9 @@
                          id="external_registration_url"
                          class="input-primary"
                          placeholder="https://example.com/register"
-                         {% if let Some(external_registration_url) = &event.external_registration_url %}value="{{ external_registration_url }}"{% endif %}>
+                         {% if let Some(external_registration_url) = &event.external_registration_url %}
+                           value="{{ external_registration_url }}"
+                         {% endif %}>
                 </div>
                 <p class="form-legend">Required when registration happens on an external site.</p>
               </div>
@@ -1027,10 +1033,17 @@
                 <div class="col-span-full lg:col-span-3">
                   <label for="tax_calculation_mode" class="form-label">Tax calculation</label>
                   <div class="mt-2">
-                    <select id="tax_calculation_mode" name="tax_calculation_mode" class="select-primary">
-                      <option value="none" {% if event.tax_calculation_mode.as_deref() != Some("automatic") && event.tax_calculation_mode.as_deref() != Some("manual") %}selected{% endif %}>None</option>
-                      <option value="automatic" {% if event.tax_calculation_mode.as_deref() == Some("automatic") %}selected{% endif %}>Automatic (Stripe Tax)</option>
-                      <option value="manual" {% if event.tax_calculation_mode.as_deref() == Some("manual") %}selected{% endif %}>Manual</option>
+                    <select id="tax_calculation_mode"
+                            name="tax_calculation_mode"
+                            class="select-primary">
+                      <option value="none"
+                              {% if event.tax_calculation_mode.as_deref() != Some("automatic") && event.tax_calculation_mode.as_deref() != Some("manual") %}
+                                selected
+                              {% endif %}>None</option>
+                      <option value="automatic"
+                              {% if event.tax_calculation_mode.as_deref() == Some("automatic") %}selected{% endif %}>Automatic (Stripe Tax)</option>
+                      <option value="manual"
+                              {% if event.tax_calculation_mode.as_deref() == Some("manual") %}selected{% endif %}>Manual</option>
                     </select>
                   </div>
                   <p class="form-legend">Automatic tax requires Stripe Tax and the deployment `automatic_tax` flag.</p>
@@ -1040,8 +1053,10 @@
                   <label for="tax_behavior" class="form-label">Tax behavior</label>
                   <div class="mt-2">
                     <select id="tax_behavior" name="tax_behavior" class="select-primary">
-                      <option value="inclusive" {% if event.tax_behavior.as_deref() != Some("exclusive") %}selected{% endif %}>Inclusive</option>
-                      <option value="exclusive" {% if event.tax_behavior.as_deref() == Some("exclusive") %}selected{% endif %}>Exclusive</option>
+                      <option value="inclusive"
+                              {% if event.tax_behavior.as_deref() != Some("exclusive") %}selected{% endif %}>Inclusive</option>
+                      <option value="exclusive"
+                              {% if event.tax_behavior.as_deref() == Some("exclusive") %}selected{% endif %}>Exclusive</option>
                     </select>
                   </div>
                   <p class="form-legend">Inclusive prices already include tax. Exclusive prices add tax at checkout.</p>
@@ -1056,7 +1071,9 @@
                               class="input-primary"
                               maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }}">{% if let Some(instructions) = &event.external_payment_instructions %}{{ instructions }}{% endif %}</textarea>
                   </div>
-                  <p class="form-legend">Shown when the group has external payments enabled. Attendees pay off Stripe; organizers confirm the transfer.</p>
+                  <p class="form-legend">
+                    Shown when the group has external payments enabled. Attendees pay off Stripe; organizers confirm the transfer.
+                  </p>
                 </div>
 
                 <div class="col-span-full lg:col-span-3">
@@ -1066,7 +1083,9 @@
                            id="external_payment_url"
                            name="external_payment_url"
                            class="input-primary"
-                           value="{% if let Some(url) = &event.external_payment_url %}{{ url }}{% endif %}">
+                           value="{% if let Some(url) = &event.external_payment_url %}
+                                    {{ url }}
+                                  {% endif %}">
                   </div>
                 </div>
 
@@ -1079,7 +1098,9 @@
                            min="1"
                            max="8760"
                            class="input-primary"
-                           value="{% if let Some(hours) = event.external_payment_window_hours %}{{ hours }}{% endif %}">
+                           value="{% if let Some(hours) = event.external_payment_window_hours %}
+                                    {{ hours }}
+                                  {% endif %}">
                   </div>
                 </div>
               </div>
@@ -1176,6 +1197,22 @@
       </form>
     </div>
     {# End Hosts & Speakers Tab -#}
+
+    {% if can_manage_events -%}
+      {# Co-hosts Tab -#}
+      <div data-content="cohosts" class="hidden">
+        <div id="event-cohosts-content">
+          <div id="event-cohosts-loading"
+               class="flex items-center justify-center py-12">
+            <div class="flex flex-col items-center space-y-4">
+              {{ ui::spinner(size = "size-10") -}}
+              <div class="text-sm text-stone-500">Loading co-host groups...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {# End Co-hosts Tab -#}
+    {% endif -%}
 
   </div>
 </div>

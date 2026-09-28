@@ -12,8 +12,8 @@ use axum_messages::Messages;
 use tracing::instrument;
 
 use super::{
-    accelerator, coffee_meet, events, gtm, integrations, logs, members, sponsors, spotlights,
-    store, team,
+    accelerator, coffee_meet, cohosts, events, gtm, integrations, logs, members, sponsors,
+    spotlights, store, team,
 };
 
 use crate::{
@@ -109,6 +109,9 @@ pub(crate) async fn page(
                 coffee_meet::prepare_list_page(&db, alliance_id, group_id, user.user_id).await?;
             Content::CoffeeMeet(template)
         }
+        Tab::Cohosts => {
+            Content::Cohosts(cohosts::prepare_inbox(&db, user.user_id, group_id).await?)
+        }
         Tab::BookExchange => {
             let can_manage_book_exchange = db
                 .user_has_group_permission(
@@ -165,19 +168,18 @@ pub(crate) async fn page(
             Content::Logs(template)
         }
         Tab::Settings => {
-            let (can_manage_settings, group, categories, parent_group_options, regions) =
-                tokio::try_join!(
-                    db.user_has_group_permission(
-                        &alliance_id,
-                        &group_id,
-                        &user.user_id,
-                        GroupPermission::SettingsWrite
-                    ),
-                    db.get_group_full(alliance_id, group_id),
-                    db.list_group_categories(alliance_id),
-                    db.list_group_parent_options(alliance_id, group_id),
-                    db.list_regions(alliance_id)
-                )?;
+            let (can_manage_settings, group, categories, parent_group_options, regions) = tokio::try_join!(
+                db.user_has_group_permission(
+                    &alliance_id,
+                    &group_id,
+                    &user.user_id,
+                    GroupPermission::SettingsWrite
+                ),
+                db.get_group_full(alliance_id, group_id),
+                db.list_group_categories(alliance_id),
+                db.list_group_parent_options(alliance_id, group_id),
+                db.list_regions(alliance_id)
+            )?;
             Content::Settings(Box::new(settings::UpdatePage {
                 can_manage_settings,
                 categories,

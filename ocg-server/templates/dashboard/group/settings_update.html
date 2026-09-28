@@ -169,7 +169,9 @@
                      placeholder="G-XXXXXXXXXX"
                      value="{%- if let Some(measurement_id) = &group.web_analytics_measurement_id -%}{{ measurement_id }}{%- endif -%}">
             </div>
-            <p class="form-legend">Optional. Adds your Google Analytics 4 tag to this group’s public event pages. Your privacy policy must disclose this third-party tracking.</p>
+            <p class="form-legend">
+              Optional. Adds your Google Analytics 4 tag to this group’s public event pages. Your privacy policy must disclose this third-party tracking.
+            </p>
           </div>
           {# End Google Analytics -#}
 

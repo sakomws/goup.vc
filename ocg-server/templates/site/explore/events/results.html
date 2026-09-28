@@ -72,7 +72,12 @@
 
 {% when ViewMode::List -%}
 {# List view -#}
-<div class="mt-4 flex flex-col divide-y divide-[#E2DDD8] {% if events.len() > 0 %}border-y border-[#E2DDD8]{% else %}border-t border-[#E2DDD8]{% endif %}">
+<div class="mt-4 flex flex-col divide-y divide-[#E2DDD8]
+            {% if events.len() > 0 %}
+              border-y border-[#E2DDD8]
+            {% else %}
+              border-t border-[#E2DDD8]
+            {% endif %}">
   {# Placeholder cards -#}
   {% if events.len() == 0 -%}
     <div class="no-results-default hidden py-6">
