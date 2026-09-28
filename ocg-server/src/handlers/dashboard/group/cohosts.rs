@@ -9,11 +9,13 @@ use tracing::instrument;
 use uuid::Uuid;
 
 use crate::{
-    db::DynDB,
+    config::HttpServerConfig,
+    db::{DBExt, DynDB},
     handlers::{
         error::HandlerError,
         extractors::{CurrentUser, SelectedGroupId, ValidatedForm},
     },
+    services::notifications::payloads::build_event_cohost_invitation_notification,
     templates::dashboard::group::cohosts::{self, RequestEventCohost},
 };
 
@@ -46,17 +48,42 @@ pub(crate) async fn request(
     CurrentUser(user): CurrentUser,
     SelectedGroupId(group_id): SelectedGroupId,
     State(db): State<DynDB>,
+    State(server_cfg): State<HttpServerConfig>,
     Path(event_id): Path<Uuid>,
     ValidatedForm(input): ValidatedForm<RequestEventCohost>,
 ) -> Result<impl IntoResponse, HandlerError> {
-    db.request_event_cohost(
-        user.user_id,
-        group_id,
-        event_id,
-        input.cohost_group_id,
-        input.message,
-    )
-    .await?;
+    db.as_ref()
+        .transaction(|tx| {
+            Box::pin(async move {
+                let event_cohost_id = tx
+                    .request_event_cohost(
+                        user.user_id,
+                        group_id,
+                        event_id,
+                        input.cohost_group_id,
+                        input.message,
+                    )
+                    .await?;
+                let recipients =
+                    tx.claim_event_cohost_invitation_recipients(event_cohost_id).await?;
+                if recipients.is_empty() {
+                    return Ok(());
+                }
+
+                let (data, site_settings) = tokio::try_join!(
+                    tx.get_event_cohost_notification_data(event_cohost_id),
+                    tx.get_site_settings(),
+                )?;
+                let notification = build_event_cohost_invitation_notification(
+                    &data,
+                    recipients,
+                    &server_cfg,
+                    &site_settings,
+                )?;
+                tx.enqueue_notification(&notification).await
+            })
+        })
+        .await?;
 
     let template = prepare_event_page(&db, user.user_id, group_id, event_id).await?;
     Ok(Html(template.render()?))

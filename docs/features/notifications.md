@@ -80,6 +80,7 @@ Each notification type has a corresponding Askama template struct in `ocg-server
 | `EventReminder` | Pre-event reminder to registered attendees |
 | `EventWelcome` | RSVP confirmation to new attendee |
 | `EventInvitation` | Organizer sends a personal invitation |
+| `EventCohostInvitation` | A peer group receives a pending co-host request |
 | `EventSeriesPublished` | Event series is published |
 | `EventWaitlistJoined` | User is placed on the waitlist |
 | `EventWaitlistLeft` | User leaves the waitlist |
@@ -121,6 +122,11 @@ SMTP settings are in the `email` section of the config:
 - [Payments](payments.md) — refund request/approval/rejection emails.
 - [Auth](auth.md) — `EmailVerification` and `SiteOnboarding` templates.
 - [Groups and alliances](groups-and-alliances.md) — `GroupWelcome`, `GroupTeamInvitation`, `AllianceTeamInvitation`.
+
+Pending co-host invitation mail is optional and goes only to verified, accepted
+group or alliance organizers who currently hold `group.events.write` for the
+invited group. Recipient claims are persisted with the co-host request so
+retries and overlapping roles do not create duplicate delivery.
 
 ## Entry points for modification
 

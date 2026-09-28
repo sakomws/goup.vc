@@ -68,7 +68,10 @@ use crate::{
                 waitlist::WaitlistEntry,
             },
             user::{
-                invitations::{AllianceTeamInvitation, EventInvitation, GroupTeamInvitation},
+                invitations::{
+                    AllianceTeamInvitation, EventCohostInvitation, EventInvitation,
+                    GroupTeamInvitation,
+                },
                 session_proposals::{
                     PendingCoSpeakerInvitation, SessionProposal as UserSessionProposal,
                     SessionProposalLevel as UserSessionProposalLevel,
@@ -401,6 +404,29 @@ pub(crate) fn sample_alliance_invitation(alliance_id: Uuid) -> AllianceTeamInvit
         alliance_name: "test-alliance".to_string(),
         role: AllianceRole::Admin,
         created_at: Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap(),
+    }
+}
+
+/// Sample event co-host invitation used by user dashboard tests.
+pub(crate) fn sample_event_cohost_invitation(
+    event_cohost_id: Uuid,
+    event_id: Uuid,
+    cohost_group_id: Uuid,
+) -> EventCohostInvitation {
+    EventCohostInvitation {
+        cohost_group_id,
+        cohost_group_name: "Invited Group".to_string(),
+        event_cohost_id,
+        event_id,
+        event_name: "Test Co-host Event".to_string(),
+        event_slug: "test-cohost-event".to_string(),
+        event_starts_at: Some(Utc.with_ymd_and_hms(2026, 10, 1, 0, 0, 0).unwrap()),
+        message: Some("Please join us".to_string()),
+        primary_alliance_name: "test-alliance".to_string(),
+        primary_group_id: Uuid::new_v4(),
+        primary_group_name: "Primary Group".to_string(),
+        primary_group_slug: "primary-group".to_string(),
+        requested_at: Utc.with_ymd_and_hms(2026, 9, 1, 0, 0, 0).unwrap(),
     }
 }
 

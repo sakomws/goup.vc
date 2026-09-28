@@ -29,13 +29,13 @@ use crate::{
     db::DynDB,
     templates::notifications::{
         AllianceTeamInvitation, CfsSubmissionUpdated, CoffeeMeetSuggestion, EmailVerification,
-        EventAttendanceCanceled, EventCanceled, EventCustom, EventInvitation, EventPublished,
-        EventRefundApproved, EventRefundRejected, EventRefundRequested, EventReminder,
-        EventRescheduled, EventSeriesCanceled, EventSeriesPublished, EventSurveyNotification,
-        EventWaitlistJoined, EventWaitlistLeft, EventWaitlistPromoted, EventWelcome, GroupCustom,
-        GroupTeamInvitation, GroupWelcome, IntentionalDatingIntroduction, MockInterviewMatched,
-        OpportunityDigest, SessionProposalCoSpeakerInvitation, SiteOnboarding,
-        SpeakerSeriesWelcome, SpeakerWelcome,
+        EventAttendanceCanceled, EventCanceled, EventCohostInvitation, EventCustom,
+        EventInvitation, EventPublished, EventRefundApproved, EventRefundRejected,
+        EventRefundRequested, EventReminder, EventRescheduled, EventSeriesCanceled,
+        EventSeriesPublished, EventSurveyNotification, EventWaitlistJoined, EventWaitlistLeft,
+        EventWaitlistPromoted, EventWelcome, GroupCustom, GroupTeamInvitation, GroupWelcome,
+        IntentionalDatingIntroduction, MockInterviewMatched, OpportunityDigest,
+        SessionProposalCoSpeakerInvitation, SiteOnboarding, SpeakerSeriesWelcome, SpeakerWelcome,
     },
 };
 
@@ -411,6 +411,12 @@ impl DeliveryWorker {
             NotificationKind::EventCanceled => {
                 let subject = "Event canceled".to_string();
                 let template: EventCanceled = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventCohostInvitation => {
+                let template: EventCohostInvitation = serde_json::from_value(template_data)?;
+                let subject = format!("Co-host invitation: {}", template.event_name);
                 let body = template.render()?;
                 (subject, body)
             }
@@ -804,6 +810,8 @@ pub(crate) enum NotificationKind {
     EventAttendanceCanceled,
     /// Notification for an event canceled.
     EventCanceled,
+    /// Notification asking eligible organizers to decide a co-host request.
+    EventCohostInvitation,
     /// Notification for a custom event message.
     EventCustom,
     /// Notification for an organizer-created event invitation.

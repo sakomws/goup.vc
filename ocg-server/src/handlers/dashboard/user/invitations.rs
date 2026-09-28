@@ -121,6 +121,21 @@ pub(crate) async fn accept_group_team_invitation(
     Ok((StatusCode::NO_CONTENT, [("HX-Trigger", "refresh-body")]))
 }
 
+/// Accepts a pending event co-host invitation.
+#[instrument(skip_all, err)]
+pub(crate) async fn accept_event_cohost_invitation(
+    messages: Messages,
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    Path(event_cohost_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.decide_user_event_cohost(user.user_id, event_cohost_id, true)
+        .await?;
+    messages.success("Co-host invitation accepted.");
+
+    Ok((StatusCode::NO_CONTENT, [("HX-Trigger", "refresh-body")]))
+}
+
 /// Rejects a pending alliance team invitation.
 #[instrument(skip_all, err)]
 pub(crate) async fn reject_alliance_team_invitation(
@@ -166,6 +181,21 @@ pub(crate) async fn reject_group_team_invitation(
     Ok((StatusCode::NO_CONTENT, [("HX-Trigger", "refresh-body")]))
 }
 
+/// Rejects a pending event co-host invitation.
+#[instrument(skip_all, err)]
+pub(crate) async fn reject_event_cohost_invitation(
+    messages: Messages,
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    Path(event_cohost_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.decide_user_event_cohost(user.user_id, event_cohost_id, false)
+        .await?;
+    messages.success("Co-host invitation rejected.");
+
+    Ok((StatusCode::NO_CONTENT, [("HX-Trigger", "refresh-body")]))
+}
+
 // Helpers.
 
 /// Prepares the invitations list page for the user dashboard.
@@ -174,15 +204,17 @@ pub(crate) async fn prepare_list_page(
     user_id: Uuid,
 ) -> Result<invitations::ListPage, HandlerError> {
     // Prepare template fetching both lists concurrently
-    let (alliance_invitations, event_invitations, group_invitations) = tokio::try_join!(
+    let (alliance_invitations, event_invitations, event_cohost_invitations, group_invitations) = tokio::try_join!(
         db.list_user_alliance_team_invitations(user_id),
         db.list_user_event_invitations(user_id),
+        db.list_user_event_cohost_invitations(user_id),
         db.list_user_group_team_invitations(user_id)
     )?;
 
     Ok(invitations::ListPage {
         alliance_invitations,
         event_invitations,
+        event_cohost_invitations,
         group_invitations,
     })
 }

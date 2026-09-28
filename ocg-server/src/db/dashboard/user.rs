@@ -14,7 +14,9 @@ use crate::{
             affiliations::{LandscapeEntryOption, UserAffiliation, UserAffiliationForm},
             coffee_meet::{CoffeeMeetSubscription, CoffeeMeetSubscriptionForm},
             events::{UserEventsFilters, UserEventsOutput},
-            invitations::{AllianceTeamInvitation, EventInvitation, GroupTeamInvitation},
+            invitations::{
+                AllianceTeamInvitation, EventCohostInvitation, EventInvitation, GroupTeamInvitation,
+            },
             mentorship::{ListPage as MentorshipRequestsOutput, MentorshipRequest},
             session_proposals::{
                 PendingCoSpeakerInvitation, SessionProposalInput, SessionProposalLevel,
@@ -46,6 +48,14 @@ pub(crate) trait DBDashboardUser {
     /// Accepts a pending group team invitation.
     async fn accept_group_team_invitation(&self, actor_user_id: Uuid, group_id: Uuid)
     -> Result<()>;
+
+    /// Approves or rejects a co-host invitation visible in the user dashboard.
+    async fn decide_user_event_cohost(
+        &self,
+        actor_user_id: Uuid,
+        event_cohost_id: Uuid,
+        approve: bool,
+    ) -> Result<()>;
 
     /// Accepts a pending co-speaker invitation for a session proposal.
     async fn accept_session_proposal_co_speaker_invitation(
@@ -124,6 +134,12 @@ pub(crate) trait DBDashboardUser {
 
     /// Lists all pending organizer-created event invitations for the user.
     async fn list_user_event_invitations(&self, user_id: Uuid) -> Result<Vec<EventInvitation>>;
+
+    /// Lists pending co-host invitations across groups the user can manage.
+    async fn list_user_event_cohost_invitations(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<EventCohostInvitation>>;
 
     /// Lists upcoming events where the user participates.
     async fn list_user_events(
@@ -273,6 +289,21 @@ where
         self.execute(
             "select accept_group_team_invitation($1::uuid, $2::uuid)",
             &[&actor_user_id, &group_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::decide_user_event_cohost`]
+    #[instrument(skip(self), err)]
+    async fn decide_user_event_cohost(
+        &self,
+        actor_user_id: Uuid,
+        event_cohost_id: Uuid,
+        approve: bool,
+    ) -> Result<()> {
+        self.execute(
+            "select decide_event_cohost($1::uuid, $2::uuid, $3::boolean)",
+            &[&actor_user_id, &event_cohost_id, &approve],
         )
         .await
     }
@@ -453,6 +484,19 @@ where
     async fn list_user_event_invitations(&self, user_id: Uuid) -> Result<Vec<EventInvitation>> {
         self.fetch_json_one("select list_user_event_invitations($1::uuid)", &[&user_id])
             .await
+    }
+
+    /// [`DBDashboardUser::list_user_event_cohost_invitations`]
+    #[instrument(skip(self), err)]
+    async fn list_user_event_cohost_invitations(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<EventCohostInvitation>> {
+        self.fetch_json_one(
+            "select list_user_event_cohost_invitations($1::uuid)",
+            &[&user_id],
+        )
+        .await
     }
 
     /// [`DBDashboardUser::list_user_events`]
