@@ -294,6 +294,8 @@ mod tests {
             kind: QuestionnaireQuestionKind::FreeText,
             prompt: "Any dietary notes?".to_string(),
             required: false,
+            min: None,
+            max: None,
 
             options: vec![],
         }

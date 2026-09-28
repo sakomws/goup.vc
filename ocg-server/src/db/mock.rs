@@ -568,6 +568,13 @@ mock! {
             event: &serde_json::Value,
             cfg_max_participants: &HashMap<crate::services::meetings::MeetingProvider, i32>,
         ) -> Result<Uuid>;
+        async fn add_event_finance_entry(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_id: Uuid,
+            entry: &serde_json::Value,
+        ) -> Result<Uuid>;
         async fn add_event_series(
             &self,
             actor_user_id: Uuid,
@@ -641,6 +648,12 @@ mock! {
             user_id: Uuid,
         ) -> Result<()>;
         async fn delete_event(&self, actor_user_id: Uuid, group_id: Uuid, event_id: Uuid) -> Result<()>;
+        async fn delete_event_finance_entry(
+            &self,
+            group_id: Uuid,
+            event_id: Uuid,
+            event_finance_entry_id: Uuid,
+        ) -> Result<()>;
         async fn delete_event_series_events(
             &self,
             actor_user_id: Uuid,
@@ -687,6 +700,26 @@ mock! {
             alliance_id: Uuid,
             group_id: Uuid,
         ) -> Result<Option<crate::types::payments::GroupPaymentRecipient>>;
+        async fn get_event_growth(
+            &self,
+            group_id: Uuid,
+            event_id: Uuid,
+        ) -> Result<crate::types::event::EventGrowth>;
+        async fn get_public_event_sponsor_report(
+            &self,
+            token: Uuid,
+        ) -> Result<Option<crate::types::event::EventSponsorReport>>;
+        async fn create_event_sponsor_report_share(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_id: Uuid,
+        ) -> Result<Uuid>;
+        async fn revoke_event_sponsor_report_share(
+            &self,
+            group_id: Uuid,
+            event_id: Uuid,
+        ) -> Result<()>;
         async fn get_group_event_defaults(
             &self,
             alliance_id: Uuid,
@@ -984,6 +1017,14 @@ mock! {
             group_id: Uuid,
             event_defaults: Option<serde_json::Value>,
         ) -> Result<()>;
+        async fn update_event_sponsor_manual_engagement(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_id: Uuid,
+            group_sponsor_id: Uuid,
+            input: &serde_json::Value,
+        ) -> Result<()>;
         async fn update_group_sponsor_featured(
             &self,
             actor_user_id: Uuid,
@@ -1189,6 +1230,19 @@ mock! {
             user_id: Uuid,
             bypass_window: bool,
         ) -> Result<()>;
+        async fn capture_event_registration_attribution(
+            &self,
+            event_id: Uuid,
+            user_id: Uuid,
+            attribution: &crate::types::event::EventRegistrationAttribution,
+        ) -> Result<()>;
+        async fn record_event_sponsor_engagement(
+            &self,
+            event_id: Uuid,
+            group_sponsor_id: Uuid,
+            metric: &str,
+            session_nonce: Uuid,
+        ) -> Result<bool>;
         async fn ensure_event_is_active(
             &self,
             alliance_id: Uuid,
@@ -1511,6 +1565,41 @@ mock! {
             group_id: Option<Uuid>,
             limit: i32,
         ) -> Result<crate::types::gtm::GtmLeadCandidates>;
+        async fn list_gtm_sponsor_packages(
+            &self,
+            alliance_id: Uuid,
+            group_id: Option<Uuid>,
+        ) -> Result<crate::types::gtm::GtmSponsorPackages>;
+        async fn list_due_gtm_tasks(
+            &self,
+            alliance_id: Uuid,
+            group_id: Option<Uuid>,
+        ) -> Result<crate::types::gtm::GtmDueTasks>;
+        async fn add_gtm_campaign_record(
+            &self,
+            function: &'static str,
+            actor_user_id: Uuid,
+            alliance_id: Uuid,
+            lead_id: Option<Uuid>,
+            input: &serde_json::Value,
+        ) -> Result<Uuid>;
+        async fn set_gtm_campaign_state(
+            &self,
+            function: &'static str,
+            actor_user_id: Uuid,
+            alliance_id: Uuid,
+            group_id: Option<Uuid>,
+            record_id: Uuid,
+            state: &str,
+        ) -> Result<()>;
+        async fn add_gtm_lead_activity(
+            &self,
+            actor_user_id: Uuid,
+            alliance_id: Uuid,
+            lead_id: Uuid,
+            kind: &str,
+            body: &str,
+        ) -> Result<Uuid>;
     }
 
     #[async_trait]
@@ -1648,6 +1737,10 @@ mock! {
             event_id: Uuid,
         ) -> Result<()>;
         async fn enqueue_due_event_reminders(
+            &self,
+            base_url: &str,
+        ) -> Result<usize>;
+        async fn enqueue_due_event_survey_notifications(
             &self,
             base_url: &str,
         ) -> Result<usize>;
@@ -1821,5 +1914,30 @@ mock! {
             user_id: Uuid,
             template: &crate::templates::dashboard::alliance::email_templates::SiteOnboardingEmailTemplate,
         ) -> Result<()>;
+    }
+
+    #[async_trait]
+    impl crate::db::survey::DBSurvey for DB {
+        async fn get_event_survey_for_user(
+            &self,
+            alliance_id: Uuid,
+            event_id: Uuid,
+            audience: &str,
+            user_id: Uuid,
+        ) -> Result<Option<crate::types::survey::EventSurvey>>;
+        async fn submit_event_survey_response(
+            &self,
+            alliance_id: Uuid,
+            event_id: Uuid,
+            audience: &str,
+            user_id: Uuid,
+            answers: &crate::types::questionnaire::QuestionnaireAnswers,
+        ) -> Result<()>;
+        async fn get_event_survey_dashboard(
+            &self,
+            group_id: Uuid,
+            event_id: Uuid,
+            audience: Option<String>,
+        ) -> Result<crate::types::survey::EventSurveyDashboard>;
     }
 }

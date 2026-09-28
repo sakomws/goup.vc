@@ -1,0 +1,29 @@
+{% extends "notifications/base.html" -%}
+{% import "macros/email.html" as email -%}
+
+{% block subject -%}
+  {% if reminder %}Reminder:{% endif %}
+  Share feedback on {{ event_name }}
+{% endblock subject -%}
+
+{% block preheader -%}
+  Your {{ audience }} feedback helps improve future events.
+{% endblock preheader -%}
+
+{% block content -%}
+  <div class="default mb-30" style="margin-bottom: 30px">
+    {% if reminder %}
+      A quick reminder to share
+    {% else %}
+      Please share
+    {% endif %}
+    your experience with <strong>{{ event_name }}</strong>. The short survey includes
+    a recommendation score, an overall rating, and optional comments.
+  </div>
+  {{ email::button(link = link, text = "Open survey", color = theme.primary_color) }}
+{% endblock content -%}
+
+{% block footer -%}
+  You received this optional email because you participated in {{ event_name }} as
+  an eligible {{ audience }}. You can manage optional notifications in your account.
+{% endblock footer -%}

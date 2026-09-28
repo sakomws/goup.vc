@@ -13,7 +13,7 @@ use crate::db::{
     auth::DBAuth, common::DBCommon, custom_domains::DBCustomDomains, dashboard::DBDashboard,
     event::DBEvent, group::DBGroup, gtm::DBGtm, images::DBImages, jobs::DBJobs,
     landscape::DBLandscape, meetings::DBMeetings, mock_interviews::DBMockInterviews,
-    notifications::DBNotifications, payments::DBPayments, site::DBSite,
+    notifications::DBNotifications, payments::DBPayments, site::DBSite, survey::DBSurvey,
 };
 
 /// Module containing database functionality for accelerator management.
@@ -80,6 +80,8 @@ pub(crate) mod pool;
 
 /// Module containing database functionality for global site.
 pub(crate) mod site;
+/// Module containing authenticated event survey operations.
+pub(crate) mod survey;
 
 /// Database operations supported by root and transaction-scoped handles.
 pub(crate) trait DBOperations:
@@ -101,6 +103,7 @@ pub(crate) trait DBOperations:
     + DBNotifications
     + DBPayments
     + DBSite
+    + DBSurvey
     + Send
     + Sync
 {
@@ -125,6 +128,7 @@ impl<T> DBOperations for T where
         + DBNotifications
         + DBPayments
         + DBSite
+        + DBSurvey
         + Send
         + Sync
 {

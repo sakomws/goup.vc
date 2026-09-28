@@ -31,9 +31,9 @@ use crate::{
         AllianceTeamInvitation, CfsSubmissionUpdated, CoffeeMeetSuggestion, EmailVerification,
         EventAttendanceCanceled, EventCanceled, EventCustom, EventInvitation, EventPublished,
         EventRefundApproved, EventRefundRejected, EventRefundRequested, EventReminder,
-        EventRescheduled, EventSeriesCanceled, EventSeriesPublished, EventWaitlistJoined,
-        EventWaitlistLeft, EventWaitlistPromoted, EventWelcome, GroupCustom, GroupTeamInvitation,
-        GroupWelcome, IntentionalDatingIntroduction, MockInterviewMatched,
+        EventRescheduled, EventSeriesCanceled, EventSeriesPublished, EventSurveyNotification,
+        EventWaitlistJoined, EventWaitlistLeft, EventWaitlistPromoted, EventWelcome, GroupCustom,
+        GroupTeamInvitation, GroupWelcome, IntentionalDatingIntroduction, MockInterviewMatched,
         SessionProposalCoSpeakerInvitation, SiteOnboarding, SpeakerSeriesWelcome, SpeakerWelcome,
     },
 };
@@ -223,12 +223,16 @@ impl EnqueueWorker {
     #[instrument(skip(self), err)]
     async fn enqueue_due_notifications(&self) -> Result<usize> {
         let event_reminders = self.db.enqueue_due_event_reminders(&self.base_url).await?;
+        let event_surveys = self.db.enqueue_due_event_survey_notifications(&self.base_url).await?;
         let coffee_meet_suggestions =
             self.db.enqueue_due_coffee_meet_suggestions(&self.base_url).await?;
         let scheduled_event_attendee_emails =
             self.db.enqueue_due_scheduled_event_attendee_emails().await?;
 
-        Ok(event_reminders + coffee_meet_suggestions + scheduled_event_attendee_emails)
+        Ok(event_reminders
+            + event_surveys
+            + coffee_meet_suggestions
+            + scheduled_event_attendee_emails)
     }
 }
 
@@ -437,6 +441,16 @@ impl DeliveryWorker {
             NotificationKind::EventReminder => {
                 let template: EventReminder = serde_json::from_value(template_data)?;
                 let subject = format!("Reminder: {} starts in 24 hours", template.event.name);
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventSurveyRequest | NotificationKind::EventSurveyReminder => {
+                let template: EventSurveyNotification = serde_json::from_value(template_data)?;
+                let subject = if template.reminder {
+                    format!("Reminder: share feedback on {}", template.event_name)
+                } else {
+                    format!("Share feedback on {}", template.event_name)
+                };
                 let body = template.render()?;
                 (subject, body)
             }
@@ -790,6 +804,10 @@ pub(crate) enum NotificationKind {
     EventRefundRequested,
     /// Notification reminding users about an upcoming event.
     EventReminder,
+    /// Initial post-event survey request.
+    EventSurveyRequest,
+    /// Follow-up post-event survey reminder.
+    EventSurveyReminder,
     /// Notification for an event rescheduled.
     EventRescheduled,
     /// Notification for multiple canceled events in a linked series.

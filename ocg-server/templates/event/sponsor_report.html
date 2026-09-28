@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Sponsor report · {{ report.event_name }}</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+  </head>
+  <body class="bg-stone-50 text-stone-900">
+    <main class="container mx-auto max-w-5xl px-4 py-10">
+      <div class="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+        <p class="text-sm font-semibold uppercase tracking-wide text-stone-500">
+          {% if public %}
+            Shared aggregate report
+          {% else %}
+            Organizer preview
+          {% endif %}
+        </p>
+        <h1 class="mt-2 text-3xl font-bold">{{ report.event_name }} sponsor report</h1>
+        <p class="mt-2 text-sm text-stone-500">
+          Aggregate placement and organizer-entered engagement only. No attendee personal data is included.
+        </p>
+        {% if let Some(survey) = report.sponsor_contact_survey -%}
+          <div class="mt-6 grid grid-cols-2 gap-3 rounded-lg bg-stone-50 p-4 text-sm md:grid-cols-4">
+            <div>
+              <div class="text-stone-500">Sponsor responses</div>
+              <div class="text-xl font-semibold">{{ survey.responses }}</div>
+            </div>
+            <div>
+              <div class="text-stone-500">NPS</div>
+              <div class="text-xl font-semibold">{{ survey.nps_score }}</div>
+            </div>
+            <div>
+              <div class="text-stone-500">Promoter / passive / detractor</div>
+              <div class="text-xl font-semibold">
+                {{ survey.promoters }} / {{ survey.passives }} / {{ survey.detractors }}
+              </div>
+            </div>
+            <div>
+              <div class="text-stone-500">Average rating</div>
+              <div class="text-xl font-semibold">
+                {% if let Some(average) = survey.average_rating %}
+                  {{ average }}
+                {% else %}
+                  —
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endif -%}
+        <div class="mt-8 overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-stone-50 text-stone-600">
+              <tr>
+                <th class="p-3">Sponsor</th>
+                <th class="p-3">Impressions</th>
+                <th class="p-3">Clicks</th>
+                <th class="p-3">Leads</th>
+                <th class="p-3">Conversations</th>
+                <th class="p-3">Meetings</th>
+                <th class="p-3">Deliverables</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-stone-100">
+              {% for sponsor in report.sponsors -%}
+                <tr>
+                  <td class="p-3 font-medium">
+                    {{ sponsor.name }} <span class="text-stone-500">· {{ sponsor.level }}</span>
+                  </td>
+                  <td class="p-3">{{ sponsor.impressions }}</td>
+                  <td class="p-3">{{ sponsor.clicks }}</td>
+                  <td class="p-3">{{ sponsor.leads_count }}</td>
+                  <td class="p-3">{{ sponsor.conversations_count }}</td>
+                  <td class="p-3">{{ sponsor.meetings_count }}</td>
+                  <td class="p-3">{{ sponsor.delivered_deliverables }}/{{ sponsor.promised_deliverables }}</td>
+                </tr>
+              {% else -%}
+                <tr>
+                  <td colspan="7" class="p-4 text-stone-500">No event sponsors configured.</td>
+                </tr>
+              {% endfor -%}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

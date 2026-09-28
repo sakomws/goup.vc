@@ -28,6 +28,30 @@ lead_generation → reachout → get_response → qualification → proposal →
 Humans may move a lead to any stage or delete it from the pipeline. Agents
 only suggest the next legal stage and cannot delete leads.
 
+## Sponsor campaign workspace
+
+Sponsor leads include a phase-one campaign workspace:
+
+- alliance-wide or group-specific packages with normalized price, currency,
+  billing period, and included deliverables
+- multiple sponsor contacts, optionally linked to platform users
+- proposals whose package terms are snapshotted when the proposal is created
+- assigned follow-up tasks and reminders with open/completed/cancelled state
+- proposal-linked or standalone deliverables with delivery state
+- standardized lost reasons
+- organizer-authored calls, emails, meetings, and notes in the existing
+  `gtm_lead_activity` contact history
+
+The lead detail page also exposes estimated value, currency, next action,
+renewal date, and lost reason. Winning a sponsor continues to use the existing
+`group_sponsor_id` linkage and side-effect flow.
+
+The GTM list includes the due-task queue. `list_due_gtm_tasks` only returns
+open tasks and `add_gtm_task` supports a per-lead unique `reminder_key`, so a future
+worker can claim/enqueue notifications without producing duplicate reminders.
+Notification delivery is intentionally not wired in phase one; organizers can
+operate and complete the visible queue now.
+
 ## Permissions
 
 Write access uses `alliance.gtm.write` and `group.gtm.write`. Alliance `admin`

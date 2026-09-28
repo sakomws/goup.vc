@@ -1183,7 +1183,9 @@ async fn db_contracts_list_user_events_deserializes() -> Result<()> {
         QuestionnaireAnswerValue::One(value) => {
             assert_eq!(value, "00000000-0000-0000-0000-00000000c072");
         }
-        QuestionnaireAnswerValue::Many(_) => panic!("expected single-select answer"),
+        QuestionnaireAnswerValue::Many(_) | QuestionnaireAnswerValue::Number(_) => {
+            panic!("expected single-select answer");
+        }
     }
 
     Ok(())
