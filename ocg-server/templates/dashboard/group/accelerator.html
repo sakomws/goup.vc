@@ -10,7 +10,9 @@
           <p class="inline-flex rounded-full border border-primary-200 bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-primary-700">
             Operating workflow
           </p>
-          <h2 class="mt-3 text-xl font-black tracking-tight text-stone-950">One control room for the full accelerator</h2>
+          <h2 class="mt-3 text-xl font-black tracking-tight text-stone-950">
+            One control room for the full accelerator
+          </h2>
           <p class="mt-2 max-w-3xl text-sm/6 text-stone-600">
             Keep the program offer, cohort timeline, application queue, weekly curriculum, member progress, and reviewer feedback in one place.
           </p>
@@ -51,7 +53,9 @@
          class="block bg-white p-5 transition hover:bg-stone-50">
         <div class="text-xs font-bold uppercase tracking-[0.16em] text-stone-500">2. Cohorts</div>
         <div class="mt-2 text-2xl font-black text-stone-950">{{ cohorts.len() }}</div>
-        <p class="mt-1 text-xs text-stone-600">{{ self.cohort_status_count("open") }} open, {{ self.cohort_status_count("running") }} running</p>
+        <p class="mt-1 text-xs text-stone-600">
+          {{ self.cohort_status_count("open") }} open, {{ self.cohort_status_count("running") }} running
+        </p>
       </a>
       <a href="#accelerator-applications"
          class="block bg-white p-5 transition hover:bg-stone-50">
@@ -163,7 +167,9 @@
     <article class="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
       <div id="accelerator-cohort-setup"></div>
       <h2 class="text-xl font-black tracking-tight text-stone-950">Create or update a cohort</h2>
-      <p class="mt-2 text-sm/6 text-stone-600">Set the operational container: status, dates, application deadline, and capacity.</p>
+      <p class="mt-2 text-sm/6 text-stone-600">
+        Set the operational container: status, dates, application deadline, and capacity.
+      </p>
       <form class="inert-form mt-5 grid gap-4"
             hx-post="/dashboard/group/accelerator/cohorts"
             hx-target="#dashboard-content"
@@ -227,7 +233,9 @@
     <article class="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
       <div id="accelerator-curriculum"></div>
       <h2 class="text-xl font-black tracking-tight text-stone-950">Add weekly curriculum</h2>
-      <p class="mt-2 text-sm/6 text-stone-600">Turn the cohort promise into concrete weekly outcomes, resources, and deliverables.</p>
+      <p class="mt-2 text-sm/6 text-stone-600">
+        Turn the cohort promise into concrete weekly outcomes, resources, and deliverables.
+      </p>
       <form class="inert-form mt-5 grid gap-4"
             hx-post="/dashboard/group/accelerator/weeks"
             hx-target="#dashboard-content"
@@ -357,15 +365,21 @@
               </div>
               <div class="grid grid-cols-3 gap-2 text-center">
                 <div class="rounded-xl bg-white px-3 py-2 ring-1 ring-inset ring-stone-200">
-                  <div class="text-lg font-black text-stone-950">{{ self.cohort_applications_count(cohort.group_accelerator_cohort_id) }}</div>
+                  <div class="text-lg font-black text-stone-950">
+                    {{ self.cohort_applications_count(cohort.group_accelerator_cohort_id) }}
+                  </div>
                   <div class="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-stone-500">Apps</div>
                 </div>
                 <div class="rounded-xl bg-white px-3 py-2 ring-1 ring-inset ring-stone-200">
-                  <div class="text-lg font-black text-stone-950">{{ self.cohort_members_count(cohort.group_accelerator_cohort_id) }}</div>
+                  <div class="text-lg font-black text-stone-950">
+                    {{ self.cohort_members_count(cohort.group_accelerator_cohort_id) }}
+                  </div>
                   <div class="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-stone-500">Members</div>
                 </div>
                 <div class="rounded-xl bg-white px-3 py-2 ring-1 ring-inset ring-stone-200">
-                  <div class="text-lg font-black text-stone-950">{{ self.cohort_weeks_count(cohort.group_accelerator_cohort_id) }}</div>
+                  <div class="text-lg font-black text-stone-950">
+                    {{ self.cohort_weeks_count(cohort.group_accelerator_cohort_id) }}
+                  </div>
                   <div class="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-stone-500">Weeks</div>
                 </div>
               </div>
@@ -482,7 +496,9 @@
       {% if members.is_empty() -%}
         <div class="mt-5 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-5 py-8 text-center">
           <h3 class="text-base font-semibold text-stone-950">No accepted members yet</h3>
-          <p class="mt-2 text-sm/6 text-stone-600">Accept applications to create the member roster and start weekly tracking.</p>
+          <p class="mt-2 text-sm/6 text-stone-600">
+            Accept applications to create the member roster and start weekly tracking.
+          </p>
         </div>
       {% else -%}
         <div class="mt-5 grid gap-3">
@@ -508,7 +524,9 @@
       {% if weekly_updates.is_empty() -%}
         <div class="mt-5 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-5 py-8 text-center">
           <h3 class="text-base font-semibold text-stone-950">No weekly updates yet</h3>
-          <p class="mt-2 text-sm/6 text-stone-600">Once members submit progress, review shipped work, metrics, blockers, asks, and links here.</p>
+          <p class="mt-2 text-sm/6 text-stone-600">
+            Once members submit progress, review shipped work, metrics, blockers, asks, and links here.
+          </p>
         </div>
       {% else -%}
         <div class="mt-5 grid gap-4">

@@ -68,11 +68,17 @@
               </div>
               <div class="mt-4 grid gap-3 text-sm/6 text-stone-700">
                 {% if let Some(books) = &member.book_exchange_books -%}
-                  <p class="whitespace-pre-line"><span class="font-semibold text-stone-950">Books:</span> {{ books }}</p>
+                  <p class="whitespace-pre-line">
+                    <span class="font-semibold text-stone-950">Books:</span> {{ books }}
+                  </p>
                 {% else -%}
                   <p class="text-stone-500">No book list details yet.</p>
                 {% endif -%}
-                <p class="text-stone-500">{{ member.title.as_deref().unwrap_or("Member") }}{% if member.company.is_some() %} · {{ member.company.as_deref().unwrap_or("") }}{% endif %}{% if member.city.is_some() %} · {{ member.city.as_deref().unwrap_or("") }}{% endif %}</p>
+                <p class="text-stone-500">
+                  {{ member.title.as_deref().unwrap_or("Member") }}
+                  {% if member.company.is_some() %}· {{ member.company.as_deref().unwrap_or("") }}{% endif %}
+                  {% if member.city.is_some() %}· {{ member.city.as_deref().unwrap_or("") }}{% endif %}
+                </p>
               </div>
             </article>
           {% endfor -%}

@@ -294,13 +294,20 @@
                       name="stage"
                       class="select-primary">
                 <option value="">Not set</option>
-                <option value="pre_seed" {% if entry.stage.as_deref() == Some("pre_seed") %}selected{% endif %}>Pre-seed</option>
-                <option value="seed" {% if entry.stage.as_deref() == Some("seed") %}selected{% endif %}>Seed</option>
-                <option value="series_a" {% if entry.stage.as_deref() == Some("series_a") %}selected{% endif %}>Series A</option>
-                <option value="series_b" {% if entry.stage.as_deref() == Some("series_b") %}selected{% endif %}>Series B</option>
-                <option value="series_c_plus" {% if entry.stage.as_deref() == Some("series_c_plus") %}selected{% endif %}>Series C+</option>
-                <option value="growth" {% if entry.stage.as_deref() == Some("growth") %}selected{% endif %}>Growth</option>
-                <option value="public" {% if entry.stage.as_deref() == Some("public") %}selected{% endif %}>Public</option>
+                <option value="pre_seed"
+                        {% if entry.stage.as_deref() == Some("pre_seed") %}selected{% endif %}>Pre-seed</option>
+                <option value="seed"
+                        {% if entry.stage.as_deref() == Some("seed") %}selected{% endif %}>Seed</option>
+                <option value="series_a"
+                        {% if entry.stage.as_deref() == Some("series_a") %}selected{% endif %}>Series A</option>
+                <option value="series_b"
+                        {% if entry.stage.as_deref() == Some("series_b") %}selected{% endif %}>Series B</option>
+                <option value="series_c_plus"
+                        {% if entry.stage.as_deref() == Some("series_c_plus") %}selected{% endif %}>Series C+</option>
+                <option value="growth"
+                        {% if entry.stage.as_deref() == Some("growth") %}selected{% endif %}>Growth</option>
+                <option value="public"
+                        {% if entry.stage.as_deref() == Some("public") %}selected{% endif %}>Public</option>
               </select>
             </div>
           </div>
@@ -342,9 +349,7 @@
                      value="{{ entry.github_url.as_deref().unwrap_or("") }}" />
             </div>
             {% let logo_value -%}
-            {% if let Some(logo_url) = &entry.logo_url %}
-              value="{{ logo_url }}"
-            {% endif %}
+            {% if let Some(logo_url) = &entry.logo_url %}value="{{ logo_url }}"{% endif %}
           {%- endlet %}
           {{ form_fields::image_field(label = "Logo", name = "logo_url", image_kind = "logo", legend = "Optional logo shown on public landscape cards.", value_attr = logo_value, field_class = "lg:col-span-2") -}}
           <div class="space-y-2">

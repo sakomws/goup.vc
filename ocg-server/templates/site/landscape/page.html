@@ -10,7 +10,7 @@
   <section class="relative isolate overflow-hidden bg-[#1A1510]">
     {# Background hairlines -#}
     <div class="pointer-events-none absolute inset-0 opacity-[0.06]"
-         style="background-image: repeating-linear-gradient(115deg, transparent 0, transparent 78px, #ffffff 78px, #ffffff 79px);">
+         style="background-image: repeating-linear-gradient(115deg, transparent 0, transparent 78px, #ffffff 78px, #ffffff 79px)">
     </div>
     {# End background hairlines -#}
 
@@ -35,7 +35,9 @@
     {% if !logo_entries.is_empty() -%}
       <section class="mb-8 pt-10 sm:pt-14 lg:pt-16">
         <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
-          <h2 class="font-amethysta text-3xl font-bold tracking-tight text-stone-950 sm:text-4xl">Explore the ecosystem</h2>
+          <h2 class="font-amethysta text-3xl font-bold tracking-tight text-stone-950 sm:text-4xl">
+            Explore the ecosystem
+          </h2>
           <p class="text-sm font-medium text-stone-500">{{ logo_entries.len() }} shown</p>
         </div>
 
@@ -43,30 +45,42 @@
           <div class="marquee-row">
             <div class="marquee-track marquee-track--rtl">
               {% for entry in logo_entries -%}
-                {% if loop.index0 % 3 == 0 -%}{{ landscape::logo_tile(entry) }}{% endif -%}
+                {% if loop.index0 % 3 == 0 -%}
+                  {{ landscape::logo_tile(entry) }}
+                {% endif -%}
               {% endfor -%}
               {% for entry in logo_entries -%}
-                {% if loop.index0 % 3 == 0 -%}{{ landscape::logo_tile(entry) }}{% endif -%}
+                {% if loop.index0 % 3 == 0 -%}
+                  {{ landscape::logo_tile(entry) }}
+                {% endif -%}
               {% endfor -%}
             </div>
           </div>
           <div class="marquee-row">
             <div class="marquee-track marquee-track--ltr">
               {% for entry in logo_entries -%}
-                {% if loop.index0 % 3 == 1 -%}{{ landscape::logo_tile(entry) }}{% endif -%}
+                {% if loop.index0 % 3 == 1 -%}
+                  {{ landscape::logo_tile(entry) }}
+                {% endif -%}
               {% endfor -%}
               {% for entry in logo_entries -%}
-                {% if loop.index0 % 3 == 1 -%}{{ landscape::logo_tile(entry) }}{% endif -%}
+                {% if loop.index0 % 3 == 1 -%}
+                  {{ landscape::logo_tile(entry) }}
+                {% endif -%}
               {% endfor -%}
             </div>
           </div>
           <div class="marquee-row">
             <div class="marquee-track marquee-track--rtl">
               {% for entry in logo_entries -%}
-                {% if loop.index0 % 3 == 2 -%}{{ landscape::logo_tile(entry) }}{% endif -%}
+                {% if loop.index0 % 3 == 2 -%}
+                  {{ landscape::logo_tile(entry) }}
+                {% endif -%}
               {% endfor -%}
               {% for entry in logo_entries -%}
-                {% if loop.index0 % 3 == 2 -%}{{ landscape::logo_tile(entry) }}{% endif -%}
+                {% if loop.index0 % 3 == 2 -%}
+                  {{ landscape::logo_tile(entry) }}
+                {% endif -%}
               {% endfor -%}
             </div>
           </div>
@@ -113,17 +127,25 @@
 
       <label class="sr-only" for="landscape-sector">Sector</label>
       <select id="landscape-sector"
-             name="category"
+              name="category"
               class="input h-11 rounded-full border-stone-200 bg-stone-50/70 px-4 transition focus:border-stone-400 focus:bg-white focus:outline-none focus:ring-0">
         <option value="">All sectors</option>
-        <option value="AI" {% if filters.category.as_deref() == Some("AI") %}selected{% endif %}>AI</option>
-        <option value="ClimateTech" {% if filters.category.as_deref() == Some("ClimateTech") %}selected{% endif %}>ClimateTech</option>
-        <option value="Cybersecurity" {% if filters.category.as_deref() == Some("Cybersecurity") %}selected{% endif %}>Cybersecurity</option>
-        <option value="DevTools" {% if filters.category.as_deref() == Some("DevTools") %}selected{% endif %}>DevTools</option>
-        <option value="EdTech" {% if filters.category.as_deref() == Some("EdTech") %}selected{% endif %}>EdTech</option>
-        <option value="Fintech" {% if filters.category.as_deref() == Some("Fintech") %}selected{% endif %}>Fintech</option>
-        <option value="HealthTech" {% if filters.category.as_deref() == Some("HealthTech") %}selected{% endif %}>HealthTech</option>
-        <option value="Infrastructure" {% if filters.category.as_deref() == Some("Infrastructure") %}selected{% endif %}>Infrastructure</option>
+        <option value="AI"
+                {% if filters.category.as_deref() == Some("AI") %}selected{% endif %}>AI</option>
+        <option value="ClimateTech"
+                {% if filters.category.as_deref() == Some("ClimateTech") %}selected{% endif %}>ClimateTech</option>
+        <option value="Cybersecurity"
+                {% if filters.category.as_deref() == Some("Cybersecurity") %}selected{% endif %}>Cybersecurity</option>
+        <option value="DevTools"
+                {% if filters.category.as_deref() == Some("DevTools") %}selected{% endif %}>DevTools</option>
+        <option value="EdTech"
+                {% if filters.category.as_deref() == Some("EdTech") %}selected{% endif %}>EdTech</option>
+        <option value="Fintech"
+                {% if filters.category.as_deref() == Some("Fintech") %}selected{% endif %}>Fintech</option>
+        <option value="HealthTech"
+                {% if filters.category.as_deref() == Some("HealthTech") %}selected{% endif %}>HealthTech</option>
+        <option value="Infrastructure"
+                {% if filters.category.as_deref() == Some("Infrastructure") %}selected{% endif %}>Infrastructure</option>
       </select>
 
       <label class="sr-only" for="landscape-stage">Startup stage</label>
@@ -131,13 +153,20 @@
               name="stage"
               class="input h-11 rounded-full border-stone-200 bg-stone-50/70 px-4 transition focus:border-stone-400 focus:bg-white focus:outline-none focus:ring-0">
         <option value="">All startup stages</option>
-        <option value="pre_seed" {% if filters.stage.as_deref() == Some("pre_seed") %}selected{% endif %}>Pre-seed</option>
-        <option value="seed" {% if filters.stage.as_deref() == Some("seed") %}selected{% endif %}>Seed</option>
-        <option value="series_a" {% if filters.stage.as_deref() == Some("series_a") %}selected{% endif %}>Series A</option>
-        <option value="series_b" {% if filters.stage.as_deref() == Some("series_b") %}selected{% endif %}>Series B</option>
-        <option value="series_c_plus" {% if filters.stage.as_deref() == Some("series_c_plus") %}selected{% endif %}>Series C+</option>
-        <option value="growth" {% if filters.stage.as_deref() == Some("growth") %}selected{% endif %}>Growth</option>
-        <option value="public" {% if filters.stage.as_deref() == Some("public") %}selected{% endif %}>Public</option>
+        <option value="pre_seed"
+                {% if filters.stage.as_deref() == Some("pre_seed") %}selected{% endif %}>Pre-seed</option>
+        <option value="seed"
+                {% if filters.stage.as_deref() == Some("seed") %}selected{% endif %}>Seed</option>
+        <option value="series_a"
+                {% if filters.stage.as_deref() == Some("series_a") %}selected{% endif %}>Series A</option>
+        <option value="series_b"
+                {% if filters.stage.as_deref() == Some("series_b") %}selected{% endif %}>Series B</option>
+        <option value="series_c_plus"
+                {% if filters.stage.as_deref() == Some("series_c_plus") %}selected{% endif %}>Series C+</option>
+        <option value="growth"
+                {% if filters.stage.as_deref() == Some("growth") %}selected{% endif %}>Growth</option>
+        <option value="public"
+                {% if filters.stage.as_deref() == Some("public") %}selected{% endif %}>Public</option>
       </select>
 
       <button class="inline-flex h-11 items-center justify-center rounded-full bg-stone-950 px-6 text-sm font-bold text-white shadow-sm transition hover:bg-stone-800"
@@ -228,9 +257,15 @@
                      hx-boost="false">
                     {# Rank: top three carry the accent, the rest stay quiet -#}
                     <span class="font-amethysta w-6 text-lg font-bold tabular-nums sm:w-7
-                                 {% if loop.index == 1 %}text-[#2461D1]{% else if loop.index == 2 %}text-[#3D5A8A]{% else if loop.index == 3 %}text-[#a86a3c]{% else %}text-[#c2b6a8]{% endif %}">
-                      {{ loop.index }}
-                    </span>
+                                 {% if loop.index == 1 %}
+                                   text-[#2461D1]
+                                 {% else if loop.index == 2 %}
+                                   text-[#3D5A8A]
+                                 {% else if loop.index == 3 %}
+                                   text-[#a86a3c]
+                                 {% else %}
+                                   text-[#c2b6a8]
+                                 {% endif %}">{{ loop.index }}</span>
 
                     <div class="min-w-0">
                       <div class="truncate text-[17px] font-semibold leading-snug text-[#1A1510] transition group-hover:text-[#2461D1]">
@@ -256,7 +291,9 @@
                         <div class="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#9A9088] sm:mt-0.5">Forks</div>
                       </div>
                       <div class="flex items-baseline gap-1.5 text-left sm:block sm:text-right">
-                        <div class="text-sm font-bold tabular-nums text-[#3a2f25]">{{ project.metrics.open_issues_count|num_fmt }}</div>
+                        <div class="text-sm font-bold tabular-nums text-[#3a2f25]">
+                          {{ project.metrics.open_issues_count|num_fmt }}
+                        </div>
                         <div class="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#9A9088] sm:mt-0.5">Issues</div>
                       </div>
                       <div class="hidden text-left sm:block sm:text-right">
@@ -278,9 +315,7 @@
 
     <div class="mb-6 flex flex-wrap items-end justify-between gap-3 pt-10 sm:pt-14 lg:pt-16">
       <div>
-        <h2 class="font-amethysta text-3xl font-bold tracking-tight text-[#1A1510] sm:text-4xl">
-          Directory
-        </h2>
+        <h2 class="font-amethysta text-3xl font-bold tracking-tight text-[#1A1510] sm:text-4xl">Directory</h2>
         <p class="font-metrophobic mt-2 text-sm text-[#9A9088]">
           {{ pagination::range_display(offset = filters.offset.unwrap_or(0) , count = entries.len(), total = total, label = "entry") }}
         </p>
@@ -321,7 +356,21 @@
                   {% endif -%}
                   {% if let Some(stage) = &entry.stage -%}
                     <span class="font-metrophobic text-xs text-[#9A9088]">
-                      {% if stage == "pre_seed" %}Pre-seed{% else if stage == "seed" %}Seed{% else if stage == "series_a" %}Series A{% else if stage == "series_b" %}Series B{% else if stage == "series_c_plus" %}Series C+{% else if stage == "growth" %}Growth{% else %}Public{% endif %}
+                      {% if stage == "pre_seed" %}
+                        Pre-seed
+                      {% else if stage == "seed" %}
+                        Seed
+                      {% else if stage == "series_a" %}
+                        Series A
+                      {% else if stage == "series_b" %}
+                        Series B
+                      {% else if stage == "series_c_plus" %}
+                        Series C+
+                      {% else if stage == "growth" %}
+                        Growth
+                      {% else %}
+                        Public
+                      {% endif %}
                     </span>
                   {% endif -%}
                 </div>

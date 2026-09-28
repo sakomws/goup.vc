@@ -61,9 +61,7 @@
   {# Filters sidebar column -#}
   <aside class="lg:w-[288px] xl:w-[320px] lg:shrink-0 lg:border-r lg:border-[#E2DDD8] lg:pr-7 xl:pr-9">
     {# Desktop filters header -#}
-    <div class="hidden lg:block">
-      {% include "site/explore/filters_header.html" -%}
-    </div>
+    <div class="hidden lg:block">{% include "site/explore/filters_header.html" -%}</div>
     {# End desktop filters header -#}
 
     {# Search + mobile filters button -#}
@@ -110,7 +108,8 @@
   {# End filters sidebar column -#}
 
   {# Results column -#}
-  <div id="explore-cards" class="relative mt-8 min-w-0 flex-1 lg:mt-0 lg:pl-9 xl:pl-14">
+  <div id="explore-cards"
+       class="relative mt-8 min-w-0 flex-1 lg:mt-0 lg:pl-9 xl:pl-14">
     <div class="relative flex h-full flex-col rounded-[10px] border border-[#E2DDD8] bg-white px-6 pt-7 shadow-md shadow-stone-200/50 md:px-10 md:pt-6 lg:px-12">
       {# Results header: count, view mode, sort by -#}
       <div class="flex flex-wrap items-center justify-between gap-3 md:flex-nowrap">
@@ -191,9 +190,7 @@
         <div class="flex min-w-0 flex-1 flex-row items-center justify-end">
           {% if view_mode == ViewMode::List -%}
             <label for="sort_selector"
-                   class="text-[13px] text-nowrap text-[#8A7A6E] leading-6 me-2">
-              Sort by:
-            </label>
+                   class="text-[13px] text-nowrap text-[#8A7A6E] leading-6 me-2">Sort by:</label>
 
             {% let current_sort_by = filters.sort_by.clone().unwrap_or("date".to_string()) -%}
 

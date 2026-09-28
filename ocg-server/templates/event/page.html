@@ -33,10 +33,14 @@
 
 {% block scripts -%}
   {% if let Some(measurement_id) = &event.group.web_analytics_measurement_id -%}
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ measurement_id }}"></script>
+    <script async
+            src="https://www.googletagmanager.com/gtag/js?id={{ measurement_id }}"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
+
+      function gtag() {
+        dataLayer.push(arguments);
+      }
       gtag("js", new Date());
       gtag("config", "{{ measurement_id }}");
     </script>
@@ -232,7 +236,10 @@
                     <p class="mt-1 whitespace-pre-line">{{ instructions }}</p>
                   {% endif -%}
                   {% if let Some(url) = &event.external_payment_url -%}
-                    <a href="{{ url }}" class="mt-2 inline-flex text-amber-900 underline" target="_blank" rel="noopener noreferrer">Open payment instructions</a>
+                    <a href="{{ url }}"
+                       class="mt-2 inline-flex text-amber-900 underline"
+                       target="_blank"
+                       rel="noopener noreferrer">Open payment instructions</a>
                   {% endif -%}
                   <p class="mt-2 text-amber-800">After you pay, an organizer will confirm your ticket.</p>
                 </div>

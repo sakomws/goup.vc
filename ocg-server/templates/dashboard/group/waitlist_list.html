@@ -101,24 +101,24 @@
         {% if *active_title == crate::templates::dashboard::group::PresenceFilter::Present -%}
           {% call dashboard::active_table_filter_badge("Present") -%}
           {{ dashboard::active_table_filter_remove_button(label = "Remove title filter") -}}
-          {% endcall -%}
-        {% else -%}
-          {% call dashboard::active_table_filter_badge("Missing") -%}
-          {{ dashboard::active_table_filter_remove_button(label = "Remove title filter") -}}
-          {% endcall -%}
-        {% endif -%}
-      </form>
+        {% endcall -%}
+      {% else -%}
+        {% call dashboard::active_table_filter_badge("Missing") -%}
+        {{ dashboard::active_table_filter_remove_button(label = "Remove title filter") -}}
+      {% endcall -%}
     {% endif -%}
-    <form class="inline-flex"
-          hx-get="/dashboard/group/events/{{ event.event_id }}/waitlist"
-          hx-target="#waitlist-content"
-          hx-swap="innerHTML"
-          hx-indicator="#dashboard-spinner">
-      {{ waitlist_table_state_inputs(limit, sort, title, ts_query, include_title = false) -}}
-      <button type="submit" class="btn-primary-outline btn-mini h-7!">Reset all</button>
-    </form>
-  </div>
-  {# End active filters -#}
+  </form>
+{% endif -%}
+<form class="inline-flex"
+      hx-get="/dashboard/group/events/{{ event.event_id }}/waitlist"
+      hx-target="#waitlist-content"
+      hx-swap="innerHTML"
+      hx-indicator="#dashboard-spinner">
+  {{ waitlist_table_state_inputs(limit, sort, title, ts_query, include_title = false) -}}
+  <button type="submit" class="btn-primary-outline btn-mini h-7!">Reset all</button>
+</form>
+</div>
+{# End active filters -#}
 {% endif -%}
 
 {# Header -#}
@@ -155,143 +155,145 @@
               {{ dashboard::table_filter_option_button(label = "Missing", name = "title", value = "missing", is_active = title == Some(crate::templates::dashboard::group::PresenceFilter::Missing) ) -}}
             </form>
           </div>
-          {% endcall -%}
-        </th>
-        <th scope="col" class="px-3 xl:px-5 py-1.5">Queue</th>
-        <th scope="col" class="hidden xl:table-cell px-3 xl:px-5 py-1.5 w-40">
-          <span class="whitespace-nowrap">Joined</span>
-        </th>
-        <th scope="col" class="px-3 xl:px-5 py-1.5 w-[72px]">
-          <span class="sr-only">Actions</span>
-        </th>
+        {% endcall -%}
+      </th>
+      <th scope="col" class="px-3 xl:px-5 py-1.5">Queue</th>
+      <th scope="col" class="hidden xl:table-cell px-3 xl:px-5 py-1.5 w-40">
+        <span class="whitespace-nowrap">Joined</span>
+      </th>
+      <th scope="col" class="px-3 xl:px-5 py-1.5 w-[72px]">
+        <span class="sr-only">Actions</span>
+      </th>
+    </tr>
+  </thead>
+  {# End table header -#}
+  <tbody id="waitlist-list" role="rowgroup">
+    {% if waitlist.is_empty() -%}
+      {# Empty state -#}
+      <tr class="bg-white border-b border-stone-200">
+        <td class="xl:hidden px-8 py-12 text-center" colspan="3">
+          {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
+            {% include "dashboard/placeholders/group_waitlist_no_results.html" -%}
+          {% else if event.waitlist_enabled -%}
+            {% include "dashboard/placeholders/group_waitlist_table.html" -%}
+          {% else -%}
+            {% include "dashboard/placeholders/group_waitlist_disabled_table.html" -%}
+          {% endif -%}
+        </td>
+        <td class="hidden xl:table-cell 2xl:hidden px-8 py-12 text-center"
+            colspan="4">
+          {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
+            {% include "dashboard/placeholders/group_waitlist_no_results.html" -%}
+          {% else if event.waitlist_enabled -%}
+            {% include "dashboard/placeholders/group_waitlist_table.html" -%}
+          {% else -%}
+            {% include "dashboard/placeholders/group_waitlist_disabled_table.html" -%}
+          {% endif -%}
+        </td>
+        <td class="hidden 2xl:table-cell px-8 py-12 text-center" colspan="5">
+          {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
+            {% include "dashboard/placeholders/group_waitlist_no_results.html" -%}
+          {% else if event.waitlist_enabled -%}
+            {% include "dashboard/placeholders/group_waitlist_table.html" -%}
+          {% else -%}
+            {% include "dashboard/placeholders/group_waitlist_disabled_table.html" -%}
+          {% endif -%}
+        </td>
       </tr>
-    </thead>
-    {# End table header -#}
-    <tbody id="waitlist-list" role="rowgroup">
-      {% if waitlist.is_empty() -%}
-        {# Empty state -#}
-        <tr class="bg-white border-b border-stone-200">
-          <td class="xl:hidden px-8 py-12 text-center" colspan="3">
-            {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
-              {% include "dashboard/placeholders/group_waitlist_no_results.html" -%}
-            {% else if event.waitlist_enabled -%}
-              {% include "dashboard/placeholders/group_waitlist_table.html" -%}
-            {% else -%}
-              {% include "dashboard/placeholders/group_waitlist_disabled_table.html" -%}
+      {# End empty state -#}
+    {% else -%}
+      {% for entry in waitlist -%}
+        {# Waitlist row -#}
+        <tr class="odd:bg-white even:bg-stone-50/50 border-b border-stone-200">
+          {# Entry -#}
+          <td class="px-3 xl:px-5 py-4 max-w-0">
+            {% call dashboard::user_profile_modal_trigger(entry.user, self::user_initials(entry.user.name.as_deref() , entry.user.username.as_str())) -%}
+            <div class="font-medium text-stone-900 truncate mb-1 group-hover:text-primary-600">
+              {{ entry.user.name.as_deref() |assigned_or(entry.user.username) }}
+            </div>
+          {% endcall -%}
+        </td>
+        {# End entry -#}
+        {# Position -#}
+        <td class="hidden 2xl:table-cell px-3 xl:px-5 py-4 max-w-0">
+          <div class="flex flex-col space-y-1">
+            <div class="font-medium text-stone-900 truncate">{{ entry.user.company.as_deref() |assigned_or("-") }}</div>
+            {% if let Some(title) = &entry.user.title -%}
+              <div class="text-xs text-stone-600 truncate">{{ title }}</div>
             {% endif -%}
-          </td>
-          <td class="hidden xl:table-cell 2xl:hidden px-8 py-12 text-center"
-              colspan="4">
-            {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
-              {% include "dashboard/placeholders/group_waitlist_no_results.html" -%}
-            {% else if event.waitlist_enabled -%}
-              {% include "dashboard/placeholders/group_waitlist_table.html" -%}
-            {% else -%}
-              {% include "dashboard/placeholders/group_waitlist_disabled_table.html" -%}
-            {% endif -%}
-          </td>
-          <td class="hidden 2xl:table-cell px-8 py-12 text-center" colspan="5">
-            {% if ts_query.is_some() && !ts_query.as_ref().unwrap().is_empty() -%}
-              {% include "dashboard/placeholders/group_waitlist_no_results.html" -%}
-            {% else if event.waitlist_enabled -%}
-              {% include "dashboard/placeholders/group_waitlist_table.html" -%}
-            {% else -%}
-              {% include "dashboard/placeholders/group_waitlist_disabled_table.html" -%}
-            {% endif -%}
-          </td>
-        </tr>
-        {# End empty state -#}
-      {% else -%}
-        {% for entry in waitlist -%}
-          {# Waitlist row -#}
-          <tr class="odd:bg-white even:bg-stone-50/50 border-b border-stone-200">
-            {# Entry -#}
-            <td class="px-3 xl:px-5 py-4 max-w-0">
-              {% call dashboard::user_profile_modal_trigger(entry.user, self::user_initials(entry.user.name.as_deref() , entry.user.username.as_str())) -%}
-              <div class="font-medium text-stone-900 truncate mb-1 group-hover:text-primary-600">{{ entry.user.name.as_deref() |assigned_or(entry.user.username) }}</div>
-              {% endcall -%}
-            </td>
-            {# End entry -#}
-            {# Position -#}
-            <td class="hidden 2xl:table-cell px-3 xl:px-5 py-4 max-w-0">
-              <div class="flex flex-col space-y-1">
-                <div class="font-medium text-stone-900 truncate">{{ entry.user.company.as_deref() |assigned_or("-") }}</div>
-                {% if let Some(title) = &entry.user.title -%}
-                  <div class="text-xs text-stone-600 truncate">{{ title }}</div>
-                {% endif -%}
+          </div>
+        </td>
+        {# End position -#}
+        {# Queue -#}
+        <td class="px-3 xl:px-5 py-4">{{ entry.waitlist_position }}</td>
+        {# End queue -#}
+        {# Joined date -#}
+        <td class="hidden xl:table-cell px-3 xl:px-5 py-4 whitespace-nowrap w-40">
+          {{ entry.created_at.format("%b %d, %Y") }}
+        </td>
+        {# End joined date -#}
+        {# Actions -#}
+        <td class="px-3 xl:px-5 py-4 w-[72px] text-right">
+          <div class="relative inline-flex justify-end">
+            {% if can_manage_events && !event.canceled && !event.is_past() && !event.is_ticketed() -%}
+              <div class="group relative">
+                <button type="button"
+                        data-event-id="waitlist-{{ entry.user.user_id }}"
+                        aria-label="Open waitlist actions for {{ entry.user.name.as_deref() |assigned_or(entry.user.username) }}"
+                        aria-haspopup="menu"
+                        aria-controls="dropdown-actions-waitlist-{{ entry.user.user_id }}"
+                        class="btn-actions btn-tertiary flex items-center justify-center p-2 group-has-[.dropdown:not(.hidden)]:bg-stone-50">
+                  <div class="svg-icon size-4 icon-vertical-dots"></div>
+                </button>
+                <div id="dropdown-actions-waitlist-{{ entry.user.user_id }}"
+                     data-event-actions-dropdown
+                     class="dropdown absolute hidden z-10 end-0 top-8 w-[200px] bg-white divide-y divide-stone-100 rounded-lg shadow border border-stone-200">
+                  <ul class="py-2 text-sm text-stone-700" role="menu">
+                    <li>
+                      <form hx-post="/dashboard/group/events/{{ event.event_id }}/attendees/invite"
+                            hx-indicator="#dashboard-spinner"
+                            hx-disabled-elt="button[type=submit]"
+                            data-htmx-response
+                            data-success-message="Invitation sent."
+                            data-error-message="Something went wrong sending this invitation. Please try again later.">
+                        <input type="hidden" name="user_id" value="{{ entry.user.user_id }}" />
+                        <button type="submit"
+                                role="menuitem"
+                                class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left">
+                          <div class="svg-icon size-4 icon-user-plus shrink-0 bg-stone-500"></div>
+                          <span>Invite user</span>
+                        </button>
+                      </form>
+                    </li>
+                  </ul>
+                </div>
               </div>
-            </td>
-            {# End position -#}
-            {# Queue -#}
-            <td class="px-3 xl:px-5 py-4">{{ entry.waitlist_position }}</td>
-            {# End queue -#}
-            {# Joined date -#}
-            <td class="hidden xl:table-cell px-3 xl:px-5 py-4 whitespace-nowrap w-40">
-              {{ entry.created_at.format("%b %d, %Y") }}
-            </td>
-            {# End joined date -#}
-            {# Actions -#}
-            <td class="px-3 xl:px-5 py-4 w-[72px] text-right">
-              <div class="relative inline-flex justify-end">
-                {% if can_manage_events && !event.canceled && !event.is_past() && !event.is_ticketed() -%}
-                  <div class="group relative">
-                    <button type="button"
-                            data-event-id="waitlist-{{ entry.user.user_id }}"
-                            aria-label="Open waitlist actions for {{ entry.user.name.as_deref() |assigned_or(entry.user.username) }}"
-                            aria-haspopup="menu"
-                            aria-controls="dropdown-actions-waitlist-{{ entry.user.user_id }}"
-                            class="btn-actions btn-tertiary flex items-center justify-center p-2 group-has-[.dropdown:not(.hidden)]:bg-stone-50">
-                      <div class="svg-icon size-4 icon-vertical-dots"></div>
-                    </button>
-                    <div id="dropdown-actions-waitlist-{{ entry.user.user_id }}"
-                         data-event-actions-dropdown
-                         class="dropdown absolute hidden z-10 end-0 top-8 w-[200px] bg-white divide-y divide-stone-100 rounded-lg shadow border border-stone-200">
-                      <ul class="py-2 text-sm text-stone-700" role="menu">
-                        <li>
-                          <form hx-post="/dashboard/group/events/{{ event.event_id }}/attendees/invite"
-                                hx-indicator="#dashboard-spinner"
-                                hx-disabled-elt="button[type=submit]"
-                                data-htmx-response
-                                data-success-message="Invitation sent."
-                                data-error-message="Something went wrong sending this invitation. Please try again later.">
-                            <input type="hidden" name="user_id" value="{{ entry.user.user_id }}" />
-                            <button type="submit"
-                                    role="menuitem"
-                                    class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left">
-                              <div class="svg-icon size-4 icon-user-plus shrink-0 bg-stone-500"></div>
-                              <span>Invite user</span>
-                            </button>
-                          </form>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                {% else -%}
-                  <button type="button"
-                          class="btn-actions btn-tertiary flex cursor-not-allowed items-center justify-center p-2 opacity-50"
-                          disabled
-                          {% if !can_manage_events -%}
-                            title="Your role cannot invite attendees."
-                          {% else if event.canceled -%}
-                            title="Canceled events cannot invite attendees."
-                          {% else if event.is_past() -%}
-                            title="Past events cannot invite attendees."
-                          {% else if event.is_ticketed() -%}
-                            title="Manual invitations are not available for ticketed events."
-                          {% endif -%}
-                          aria-label="Waitlist actions unavailable for {{ entry.user.name.as_deref() |assigned_or(entry.user.username) }}">
-                    <div class="svg-icon size-4 icon-vertical-dots"></div>
-                  </button>
-                {% endif -%}
-              </div>
-            </td>
-            {# End actions -#}
-          </tr>
-          {# End waitlist row -#}
-        {% endfor -%}
-      {% endif -%}
-    </tbody>
-  </table>
+            {% else -%}
+              <button type="button"
+                      class="btn-actions btn-tertiary flex cursor-not-allowed items-center justify-center p-2 opacity-50"
+                      disabled
+                      {% if !can_manage_events -%}
+                        title="Your role cannot invite attendees."
+                      {% else if event.canceled -%}
+                        title="Canceled events cannot invite attendees."
+                      {% else if event.is_past() -%}
+                        title="Past events cannot invite attendees."
+                      {% else if event.is_ticketed() -%}
+                        title="Manual invitations are not available for ticketed events."
+                      {% endif -%}
+                      aria-label="Waitlist actions unavailable for {{ entry.user.name.as_deref() |assigned_or(entry.user.username) }}">
+                <div class="svg-icon size-4 icon-vertical-dots"></div>
+              </button>
+            {% endif -%}
+          </div>
+        </td>
+        {# End actions -#}
+      </tr>
+      {# End waitlist row -#}
+    {% endfor -%}
+  {% endif -%}
+</tbody>
+</table>
 </div>
 {# End waitlist table -#}
 
