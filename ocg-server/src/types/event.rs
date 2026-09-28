@@ -793,10 +793,42 @@ pub struct EventSponsorReport {
     #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub starts_at: Option<DateTime<Utc>>,
     #[serde(default)]
+    pub sponsor_count: i64,
+    #[serde(default)]
+    pub total_impressions: i64,
+    #[serde(default)]
+    pub total_clicks: i64,
+    #[serde(default)]
+    pub click_through_rate: f64,
+    #[serde(default)]
+    pub total_leads: i64,
+    #[serde(default)]
+    pub total_conversations: i64,
+    #[serde(default)]
+    pub total_meetings: i64,
+    #[serde(default)]
+    pub promised_deliverables: i64,
+    #[serde(default)]
+    pub delivered_deliverables: i64,
+    #[serde(default)]
+    pub deliverable_completion_rate: f64,
+    #[serde(default)]
+    pub event_outcomes: EventSponsorReportOutcomes,
+    #[serde(default)]
     pub sponsors: Vec<EventSponsorMetrics>,
     /// Sponsor-contact survey aggregate, withheld until at least three responses.
     #[serde(default)]
     pub sponsor_contact_survey: Option<EventSponsorSurveyMetrics>,
+}
+
+/// Privacy-safe event funnel totals included in sponsor reports.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EventSponsorReportOutcomes {
+    pub views: i64,
+    pub registrations: i64,
+    pub confirmed: i64,
+    pub check_ins: i64,
+    pub conversion_rate: f64,
 }
 
 /// Thresholded sponsor-contact feedback included in shareable reports.
@@ -818,12 +850,16 @@ pub struct EventSponsorMetrics {
     pub level: String,
     pub impressions: i64,
     pub clicks: i64,
+    #[serde(default)]
+    pub click_through_rate: f64,
     pub leads_count: i32,
     pub conversations_count: i32,
     pub meetings_count: i32,
     pub notes: Option<String>,
     pub promised_deliverables: i64,
     pub delivered_deliverables: i64,
+    #[serde(default)]
+    pub deliverable_completion_rate: f64,
 }
 
 impl EventAttendanceInfo {

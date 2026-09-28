@@ -53,10 +53,127 @@
             hx-vals='{"agent_id":"lead_generation"}'
             hx-target="#dashboard-content"
             hx-indicator="#dashboard-spinner"
-            {% if !can_manage_gtm %}disabled{% endif %}
+            hx-disabled-elt="this"
+            data-htmx-response
+            data-success-message="Lead suggestions are ready for review."
+            data-error-message="Something went wrong preparing lead suggestions. Please try again."
+            aria-describedby="lead-gen-status"
+            {% if !can_manage_gtm || has_pending_lead_generation_draft() %}disabled{% endif %}
             class="btn-secondary
-                   {% if !can_manage_gtm %}opacity-50 cursor-not-allowed{% endif %}">Run lead-gen agent</button>
+                   {% if !can_manage_gtm || has_pending_lead_generation_draft() %}opacity-50 cursor-not-allowed{% endif %}">
+      {% if has_pending_lead_generation_draft() %}
+        Draft awaiting review
+      {% else %}
+        Run lead-gen agent
+      {% endif %}
+      <span class="hx-spinner" role="status">Preparing suggestions…</span>
+    </button>
   </div>
+</div>
+
+<div id="lead-gen-status" aria-live="polite">
+  {% if let Some(review) = lead_generation_draft -%}
+    <section class="mb-8 rounded-[2rem] border border-primary-200 bg-primary-50/40 p-5 shadow-sm"
+             aria-labelledby="lead-generation-review-title">
+      <div class="text-xs font-bold uppercase tracking-[0.16em] text-primary-700">
+        Lead suggestions awaiting review
+      </div>
+      <h2 id="lead-generation-review-title"
+          class="mt-2 text-xl font-black text-stone-950">{{ review.draft.title }}</h2>
+      <p class="mt-2 text-sm text-stone-700">{{ review.draft.body }}</p>
+      {% if review.older_pending_count > 0 -%}
+        <p class="mt-2 text-sm font-semibold text-amber-800">
+          Showing the latest draft. {{ review.older_pending_count }} older pending draft(s) remain.
+        </p>
+      {% endif -%}
+
+      {% if review.candidates.is_empty() -%}
+        <p class="mt-4 rounded-xl bg-white p-4 text-sm text-stone-600">
+          No new candidate leads were found. Reject this draft to clear it.
+        </p>
+      {% else -%}
+        <ul class="mt-4 grid gap-3 md:grid-cols-2" aria-label="Suggested leads">
+          {% for candidate in review.candidates -%}
+            <li class="rounded-2xl border border-primary-100 bg-white p-4">
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h3 class="font-black text-stone-950">{{ candidate.name }}</h3>
+                  {% if candidate.org_name.is_some() -%}
+                    <p class="text-sm text-stone-600">{{ candidate.org_name.as_deref().unwrap_or("") }}</p>
+                  {% endif -%}
+                </div>
+                <span class="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-700">
+                  {{ candidate.kind }}
+                </span>
+              </div>
+              <dl class="mt-3 space-y-1 text-sm text-stone-700">
+                {% if candidate.email.is_some() -%}
+                  <div>
+                    <dt class="inline font-semibold">Email:</dt>
+                    <dd class="inline">
+                      {{ candidate.email.as_deref().unwrap_or("") }}
+                    </dd>
+                  </div>
+                {% endif -%}
+                {% if candidate.website_url.is_some() -%}
+                  <div>
+                    <dt class="inline font-semibold">Website:</dt>
+                    <dd class="inline">
+                      <a class="link"
+                         href="{{ candidate.website_url.as_deref().unwrap_or("") }}"
+                         target="_blank"
+                         rel="noopener noreferrer">{{ candidate.website_url.as_deref().unwrap_or("") }}</a>
+                    </dd>
+                  </div>
+                {% endif -%}
+                {% if candidate.linkedin_url.is_some() -%}
+                  <div>
+                    <dt class="inline font-semibold">LinkedIn:</dt>
+                    <dd class="inline">
+                      <a class="link"
+                         href="{{ candidate.linkedin_url.as_deref().unwrap_or("") }}"
+                         target="_blank"
+                         rel="noopener noreferrer">View profile</a>
+                    </dd>
+                  </div>
+                {% endif -%}
+                {% if candidate.source.is_some() -%}
+                  <div>
+                    <dt class="inline font-semibold">Source:</dt>
+                    <dd class="inline">
+                      {{ candidate.source.as_deref().unwrap_or("") }}
+                    </dd>
+                  </div>
+                {% endif -%}
+              </dl>
+              {% if candidate.notes.is_some() -%}
+                <p class="mt-3 text-sm text-stone-600">{{ candidate.notes.as_deref().unwrap_or("") }}</p>
+              {% endif -%}
+            </li>
+          {% endfor -%}
+        </ul>
+      {% endif -%}
+
+      {% if can_manage_gtm -%}
+        <form class="inert-form mt-5 flex flex-wrap gap-2"
+              hx-post="{{ dashboard_base }}/gtm/drafts/{{ review.draft.gtm_agent_draft_id }}/review"
+              hx-target="#dashboard-content"
+              hx-indicator="#dashboard-spinner"
+              hx-disabled-elt="find button"
+              data-htmx-response
+              data-success-message="Lead-generation draft reviewed."
+              data-error-message="Something went wrong reviewing these suggestions. Please try again.">
+          <button type="submit" name="status" value="approved" class="btn-primary">
+            Approve {{ review.candidates.len() }} lead(s)
+            <span class="hx-spinner" role="status">Saving…</span>
+          </button>
+          <button type="submit" name="status" value="rejected" class="btn-secondary">Reject suggestions</button>
+        </form>
+      {% endif -%}
+    </section>
+  {% else -%}
+    <p class="sr-only">No lead suggestions are awaiting review.</p>
+  {% endif -%}
 </div>
 
 {% if can_manage_gtm -%}

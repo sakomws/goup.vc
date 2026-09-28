@@ -13,7 +13,10 @@ use crate::{
     db::mock::MockDB,
     handlers::tests::*,
     services::notifications::MockNotificationsManager,
-    types::{gtm::GtmReviewDraftResult, permissions::AlliancePermission},
+    types::{
+        gtm::{GtmAgentDraft, GtmAgentDraftList, GtmReviewDraftResult},
+        permissions::AlliancePermission,
+    },
 };
 
 #[tokio::test]
@@ -102,6 +105,24 @@ async fn test_review_draft_approves_without_sending_when_not_outreach() {
     let mut db = MockDB::new();
     expect_authenticated_alliance_session(&mut db, session_id, user_id, alliance_id);
     expect_alliance_permission(&mut db, alliance_id, user_id, AlliancePermission::GtmWrite);
+    db.expect_list_gtm_agent_drafts()
+        .times(1)
+        .withf(move |id, filters| {
+            *id == alliance_id
+                && filters["status"] == "pending"
+                && filters["exact_scope"] == true
+                && filters["group_id"].is_null()
+        })
+        .returning(move |_, _| {
+            Ok(GtmAgentDraftList {
+                drafts: vec![GtmAgentDraft {
+                    gtm_agent_draft_id: draft_id,
+                    alliance_id,
+                    status: "pending".into(),
+                    ..Default::default()
+                }],
+            })
+        });
     db.expect_review_gtm_agent_draft()
         .times(1)
         .withf(move |actor_user_id, id, id_draft, input| {
@@ -133,6 +154,54 @@ async fn test_review_draft_approves_without_sending_when_not_outreach() {
                 .header(COOKIE, format!("id={session_id}"))
                 .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
                 .body(Body::from("status=approved"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn test_run_lead_generation_reuses_pending_scope_draft() {
+    let alliance_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+
+    let mut db = MockDB::new();
+    expect_authenticated_alliance_session(&mut db, session_id, user_id, alliance_id);
+    expect_alliance_permission(&mut db, alliance_id, user_id, AlliancePermission::GtmWrite);
+    db.expect_list_gtm_agent_drafts()
+        .times(1)
+        .withf(move |id, filters| {
+            *id == alliance_id
+                && filters["agent_id"] == "lead_generation"
+                && filters["status"] == "pending"
+                && filters["exact_scope"] == true
+                && filters["group_id"].is_null()
+        })
+        .returning(move |_, _| {
+            Ok(GtmAgentDraftList {
+                drafts: vec![GtmAgentDraft {
+                    gtm_agent_draft_id: Uuid::new_v4(),
+                    alliance_id,
+                    agent_id: "lead_generation".into(),
+                    status: "pending".into(),
+                    ..Default::default()
+                }],
+            })
+        });
+
+    let router =
+        Box::pin(TestRouterBuilder::new(db, MockNotificationsManager::new()).build()).await;
+    let response = router
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/dashboard/alliance/gtm/agents/run")
+                .header(COOKIE, format!("id={session_id}"))
+                .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+                .body(Body::from("agent_id=lead_generation"))
                 .unwrap(),
         )
         .await

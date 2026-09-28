@@ -62,7 +62,7 @@ pub(crate) enum Content {
     /// Groups management page.
     Groups(groups::ListPage),
     /// GTM pipeline page.
-    Gtm(gtm::ListPage),
+    Gtm(Box<gtm::ListPage>),
     /// Private book exchange page.
     BookExchange(book_exchange::ListPage),
     /// Private intentional dating curation page.

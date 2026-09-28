@@ -6,8 +6,7 @@ import { setLinkContent } from "/static/js/common/url-utils.js";
 import { printQrCode } from "/static/js/dashboard/group/qr-code/print.js";
 
 const MODAL_ID = "event-qr-code-modal";
-const OPEN_BUTTON_SELECTOR =
-  "[data-event-qr-code-modal-trigger], #open-event-qr-code-modal";
+const OPEN_BUTTON_SELECTOR = "[data-event-qr-code-modal-trigger], #open-event-qr-code-modal";
 const CLOSE_BUTTON_ID = "close-event-qr-code-modal";
 const OVERLAY_ID = "overlay-event-qr-code-modal";
 const PRINT_BUTTON_ID = "print-event-qr-code";

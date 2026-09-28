@@ -299,10 +299,18 @@ test.describe("authentication", () => {
     ).toBeVisible();
   });
 
-  test("logged in user can log out", async ({ page }) => {
-    // Log in with a seeded member before using the dashboard logout action.
+  test("logged in user can log out from the header menu", async ({ page }) => {
+    // Log in with a seeded member before using the header menu.
     await logInWithSeededUser(page, TEST_USER_CREDENTIALS.member1);
-    await navigateToPath(page, "/dashboard/user");
+
+    // Find the account menu trigger.
+    const userMenuButton = page.getByRole("link", {
+      name: "Open account menu",
+    });
+
+    // Verify logged in user can log out from the header menu.
+    await expect(userMenuButton).toBeVisible();
+    await userMenuButton.hover();
 
     // Find the Log out control.
     const logOutLink = page.getByRole("link", { name: "Log out" });

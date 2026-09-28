@@ -6,6 +6,8 @@ declare
     v_lead_id uuid := nullif(p_filters->>'gtm_lead_id', '')::uuid;
     v_status text := nullif(trim(p_filters->>'status'), '');
     v_group_id uuid := nullif(p_filters->>'group_id', '')::uuid;
+    v_agent_id text := nullif(trim(p_filters->>'agent_id'), '');
+    v_exact_scope boolean := coalesce((p_filters->>'exact_scope')::boolean, false);
     v_drafts jsonb;
 begin
     select coalesce(
@@ -17,7 +19,11 @@ begin
     where d.alliance_id = p_alliance_id
       and (v_lead_id is null or d.gtm_lead_id = v_lead_id)
       and (v_status is null or d.status = v_status)
-      and (v_group_id is null or d.group_id = v_group_id);
+      and (v_agent_id is null or d.agent_id = v_agent_id)
+      and (
+          (v_exact_scope and d.group_id is not distinct from v_group_id)
+          or (not v_exact_scope and (v_group_id is null or d.group_id = v_group_id))
+      );
 
     return jsonb_build_object('drafts', coalesce(v_drafts, '[]'::jsonb));
 end;

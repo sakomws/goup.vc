@@ -127,7 +127,16 @@ pub(crate) async fn review_draft(
     SelectedAllianceId(alliance_id): SelectedAllianceId,
     input: ValidatedForm<GtmReviewDraftInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
-    gtm_handlers::review_draft(user, db, notifications_manager, path, alliance_id, input).await
+    gtm_handlers::review_draft(
+        user,
+        db,
+        notifications_manager,
+        path,
+        alliance_id,
+        None,
+        input,
+    )
+    .await
 }
 
 pub(crate) async fn add_package(
