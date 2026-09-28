@@ -84,12 +84,12 @@
 
       <div class="mt-10 grid max-w-5xl grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6">
         {% let website_value -%}{%- endlet %}
-      {{ form_fields::social_url_field(name = "website_url", label = "Website", icon = "icon-link", placeholder = "https://example.com", value_attr = website_value) -}}
+        {{ form_fields::social_url_field(name = "website_url", label = "Website", icon = "icon-link", placeholder = "https://example.com", value_attr = website_value) -}}
+      </div>
     </div>
   </div>
-</div>
 
-{{ dashboard::form_actions(cancel_href = "/dashboard/alliance",
-spinner_id = "alliance-create-spinner",
-submit_label = "Create Alliance") -}}
+  {{ dashboard::form_actions(cancel_href = "/dashboard/alliance",
+    spinner_id = "alliance-create-spinner",
+    submit_label = "Create Alliance") -}}
 </form>

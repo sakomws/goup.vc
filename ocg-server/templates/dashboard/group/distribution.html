@@ -6,7 +6,9 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 class="text-xl font-black text-stone-950">Campaign metrics</h2>
-        <p class="mt-1 text-sm text-stone-600">Daily-deduplicated clicks and attributed registrations. No visitor identifiers are retained.</p>
+        <p class="mt-1 text-sm text-stone-600">
+          Daily-deduplicated clicks and attributed registrations. No visitor identifiers are retained.
+        </p>
       </div>
       <a class="btn-secondary-anchor" href="/dashboard/group/distribution.csv">Export CSV</a>
     </div>
@@ -14,19 +16,25 @@
       {% for campaign in dashboard.campaigns -%}
         <article class="rounded-xl border border-stone-200 p-4">
           <div class="font-bold">{{ campaign.name }}</div>
-          <div class="mt-2 text-sm text-stone-600">{{ campaign.status }} · {{ campaign.clicks }} clicks · {{ campaign.registrations }} registrations</div>
+          <div class="mt-2 text-sm text-stone-600">
+            {{ campaign.status }} · {{ campaign.clicks }} clicks · {{ campaign.registrations }} registrations
+          </div>
         </article>
       {% endfor -%}
       {% for metric in dashboard.channel_metrics -%}
         <article class="rounded-xl bg-stone-50 p-4">
           <div class="text-xs font-bold uppercase text-stone-500">{{ metric.channel }}</div>
-          <div class="mt-1 text-2xl font-black">{{ metric.clicks }} clicks · {{ metric.registrations }} registrations</div>
+          <div class="mt-1 text-2xl font-black">
+            {{ metric.clicks }} clicks · {{ metric.registrations }} registrations
+          </div>
         </article>
       {% endfor -%}
       {% for partner in dashboard.partners -%}
         <article class="rounded-xl bg-stone-50 p-4">
           <div class="text-xs font-bold uppercase text-stone-500">Partner · {{ partner.referral_code }}</div>
-          <div class="mt-1 font-bold">{{ partner.name }} · {{ partner.clicks }} clicks · {{ partner.registrations }} registrations</div>
+          <div class="mt-1 font-bold">
+            {{ partner.name }} · {{ partner.clicks }} clicks · {{ partner.registrations }} registrations
+          </div>
         </article>
       {% endfor -%}
     </div>
@@ -43,7 +51,9 @@
              required>
       <select class="select-primary mt-3" name="event_id">
         <option value="">No linked event</option>
-        {% for event in dashboard.events %}<option value="{{ event.event_id }}">{{ event.name }}</option>{% endfor %}
+        {% for event in dashboard.events %}
+          <option value="{{ event.event_id }}">{{ event.name }}</option>
+        {% endfor %}
       </select>
       <select class="select-primary mt-3" name="status">
         <option value="draft">Draft</option>
@@ -76,11 +86,15 @@
           {% if !can_manage %}inert{% endif %}>
       <select class="select-primary" name="distribution_campaign_id" required>
         <option value="">Campaign</option>
-        {% for campaign in dashboard.campaigns %}<option value="{{ campaign.distribution_campaign_id }}">{{ campaign.name }}</option>{% endfor %}
+        {% for campaign in dashboard.campaigns %}
+          <option value="{{ campaign.distribution_campaign_id }}">{{ campaign.name }}</option>
+        {% endfor %}
       </select>
       <select class="select-primary" name="distribution_partner_id">
         <option value="">No partner</option>
-        {% for partner in dashboard.partners %}<option value="{{ partner.distribution_partner_id }}">{{ partner.name }}</option>{% endfor %}
+        {% for partner in dashboard.partners %}
+          <option value="{{ partner.distribution_partner_id }}">{{ partner.name }}</option>
+        {% endfor %}
       </select>
       <select class="select-primary" name="channel">
         <option>linkedin</option>
@@ -131,7 +145,9 @@
           hx-post="/dashboard/group/distribution/content"
           {% if !can_manage %}inert{% endif %}>
       <select class="select-primary" name="distribution_campaign_id" required>
-        {% for campaign in dashboard.campaigns %}<option value="{{ campaign.distribution_campaign_id }}">{{ campaign.name }}</option>{% endfor %}
+        {% for campaign in dashboard.campaigns %}
+          <option value="{{ campaign.distribution_campaign_id }}">{{ campaign.name }}</option>
+        {% endfor %}
       </select>
       <select class="select-primary" name="channel">
         <option>linkedin</option>
@@ -165,7 +181,9 @@
     <div class="mt-5 grid gap-3">
       {% for item in dashboard.content -%}
         <article class="rounded-xl border border-stone-200 p-4">
-          <div class="flex flex-wrap justify-between gap-2"><strong>{{ item.title }}</strong><span>{{ item.channel }} · {{ item.state }}</span></div>
+          <div class="flex flex-wrap justify-between gap-2">
+            <strong>{{ item.title }}</strong><span>{{ item.channel }} · {{ item.state }}</span>
+          </div>
           <p class="mt-2 whitespace-pre-wrap text-sm">{{ item.caption }}</p>
           <div class="mt-3 flex flex-wrap gap-2">
             <button class="btn-tertiary"
