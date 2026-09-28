@@ -9,53 +9,53 @@
     {# In-person -#}
     <li>
       <label class="group items-center w-full px-3.5 py-2.5 bg-white border rounded-full cursor-pointer select-none flex flex-row transition-colors {%+ if filters.kind.contains(&EventKind::InPerson) %}border-[#8A7A6E] bg-[#f5efe7] text-[#1A1510]{%- else %}border-[#C8BDB3] hover:bg-[#f5efe7]/50{%- endif %}">
-      <input type="checkbox"
-             name="kind[]"
-             value="in-person"
-             class="hidden peer"
-             {% if filters.kind.contains(&EventKind::InPerson) %}checked{% endif %}>
-      <div class="svg-icon size-4 bg-stone-500 peer-checked:bg-stone-700 icon-in-person shrink-0"></div>
-      <div class="text-[15px] ms-2.5 text-[#6B6058] text-nowrap peer-checked:text-[#1A1510]">In-person</div>
-    </label>
-  </li>
-  {# End in-person -#}
+        <input type="checkbox"
+               name="kind[]"
+               value="in-person"
+               class="hidden peer"
+               {% if filters.kind.contains(&EventKind::InPerson) %}checked{% endif %}>
+        <div class="svg-icon size-4 bg-stone-500 peer-checked:bg-stone-700 icon-in-person shrink-0"></div>
+        <div class="text-[15px] ms-2.5 text-[#6B6058] text-nowrap peer-checked:text-[#1A1510]">In-person</div>
+      </label>
+    </li>
+    {# End in-person -#}
 
-  {# Virtual -#}
-  <li>
-    <label class="group flex flex-row items-center w-full px-3.5 py-2.5 border rounded-full peer-enabled:cursor-pointer select-none {%+ if view_mode == ViewMode::Map %} bg-stone-50 border-[#C8BDB3] opacity-30 {%- else %} {%+ if filters.kind.contains(&EventKind::Virtual) %}border-[#8A7A6E] bg-[#f5efe7] text-[#1A1510]{%- else %}border-[#C8BDB3]{%- endif %} cursor-pointer hover:bg-[#f5efe7]/50 bg-white transition-colors{%- endif %}">
-  {% if view_mode == ViewMode::Map -%}
-    <input type="checkbox"
-           name="kind[]"
-           value="virtual"
-           class="virtual-kind hidden peer"
-           disabled>
-  {% else -%}
-    <input type="checkbox"
-           name="kind[]"
-           value="virtual"
-           class="virtual-kind hidden peer"
-           {% if filters.kind.contains(&EventKind::Virtual) %}checked{% endif %}>
-  {% endif -%}
-  <div class="svg-icon size-4 bg-stone-500 peer-checked:bg-stone-700 icon-virtual shrink-0"></div>
-  <div class="text-[15px] ms-2.5 text-[#6B6058] peer-checked:text-[#1A1510]">Virtual</div>
-</label>
-</li>
-{# End virtual -#}
+    {# Virtual -#}
+    <li>
+      <label class="group flex flex-row items-center w-full px-3.5 py-2.5 border rounded-full peer-enabled:cursor-pointer select-none {%+ if view_mode == ViewMode::Map %} bg-stone-50 border-[#C8BDB3] opacity-30 {%- else %} {%+ if filters.kind.contains(&EventKind::Virtual) %}border-[#8A7A6E] bg-[#f5efe7] text-[#1A1510]{%- else %}border-[#C8BDB3]{%- endif %} cursor-pointer hover:bg-[#f5efe7]/50 bg-white transition-colors{%- endif %}">
+        {% if view_mode == ViewMode::Map -%}
+          <input type="checkbox"
+                 name="kind[]"
+                 value="virtual"
+                 class="virtual-kind hidden peer"
+                 disabled>
+        {% else -%}
+          <input type="checkbox"
+                 name="kind[]"
+                 value="virtual"
+                 class="virtual-kind hidden peer"
+                 {% if filters.kind.contains(&EventKind::Virtual) %}checked{% endif %}>
+        {% endif -%}
+        <div class="svg-icon size-4 bg-stone-500 peer-checked:bg-stone-700 icon-virtual shrink-0"></div>
+        <div class="text-[15px] ms-2.5 text-[#6B6058] peer-checked:text-[#1A1510]">Virtual</div>
+      </label>
+    </li>
+    {# End virtual -#}
 
-{# Hybrid -#}
-<li>
-  <label class="group items-center w-full px-3.5 py-2.5 bg-white border rounded-full cursor-pointer select-none flex flex-row transition-colors {%+ if filters.kind.contains(&EventKind::Hybrid) %}border-[#8A7A6E] bg-[#f5efe7] text-[#1A1510]{%- else %}border-[#C8BDB3] hover:bg-[#f5efe7]/50{%- endif %}">
-  <input type="checkbox"
-         name="kind[]"
-         value="hybrid"
-         class="hidden peer"
-         {% if filters.kind.contains(&EventKind::Hybrid) %}checked{% endif %}>
-  <div class="svg-icon size-4 bg-stone-500 peer-checked:bg-stone-700 icon-buildings shrink-0"></div>
-  <div class="text-[15px] ms-2.5 text-[#6B6058] peer-checked:text-[#1A1510]">Hybrid</div>
-</label>
-</li>
-{# End hybrid -#}
-</ul>
+    {# Hybrid -#}
+    <li>
+      <label class="group items-center w-full px-3.5 py-2.5 bg-white border rounded-full cursor-pointer select-none flex flex-row transition-colors {%+ if filters.kind.contains(&EventKind::Hybrid) %}border-[#8A7A6E] bg-[#f5efe7] text-[#1A1510]{%- else %}border-[#C8BDB3] hover:bg-[#f5efe7]/50{%- endif %}">
+        <input type="checkbox"
+               name="kind[]"
+               value="hybrid"
+               class="hidden peer"
+               {% if filters.kind.contains(&EventKind::Hybrid) %}checked{% endif %}>
+        <div class="svg-icon size-4 bg-stone-500 peer-checked:bg-stone-700 icon-buildings shrink-0"></div>
+        <div class="text-[15px] ms-2.5 text-[#6B6058] peer-checked:text-[#1A1510]">Hybrid</div>
+      </label>
+    </li>
+    {# End hybrid -#}
+  </ul>
 </div>
 {# End type -#}
 

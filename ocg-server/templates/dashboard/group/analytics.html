@@ -137,7 +137,11 @@ description = "Group statistics and growth trends. Analytics are cached for a fe
                     <div class="flex size-10 items-center justify-center rounded-full bg-stone-950 text-sm font-black text-white">
                       #{{ entry.rank }}
                     </div>
-                    <logo-image {% if let Some(photo_url) = &entry.photo_url -%} image-url="{{ photo_url }}" {% endif -%} size="size-12" placeholder="{{ crate::templates::helpers::user_initials(entry.name.as_deref() , entry.username.as_str()) }}">
+                    <logo-image
+                    {% if let Some(photo_url) = &entry.photo_url -%}
+                      image-url="{{ photo_url }}"
+                    {% endif -%}
+                    size="size-12" placeholder="{{ crate::templates::helpers::user_initials(entry.name.as_deref() , entry.username.as_str()) }}">
                     </logo-image>
                   </div>
                   <div class="min-w-0">

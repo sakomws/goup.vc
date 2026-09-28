@@ -325,6 +325,7 @@ select results_eq(
         ('alliance-team-invitation', false),
         ('cfs-submission-updated', false),
         ('coffee-meet-suggestion', true),
+        ('distribution-content-due', true),
         ('email-verification', false),
         ('event-attendance-canceled', false),
         ('event-canceled', false),
@@ -466,6 +467,7 @@ select results_eq(
 select results_eq(
     'select alliance_role_id, group_permission_id from alliance_role_group_permission order by alliance_role_id, group_permission_id',
     $$ values
+        ('admin', 'group.distribution.write'),
         ('admin', 'group.events.write'),
         ('admin', 'group.gtm.write'),
         ('admin', 'group.members.write'),
@@ -474,6 +476,7 @@ select results_eq(
         ('admin', 'group.settings.write'),
         ('admin', 'group.sponsors.write'),
         ('admin', 'group.team.write'),
+        ('groups-manager', 'group.distribution.write'),
         ('groups-manager', 'group.events.write'),
         ('groups-manager', 'group.gtm.write'),
         ('groups-manager', 'group.members.write'),
@@ -491,6 +494,7 @@ select results_eq(
 select results_eq(
     'select group_permission_id, display_name from group_permission order by group_permission_id',
     $$ values
+        ('group.distribution.write', 'Distribution Write'),
         ('group.events.write', 'Events Write'),
         ('group.gtm.write', 'GTM Write'),
         ('group.members.write', 'Members Write'),
@@ -518,6 +522,7 @@ select results_eq(
 select results_eq(
     'select group_permission_id, group_role_id from group_role_group_permission order by group_permission_id, group_role_id',
     $$ values
+        ('group.distribution.write', 'admin'),
         ('group.events.write', 'admin'),
         ('group.events.write', 'events-manager'),
         ('group.gtm.write', 'admin'),
