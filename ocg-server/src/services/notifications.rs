@@ -28,12 +28,12 @@ use crate::{
     config::EmailConfig,
     db::DynDB,
     templates::notifications::{
-        AllianceTeamInvitation, CfsSubmissionUpdated, CoffeeMeetSuggestion, EmailVerification,
-        EventAttendanceCanceled, EventCanceled, EventCustom, EventInvitation, EventPublished,
-        EventRefundApproved, EventRefundRejected, EventRefundRequested, EventReminder,
-        EventRescheduled, EventSeriesCanceled, EventSeriesPublished, EventWaitlistJoined,
-        EventWaitlistLeft, EventWaitlistPromoted, EventWelcome, GroupCustom, GroupTeamInvitation,
-        GroupWelcome, IntentionalDatingIntroduction, MockInterviewMatched,
+        AllianceTeamInvitation, CfsSubmissionUpdated, CoffeeMeetSuggestion, DistributionContentDue,
+        EmailVerification, EventAttendanceCanceled, EventCanceled, EventCustom, EventInvitation,
+        EventPublished, EventRefundApproved, EventRefundRejected, EventRefundRequested,
+        EventReminder, EventRescheduled, EventSeriesCanceled, EventSeriesPublished,
+        EventWaitlistJoined, EventWaitlistLeft, EventWaitlistPromoted, EventWelcome, GroupCustom,
+        GroupTeamInvitation, GroupWelcome, IntentionalDatingIntroduction, MockInterviewMatched,
         SessionProposalCoSpeakerInvitation, SiteOnboarding, SpeakerSeriesWelcome, SpeakerWelcome,
     },
 };
@@ -225,10 +225,17 @@ impl EnqueueWorker {
         let event_reminders = self.db.enqueue_due_event_reminders(&self.base_url).await?;
         let coffee_meet_suggestions =
             self.db.enqueue_due_coffee_meet_suggestions(&self.base_url).await?;
+        let distribution_reminders = self
+            .db
+            .enqueue_due_distribution_content_reminders(&self.base_url)
+            .await?;
         let scheduled_event_attendee_emails =
             self.db.enqueue_due_scheduled_event_attendee_emails().await?;
 
-        Ok(event_reminders + coffee_meet_suggestions + scheduled_event_attendee_emails)
+        Ok(event_reminders
+            + coffee_meet_suggestions
+            + distribution_reminders
+            + scheduled_event_attendee_emails)
     }
 }
 
@@ -401,6 +408,12 @@ impl DeliveryWorker {
             NotificationKind::EventCustom => {
                 let template: EventCustom = serde_json::from_value(template_data)?;
                 let subject = template.subject.clone();
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::DistributionContentDue => {
+                let template: DistributionContentDue = serde_json::from_value(template_data)?;
+                let subject = format!("Distribution content due: {}", template.title);
                 let body = template.render()?;
                 (subject, body)
             }
@@ -768,6 +781,8 @@ pub(crate) enum NotificationKind {
     CfsSubmissionUpdated,
     /// Notification for a `CoffeeMeet` member suggestion.
     CoffeeMeetSuggestion,
+    /// Optional reminder for due manually published content.
+    DistributionContentDue,
     /// Notification for a alliance team invitation.
     AllianceTeamInvitation,
     /// Notification for email verification.

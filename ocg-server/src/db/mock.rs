@@ -1692,6 +1692,10 @@ mock! {
             &self,
             base_url: &str,
         ) -> Result<usize>;
+        async fn enqueue_due_distribution_content_reminders(
+            &self,
+            base_url: &str,
+        ) -> Result<usize>;
         async fn enqueue_due_scheduled_event_attendee_emails(&self) -> Result<usize>;
         async fn enqueue_notification(
             &self,
@@ -1830,6 +1834,51 @@ mock! {
             event_id: Uuid,
             user_id: Uuid,
         ) -> Result<()>;
+    }
+
+    #[async_trait]
+    impl crate::db::distribution::DBDistribution for DB {
+        async fn get_distribution_dashboard(
+            &self,
+            group_id: Uuid,
+        ) -> Result<crate::types::distribution::DistributionDashboard>;
+        async fn add_distribution_campaign(
+            &self,
+            actor: Uuid,
+            group_id: Uuid,
+            input: &crate::types::distribution::CampaignInput,
+        ) -> Result<Uuid>;
+        async fn add_distribution_partner(
+            &self,
+            group_id: Uuid,
+            input: &crate::types::distribution::PartnerInput,
+        ) -> Result<Uuid>;
+        async fn add_distribution_link(
+            &self,
+            group_id: Uuid,
+            input: &crate::types::distribution::LinkInput,
+        ) -> Result<Uuid>;
+        async fn add_distribution_content(
+            &self,
+            group_id: Uuid,
+            input: &crate::types::distribution::ContentInput,
+        ) -> Result<Uuid>;
+        async fn add_distribution_library_item(
+            &self,
+            group_id: Uuid,
+            input: &crate::types::distribution::LibraryInput,
+        ) -> Result<Uuid>;
+        async fn update_distribution_content_state(
+            &self,
+            group_id: Uuid,
+            content_id: Uuid,
+            state: &str,
+        ) -> Result<()>;
+        async fn resolve_distribution_link(
+            &self,
+            code: &str,
+            fingerprint_hash: &str,
+        ) -> Result<Option<crate::types::distribution::ResolvedDistributionLink>>;
     }
 
     #[async_trait]

@@ -11,8 +11,8 @@ use tokio_postgres::types::{FromSql, Json, ToSql};
 use crate::db::{
     accelerator::DBAccelerator, activity_tracker::DBActivityTracker, alliance::DBAlliance,
     auth::DBAuth, common::DBCommon, custom_domains::DBCustomDomains, dashboard::DBDashboard,
-    event::DBEvent, group::DBGroup, gtm::DBGtm, images::DBImages, jobs::DBJobs,
-    landscape::DBLandscape, meetings::DBMeetings, mock_interviews::DBMockInterviews,
+    distribution::DBDistribution, event::DBEvent, group::DBGroup, gtm::DBGtm, images::DBImages,
+    jobs::DBJobs, landscape::DBLandscape, meetings::DBMeetings, mock_interviews::DBMockInterviews,
     notifications::DBNotifications, payments::DBPayments, site::DBSite,
 };
 
@@ -27,6 +27,9 @@ pub(crate) mod common;
 
 /// Module containing custom hostname operations.
 pub(crate) mod custom_domains;
+
+/// Module containing group distribution planning operations.
+pub(crate) mod distribution;
 
 /// Module containing database contract tests.
 #[cfg(test)]
@@ -90,6 +93,7 @@ pub(crate) trait DBOperations:
     + DBCustomDomains
     + DBAlliance
     + DBDashboard
+    + DBDistribution
     + DBEvent
     + DBGroup
     + DBGtm
@@ -114,6 +118,7 @@ impl<T> DBOperations for T where
         + DBCustomDomains
         + DBAlliance
         + DBDashboard
+        + DBDistribution
         + DBEvent
         + DBGroup
         + DBGtm

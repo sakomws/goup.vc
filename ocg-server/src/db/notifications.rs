@@ -37,6 +37,9 @@ pub(crate) trait DBNotifications {
     /// Enqueues due `CoffeeMeet` suggestions and returns the number created.
     async fn enqueue_due_coffee_meet_suggestions(&self, base_url: &str) -> Result<usize>;
 
+    /// Enqueues optional reminders for due distribution content.
+    async fn enqueue_due_distribution_content_reminders(&self, base_url: &str) -> Result<usize>;
+
     /// Enqueues all scheduled attendee emails that are due.
     async fn enqueue_due_scheduled_event_attendee_emails(&self) -> Result<usize>;
 
@@ -198,6 +201,18 @@ where
             .map_err(|_| anyhow!("enqueued CoffeeMeet suggestion count cannot be negative"))?;
 
         Ok(count)
+    }
+
+    #[instrument(skip(self), err)]
+    async fn enqueue_due_distribution_content_reminders(&self, base_url: &str) -> Result<usize> {
+        let count: i32 = self
+            .fetch_scalar_one(
+                "select enqueue_due_distribution_content_reminders($1::text)::int",
+                &[&base_url],
+            )
+            .await?;
+        usize::try_from(count)
+            .map_err(|_| anyhow!("enqueued distribution reminder count cannot be negative"))
     }
 
     #[instrument(skip(self), err)]

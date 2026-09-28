@@ -56,6 +56,7 @@
 {{ template "common/normalize_custom_domain_hostname.sql" }}
 {{ template "common/mark_custom_domain_verified.sql" }}
 {{ template "common/resolve_active_custom_domain.sql" }}
+{{ template "common/resolve_distribution_link.sql" }}
 {{ template "common/search_events.sql" }}
 {{ template "common/search_groups.sql" }}
 
@@ -169,6 +170,7 @@
 {{ template "dashboard-group/get_event_summary_dashboard.sql" }} -- Dependency for list_group_events
 {{ template "dashboard-group/get_group_sponsor.sql" }}
 {{ template "dashboard-group/get_group_stats.sql" }}
+{{ template "dashboard-group/get_distribution_dashboard.sql" }}
 {{ template "dashboard-group/invite_event_attendee.sql" }}
 {{ template "dashboard-group/list_cfs_submission_statuses_for_review.sql" }}
 {{ template "dashboard-group/list_event_approved_cfs_submissions.sql" }}
@@ -310,6 +312,7 @@
 
 {{ template "notifications/claim_pending_notification.sql" }}
 {{ template "notifications/enqueue_due_coffee_meet_suggestions.sql" }}
+{{ template "notifications/enqueue_due_distribution_content_reminders.sql" }}
 {{ template "notifications/enqueue_due_event_reminders.sql" }}
 {{ template "notifications/enqueue_notification.sql" }} -- Dependency for tracked custom and auth notification helpers
 {{ template "notifications/manual_requeue_notifications.sql" }}

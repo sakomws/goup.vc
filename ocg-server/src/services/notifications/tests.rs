@@ -65,6 +65,10 @@ async fn test_enqueue_worker_enqueue_due_notifications() {
         .times(1)
         .withf(|base_url| base_url == "https://example.test")
         .returning(|_| Ok(1));
+    db.expect_enqueue_due_distribution_content_reminders()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(4));
     db.expect_enqueue_due_scheduled_event_attendee_emails()
         .times(1)
         .returning(|| Ok(3));
@@ -79,7 +83,7 @@ async fn test_enqueue_worker_enqueue_due_notifications() {
     let enqueued = worker.enqueue_due_notifications().await.unwrap();
 
     // Check result matches expectations
-    assert_eq!(enqueued, 6);
+    assert_eq!(enqueued, 10);
 }
 
 #[tokio::test]
@@ -149,6 +153,10 @@ async fn test_enqueue_worker_run_stops_on_cancellation_after_enqueue_success() {
             Ok(1)
         });
     db.expect_enqueue_due_coffee_meet_suggestions()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(0));
+    db.expect_enqueue_due_distribution_content_reminders()
         .times(1)
         .withf(|base_url| base_url == "https://example.test")
         .returning(|_| Ok(0));

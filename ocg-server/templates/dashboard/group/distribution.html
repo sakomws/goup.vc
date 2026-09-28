@@ -1,0 +1,152 @@
+{% import "macros/dashboard.html" as dashboard -%}
+{{ dashboard::page_title(title = "Distribution") -}}
+
+<div class="my-5 grid gap-6" data-distribution-dashboard>
+  <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 class="text-xl font-black text-stone-950">Campaign metrics</h2>
+        <p class="mt-1 text-sm text-stone-600">Daily-deduplicated clicks and attributed registrations. No visitor identifiers are retained.</p>
+      </div>
+      <a class="btn-secondary-anchor" href="/dashboard/group/distribution.csv">Export CSV</a>
+    </div>
+    <div class="mt-5 grid gap-3 md:grid-cols-3">
+      {% for campaign in dashboard.campaigns -%}
+        <article class="rounded-xl border border-stone-200 p-4">
+          <div class="font-bold">{{ campaign.name }}</div>
+          <div class="mt-2 text-sm text-stone-600">{{ campaign.status }} · {{ campaign.clicks }} clicks · {{ campaign.registrations }} registrations</div>
+        </article>
+      {% endfor -%}
+      {% for metric in dashboard.channel_metrics -%}
+        <article class="rounded-xl bg-stone-50 p-4">
+          <div class="text-xs font-bold uppercase text-stone-500">{{ metric.channel }}</div>
+          <div class="mt-1 text-2xl font-black">{{ metric.clicks }} clicks · {{ metric.registrations }} registrations</div>
+        </article>
+      {% endfor -%}
+      {% for partner in dashboard.partners -%}
+        <article class="rounded-xl bg-stone-50 p-4">
+          <div class="text-xs font-bold uppercase text-stone-500">Partner · {{ partner.referral_code }}</div>
+          <div class="mt-1 font-bold">{{ partner.name }} · {{ partner.clicks }} clicks · {{ partner.registrations }} registrations</div>
+        </article>
+      {% endfor -%}
+    </div>
+  </section>
+
+  <section class="grid gap-5 xl:grid-cols-2">
+    <form class="inert-form rounded-2xl border border-stone-200 bg-white p-5"
+          hx-post="/dashboard/group/distribution/campaigns" {% if !can_manage %}inert{% endif %}>
+      <h2 class="font-bold">New campaign</h2>
+      <input class="input-primary mt-3" name="name" placeholder="Fall meetup launch" required>
+      <select class="select-primary mt-3" name="event_id">
+        <option value="">No linked event</option>
+        {% for event in dashboard.events %}<option value="{{ event.event_id }}">{{ event.name }}</option>{% endfor %}
+      </select>
+      <select class="select-primary mt-3" name="status">
+        <option value="draft">Draft</option><option value="active">Active</option><option value="completed">Completed</option>
+      </select>
+      <button class="btn-primary mt-3" type="submit">Add campaign</button>
+    </form>
+    <form class="inert-form rounded-2xl border border-stone-200 bg-white p-5"
+          hx-post="/dashboard/group/distribution/partners" {% if !can_manage %}inert{% endif %}>
+      <h2 class="font-bold">Partner referral code</h2>
+      <input class="input-primary mt-3" name="name" placeholder="Partner name" required>
+      <input class="input-primary mt-3" name="referral_code" placeholder="PARTNER_2026" pattern="[A-Za-z0-9_-]{2,64}" required>
+      <button class="btn-primary mt-3" type="submit">Add partner</button>
+    </form>
+  </section>
+
+  <section class="rounded-2xl border border-stone-200 bg-white p-5">
+    <h2 class="text-lg font-bold">Tracked links</h2>
+    <form class="inert-form mt-4 grid gap-3 md:grid-cols-3"
+          hx-post="/dashboard/group/distribution/links" {% if !can_manage %}inert{% endif %}>
+      <select class="select-primary" name="distribution_campaign_id" required>
+        <option value="">Campaign</option>
+        {% for campaign in dashboard.campaigns %}<option value="{{ campaign.distribution_campaign_id }}">{{ campaign.name }}</option>{% endfor %}
+      </select>
+      <select class="select-primary" name="distribution_partner_id">
+        <option value="">No partner</option>
+        {% for partner in dashboard.partners %}<option value="{{ partner.distribution_partner_id }}">{{ partner.name }}</option>{% endfor %}
+      </select>
+      <select class="select-primary" name="channel">
+        <option>linkedin</option><option>x</option><option>instagram</option><option>email</option><option>partner</option><option>other</option>
+      </select>
+      <input class="input-primary" name="code" placeholder="short-code" required>
+      <input class="input-primary md:col-span-2" name="target_url" type="url" placeholder="https://public.example/event" required>
+      <input class="input-primary" name="utm_source" placeholder="utm_source" required>
+      <input class="input-primary" name="utm_medium" placeholder="utm_medium" required>
+      <input class="input-primary" name="utm_campaign" placeholder="utm_campaign" required>
+      <input class="input-primary md:col-span-2" name="utm_content" placeholder="utm_content (optional)">
+      <button class="btn-primary" type="submit">Create frozen link</button>
+    </form>
+    <div class="mt-5 grid gap-2">
+      {% for link in dashboard.links -%}
+        <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-stone-50 p-3 text-sm">
+          <code>/r/{{ link.code }}</code><span>{{ link.channel }} · {{ link.clicks }} clicks · {{ link.registrations }} registrations</span>
+          <button type="button" class="btn-tertiary" data-copy-text="/r/{{ link.code }}">Copy</button>
+        </div>
+      {% endfor -%}
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-stone-200 bg-white p-5">
+    <h2 class="text-lg font-bold">LinkedIn / X / Instagram calendar</h2>
+    <form class="inert-form mt-4 grid gap-3 md:grid-cols-2"
+          hx-post="/dashboard/group/distribution/content" {% if !can_manage %}inert{% endif %}>
+      <select class="select-primary" name="distribution_campaign_id" required>
+        {% for campaign in dashboard.campaigns %}<option value="{{ campaign.distribution_campaign_id }}">{{ campaign.name }}</option>{% endfor %}
+      </select>
+      <select class="select-primary" name="channel"><option>linkedin</option><option>x</option><option>instagram</option></select>
+      <select class="select-primary" name="state"><option>idea</option><option>draft</option><option>ready</option></select>
+      <input class="input-primary" name="title" placeholder="Post title" required>
+      <textarea class="input-primary md:col-span-2" name="caption" placeholder="Caption"></textarea>
+      <input class="input-primary" name="cta" placeholder="CTA">
+      <input class="input-primary" name="hashtags" placeholder="#community #event">
+      <input class="input-primary" name="event_image_reference" placeholder="Event image URL/reference">
+      <input class="input-primary" name="scheduled_for" type="datetime-local">
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="remind_when_due" value="true"> Optional due reminder</label>
+      <button class="btn-primary" type="submit">Add content</button>
+    </form>
+    <div class="mt-5 grid gap-3">
+      {% for item in dashboard.content -%}
+        <article class="rounded-xl border border-stone-200 p-4">
+          <div class="flex flex-wrap justify-between gap-2"><strong>{{ item.title }}</strong><span>{{ item.channel }} · {{ item.state }}</span></div>
+          <p class="mt-2 whitespace-pre-wrap text-sm">{{ item.caption }}</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button class="btn-tertiary" type="button" data-copy-text="{{ item.caption }} {{ item.cta }} {{ item.hashtags }}">Copy</button>
+            <button class="btn-tertiary" type="button" data-open-platform="{{ item.channel }}">Open platform</button>
+            <form hx-put="/dashboard/group/distribution/content/{{ item.distribution_content_id }}/state"
+                  class="flex gap-2">
+              <select class="select-primary" name="state" aria-label="Content state" {% if !can_manage %}disabled{% endif %}>
+                <option value="idea" {% if item.state == "idea" %}selected{% endif %}>Idea</option>
+                <option value="draft" {% if item.state == "draft" %}selected{% endif %}>Draft</option>
+                <option value="ready" {% if item.state == "ready" %}selected{% endif %}>Ready</option>
+                <option value="posted_manual" {% if item.state == "posted_manual" %}selected{% endif %}>Posted manually</option>
+              </select>
+              <button class="btn-secondary" type="submit" {% if !can_manage %}disabled{% endif %}>Save state</button>
+            </form>
+            {% if item.state != "posted_manual" -%}
+              <button class="btn-primary" hx-put="/dashboard/group/distribution/content/{{ item.distribution_content_id }}/state"
+                      hx-vals='{"state":"posted_manual"}' {% if !can_manage %}disabled{% endif %}>Mark posted</button>
+            {% endif -%}
+          </div>
+        </article>
+      {% endfor -%}
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-stone-200 bg-white p-5">
+    <h2 class="text-lg font-bold">Reusable copy and image library</h2>
+    <form class="inert-form mt-4 grid gap-3 md:grid-cols-4"
+          hx-post="/dashboard/group/distribution/library" {% if !can_manage %}inert{% endif %}>
+      <select class="select-primary" name="kind"><option>caption</option><option>cta</option><option>hashtags</option><option value="event_image">event image</option></select>
+      <input class="input-primary" name="name" placeholder="Name" required>
+      <input class="input-primary" name="value" placeholder="Reusable text or image reference" required>
+      <button class="btn-primary" type="submit">Save item</button>
+    </form>
+    <div class="mt-4 flex flex-wrap gap-2">
+      {% for item in dashboard.library -%}
+        <button type="button" class="rounded-full border border-stone-200 px-3 py-2 text-sm" data-copy-text="{{ item.value }}">{{ item.kind }}: {{ item.name }}</button>
+      {% endfor -%}
+    </div>
+  </section>
+</div>

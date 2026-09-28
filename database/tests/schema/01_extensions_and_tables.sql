@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(76);
+select plan(82);
 
 -- ============================================================================
 -- TESTS
@@ -32,6 +32,12 @@ select has_table('alliance_team');
 select has_table('alliance_views');
 select has_table('custom_domain');
 select has_table('custom_notification');
+select has_table('distribution_campaign');
+select has_table('distribution_content');
+select has_table('distribution_library_item');
+select has_table('distribution_link');
+select has_table('distribution_link_click_daily');
+select has_table('distribution_partner');
 select has_table('email_verification_code');
 select has_table('event');
 select has_table('event_attendee');
