@@ -1,6 +1,6 @@
 //! Types for planning and measuring group distribution.
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use garde::Validate;
 use serde::{Deserialize, Deserializer, Serialize};
 use uuid::Uuid;
@@ -130,13 +130,14 @@ pub(crate) struct LinkInput {
     pub channel: String,
     #[garde(url, length(max = MAX_LEN_L))]
     pub target_url: String,
-    #[garde(custom(trimmed_non_empty))]
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
     pub utm_source: String,
-    #[garde(custom(trimmed_non_empty))]
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
     pub utm_medium: String,
-    #[garde(custom(trimmed_non_empty))]
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
     pub utm_campaign: String,
-    #[garde(skip)]
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
     pub utm_content: Option<String>,
 }
 
@@ -150,16 +151,16 @@ pub(crate) struct ContentInput {
     pub state: String,
     #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
     pub title: String,
-    #[garde(skip)]
+    #[garde(length(max = MAX_LEN_L))]
     pub caption: String,
-    #[garde(skip)]
+    #[garde(length(max = MAX_LEN_M))]
     pub cta: String,
-    #[garde(skip)]
+    #[garde(length(max = MAX_LEN_M))]
     pub hashtags: String,
-    #[garde(skip)]
+    #[garde(length(max = MAX_LEN_L))]
     pub event_image_reference: Option<String>,
-    #[garde(skip)]
     #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M), custom(valid_scheduled_for))]
     pub scheduled_for: Option<String>,
     #[serde(default)]
     #[garde(skip)]
@@ -201,4 +202,14 @@ where
         .filter(|value| !value.trim().is_empty())
         .map(|value| Uuid::parse_str(value.trim()).map_err(serde::de::Error::custom))
         .transpose()
+}
+
+fn valid_scheduled_for(value: &Option<String>, _ctx: &()) -> garde::Result {
+    let Some(value) = value else {
+        return Ok(());
+    };
+    NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M")
+        .or_else(|_| NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M:%S"))
+        .map(|_| ())
+        .map_err(|_| garde::Error::new("invalid UTC schedule"))
 }

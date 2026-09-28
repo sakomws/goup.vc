@@ -12,9 +12,10 @@ Organizers with `group.distribution.write` can:
 - opt into idempotent reminders when ready content becomes due; and
 - export campaign and link metrics as CSV.
 
-Public `/r/{code}` redirects accept only public HTTP(S) targets. Incoming non-attribution query parameters
-are retained, while the stored UTM and referral values always win. Clicks are deduplicated per link and day
-using a one-way fingerprint; raw IP addresses and request headers are not stored.
+Public `/r/{code}` redirects accept only public HTTPS targets without nested redirect parameters. Incoming
+parameters may override only keys already present on the stored target URL, while stored UTM and referral
+values always win. Clicks are deduplicated per link and UTC day using a one-way fingerprint; raw IP
+addresses and request headers are not stored.
 
 Registration totals use `event_registration_attribution` when that independently migrated table exists.
 Without it, the dashboard remains available and reports zero registrations.

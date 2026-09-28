@@ -19,7 +19,9 @@ begin
     insert into distribution_link_click_daily (
         distribution_link_id, clicked_on, fingerprint_hash
     ) values (
-        v_link.distribution_link_id, current_date, p_fingerprint_hash
+        v_link.distribution_link_id,
+        (current_timestamp at time zone 'UTC')::date,
+        p_fingerprint_hash
     ) on conflict do nothing;
 
     return jsonb_strip_nulls(jsonb_build_object(

@@ -34,7 +34,9 @@ begin
                 'distribution-content-due',
                 jsonb_build_object(
                     'channel', v_content.channel,
+                    'content_id', v_content.distribution_content_id,
                     'group_name', v_content.group_name,
+                    'scheduled_for', v_content.scheduled_for,
                     'title', v_content.title,
                     'link', regexp_replace(p_base_url, '/+$', '') || '/dashboard/group?tab=distribution'
                 ),

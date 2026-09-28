@@ -25,6 +25,22 @@ use crate::{
 
 const REFRESH: [(&str, &str); 1] = [("HX-Trigger", "refresh-group-dashboard-table")];
 
+fn require_choice(value: &str, allowed: &[&str], field: &str) -> Result<(), HandlerError> {
+    if allowed.contains(&value) {
+        Ok(())
+    } else {
+        Err(HandlerError::Deserialization(format!("invalid {field}")))
+    }
+}
+
+fn csv_safe(value: &str) -> String {
+    if value.trim_start().starts_with(['=', '+', '-', '@']) {
+        format!("'{value}")
+    } else {
+        value.to_string()
+    }
+}
+
 pub(crate) async fn page(
     CurrentUser(user): CurrentUser,
     SelectedAllianceId(alliance_id): SelectedAllianceId,
@@ -68,6 +84,11 @@ pub(crate) async fn add_campaign(
     State(db): State<DynDB>,
     ValidatedForm(input): ValidatedForm<CampaignInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
+    require_choice(
+        &input.status,
+        &["draft", "active", "completed"],
+        "campaign status",
+    )?;
     db.add_distribution_campaign(user.user_id, group_id, &input).await?;
     Ok((StatusCode::CREATED, REFRESH))
 }
@@ -86,6 +107,11 @@ pub(crate) async fn add_link(
     State(db): State<DynDB>,
     ValidatedForm(input): ValidatedForm<LinkInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
+    require_choice(
+        &input.channel,
+        &["linkedin", "x", "instagram", "email", "partner", "other"],
+        "link channel",
+    )?;
     super::super::super::distribution::validate_redirect_target(&input.target_url)?;
     db.add_distribution_link(group_id, &input).await?;
     Ok((StatusCode::CREATED, REFRESH))
@@ -96,6 +122,12 @@ pub(crate) async fn add_content(
     State(db): State<DynDB>,
     ValidatedForm(input): ValidatedForm<ContentInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
+    require_choice(
+        &input.channel,
+        &["linkedin", "x", "instagram"],
+        "content channel",
+    )?;
+    require_choice(&input.state, &["idea", "draft", "ready"], "content state")?;
     db.add_distribution_content(group_id, &input).await?;
     Ok((StatusCode::CREATED, REFRESH))
 }
@@ -105,6 +137,11 @@ pub(crate) async fn add_library_item(
     State(db): State<DynDB>,
     ValidatedForm(input): ValidatedForm<LibraryInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
+    require_choice(
+        &input.kind,
+        &["caption", "cta", "hashtags", "event_image"],
+        "library item kind",
+    )?;
     db.add_distribution_library_item(group_id, &input).await?;
     Ok((StatusCode::CREATED, REFRESH))
 }
@@ -141,7 +178,7 @@ pub(crate) async fn download_csv(
         writer
             .write_record([
                 "campaign",
-                &campaign.name,
+                &csv_safe(&campaign.name),
                 "",
                 "",
                 &campaign.clicks.to_string(),
@@ -154,8 +191,8 @@ pub(crate) async fn download_csv(
             .write_record([
                 "link",
                 "",
-                &link.channel,
-                &link.code,
+                &csv_safe(&link.channel),
+                &csv_safe(&link.code),
                 &link.clicks.to_string(),
                 &link.registrations.to_string(),
             ])
@@ -165,9 +202,9 @@ pub(crate) async fn download_csv(
         writer
             .write_record([
                 "partner",
-                &partner.name,
+                &csv_safe(&partner.name),
                 "",
-                &partner.referral_code,
+                &csv_safe(&partner.referral_code),
                 &partner.clicks.to_string(),
                 &partner.registrations.to_string(),
             ])
@@ -178,7 +215,7 @@ pub(crate) async fn download_csv(
             .write_record([
                 "channel",
                 "",
-                &channel.channel,
+                &csv_safe(&channel.channel),
                 "",
                 &channel.clicks.to_string(),
                 &channel.registrations.to_string(),
@@ -198,4 +235,19 @@ pub(crate) async fn download_csv(
         ],
         body,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::csv_safe;
+
+    #[test]
+    fn csv_values_that_can_execute_formulas_are_escaped() {
+        for value in [
+            "=1+1", "+cmd", "-1+2", "@SUM(A1)", "\t=1+1", "\r@cmd", "\n-2+3",
+        ] {
+            assert!(csv_safe(value).starts_with('\''));
+        }
+        assert_eq!(csv_safe("Campaign"), "Campaign");
+    }
 }

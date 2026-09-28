@@ -117,7 +117,8 @@ where
             "insert into distribution_content (
                 distribution_campaign_id,channel,state,title,caption,cta,hashtags,
                 event_image_reference,scheduled_for,remind_when_due
-             ) select $1,$2,$3,$4,$5,$6,$7,$8,$9::timestamptz,$10
+             ) select $1,$2,$3,$4,$5,$6,$7,$8,
+                $9::timestamp without time zone at time zone 'UTC',$10
              where exists (
                 select 1 from distribution_campaign
                 where distribution_campaign_id=$1 and group_id=$11

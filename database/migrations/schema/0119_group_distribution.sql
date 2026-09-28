@@ -51,8 +51,8 @@ create unique index if not exists distribution_link_code_key
 -- Stores only a one-way, day-scoped fingerprint. Raw address/header values are never persisted.
 create table if not exists distribution_link_click_daily (
     distribution_link_id uuid not null references distribution_link (distribution_link_id) on delete cascade,
-    clicked_on date not null default current_date,
-    fingerprint_hash text not null check (length(fingerprint_hash) = 64),
+    clicked_on date not null default ((current_timestamp at time zone 'UTC')::date),
+    fingerprint_hash text not null check (fingerprint_hash ~ '^[0-9a-f]{64}$'),
     created_at timestamptz not null default current_timestamp,
     primary key (distribution_link_id, clicked_on, fingerprint_hash)
 );

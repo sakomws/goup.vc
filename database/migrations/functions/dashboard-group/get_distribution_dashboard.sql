@@ -15,12 +15,21 @@ begin
                 select c.distribution_campaign_id, count(distinct a.user_id) registrations
                 from distribution_campaign c
                 join event_registration_attribution a on a.event_id = c.event_id
-                left join distribution_link l on l.distribution_campaign_id = c.distribution_campaign_id
-                left join distribution_partner p on p.distribution_partner_id = l.distribution_partner_id
                 where c.group_id = $1
-                and (
-                    lower(a.utm_campaign) = lower(l.utm_campaign)
-                    or lower(a.referral_code) = lower(p.referral_code)
+                and exists (
+                    select 1
+                    from distribution_link l
+                    left join distribution_partner p using (distribution_partner_id)
+                    where l.distribution_campaign_id = c.distribution_campaign_id
+                    and (
+                        (
+                            lower(a.utm_campaign) = lower(l.utm_campaign)
+                            and lower(a.utm_source) = lower(l.utm_source)
+                            and lower(a.utm_medium) = lower(l.utm_medium)
+                            and lower(a.utm_content) is not distinct from lower(l.utm_content)
+                        )
+                        or lower(a.referral_code) = lower(p.referral_code)
+                    )
                 )
                 group by c.distribution_campaign_id
             ) totals
@@ -32,23 +41,20 @@ begin
                 from distribution_link l
                 join distribution_campaign c using (distribution_campaign_id)
                 join event_registration_attribution a on a.event_id = c.event_id
-                left join distribution_partner p using (distribution_partner_id)
-                where c.group_id = $1 and (
-                    (
-                        lower(a.utm_campaign) = lower(l.utm_campaign)
-                        and lower(a.utm_source) = lower(l.utm_source)
-                        and lower(a.utm_medium) = lower(l.utm_medium)
-                        and (l.utm_content is null or lower(a.utm_content) = lower(l.utm_content))
-                    )
-                    or lower(a.referral_code) = lower(p.referral_code)
-                )
+                where c.group_id = $1
+                and lower(a.utm_campaign) = lower(l.utm_campaign)
+                and lower(a.utm_source) = lower(l.utm_source)
+                and lower(a.utm_medium) = lower(l.utm_medium)
+                and lower(a.utm_content) is not distinct from lower(l.utm_content)
                 group by l.distribution_link_id
             ) totals
         $query$ into v_link_registrations using p_group_id;
         execute $query$
             select coalesce(jsonb_object_agg(distribution_partner_id, registrations), '{}'::jsonb)
             from (
-                select p.distribution_partner_id, count(distinct a.user_id) registrations
+                select
+                    p.distribution_partner_id,
+                    count(distinct (a.event_id, a.user_id)) registrations
                 from distribution_partner p
                 join distribution_campaign c on c.group_id = p.group_id
                 join event_registration_attribution a on a.event_id = c.event_id
@@ -60,12 +66,14 @@ begin
         execute $query$
             select coalesce(jsonb_object_agg(channel, registrations), '{}'::jsonb)
             from (
-                select l.channel, count(distinct a.user_id) registrations
+                select l.channel, count(distinct (a.event_id, a.user_id)) registrations
                 from distribution_link l
                 join distribution_campaign c using (distribution_campaign_id)
                 join event_registration_attribution a on a.event_id = c.event_id
                     and lower(a.utm_campaign) = lower(l.utm_campaign)
                     and lower(a.utm_source) = lower(l.utm_source)
+                    and lower(a.utm_medium) = lower(l.utm_medium)
+                    and lower(a.utm_content) is not distinct from lower(l.utm_content)
                 where c.group_id = $1
                 group by l.channel
             ) totals
