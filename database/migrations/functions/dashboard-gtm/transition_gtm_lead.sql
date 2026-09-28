@@ -23,6 +23,14 @@ begin
         raise exception 'illegal gtm stage transition from % to %', v_lead.stage, v_stage;
     end if;
 
+    if v_stage = 'lost' and not exists (
+        select 1 from gtm_lost_reason
+        where code = coalesce(nullif(trim(p_details->>'lost_reason'), ''), v_lead.lost_reason)
+          and active
+    ) then
+        raise exception 'a standardized lost reason is required';
+    end if;
+
     update gtm_lead
     set
         stage = v_stage,

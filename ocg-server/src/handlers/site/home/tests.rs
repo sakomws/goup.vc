@@ -13,7 +13,7 @@ use crate::{
     handlers::tests::*,
     router::CACHE_CONTROL_PRIVATE_NO_STORE,
     services::notifications::MockNotificationsManager,
-    types::{jobs::JobsOutput, landscape::LandscapeOutput},
+    types::{landscape::LandscapeOutput, opportunities::OpportunitiesOutput},
 };
 
 #[tokio::test]
@@ -58,9 +58,9 @@ async fn test_page_success() {
     db.expect_get_site_upcoming_events()
         .times(2)
         .returning(|_| Ok(vec![]));
-    db.expect_search_jobs()
+    db.expect_search_opportunities()
         .times(1)
-        .returning(|_| Ok(JobsOutput::default()));
+        .returning(|_| Ok(OpportunitiesOutput::default()));
     db.expect_search_landscape_entries()
         .times(1)
         .returning(|_| Ok(LandscapeOutput::default()));

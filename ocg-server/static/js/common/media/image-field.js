@@ -264,9 +264,9 @@ export class ImageField extends LitWrapper {
       ? IMAGE_UPLOAD_MAX_SIZE_TEXT
       : isLogoTarget
         ? `Images can be any size. Raster logos are fitted inside a 360 x 360 px square without cropping. ${LOGO_IMAGE_UPLOAD_MAX_SIZE_TEXT} ${IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT}`
-      : isWide
-        ? `${IMAGE_UPLOAD_MAX_SIZE_TEXT} ${IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT}`
-        : `${IMAGE_UPLOAD_MAX_SIZE_TEXT} ${IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT}`;
+        : isWide
+          ? `${IMAGE_UPLOAD_MAX_SIZE_TEXT} ${IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT}`
+          : `${IMAGE_UPLOAD_MAX_SIZE_TEXT} ${IMAGE_UPLOAD_SUPPORTED_FORMATS_TEXT}`;
     const combinedHelpText = helpPrefixText.length > 0 ? `${helpPrefixText} ${helpText}` : helpText;
     const acceptedFormats = isOpenGraphTarget
       ? OPEN_GRAPH_IMAGE_ACCEPTED_FORMATS

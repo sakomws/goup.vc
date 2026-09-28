@@ -3,7 +3,9 @@
 use askama::Template;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{event::EventSummary, group::GroupSummary, site::Theme};
+use crate::types::{
+    event::EventSummary, group::GroupSummary, opportunities::OpportunitySummary, site::Theme,
+};
 
 // Emails templates.
 
@@ -51,6 +53,19 @@ pub(crate) struct CoffeeMeetSuggestion {
     /// Link to manage `CoffeeMeet` subscriptions.
     pub dashboard_link: String,
     /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Daily or weekly saved opportunity search digest.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/opportunity_digest.html")]
+pub(crate) struct OpportunityDigest {
+    pub search_name: String,
+    pub frequency: String,
+    pub match_count: usize,
+    pub opportunities: Vec<OpportunitySummary>,
+    pub board_link: String,
+    pub manage_link: String,
     pub theme: Theme,
 }
 
@@ -206,6 +221,18 @@ pub(crate) struct EventReminder {
     /// Link to the user dashboard events page.
     #[serde(default)]
     pub dashboard_link: Option<String>,
+}
+
+/// Template for a post-event survey request or reminder.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_survey.html")]
+pub(crate) struct EventSurveyNotification {
+    pub event_name: String,
+    pub group_name: String,
+    pub audience: String,
+    pub link: String,
+    pub reminder: bool,
+    pub theme: Theme,
 }
 
 /// Template for event rescheduled notification.

@@ -16,7 +16,9 @@ describe("alliance explore calendar", () => {
     Calendar._instance = null;
     fetchMock = mockFetch();
     replaceStateCalls = [];
-    document.head.querySelectorAll('script[src*="fullcalendar"]').forEach((node) => node.remove());
+    document.head
+      .querySelectorAll('script[src*="fullcalendar"]')
+      .forEach((node) => node.remove());
     document.body.innerHTML = `
       <div id="main-loading-calendar" class="hidden"></div>
       <div id="loading-calendar" class="hidden"></div>
@@ -46,7 +48,8 @@ describe("alliance explore calendar", () => {
           this.config = config;
           this.currentData = { viewTitle: "April 2026" };
           this.events = [];
-          this.viewDate = new Date("2026-04-01T00:00:00Z");
+          // FullCalendar returns a date in the browser's local timezone.
+          this.viewDate = new Date(2026, 3, 1);
         }
 
         // Render is a no-op because tests inspect the captured calendar state directly.
@@ -72,7 +75,9 @@ describe("alliance explore calendar", () => {
     Calendar._instance = null;
     fetchMock.restore();
     window.history.replaceState = originalReplaceState;
-    document.head.querySelectorAll('script[src*="fullcalendar"]').forEach((node) => node.remove());
+    document.head
+      .querySelectorAll('script[src*="fullcalendar"]')
+      .forEach((node) => node.remove());
     if (originalFullCalendar) {
       globalThis.FullCalendar = originalFullCalendar;
     } else {
@@ -113,10 +118,20 @@ describe("alliance explore calendar", () => {
       className: "cursor-pointer opacity-40",
       borderColor: "#0094ff",
     });
-    expect(calendar.fullCalendar.events[0].extendedProps.event.slug).to.equal("meetup");
-    expect(document.getElementById("calendar-date").textContent).to.equal("April 2026");
-    expect(document.getElementById("calendar-box")?.classList.contains("opacity-30")).to.equal(false);
-    expect(document.querySelector(".no-results-default")?.classList.contains("hidden")).to.equal(true);
+    expect(calendar.fullCalendar.events[0].extendedProps.event.slug).to.equal(
+      "meetup",
+    );
+    expect(document.getElementById("calendar-date").textContent).to.equal(
+      "April 2026",
+    );
+    expect(
+      document.getElementById("calendar-box")?.classList.contains("opacity-30"),
+    ).to.equal(false);
+    expect(
+      document
+        .querySelector(".no-results-default")
+        ?.classList.contains("hidden"),
+    ).to.equal(true);
   });
 
   it("opens event popovers upward on the last calendar row", async () => {
@@ -171,16 +186,30 @@ describe("alliance explore calendar", () => {
     expect(fetchMock.calls[0][0]).to.include("view_mode=calendar");
     expect(fetchMock.calls[0][0]).to.include("date_from=2026-04-01");
     expect(fetchMock.calls[0][0]).to.include("date_to=2026-04-30");
-    expect(document.querySelector('input[name="date_from"]')?.value).to.equal("2026-04-01");
-    expect(document.querySelector('input[name="date_to"]')?.value).to.equal("2026-04-30");
+    expect(document.querySelector('input[name="date_from"]')?.value).to.equal(
+      "2026-04-01",
+    );
+    expect(document.querySelector('input[name="date_to"]')?.value).to.equal(
+      "2026-04-30",
+    );
     expect(window.location.search).to.include("view_mode=calendar");
     expect(window.location.search).to.include("date_from=2026-04-01");
     expect(window.location.search).to.include("date_to=2026-04-30");
     expect(replaceStateCalls).to.have.length.greaterThan(0);
-    expect(document.getElementById("calendar-box")?.classList.contains("opacity-30")).to.equal(true);
-    expect(document.querySelector(".no-results-default")?.classList.contains("hidden")).to.equal(false);
+    expect(
+      document.getElementById("calendar-box")?.classList.contains("opacity-30"),
+    ).to.equal(true);
+    expect(
+      document
+        .querySelector(".no-results-default")
+        ?.classList.contains("hidden"),
+    ).to.equal(false);
     expect(calendar.state.status).to.equal("empty");
-    expect(document.getElementById("loading-calendar")?.classList.contains("is-loading")).to.equal(false);
+    expect(
+      document
+        .getElementById("loading-calendar")
+        ?.classList.contains("is-loading"),
+    ).to.equal(false);
   });
 
   it("clears loading and records an error state when month data cannot load", async () => {
@@ -194,6 +223,10 @@ describe("alliance explore calendar", () => {
     await calendar.refresh();
 
     expect(calendar.state.status).to.equal("error");
-    expect(document.getElementById("loading-calendar")?.classList.contains("is-loading")).to.equal(false);
+    expect(
+      document
+        .getElementById("loading-calendar")
+        ?.classList.contains("is-loading"),
+    ).to.equal(false);
   });
 });

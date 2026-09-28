@@ -707,6 +707,8 @@ async fn test_attend_event_success_with_registration_answers() {
         kind: QuestionnaireQuestionKind::FreeText,
         prompt: "Dietary restrictions?".to_string(),
         required: true,
+        min: None,
+        max: None,
 
         options: vec![],
     }];
@@ -1777,6 +1779,8 @@ async fn test_start_checkout_rejects_refund_requested_purchase() {
         kind: QuestionnaireQuestionKind::FreeText,
         prompt: "Dietary restrictions?".to_string(),
         required: true,
+        min: None,
+        max: None,
 
         options: vec![],
     }];

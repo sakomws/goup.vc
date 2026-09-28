@@ -21,7 +21,10 @@ use crate::{
         questionnaire::QuestionnaireQuestion,
         user::User,
     },
-    validation::{MAX_LEN_EVENT_LABEL_NAME, trimmed_non_empty, valid_cfs_label_color},
+    validation::{
+        MAX_LEN_EVENT_LABEL_NAME, MAX_LEN_L, MAX_LEN_S, trimmed_non_empty, trimmed_non_empty_opt,
+        valid_cfs_label_color,
+    },
 };
 
 #[cfg(test)]
@@ -676,6 +679,151 @@ pub struct EventAttendanceInfo {
     pub purchase_amount_minor: Option<i64>,
     /// Provider URL for resuming a pending checkout.
     pub resume_checkout_url: Option<String>,
+}
+
+/// Optional first-touch marketing context submitted with event registration.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct EventRegistrationAttribution {
+    /// Explicit source label supplied by the referring campaign.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub source: Option<String>,
+    /// Referral or ambassador code supplied in the event URL.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub referral_code: Option<String>,
+    /// Browser referrer captured when the event page first loaded.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_L))]
+    pub referrer: Option<String>,
+    /// UTM campaign name.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub utm_campaign: Option<String>,
+    /// UTM ad or link content.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub utm_content: Option<String>,
+    /// UTM marketing medium.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub utm_medium: Option<String>,
+    /// UTM source.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub utm_source: Option<String>,
+    /// UTM search term.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub utm_term: Option<String>,
+}
+
+impl EventRegistrationAttribution {
+    /// Returns whether no attribution value was submitted.
+    pub fn is_empty(&self) -> bool {
+        self.source.is_none()
+            && self.referral_code.is_none()
+            && self.referrer.is_none()
+            && self.utm_campaign.is_none()
+            && self.utm_content.is_none()
+            && self.utm_medium.is_none()
+            && self.utm_source.is_none()
+            && self.utm_term.is_none()
+    }
+}
+
+/// Per-event registration funnel counts.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EventGrowthFunnel {
+    pub views: i64,
+    pub registrations: i64,
+    pub waitlisted: i64,
+    pub pending: i64,
+    pub confirmed: i64,
+    pub check_ins: i64,
+    pub conversion_rate: f64,
+    pub unique_attendees: i64,
+    pub repeat_attendees: i64,
+    pub new_members: i64,
+    pub follow_up_collaborators: i64,
+}
+
+/// Labeled event-growth breakdown row.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventGrowthBreakdown {
+    pub label: String,
+    pub total: i64,
+}
+
+/// Currency-safe event finance totals.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventFinanceTotals {
+    pub currency_code: String,
+    pub gross_purchases_minor: i64,
+    pub refunds_minor: i64,
+    pub net_purchases_minor: i64,
+    pub manual_income_minor: i64,
+    pub manual_expense_minor: i64,
+    pub net_total_minor: i64,
+}
+
+/// Organizer-entered event income or expense.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventFinanceEntry {
+    pub event_finance_entry_id: Uuid,
+    pub kind: String,
+    pub category: String,
+    pub description: Option<String>,
+    pub amount_minor: i64,
+    pub currency_code: String,
+    pub occurred_at: NaiveDate,
+}
+
+/// Complete event growth dashboard payload.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EventGrowth {
+    pub funnel: EventGrowthFunnel,
+    pub source_breakdown: Vec<EventGrowthBreakdown>,
+    pub referral_breakdown: Vec<EventGrowthBreakdown>,
+    pub finances: Vec<EventFinanceTotals>,
+    pub finance_entries: Vec<EventFinanceEntry>,
+    /// Aggregate sponsor performance; absent from older database functions.
+    #[serde(default)]
+    pub sponsor_report: Option<EventSponsorReport>,
+}
+
+/// Aggregate-only sponsor report for an event.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EventSponsorReport {
+    pub event_id: Uuid,
+    pub event_name: String,
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub starts_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub sponsors: Vec<EventSponsorMetrics>,
+    /// Sponsor-contact survey aggregate, withheld until at least three responses.
+    #[serde(default)]
+    pub sponsor_contact_survey: Option<EventSponsorSurveyMetrics>,
+}
+
+/// Thresholded sponsor-contact feedback included in shareable reports.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EventSponsorSurveyMetrics {
+    pub responses: i64,
+    pub promoters: i64,
+    pub passives: i64,
+    pub detractors: i64,
+    pub nps_score: f64,
+    pub average_rating: Option<f64>,
+}
+
+/// Metrics for one sponsor placement. This intentionally contains no attendee fields.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EventSponsorMetrics {
+    pub group_sponsor_id: Uuid,
+    pub name: String,
+    pub level: String,
+    pub impressions: i64,
+    pub clicks: i64,
+    pub leads_count: i32,
+    pub conversations_count: i32,
+    pub meetings_count: i32,
+    pub notes: Option<String>,
+    pub promised_deliverables: i64,
+    pub delivered_deliverables: i64,
 }
 
 impl EventAttendanceInfo {

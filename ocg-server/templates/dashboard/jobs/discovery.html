@@ -108,7 +108,9 @@
       <section class="mt-8 border-t pt-6">
         <form action="/dashboard/jobs/discovery/run" method="post">
           <button class="button-secondary"
-                  {% if !discovery.enabled %}disabled{% endif %}>Run discovery now</button>
+                  {% if !discovery.enabled %}
+                    disabled
+                  {% endif %}>Run discovery now</button>
         </form>
         {% if let Some(run) = discovery.latest_run %}
           <p class="mt-3">

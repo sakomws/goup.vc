@@ -45,7 +45,9 @@ begin
         end if;
 
         v_kind := v_question->>'kind';
-        if v_kind not in ('free-text', 'multi-select', 'single-select') then
+        if v_kind not in (
+            'free-text', 'multi-select', 'single-select', 'numeric-scale', 'nps'
+        ) then
             raise exception 'questionnaire question kind is invalid';
         end if;
 
@@ -63,8 +65,24 @@ begin
             raise exception 'free-text questionnaire questions cannot define options';
         end if;
 
+        if v_kind in ('numeric-scale', 'nps') and jsonb_array_length(v_options) <> 0 then
+            raise exception 'numeric questionnaire questions cannot define options';
+        end if;
+
         if v_kind in ('multi-select', 'single-select') and jsonb_array_length(v_options) = 0 then
             raise exception 'select questionnaire questions require options';
+        end if;
+
+        if v_kind in ('numeric-scale', 'nps') then
+            if coalesce(jsonb_typeof(v_question->'min'), '') <> 'number'
+               or coalesce(jsonb_typeof(v_question->'max'), '') <> 'number'
+               or (v_question->>'min')::int >= (v_question->>'max')::int then
+                raise exception 'numeric questionnaire questions require a valid min and max';
+            end if;
+            if v_kind = 'nps'
+               and ((v_question->>'min')::int <> 0 or (v_question->>'max')::int <> 10) then
+                raise exception 'nps questionnaire questions must use a 0 to 10 scale';
+            end if;
         end if;
 
         -- Validate each option definition

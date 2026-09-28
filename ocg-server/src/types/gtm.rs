@@ -49,6 +49,15 @@ pub(crate) const GTM_AGENTS: [&str; 9] = [
 ];
 
 const GTM_SOURCES: [&str; 4] = ["manual", "landscape", "member", "discovery"];
+pub(crate) const GTM_LOST_REASONS: [(&str, &str); 7] = [
+    ("budget", "Budget unavailable"),
+    ("timing", "Timing"),
+    ("no_response", "No response"),
+    ("not_a_fit", "Not a fit"),
+    ("competitor", "Selected another partner"),
+    ("internal_change", "Internal change"),
+    ("other", "Other"),
+];
 
 /// Dashboard list filters.
 #[skip_serializing_none]
@@ -157,6 +166,18 @@ pub(crate) struct GtmLead {
     /// Agent drafts (detail view).
     #[serde(default)]
     pub drafts: Vec<GtmAgentDraft>,
+    /// Sponsor contacts.
+    #[serde(default)]
+    pub contacts: Vec<GtmSponsorContact>,
+    /// Sponsor proposals.
+    #[serde(default)]
+    pub proposals: Vec<GtmSponsorProposal>,
+    /// Follow-up tasks.
+    #[serde(default)]
+    pub tasks: Vec<GtmTask>,
+    /// Sponsor deliverables.
+    #[serde(default)]
+    pub deliverables: Vec<GtmSponsorDeliverable>,
     /// Created at.
     #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub created_at: Option<DateTime<Utc>>,
@@ -256,6 +277,22 @@ pub(crate) struct GtmLeadInput {
     /// Owner.
     #[garde(skip)]
     pub owner_user_id: Option<Uuid>,
+    /// Estimated deal value in cents.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(valid_cents_opt))]
+    pub estimated_value_cents: Option<String>,
+    /// ISO-4217 currency code.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(valid_currency_opt))]
+    pub currency: Option<String>,
+    /// Browser-local follow-up timestamp.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub next_action_at: Option<String>,
+    /// Browser-local renewal timestamp.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub renewal_at: Option<String>,
     /// Notes.
     #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION))]
@@ -276,6 +313,176 @@ pub(crate) struct GtmLeadTransitionInput {
     #[serde(default, deserialize_with = "optional_trimmed_string")]
     #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_L))]
     pub lost_reason: Option<String>,
+}
+
+/// Sponsor package shown in campaign forms.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct GtmSponsorPackage {
+    pub gtm_sponsor_package_id: Uuid,
+    pub alliance_id: Uuid,
+    pub group_id: Option<Uuid>,
+    pub name: String,
+    pub description: Option<String>,
+    pub price_cents: i64,
+    pub currency: String,
+    pub billing_period: String,
+    pub active: bool,
+    #[serde(default)]
+    pub deliverables: Vec<serde_json::Value>,
+}
+
+/// Sponsor package list returned by SQL.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct GtmSponsorPackages(pub Vec<GtmSponsorPackage>);
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct GtmSponsorContact {
+    pub gtm_sponsor_contact_id: Uuid,
+    pub user_id: Option<Uuid>,
+    pub name: String,
+    pub email: Option<String>,
+    pub title: Option<String>,
+    pub is_primary: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct GtmSponsorProposal {
+    pub gtm_sponsor_proposal_id: Uuid,
+    pub gtm_sponsor_package_id: Option<Uuid>,
+    pub status: String,
+    pub title: String,
+    #[serde(default)]
+    pub package_snapshot: serde_json::Value,
+    pub amount_cents: i64,
+    pub currency: String,
+    pub valid_until: Option<String>,
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub created_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct GtmTask {
+    pub gtm_task_id: Uuid,
+    pub gtm_lead_id: Option<Uuid>,
+    pub lead_name: Option<String>,
+    pub title: String,
+    pub notes: Option<String>,
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub due_at: Option<DateTime<Utc>>,
+    pub state: String,
+    pub assigned_user_id: Option<Uuid>,
+    pub reminder_key: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct GtmDueTasks(pub Vec<GtmTask>);
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct GtmSponsorDeliverable {
+    pub gtm_sponsor_deliverable_id: Uuid,
+    pub gtm_sponsor_proposal_id: Option<Uuid>,
+    pub title: String,
+    pub notes: Option<String>,
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub due_at: Option<DateTime<Utc>>,
+    pub state: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub(crate) struct GtmSponsorPackageInput {
+    #[garde(skip)]
+    pub group_id: Option<Uuid>,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub name: String,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_DESCRIPTION))]
+    pub description: Option<String>,
+    #[garde(range(min = 0))]
+    pub price_cents: i64,
+    #[garde(custom(valid_currency))]
+    pub currency: String,
+    #[garde(custom(valid_billing_period))]
+    pub billing_period: String,
+    #[serde(default)]
+    #[garde(length(max = MAX_LEN_DESCRIPTION))]
+    pub deliverables: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub(crate) struct GtmSponsorContactInput {
+    #[garde(skip)]
+    pub user_id: Option<Uuid>,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub name: String,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(email, length(max = MAX_LEN_M))]
+    pub email: Option<String>,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub title: Option<String>,
+    #[serde(default)]
+    #[garde(skip)]
+    pub is_primary: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub(crate) struct GtmSponsorProposalInput {
+    #[garde(skip)]
+    pub gtm_sponsor_package_id: Uuid,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub title: String,
+    #[garde(range(min = 0))]
+    pub amount_cents: Option<i64>,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(valid_currency_opt))]
+    pub currency: Option<String>,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub valid_until: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub(crate) struct GtmTaskInput {
+    #[garde(skip)]
+    pub assigned_user_id: Option<Uuid>,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub title: String,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_DESCRIPTION))]
+    pub notes: Option<String>,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
+    pub due_at: String,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub reminder_key: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub(crate) struct GtmActivityInput {
+    #[garde(custom(valid_activity_kind))]
+    pub kind: String,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_L))]
+    pub body: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub(crate) struct GtmDeliverableInput {
+    #[garde(skip)]
+    pub gtm_sponsor_proposal_id: Option<Uuid>,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub title: String,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_DESCRIPTION))]
+    pub notes: Option<String>,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub due_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub(crate) struct GtmStateInput {
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
+    pub state: String,
 }
 
 /// Request to run one agent.
@@ -414,6 +621,42 @@ fn valid_gtm_review_status(value: &str, _: &()) -> garde::Result {
         Ok(())
     } else {
         Err(garde::Error::new("invalid gtm review status"))
+    }
+}
+
+fn valid_currency(value: &str, _: &()) -> garde::Result {
+    if value.len() == 3 && value.bytes().all(|c| c.is_ascii_alphabetic()) {
+        Ok(())
+    } else {
+        Err(garde::Error::new("currency must be a three-letter code"))
+    }
+}
+
+fn valid_cents_opt(value: &Option<String>, _: &()) -> garde::Result {
+    match value {
+        Some(value) if value.parse::<i64>().is_ok_and(|value| value >= 0) => Ok(()),
+        Some(_) => Err(garde::Error::new("value must be non-negative cents")),
+        None => Ok(()),
+    }
+}
+
+fn valid_currency_opt(value: &Option<String>, _: &()) -> garde::Result {
+    value.as_deref().map_or(Ok(()), |value| valid_currency(value, &()))
+}
+
+fn valid_billing_period(value: &str, _: &()) -> garde::Result {
+    if matches!(value, "one_time" | "monthly" | "quarterly" | "annual") {
+        Ok(())
+    } else {
+        Err(garde::Error::new("invalid billing period"))
+    }
+}
+
+fn valid_activity_kind(value: &str, _: &()) -> garde::Result {
+    if matches!(value, "note" | "call" | "email" | "meeting") {
+        Ok(())
+    } else {
+        Err(garde::Error::new("invalid manual activity kind"))
     }
 }
 

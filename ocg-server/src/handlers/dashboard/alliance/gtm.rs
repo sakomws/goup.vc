@@ -16,7 +16,11 @@ use crate::{
         extractors::{CurrentUser, SelectedAllianceId, ValidatedForm},
     },
     services::notifications::DynNotificationsManager,
-    types::gtm::{GtmLeadInput, GtmLeadTransitionInput, GtmReviewDraftInput, GtmRunAgentInput},
+    types::gtm::{
+        GtmActivityInput, GtmDeliverableInput, GtmLeadInput, GtmLeadTransitionInput,
+        GtmReviewDraftInput, GtmRunAgentInput, GtmSponsorContactInput, GtmSponsorPackageInput,
+        GtmSponsorProposalInput, GtmStateInput, GtmTaskInput,
+    },
 };
 
 #[cfg(test)]
@@ -124,6 +128,65 @@ pub(crate) async fn review_draft(
     input: ValidatedForm<GtmReviewDraftInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
     gtm_handlers::review_draft(user, db, notifications_manager, path, alliance_id, input).await
+}
+
+pub(crate) async fn add_package(
+    user: CurrentUser,
+    db: State<DynDB>,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    input: ValidatedForm<GtmSponsorPackageInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    gtm_handlers::add_package(user, db, alliance_id, None, input).await
+}
+
+macro_rules! alliance_lead_action {
+    ($name:ident, $shared:ident, $input:ty) => {
+        pub(crate) async fn $name(
+            user: CurrentUser,
+            db: State<DynDB>,
+            path: Path<Uuid>,
+            SelectedAllianceId(alliance_id): SelectedAllianceId,
+            input: ValidatedForm<$input>,
+        ) -> Result<impl IntoResponse, HandlerError> {
+            gtm_handlers::$shared(user, db, path, alliance_id, input).await
+        }
+    };
+}
+
+alliance_lead_action!(add_contact, add_contact, GtmSponsorContactInput);
+alliance_lead_action!(add_proposal, add_proposal, GtmSponsorProposalInput);
+alliance_lead_action!(add_task, add_task, GtmTaskInput);
+alliance_lead_action!(add_deliverable, add_deliverable, GtmDeliverableInput);
+alliance_lead_action!(add_activity, add_activity, GtmActivityInput);
+
+pub(crate) async fn set_task_state(
+    user: CurrentUser,
+    db: State<DynDB>,
+    path: Path<Uuid>,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    input: ValidatedForm<GtmStateInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    gtm_handlers::set_campaign_state(user, db, path, alliance_id, None, "task", input).await
+}
+
+pub(crate) async fn set_proposal_state(
+    user: CurrentUser,
+    db: State<DynDB>,
+    path: Path<Uuid>,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    input: ValidatedForm<GtmStateInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    gtm_handlers::set_campaign_state(user, db, path, alliance_id, None, "proposal", input).await
+}
+
+pub(crate) async fn set_deliverable_state(
+    user: CurrentUser,
+    db: State<DynDB>,
+    path: Path<Uuid>,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    input: ValidatedForm<GtmStateInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    gtm_handlers::set_campaign_state(user, db, path, alliance_id, None, "deliverable", input).await
 }
 
 /// Prepares the alliance GTM tab.

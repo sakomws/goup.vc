@@ -239,6 +239,10 @@ pub(crate) async fn setup(
             post(event::request_refund),
         )
         .route(
+            "/{alliance}/event/{event_id}/survey/{audience}",
+            get(event::survey_page).post(event::submit_survey),
+        )
+        .route(
             "/{alliance}/event/{event_id}/cfs-submissions",
             post(event::submit_cfs_submission),
         )
@@ -247,6 +251,14 @@ pub(crate) async fn setup(
             post(group::submit_cfs_submission),
         )
         .route("/{alliance}/group/{group_id}/join", post(group::join_group))
+        .route(
+            "/projects/{project_id}/updates",
+            post(group::submit_collaboration_update),
+        )
+        .route(
+            "/projects/office-hours/{session_id}/book",
+            post(group::book_collaboration_office_hour),
+        )
         .route(
             "/{alliance}/group/{group_id}/accelerator/cohorts/{cohort_id}/apply",
             post(group::apply_to_accelerator_cohort),
@@ -378,6 +390,36 @@ pub(crate) async fn setup(
             "/dashboard/jobs/{job_id}/unpublish",
             put(crate::handlers::dashboard::jobs::unpublish),
         )
+        .route(
+            "/dashboard/opportunities",
+            get(crate::handlers::dashboard::opportunities::page)
+                .post(crate::handlers::dashboard::opportunities::add),
+        )
+        .route(
+            "/dashboard/opportunities/{opportunity_id}",
+            put(crate::handlers::dashboard::opportunities::update)
+                .delete(crate::handlers::dashboard::opportunities::delete),
+        )
+        .route(
+            "/dashboard/opportunities/{opportunity_id}/publish",
+            put(crate::handlers::dashboard::opportunities::publish),
+        )
+        .route(
+            "/dashboard/opportunities/{opportunity_id}/unpublish",
+            put(crate::handlers::dashboard::opportunities::unpublish),
+        )
+        .route(
+            "/dashboard/opportunities/searches",
+            post(crate::handlers::dashboard::opportunities::save_search),
+        )
+        .route(
+            "/dashboard/opportunities/searches/{saved_search_id}/activate",
+            post(crate::handlers::dashboard::opportunities::activate_search),
+        )
+        .route(
+            "/dashboard/opportunities/searches/{saved_search_id}",
+            delete(crate::handlers::dashboard::opportunities::delete_search),
+        )
         .nest("/dashboard/alliance", alliance_dashboard_router)
         .nest("/dashboard/group", group_dashboard_router)
         .nest("/dashboard/user", user_dashboard_router)
@@ -451,9 +493,23 @@ pub(crate) async fn setup(
             get(site::jobs::mock_interviews_page),
         )
         .route("/jobs/{slug}", get(site::jobs::details))
+        .route("/opportunities", get(site::opportunities::page))
+        .route("/opportunities.csv", get(site::opportunities::csv))
+        .route(
+            "/opportunities/{source_kind}/{source_id}",
+            get(site::opportunities::details),
+        )
         .route("/landscape", get(site::landscape::page))
         .route("/privacy", get(site::privacy::page))
         .route("/profiles/{username}", get(site::profile::page))
+        .route(
+            "/event-sponsors/{event_id}/{group_sponsor_id}/engagement",
+            post(event::sponsor_engagement),
+        )
+        .route(
+            "/sponsor-reports/{token}",
+            get(event::public_sponsor_report),
+        )
         .route("/search", get(site::search::page))
         .route(
             "/sponsor",
@@ -478,6 +534,10 @@ pub(crate) async fn setup(
         .route(
             "/{alliance}/group/{group_slug}/accelerator",
             get(group::accelerator_page),
+        )
+        .route(
+            "/{alliance}/group/{group_slug}/projects/{project_slug}",
+            get(group::collaboration_project_page),
         )
         .route("/{alliance}/group/{group_slug}/cfs", get(group::cfs_page))
         .route("/{alliance}/group/{group_slug}", get(group::page))

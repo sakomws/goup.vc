@@ -26,8 +26,9 @@ use crate::{
     templates::dashboard::gtm::{DetailPage, ListPage},
     types::{
         gtm::{
-            GtmLeadFilters, GtmLeadInput, GtmLeadTransitionInput, GtmReviewDraftInput,
-            GtmRunAgentInput,
+            GtmActivityInput, GtmDeliverableInput, GtmLeadFilters, GtmLeadInput,
+            GtmLeadTransitionInput, GtmReviewDraftInput, GtmRunAgentInput, GtmSponsorContactInput,
+            GtmSponsorPackageInput, GtmSponsorProposalInput, GtmStateInput, GtmTaskInput,
         },
         pagination::{self, NavigationLinks},
         permissions::{AlliancePermission, GroupPermission},
@@ -41,6 +42,91 @@ pub(crate) enum GtmScope {
     Alliance,
     /// Group-scoped pipeline.
     Group,
+}
+
+/// Creates a package in the selected campaign scope.
+pub(crate) async fn add_package(
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    alliance_id: Uuid,
+    group_id: Option<Uuid>,
+    ValidatedForm(mut input): ValidatedForm<GtmSponsorPackageInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    input.group_id = group_id;
+    let deliverables = input
+        .deliverables
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(|name| json!({ "name": name, "quantity": 1 }))
+        .collect::<Vec<_>>();
+    let mut value = serde_json::to_value(&input)?;
+    value["deliverables"] = json!(deliverables);
+    db.add_gtm_campaign_record("package", user.user_id, alliance_id, None, &value)
+        .await?;
+    Ok((StatusCode::CREATED, [("HX-Trigger", "refresh-body")]).into_response())
+}
+
+macro_rules! add_lead_record_handler {
+    ($name:ident, $input:ty, $record:literal) => {
+        pub(crate) async fn $name(
+            CurrentUser(user): CurrentUser,
+            State(db): State<DynDB>,
+            Path(lead_id): Path<Uuid>,
+            alliance_id: Uuid,
+            ValidatedForm(input): ValidatedForm<$input>,
+        ) -> Result<impl IntoResponse, HandlerError> {
+            db.add_gtm_campaign_record(
+                $record,
+                user.user_id,
+                alliance_id,
+                Some(lead_id),
+                &serde_json::to_value(&input)?,
+            )
+            .await?;
+            Ok((StatusCode::CREATED, [("HX-Trigger", "refresh-body")]).into_response())
+        }
+    };
+}
+
+add_lead_record_handler!(add_contact, GtmSponsorContactInput, "contact");
+add_lead_record_handler!(add_proposal, GtmSponsorProposalInput, "proposal");
+add_lead_record_handler!(add_task, GtmTaskInput, "task");
+add_lead_record_handler!(add_deliverable, GtmDeliverableInput, "deliverable");
+
+/// Adds an organizer-authored contact-history note.
+pub(crate) async fn add_activity(
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    Path(lead_id): Path<Uuid>,
+    alliance_id: Uuid,
+    ValidatedForm(input): ValidatedForm<GtmActivityInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.add_gtm_lead_activity(user.user_id, alliance_id, lead_id, &input.kind, &input.body)
+        .await?;
+    Ok((StatusCode::CREATED, [("HX-Trigger", "refresh-body")]).into_response())
+}
+
+/// Changes a task or deliverable state.
+pub(crate) async fn set_campaign_state(
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    Path(record_id): Path<Uuid>,
+    alliance_id: Uuid,
+    group_id: Option<Uuid>,
+    record: &'static str,
+    ValidatedForm(input): ValidatedForm<GtmStateInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.set_gtm_campaign_state(
+        record,
+        user.user_id,
+        alliance_id,
+        group_id,
+        record_id,
+        &input.state,
+    )
+    .await?;
+    Ok((StatusCode::NO_CONTENT, [("HX-Trigger", "refresh-body")]).into_response())
 }
 
 impl GtmScope {
@@ -120,6 +206,9 @@ pub(crate) async fn add(
     if input.source.is_none() {
         input.source = Some("manual".to_string());
     }
+    if let Some(currency) = &mut input.currency {
+        currency.make_ascii_uppercase();
+    }
     db.add_gtm_lead(user.user_id, alliance_id, &input).await?;
     Ok((StatusCode::CREATED, [("HX-Trigger", "refresh-body")]).into_response())
 }
@@ -136,6 +225,9 @@ pub(crate) async fn update(
 ) -> Result<impl IntoResponse, HandlerError> {
     if let Some(group_id) = group_id {
         input.group_id = Some(group_id);
+    }
+    if let Some(currency) = &mut input.currency {
+        currency.make_ascii_uppercase();
     }
     db.update_gtm_lead(
         user.user_id,
@@ -282,9 +374,11 @@ pub(crate) async fn prepare_list_page(
     }
     filters.validate()?;
 
-    let (can_manage_gtm, output) = tokio::try_join!(
+    let (can_manage_gtm, output, packages, due_tasks) = tokio::try_join!(
         user_can_manage_gtm(db, alliance_id, group_id, user_id, scope),
-        db.list_gtm_leads(alliance_id, &filters)
+        db.list_gtm_leads(alliance_id, &filters),
+        db.list_gtm_sponsor_packages(alliance_id, group_id),
+        db.list_due_gtm_tasks(alliance_id, group_id)
     )?;
     let navigation_links = NavigationLinks::from_filters(
         &filters,
@@ -304,6 +398,8 @@ pub(crate) async fn prepare_list_page(
             total: output.total,
             stage_counts: output.stage_counts,
             navigation_links,
+            packages: packages.0,
+            due_tasks: due_tasks.0,
         },
     ))
 }
@@ -317,10 +413,11 @@ async fn prepare_detail_page(
     gtm_lead_id: Uuid,
 ) -> Result<DetailPage, HandlerError> {
     let draft_filters = json!({ "gtm_lead_id": gtm_lead_id });
-    let (can_manage_gtm, lead, drafts) = tokio::try_join!(
+    let (can_manage_gtm, lead, drafts, packages) = tokio::try_join!(
         user_can_manage_gtm(db, alliance_id, group_id, user_id, scope),
         db.get_gtm_lead(alliance_id, gtm_lead_id),
-        db.list_gtm_agent_drafts(alliance_id, &draft_filters)
+        db.list_gtm_agent_drafts(alliance_id, &draft_filters),
+        db.list_gtm_sponsor_packages(alliance_id, group_id)
     )?;
     let Some(mut lead) = lead else {
         return Err(HandlerError::NotFound);
@@ -336,6 +433,7 @@ async fn prepare_detail_page(
         dashboard_base: scope.dashboard_base().to_string(),
         dashboard_tab_url: scope.dashboard_tab_url().to_string(),
         lead,
+        packages: packages.0,
     })
 }
 
