@@ -51,7 +51,10 @@ describe("dashboard group attendees list template", () => {
     expect(template).to.include('hx-disabled-elt="this"');
     expect(template).to.include("data-confirm-action");
     expect(template).to.include(
-      'data-confirm-message="Are you sure you want to cancel this attendance?"',
+      "Cancel this paid attendance and refund the ticket?",
+    );
+    expect(template).to.include(
+      "Are you sure you want to cancel this attendance?",
     );
     expect(template).to.include('data-success-message="Attendance canceled."');
     expect(template).to.include(
@@ -59,19 +62,13 @@ describe("dashboard group attendees list template", () => {
     );
   });
 
-  it("keeps cancel attendance disabled for unsupported attendee states", async () => {
+  it("keeps cancel attendance disabled for canceled or past events", async () => {
     // Load the attendees list template before checking disabled states.
     const template = normalizeWhitespace(await loadTemplate());
 
     // Verify keeps cancel attendance disabled for unsupported attendee states.
-    expect(template).to.include(
-      "!self::is_paid_attendee(attendee.amount_minor)",
-    );
     expect(template).to.include("!event.canceled");
     expect(template).to.include("!event.is_past()");
-    expect(template).to.include(
-      'title="Paid attendee attendance cannot be canceled from attendee actions."',
-    );
     expect(template).to.include(
       'title="Canceled event attendance cannot be canceled."',
     );
@@ -188,7 +185,9 @@ describe("dashboard group attendees list template", () => {
     expect(template).to.not.include("dashboard::table_sort_control");
     expect(template).to.include('class="px-3 xl:px-5 py-1.5"');
     expect(template).to.include('class="hidden px-3 xl:px-5 py-1.5 w-12"');
-    expect(template).to.include('class="hidden 2xl:table-cell px-3 xl:px-5 py-1.5"');
+    expect(template).to.include(
+      'class="hidden 2xl:table-cell px-3 xl:px-5 py-1.5"',
+    );
     expect(template).to.include(
       'class="hidden 2xl:table-cell px-3 xl:px-5 py-1.5 w-40"',
     );
@@ -197,8 +196,12 @@ describe("dashboard group attendees list template", () => {
     );
     expect(template).to.include('class="px-3 xl:px-5 py-1.5 w-30"');
     expect(template).to.include('class="px-3 xl:px-5 py-1.5 w-[72px]"');
-    expect(template).to.include('<span class="whitespace-nowrap">Attendee</span>');
-    expect(template).to.include('<span class="whitespace-nowrap">RSVP Date</span>');
+    expect(template).to.include(
+      '<span class="whitespace-nowrap">Attendee</span>',
+    );
+    expect(template).to.include(
+      '<span class="whitespace-nowrap">RSVP Date</span>',
+    );
     expect(template).to.include(
       'dashboard::table_filter_menu(id = "attendees-position-filter", label = "Position"',
     );
@@ -227,7 +230,9 @@ describe("dashboard group attendees list template", () => {
       'dashboard::table_filter_option_button(label = "Not checked in", name = "checked_in", value = "false"',
     );
     expect(template).to.include("Reset all");
-    expect(template).to.not.include('dashboard::active_table_filter_badge("Sort:');
+    expect(template).to.not.include(
+      'dashboard::active_table_filter_badge("Sort:',
+    );
     expect(template).to.not.include('id = "attendees-name-filter"');
     expect(template).to.include("Ticket type");
   });

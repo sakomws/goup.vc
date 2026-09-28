@@ -44,9 +44,13 @@ const promptAfterLogin = () => {
 };
 
 const installLoginPrompt = (root = document) => {
-  root.querySelectorAll('form[action^="/log-in"], a[href^="/log-in/oauth2/"], a[href^="/log-in/oidc/"]').forEach(
-    (control) => control.addEventListener("click", () => sessionStorage.setItem("goup.profilePrompt", "true"), { once: true }),
-  );
+  root
+    .querySelectorAll('form[action^="/log-in"], a[href^="/log-in/oauth2/"], a[href^="/log-in/oidc/"]')
+    .forEach((control) =>
+      control.addEventListener("click", () => sessionStorage.setItem("goup.profilePrompt", "true"), {
+        once: true,
+      }),
+    );
   promptAfterLogin();
 };
 

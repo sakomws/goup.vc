@@ -208,7 +208,9 @@
             {# Entry -#}
             <td class="px-3 xl:px-5 py-4 max-w-0">
               {% call dashboard::user_profile_modal_trigger(entry.user, self::user_initials(entry.user.name.as_deref() , entry.user.username.as_str())) -%}
-              <div class="font-medium text-stone-900 truncate mb-1 group-hover:text-primary-600">{{ entry.user.name.as_deref() |assigned_or(entry.user.username) }}</div>
+              <div class="font-medium text-stone-900 truncate mb-1 group-hover:text-primary-600">
+                {{ entry.user.name.as_deref() |assigned_or(entry.user.username) }}
+              </div>
               {% endcall -%}
             </td>
             {# End entry -#}

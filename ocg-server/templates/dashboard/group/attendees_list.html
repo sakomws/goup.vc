@@ -352,7 +352,8 @@
             <div class="font-medium text-stone-900">{{ scheduled_email.subject }}</div>
             <div class="text-sm text-stone-600">
               {{ scheduled_email.scheduled_at.format("%b %e, %Y %H:%M UTC") }}
-              · {{ scheduled_email.recipient_count }} recipient{% if scheduled_email.recipient_count != 1 %}s{% endif %}
+              · {{ scheduled_email.recipient_count }} recipient
+              {% if scheduled_email.recipient_count != 1 %}s{% endif %}
               · {{ scheduled_email.recipient_scope }}
               · {{ scheduled_email.status }}
             </div>
@@ -367,7 +368,12 @@
                       data-recipient-scope="{{ scheduled_email.recipient_scope }}"
                       data-subject="{{ scheduled_email.subject }}"
                       data-body="{{ scheduled_email.body }}"
-                      data-recipient-ids="{% if let Some(recipient_user_ids) = &scheduled_email.recipient_user_ids %}{% for recipient_user_id in recipient_user_ids %}{{ recipient_user_id }}{% if !loop.last %},{% endif %}{% endfor %}{% endif %}">Edit</button>
+                      data-recipient-ids="{% if let Some(recipient_user_ids) = &scheduled_email.recipient_user_ids %}
+                                            {% for recipient_user_id in recipient_user_ids %}
+                                              {{ recipient_user_id }}
+                                              {% if !loop.last %},{% endif %}
+                                            {% endfor %}
+                                          {% endif %}">Edit</button>
               <button type="button"
                       class="btn-primary-outline btn-mini"
                       hx-delete="/dashboard/group/notifications/{{ event.event_id }}/scheduled/{{ scheduled_email.scheduled_event_attendee_email_id }}"
@@ -577,7 +583,9 @@
             {# Position -#}
             <td class="hidden 2xl:table-cell px-3 xl:px-5 py-4 max-w-0">
               <div class="flex flex-col space-y-1">
-                <div class="font-medium text-stone-900 truncate">{{ attendee.user.company.as_deref() |assigned_or("-") }}</div>
+                <div class="font-medium text-stone-900 truncate">
+                  {{ attendee.user.company.as_deref() |assigned_or("-") }}
+                </div>
                 {% if let Some(title) = &attendee.user.title -%}
                   <div class="text-xs text-stone-600 truncate">{{ title }}</div>
                 {% endif -%}
@@ -772,11 +780,22 @@
                           <li>
                             <button id="cancel-attendance-{{ attendee.user.user_id }}"
                                     {% if !event.canceled && !event.is_past() -%}
-                                      hx-delete="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/attendance" hx-indicator="#dashboard-spinner" hx-trigger="confirmed" hx-disabled-elt="this" data-confirm-action data-confirm-message="{% if self::is_paid_attendee(attendee.amount_minor) %}Cancel this paid attendance and refund the ticket?{% else %}Are you sure you want to cancel this attendance?{% endif %}" data-confirm-text="Yes" data-success-message="Attendance canceled." data-error-message="Something went wrong canceling this attendance. Please try again later."
+                                      hx-delete="/dashboard/group/events/{{ event.event_id }}/attendees/{{ attendee.user.user_id }}/attendance" hx-indicator="#dashboard-spinner" hx-trigger="confirmed" hx-disabled-elt="this" data-confirm-action data-confirm-message="
+                                      {% if self::is_paid_attendee(attendee.amount_minor) %}
+                                        Cancel this paid attendance and refund the ticket?
+                                      {% else %}
+                                        Are you sure you want to cancel this attendance?
+                                      {% endif %}
+                                    "
+                                    data-confirm-text="Yes"
+                                    data-success-message="Attendance canceled."
+                                    data-error-message="Something went wrong canceling this attendance. Please try again later."
                                     {% else if event.canceled -%}
-                                      disabled title="Canceled event attendance cannot be canceled."
+                                    disabled
+                                    title="Canceled event attendance cannot be canceled."
                                     {% else -%}
-                                      disabled title="Past event attendance cannot be canceled."
+                                    disabled
+                                    title="Past event attendance cannot be canceled."
                                     {% endif -%}
                                     role="menuitem"
                                     class="flex items-center w-full px-4 py-2 hover:bg-stone-100 hover:text-stone-900 transition-colors gap-3 text-left disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-stone-700"
@@ -1027,7 +1046,9 @@
                  name="recipient_scope"
                  value="all">
           <div id="attendee-notification-selected-fields"></div>
-          <input type="hidden" id="attendee-notification-scheduled-at" name="scheduled_at">
+          <input type="hidden"
+                 id="attendee-notification-scheduled-at"
+                 name="scheduled_at">
 
           <div class="mb-4">
             <label for="attendee-subject" class="form-label">

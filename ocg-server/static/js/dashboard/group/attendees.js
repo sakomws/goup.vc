@@ -723,14 +723,13 @@ const syncNotificationDeliveryMode = (root) => {
   form.removeAttribute("hx-put");
   if (eventId) {
     if (scheduled && scheduledEmailId) {
-      form.setAttribute(
-        "hx-put",
-        `/dashboard/group/notifications/${eventId}/scheduled/${scheduledEmailId}`,
-      );
+      form.setAttribute("hx-put", `/dashboard/group/notifications/${eventId}/scheduled/${scheduledEmailId}`);
     } else {
       form.setAttribute(
         "hx-post",
-        scheduled ? `/dashboard/group/notifications/${eventId}/scheduled` : `/dashboard/group/notifications/${eventId}`,
+        scheduled
+          ? `/dashboard/group/notifications/${eventId}/scheduled`
+          : `/dashboard/group/notifications/${eventId}`,
       );
     }
   }
@@ -751,8 +750,10 @@ const syncNotificationDeliveryMode = (root) => {
 const editScheduledEmail = (root, trigger) => {
   const { deliveryMode, form, scheduledAt, scheduledFields, scheduledLocal, selectedFields, submitLabel } =
     getAttendeeNotificationControls(root);
-  const eventId = trigger.closest("[data-attendee-email-selection-bar]")?.dataset.eventId ||
-    root.querySelector("[data-attendee-email-selection-start]")?.dataset.eventId || "";
+  const eventId =
+    trigger.closest("[data-attendee-email-selection-bar]")?.dataset.eventId ||
+    root.querySelector("[data-attendee-email-selection-start]")?.dataset.eventId ||
+    "";
   const scheduledEmailId = trigger.dataset.scheduledEmailId || "";
   if (!form || !eventId || !scheduledEmailId) return;
 
@@ -775,10 +776,7 @@ const editScheduledEmail = (root, trigger) => {
   form.dataset.notificationEventId = eventId;
   form.dataset.notificationScheduleId = scheduledEmailId;
   form.removeAttribute("hx-post");
-  form.setAttribute(
-    "hx-put",
-    `/dashboard/group/notifications/${eventId}/scheduled/${scheduledEmailId}`,
-  );
+  form.setAttribute("hx-put", `/dashboard/group/notifications/${eventId}/scheduled/${scheduledEmailId}`);
   window.htmx?.process?.(form);
   setScopedModalVisibility(root, modalId, true);
 };
@@ -1001,7 +999,11 @@ const initializeAttendeeNotification = (root = document) => {
   }
 
   root.addEventListener("click", (event) => {
-    const scheduledEdit = closestElementWithinRoot(event.target, "[data-attendee-scheduled-email-edit]", root);
+    const scheduledEdit = closestElementWithinRoot(
+      event.target,
+      "[data-attendee-scheduled-email-edit]",
+      root,
+    );
     if (scheduledEdit instanceof HTMLElement) {
       event.stopPropagation();
       editScheduledEmail(root, scheduledEdit);
