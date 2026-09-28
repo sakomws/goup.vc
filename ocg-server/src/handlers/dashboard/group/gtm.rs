@@ -16,7 +16,11 @@ use crate::{
         extractors::{CurrentUser, SelectedAllianceId, SelectedGroupId, ValidatedForm},
     },
     services::notifications::DynNotificationsManager,
-    types::gtm::{GtmLeadInput, GtmLeadTransitionInput, GtmReviewDraftInput, GtmRunAgentInput},
+    types::gtm::{
+        GtmActivityInput, GtmDeliverableInput, GtmLeadInput, GtmLeadTransitionInput,
+        GtmReviewDraftInput, GtmRunAgentInput, GtmSponsorContactInput, GtmSponsorPackageInput,
+        GtmSponsorProposalInput, GtmStateInput, GtmTaskInput,
+    },
 };
 
 /// Group GTM list partial.
@@ -144,6 +148,95 @@ pub(crate) async fn review_draft(
     input: ValidatedForm<GtmReviewDraftInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
     gtm_handlers::review_draft(user, db, notifications_manager, path, alliance_id, input).await
+}
+
+pub(crate) async fn add_package(
+    user: CurrentUser,
+    db: State<DynDB>,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    input: ValidatedForm<GtmSponsorPackageInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    gtm_handlers::add_package(user, db, alliance_id, Some(group_id), input).await
+}
+
+macro_rules! group_lead_action {
+    ($name:ident, $shared:ident, $input:ty) => {
+        pub(crate) async fn $name(
+            user: CurrentUser,
+            db: State<DynDB>,
+            path: Path<Uuid>,
+            SelectedAllianceId(alliance_id): SelectedAllianceId,
+            SelectedGroupId(group_id): SelectedGroupId,
+            input: ValidatedForm<$input>,
+        ) -> Result<impl IntoResponse, HandlerError> {
+            let lead = db
+                .get_gtm_lead(alliance_id, path.0)
+                .await?
+                .filter(|lead| lead.group_id == Some(group_id))
+                .ok_or(HandlerError::NotFound)?;
+            drop(lead);
+            gtm_handlers::$shared(user, db, path, alliance_id, input).await
+        }
+    };
+}
+
+group_lead_action!(add_contact, add_contact, GtmSponsorContactInput);
+group_lead_action!(add_proposal, add_proposal, GtmSponsorProposalInput);
+group_lead_action!(add_task, add_task, GtmTaskInput);
+group_lead_action!(add_deliverable, add_deliverable, GtmDeliverableInput);
+group_lead_action!(add_activity, add_activity, GtmActivityInput);
+
+pub(crate) async fn set_task_state(
+    user: CurrentUser,
+    db: State<DynDB>,
+    path: Path<Uuid>,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    input: ValidatedForm<GtmStateInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    gtm_handlers::set_campaign_state(user, db, path, alliance_id, Some(group_id), "task", input)
+        .await
+}
+
+pub(crate) async fn set_proposal_state(
+    user: CurrentUser,
+    db: State<DynDB>,
+    path: Path<Uuid>,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    input: ValidatedForm<GtmStateInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    gtm_handlers::set_campaign_state(
+        user,
+        db,
+        path,
+        alliance_id,
+        Some(group_id),
+        "proposal",
+        input,
+    )
+    .await
+}
+
+pub(crate) async fn set_deliverable_state(
+    user: CurrentUser,
+    db: State<DynDB>,
+    path: Path<Uuid>,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    input: ValidatedForm<GtmStateInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    gtm_handlers::set_campaign_state(
+        user,
+        db,
+        path,
+        alliance_id,
+        Some(group_id),
+        "deliverable",
+        input,
+    )
+    .await
 }
 
 /// Prepares the group GTM tab.

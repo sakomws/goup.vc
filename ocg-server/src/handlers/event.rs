@@ -3,7 +3,7 @@
 use askama::Template;
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Form, Path, State},
     http::{HeaderMap, HeaderValue, StatusCode, Uri, header::CACHE_CONTROL},
     response::{Html, IntoResponse, Redirect},
 };
@@ -39,10 +39,10 @@ use crate::{
     templates::{
         PageId,
         auth::User,
-        event::{CfsModal, CheckInPage, Page},
+        event::{CfsModal, CheckInPage, Page, SponsorReportPage, SurveyPage},
     },
     types::{
-        event::{EventAttendanceStatus, EventFull, EventSummary},
+        event::{EventAttendanceStatus, EventFull, EventRegistrationAttribution, EventSummary},
         payments::{EventPurchaseStatus, EventTicketType, PreparedEventCheckout},
         questionnaire::{
             OptionalQuestionnaireAnswersForm, QuestionnaireAnswers, QuestionnaireQuestion,
@@ -112,7 +112,9 @@ pub(crate) async fn page(
         custom_domain,
         event,
         page_id: PageId::Event,
-        path: uri.path().to_string(),
+        path: uri
+            .path_and_query()
+            .map_or_else(|| uri.path().to_string(), ToString::to_string),
         site_settings,
         user,
         viewer_timezone,
@@ -201,6 +203,71 @@ pub(crate) async fn cfs_modal(
     Ok(Html(template.render()?))
 }
 
+/// Renders an authenticated post-event survey for an eligible audience member.
+#[instrument(skip_all, err)]
+pub(crate) async fn survey_page(
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    AllianceId(alliance_id): AllianceId,
+    Path((_, event_id, audience)): Path<(String, Uuid, String)>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let survey = db
+        .get_event_survey_for_user(alliance_id, event_id, &audience, user.user_id)
+        .await?
+        .ok_or(HandlerError::NotFound)?;
+
+    Ok((
+        [(CACHE_CONTROL, CACHE_CONTROL_NO_STORE)],
+        Html(
+            SurveyPage {
+                survey,
+                notice: None,
+            }
+            .render()?,
+        ),
+    ))
+}
+
+/// Stores one immutable survey response for the authenticated eligible user.
+#[instrument(skip_all, err)]
+pub(crate) async fn submit_survey(
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    AllianceId(alliance_id): AllianceId,
+    Path((_, event_id, audience)): Path<(String, Uuid, String)>,
+    Form(input): Form<EventSurveyResponseForm>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let mut survey = db
+        .get_event_survey_for_user(alliance_id, event_id, &audience, user.user_id)
+        .await?
+        .ok_or(HandlerError::NotFound)?;
+    if survey.submitted {
+        return Err(HandlerError::Database(
+            "survey response already submitted".to_string(),
+        ));
+    }
+
+    let answers: QuestionnaireAnswers = serde_json::from_str(&input.survey_answers)
+        .map_err(|err| HandlerError::Deserialization(err.to_string()))?;
+    answers
+        .validate_against_questions(&survey.questions)
+        .map_err(validation_error)?;
+    db.submit_event_survey_response(alliance_id, event_id, &audience, user.user_id, &answers)
+        .await?;
+    survey.submitted = true;
+
+    Ok((
+        [(CACHE_CONTROL, CACHE_CONTROL_NO_STORE)],
+        Html(
+            SurveyPage {
+                survey,
+                notice: Some("Thank you for sharing your feedback.".to_string()),
+            }
+            .render()?,
+        ),
+    ))
+}
+
 // JSON handlers.
 
 /// Handler that returns fresh public availability for the event page.
@@ -226,6 +293,60 @@ pub(crate) async fn availability(
     Ok((headers, Json(EventAvailability::from_event(&event))).into_response())
 }
 
+/// Records an anonymous, de-duplicated sponsor placement impression or click.
+#[instrument(skip_all)]
+pub(crate) async fn sponsor_engagement(
+    headers: HeaderMap,
+    State(db): State<DynDB>,
+    State(server_cfg): State<HttpServerConfig>,
+    Path((event_id, group_sponsor_id)): Path<(Uuid, Uuid)>,
+    Json(input): Json<SponsorEngagementInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    if !request_matches_site(&server_cfg, &headers)? {
+        return Ok((
+            [(CACHE_CONTROL, CACHE_CONTROL_NO_STORE)],
+            StatusCode::NO_CONTENT,
+        ));
+    }
+    if !matches!(input.metric.as_str(), "impression" | "click") {
+        return Err(HandlerError::Deserialization(
+            "metric must be impression or click".to_string(),
+        ));
+    }
+    db.record_event_sponsor_engagement(
+        event_id,
+        group_sponsor_id,
+        &input.metric,
+        input.session_nonce,
+    )
+    .await?;
+
+    Ok((
+        [(CACHE_CONTROL, CACHE_CONTROL_NO_STORE)],
+        StatusCode::NO_CONTENT,
+    ))
+}
+
+/// Renders an unguessable, revocable aggregate sponsor report.
+#[instrument(skip_all)]
+pub(crate) async fn public_sponsor_report(
+    State(db): State<DynDB>,
+    Path(token): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let report = db
+        .get_public_event_sponsor_report(token)
+        .await?
+        .ok_or(HandlerError::NotFound)?;
+    let page = SponsorReportPage {
+        report,
+        public: true,
+    };
+    Ok((
+        [(CACHE_CONTROL, CACHE_CONTROL_NO_STORE)],
+        Html(page.render()?),
+    ))
+}
+
 // Actions handlers.
 
 /// Handler for attending an event.
@@ -237,7 +358,7 @@ pub(crate) async fn attend_event(
     State(server_cfg): State<HttpServerConfig>,
     AllianceId(alliance_id): AllianceId,
     Path((_, event_id)): Path<(String, Uuid)>,
-    ValidatedForm(input): ValidatedForm<OptionalQuestionnaireAnswersForm>,
+    ValidatedForm(input): ValidatedForm<AttendEventInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
     // Validate that the event is still attendee-visible before checking ticketing
     ensure_attendee_event_is_active(&db, alliance_id, event_id).await?;
@@ -257,7 +378,7 @@ pub(crate) async fn attend_event(
         let registration_questions =
             db.get_event_registration_questions(alliance_id, event_id).await?;
         validate_registration_answers(
-            input.registration_answers.as_ref(),
+            input.answers.registration_answers.as_ref(),
             &registration_questions,
         )?;
     }
@@ -268,9 +389,16 @@ pub(crate) async fn attend_event(
             alliance_id,
             event_id,
             user.user_id,
-            input.registration_answers,
+            input.answers.registration_answers,
         )
         .await?;
+    if !input.attribution.is_empty()
+        && let Err(err) = db
+            .capture_event_registration_attribution(event_id, user.user_id, &input.attribution)
+            .await
+    {
+        warn!(error = %err, "failed to capture event registration attribution");
+    }
     let response = (
         StatusCode::OK,
         Json(json!({
@@ -549,6 +677,13 @@ pub(crate) async fn start_checkout(
         &input,
     )
     .await?;
+    if !input.attribution.is_empty()
+        && let Err(err) = db
+            .capture_event_registration_attribution(event_id, user.user_id, &input.attribution)
+            .await
+    {
+        warn!(error = %err, "failed to capture event checkout attribution");
+    }
 
     // Return early when the attendee already has a purchase state that should not reopen checkout
     if let Some(status) = get_checkout_status_response(prepared_checkout.purchase.status)? {
@@ -656,6 +791,32 @@ pub(crate) async fn track_view(
 
 // Types.
 
+/// Free RSVP payload with optional first-touch attribution.
+#[derive(Debug, Deserialize, Validate)]
+pub(crate) struct AttendEventInput {
+    /// Registration questionnaire answers.
+    #[serde(default, flatten)]
+    #[garde(dive)]
+    answers: OptionalQuestionnaireAnswersForm,
+    /// Marketing attribution supplied by the event page.
+    #[serde(default, flatten)]
+    #[garde(dive)]
+    attribution: EventRegistrationAttribution,
+}
+
+/// Anonymous browser-tab nonce and aggregate metric kind.
+#[derive(Debug, Deserialize)]
+pub(crate) struct SponsorEngagementInput {
+    metric: String,
+    session_nonce: Uuid,
+}
+
+/// JSON-encoded answers submitted by the standalone survey form.
+#[derive(Debug, Deserialize)]
+pub(crate) struct EventSurveyResponseForm {
+    survey_answers: String,
+}
+
 /// Submitted CFS proposal form data.
 #[derive(Debug, Deserialize, Validate)]
 pub(crate) struct CfsSubmissionInput {
@@ -681,6 +842,10 @@ pub(crate) struct CheckoutInput {
     #[serde(default, flatten)]
     #[garde(dive)]
     registration_answers: OptionalQuestionnaireAnswersForm,
+    /// Marketing attribution supplied by the event page.
+    #[serde(default, flatten)]
+    #[garde(dive)]
+    attribution: EventRegistrationAttribution,
 }
 
 /// Public event availability returned to hydrate cached event pages.

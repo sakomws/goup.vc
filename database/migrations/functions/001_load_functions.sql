@@ -167,6 +167,8 @@
 {{ template "dashboard-group/get_cfs_submission_notification_data.sql" }}
 {{ template "dashboard-group/get_custom_domain.sql" }}
 {{ template "dashboard-group/get_event_summary_dashboard.sql" }} -- Dependency for list_group_events
+{{ template "dashboard-group/event_sponsor_reporting.sql" }}
+{{ template "dashboard-group/event_growth.sql" }}
 {{ template "dashboard-group/get_group_sponsor.sql" }}
 {{ template "dashboard-group/get_group_stats.sql" }}
 {{ template "dashboard-group/invite_event_attendee.sql" }}
@@ -231,6 +233,7 @@
 {{ template "dashboard-gtm/apply_gtm_won_side_effects.sql" }}
 {{ template "dashboard-gtm/review_gtm_agent_draft.sql" }}
 {{ template "dashboard-gtm/suggest_gtm_lead_candidates.sql" }}
+{{ template "dashboard-gtm/sponsor_campaign.sql" }}
 
 {{ template "dashboard-user/accept_alliance_team_invitation.sql" }}
 {{ template "dashboard-user/accept_event_attendee_invitation.sql" }}
@@ -271,6 +274,7 @@
 {{ template "event/get_event_attendance.sql" }}
 {{ template "event/get_event_full_by_slug.sql" }}
 {{ template "event/get_event_summary_by_id.sql" }}
+{{ template "event/event_surveys.sql" }}
 {{ template "event/is_event_check_in_window_open.sql" }}
 {{ template "payments/release_event_discount_code_availability.sql" }} -- Dependency for event and payments flows
 {{ template "payments/release_event_checkout_attendee_hold.sql" }} -- Dependency for checkout expiration flows

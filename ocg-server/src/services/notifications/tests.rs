@@ -61,6 +61,10 @@ async fn test_enqueue_worker_enqueue_due_notifications() {
         .times(1)
         .withf(|base_url| base_url == "https://example.test")
         .returning(|_| Ok(2));
+    db.expect_enqueue_due_event_survey_notifications()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(4));
     db.expect_enqueue_due_coffee_meet_suggestions()
         .times(1)
         .withf(|base_url| base_url == "https://example.test")
@@ -79,7 +83,7 @@ async fn test_enqueue_worker_enqueue_due_notifications() {
     let enqueued = worker.enqueue_due_notifications().await.unwrap();
 
     // Check result matches expectations
-    assert_eq!(enqueued, 6);
+    assert_eq!(enqueued, 10);
 }
 
 #[tokio::test]
@@ -148,6 +152,10 @@ async fn test_enqueue_worker_run_stops_on_cancellation_after_enqueue_success() {
             cancellation_token_for_mock.cancel();
             Ok(1)
         });
+    db.expect_enqueue_due_event_survey_notifications()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(0));
     db.expect_enqueue_due_coffee_meet_suggestions()
         .times(1)
         .withf(|base_url| base_url == "https://example.test")
@@ -676,6 +684,30 @@ fn test_delivery_worker_prepare_content_event_reminder() {
         "https://example.test/test-alliance/group/notification-group/event/reminder-event"
     ));
     assert!(body.contains("https://example.test/dashboard/user?tab=events"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_survey_reminder() {
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventSurveyReminder,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(json!({
+            "event_name": "Community Summit",
+            "group_name": "Community Group",
+            "audience": "speaker",
+            "link": "https://example.test/alliance/event/id/survey/speaker",
+            "reminder": true,
+            "theme": sample_event_reminder_template_data()["theme"].clone(),
+        })),
+    };
+
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    assert_eq!(subject, "Reminder: share feedback on Community Summit");
+    assert!(body.contains("Open survey"));
+    assert!(body.contains("eligible speaker"));
 }
 
 #[test]

@@ -104,6 +104,15 @@ begin
             if (v_question->>'required')::boolean and nullif(btrim(v_answer_value #>> '{}'), '') is null then
                 raise exception 'required questionnaire answer is empty';
             end if;
+        elsif v_question->>'kind' in ('numeric-scale', 'nps') then
+            if coalesce(jsonb_typeof(v_answer_value), '') <> 'number'
+               or (v_answer_value #>> '{}') !~ '^-?[0-9]+$' then
+                raise exception 'numeric questionnaire answer must be an integer';
+            end if;
+            if (v_answer_value #>> '{}')::int < (v_question->>'min')::int
+               or (v_answer_value #>> '{}')::int > (v_question->>'max')::int then
+                raise exception 'numeric questionnaire answer is outside the allowed range';
+            end if;
         elsif v_question->>'kind' = 'single-select' then
             -- Validate single-select answer value
             if coalesce(jsonb_typeof(v_answer_value), '') <> 'string' then

@@ -16,8 +16,9 @@ use crate::{
         helpers::{self, user_initials},
     },
     types::{
-        event::{EventCfsLabel, EventFull, EventKind, EventSummary},
+        event::{EventCfsLabel, EventFull, EventKind, EventSponsorReport, EventSummary},
         site::SiteSettings,
+        survey::EventSurvey,
         user::UserSummary,
     },
 };
@@ -45,6 +46,22 @@ pub(crate) struct Page {
     pub user: User,
     /// Preferred timezone of the signed-in viewer, when configured.
     pub viewer_timezone: Option<Tz>,
+}
+
+/// Aggregate-only sponsor report, used for organizer preview and public sharing.
+#[derive(Debug, Clone, Template)]
+#[template(path = "event/sponsor_report.html")]
+pub(crate) struct SponsorReportPage {
+    pub report: EventSponsorReport,
+    pub public: bool,
+}
+
+/// Authenticated post-event survey page.
+#[derive(Debug, Clone, Template)]
+#[template(path = "event/survey.html")]
+pub(crate) struct SurveyPage {
+    pub survey: EventSurvey,
+    pub notice: Option<String>,
 }
 
 impl Page {

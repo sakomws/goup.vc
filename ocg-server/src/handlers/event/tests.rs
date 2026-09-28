@@ -360,9 +360,11 @@ async fn test_page_success() {
     );
     let body = String::from_utf8(bytes.to_vec()).unwrap();
     assert!(body.contains("<title>Test Event - March 5</title>"));
-    assert!(body.contains(
-        r#"href="/log-in?next_url=/test-alliance/group/pretty-group/event/test-event""#
-    ));
+    assert!(
+        body.contains(
+            r#"href="/log-in?next_url=/test-alliance/group/pretty-group/event/test-event""#
+        )
+    );
     assert!(body.contains(
         r#"<meta name="description" content="Test Group in Test Alliance alliance. Open Alliance Groups, where Open Source alliances thrive.">"#
     ));
@@ -705,6 +707,8 @@ async fn test_attend_event_success_with_registration_answers() {
         kind: QuestionnaireQuestionKind::FreeText,
         prompt: "Dietary restrictions?".to_string(),
         required: true,
+        min: None,
+        max: None,
 
         options: vec![],
     }];
@@ -1775,6 +1779,8 @@ async fn test_start_checkout_rejects_refund_requested_purchase() {
         kind: QuestionnaireQuestionKind::FreeText,
         prompt: "Dietary restrictions?".to_string(),
         required: true,
+        min: None,
+        max: None,
 
         options: vec![],
     }];
