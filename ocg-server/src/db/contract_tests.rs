@@ -662,6 +662,13 @@ async fn db_contracts_get_site_stats_deserializes() -> Result<()> {
     assert_eq!(stats.events.total, 2);
     assert_eq!(stats.groups.total, 1);
     assert_eq!(stats.members.total, 1);
+    assert_eq!(stats.events_by_group.len(), 1);
+    assert_eq!(stats.events_by_group[0].group_name, "Contract Group");
+    assert_eq!(stats.events_by_group[0].event_count, 2);
+    assert_eq!(
+        stats.events_by_group[0].host_names,
+        vec!["Contract Organizer"]
+    );
 
     Ok(())
 }

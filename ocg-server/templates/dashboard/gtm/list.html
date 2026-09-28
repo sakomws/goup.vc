@@ -153,6 +153,7 @@
                         class="btn-secondary">Open</button>
                 {% if can_manage_gtm -%}
                   <button type="button"
+                          id="delete-gtm-lead-{{ lead.gtm_lead_id }}"
                           class="btn-tertiary text-red-700"
                           hx-delete="{{ dashboard_base }}/gtm/{{ lead.gtm_lead_id }}"
                           hx-target="#dashboard-content"

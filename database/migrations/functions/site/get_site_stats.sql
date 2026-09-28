@@ -16,10 +16,13 @@ with params as (
 ),
 filtered_groups as (
     select
+        c.name as alliance_name,
         g.created_at,
         g.group_category_id,
         g.group_id,
+        g.name as group_name,
         g.region_id,
+        coalesce(g.slug_pretty, g.slug) as group_slug,
 
         timezone(
             'UTC',
@@ -198,6 +201,35 @@ event_category_counts as (
     join event_category ec on ec.event_category_id = e.event_category_id
     group by ec.name
 ),
+event_host_names as (
+    select e.event_id, coalesce(nullif(btrim(u.name), ''), u.username) as host_name
+    from events e
+    join event_host eh on eh.event_id = e.event_id
+    join "user" u on u.user_id = eh.user_id
+
+    union
+
+    select e.event_id, btrim(leh.name) as host_name
+    from events e
+    join legacy_event_host leh on leh.event_id = e.event_id
+    where nullif(btrim(leh.name), '') is not null
+),
+events_by_group as (
+    select
+        fg.alliance_name,
+        fg.group_name,
+        fg.group_slug,
+        count(distinct e.event_id)::int as event_count,
+        coalesce(
+            array_agg(distinct ehn.host_name order by ehn.host_name)
+                filter (where ehn.host_name is not null),
+            '{}'::text[]
+        ) as host_names
+    from events e
+    join filtered_groups fg on fg.group_id = e.group_id
+    left join event_host_names ehn on ehn.event_id = e.event_id
+    group by fg.alliance_name, fg.group_id, fg.group_name, fg.group_slug
+),
 landscape_category_counts as (
     select coalesce(nullif(le.category, ''), 'Uncategorized') as label, count(*)::int as count
     from landscape_entry le
@@ -330,6 +362,19 @@ select json_strip_nulls(json_build_object(
             from event_category_counts
         ), '[]'::json)
     ),
+    'events_by_group', coalesce((
+        select json_agg(
+            json_build_object(
+                'alliance_name', alliance_name,
+                'event_count', event_count,
+                'group_name', group_name,
+                'group_slug', group_slug,
+                'host_names', host_names
+            )
+            order by event_count desc, group_name, alliance_name, group_slug
+        )
+        from events_by_group
+    ), '[]'::json),
     'jobs_overview', json_build_object(
         'active', (
             select count(*)::int
