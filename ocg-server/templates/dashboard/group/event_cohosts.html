@@ -1,0 +1,87 @@
+{% import "macros/dashboard.html" as dashboard -%}
+
+<div id="event-cohosts"
+     hx-get="/dashboard/group/events/{{ event_id }}/cohosts"
+     hx-trigger="refresh-event-cohosts from:body"
+     hx-target="this"
+     hx-swap="outerHTML">
+  {{ dashboard::form_title(title = "Co-host groups", description = "Invite another group to promote and co-host this event. Their event managers must accept before the event appears in their group feed.") -}}
+
+  {% if !candidates.is_empty() -%}
+    <form class="mt-6 grid gap-4 rounded-xl border border-stone-200 bg-stone-50 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end"
+          hx-post="/dashboard/group/events/{{ event_id }}/cohosts"
+          hx-target="#event-cohosts"
+          hx-swap="outerHTML"
+          hx-indicator="#dashboard-spinner">
+      <div>
+        <label for="cohost_group_id" class="form-label">Group</label>
+        <select id="cohost_group_id"
+                name="cohost_group_id"
+                required
+                class="input-primary mt-2">
+          <option value="">Select a group</option>
+          {% for candidate in candidates -%}
+            <option value="{{ candidate.group_id }}">
+              {{ candidate.group_name }} · {{ candidate.alliance_name }}
+              {% if let Some(distance_km) = candidate.distance_km -%}
+                · {{ distance_km }} km
+              {% endif -%}
+            </option>
+          {% endfor -%}
+        </select>
+      </div>
+      <div>
+        <label for="cohost_message" class="form-label">Message <span class="font-normal text-stone-400">(optional)</span></label>
+        <input id="cohost_message"
+               name="message"
+               type="text"
+               maxlength="{{ crate::validation::MAX_LEN_L }}"
+               class="input-primary mt-2"
+               placeholder="Why would you like to co-host?">
+      </div>
+      <button type="submit" class="btn-primary whitespace-nowrap">Send invitation</button>
+    </form>
+  {% else -%}
+    <p class="mt-5 rounded-lg bg-stone-50 p-4 text-sm text-stone-600">
+      No nearby or alliance groups are available to invite.
+    </p>
+  {% endif -%}
+
+  {% if !requests.is_empty() -%}
+    <div class="mt-8 space-y-3">
+      <h3 class="text-sm font-semibold text-stone-900">Invitations</h3>
+      {% for request in requests -%}
+        <div class="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
+            <p class="truncate font-medium text-stone-900">{{ request.group_name }}</p>
+            <p class="text-xs text-stone-500">
+              {{ request.alliance_name }} · requested {{ request.requested_at.format("%b %d, %Y") }}
+            </p>
+            {% if let Some(message) = &request.message -%}
+              <p class="mt-2 text-sm text-stone-600">{{ message }}</p>
+            {% endif -%}
+          </div>
+          <div class="flex shrink-0 items-center gap-3">
+            <span class="rounded-full px-2.5 py-1 text-xs font-medium
+                         {% if request.status == "approved" -%}
+                           bg-green-100 text-green-700
+                         {% else if request.status == "pending" -%}
+                           bg-amber-100 text-amber-700
+                         {% else -%}
+                           bg-stone-100 text-stone-600
+                         {% endif -%}">{{ request.status }}</span>
+            {% if request.status == "pending" || request.status == "approved" -%}
+              <button type="button"
+                      class="btn-tertiary px-3 py-1.5 text-xs"
+                      hx-put="/dashboard/group/events/{{ event_id }}/cohosts/{{ request.event_cohost_id }}/revoke"
+                      hx-target="#event-cohosts"
+                      hx-swap="outerHTML"
+                      hx-indicator="#dashboard-spinner"
+                      hx-confirm="Remove this co-host?">Remove</button>
+            {% endif -%}
+          </div>
+        </div>
+      {% endfor -%}
+    </div>
+  {% endif -%}
+</div>

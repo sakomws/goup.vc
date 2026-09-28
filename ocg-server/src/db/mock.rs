@@ -757,6 +757,27 @@ mock! {
             user_id: Option<Uuid>,
             email: Option<String>,
         ) -> Result<Uuid>;
+        async fn request_event_cohost(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_id: Uuid,
+            cohost_group_id: Uuid,
+            message: Option<String>,
+        ) -> Result<Uuid>;
+        async fn decide_event_cohost(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_cohost_id: Uuid,
+            approve: bool,
+        ) -> Result<()>;
+        async fn revoke_event_cohost(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_cohost_id: Uuid,
+        ) -> Result<()>;
         async fn list_cfs_submission_statuses_for_review(
             &self,
         ) -> Result<Vec<crate::templates::dashboard::group::events::CfsSubmissionStatus>>;
@@ -770,6 +791,17 @@ mock! {
             group_id: Uuid,
             event_id: Uuid,
         ) -> Result<Vec<Uuid>>;
+        async fn list_event_cohost_candidates(
+            &self,
+            actor_user_id: Uuid,
+            event_id: Uuid,
+        ) -> Result<Vec<crate::templates::dashboard::group::cohosts::EventCohostCandidate>>;
+        async fn list_event_cohost_requests(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_id: Uuid,
+        ) -> Result<Vec<crate::templates::dashboard::group::cohosts::EventCohostRequest>>;
         async fn list_event_categories(
             &self,
             alliance_id: Uuid,
@@ -805,6 +837,11 @@ mock! {
             group_id: Uuid,
             filters: &crate::templates::dashboard::group::events::EventsListFilters,
         ) -> Result<crate::templates::dashboard::group::events::GroupEvents>;
+        async fn list_group_event_cohost_inbox(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+        ) -> Result<Vec<crate::templates::dashboard::group::cohosts::EventCohostInvitation>>;
         async fn list_group_members(
             &self,
             group_id: Uuid,
