@@ -4,7 +4,30 @@
 //! for managing alliance groups and events.
 
 #![warn(clippy::all, clippy::pedantic)]
-#![allow(clippy::struct_field_names)]
+// Keep the existing Clippy debt explicit while CI denies all other warnings.
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::default_trait_access,
+    clippy::doc_markdown,
+    clippy::duration_suboptimal_units,
+    clippy::ignored_unit_patterns,
+    clippy::ip_constant,
+    clippy::large_futures,
+    clippy::map_unwrap_or,
+    clippy::needless_borrow,
+    clippy::needless_raw_string_hashes,
+    clippy::redundant_closure_for_method_calls,
+    clippy::semicolon_if_nothing_returned,
+    clippy::struct_excessive_bools,
+    clippy::struct_field_names,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::unnecessary_semicolon,
+    clippy::unnecessary_wraps,
+    clippy::unused_self
+)]
 
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 

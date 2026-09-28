@@ -131,413 +131,413 @@
               </div>
 
               <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-6xl">
-              {# Event name -#}
-              <div class="col-span-full">
-                <label for="name" class="form-label">
-                  Name <span class="asterisk">*</span>
-                </label>
-                <div class="mt-2">
-                  <input type="text"
-                         name="name"
-                         id="name"
-                         maxlength="{{ crate::validation::MAX_LEN_ENTITY_NAME }}"
-                         class="input-primary"
-                         autocomplete="off"
-                         autocorrect="off"
-                         autocapitalize="off"
-                         spellcheck="false"
-                         required>
-                </div>
-                <p class="form-legend">
-                  Display name of the event (e.g. Kubernetes Amsterdam Meetup). Max {{ crate::validation::MAX_LEN_ENTITY_NAME }} characters.
-                </p>
-              </div>
-              {# End Event name -#}
-
-              <div class="hidden lg:flex col-span-3"></div>
-
-              {# Event kind -#}
-              <div class="col-span-full lg:col-span-3">
-                <label for="kind_id" class="form-label">
-                  Event Type <span class="asterisk">*</span>
-                </label>
-                <div class="mt-2 grid grid-cols-1">
-                  <select id="kind_id" name="kind_id" class="select-primary" required>
-                    <option value="">Select an event type</option>
-                    {% for kind in event_kinds %}
-                      <option value="{{ kind.event_kind_id }}">{{ kind.display_name }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <p class="form-legend">Whether this is an in-person, virtual, or hybrid event.</p>
-              </div>
-              {# End Event kind -#}
-
-              {# Event category -#}
-              <div class="col-span-full lg:col-span-3">
-                <label for="category_id" class="form-label">
-                  Category <span class="asterisk">*</span>
-                </label>
-                <div class="mt-2 grid grid-cols-1">
-                  <select id="category_id" name="category_id" class="select-primary" required>
-                    <option value="">Select a category</option>
-                    {% for category in categories %}
-                      <option value="{{ category.event_category_id }}">{{ category.name }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <p class="form-legend">Type of event or meetup.</p>
-              </div>
-              {# End Event category -#}
-
-              {# Logo URL -#}
-              {{ form_fields::image_field(label = "Logo", name = "logo_url", image_kind = "logo", target = "logo", legend = "If this logo isn't provided, we'll fall back to the group logo, then the alliance logo if needed.", field_class = "col-span-full lg:col-span-4", input_class = "w-full block") -}}
-              {# End Logo URL -#}
-
-              {# Banner URL -#}
-              {{ form_fields::image_field(label = "Banner", name = "banner_url", image_kind = "banner", target = "banner", help_prefix_text = "Size required 2428 x 192 px.", legend = "If this banner isn't provided, we'll fall back to the group banner, then the alliance banner if needed.", input_class = "w-full block") -}}
-              {# End Banner URL -#}
-
-              {# Banner Mobile URL -#}
-              {{ form_fields::image_field(label = "Banner Mobile", name = "banner_mobile_url", image_kind = "banner", target = "banner_mobile", help_prefix_text = "Size required 1220 x 192 px.", legend = "If this banner isn't provided, we'll fall back to the group banner, then the alliance banner if needed.", input_class = "w-full block") -}}
-              {# End Banner Mobile URL -#}
-
-              {# Open Graph Image URL -#}
-              {{ form_fields::image_field(label = "Open Graph Image", name = "og_image_url", image_kind = "banner", target = "open_graph", help_prefix_text = "Size required 1200 x 630 px. Format must be PNG, JPEG, or WebP.", legend = "Shown when this event's link is shared. If not provided, we'll use the group or alliance Open Graph image, then the event logo.", input_class = "w-full block") -}}
-              {# End Open Graph Image URL -#}
-
-              {# Short Description -#}
-              <div class="col-span-full">
-                <label for="description_short" class="form-label">Short Description</label>
-                <div class="mt-2">
-                  <input type="text"
-                         id="description_short"
-                         name="description_short"
-                         class="input-primary"
-                         maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }}" />
-                </div>
-                <p class="form-legend">
-                  Brief description used in event listings and previews. Max {{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }} characters.
-                </p>
-              </div>
-              {# End Short Description -#}
-
-              {# Event Description -#}
-              <div class="col-span-full">
-                <label for="description" class="form-label">
-                  Description <span class="asterisk">*</span>
-                </label>
-                <div class="mt-2">
-                  <markdown-editor id="description" name="description" maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION }}" required></markdown-editor>
-                </div>
-                <p class="form-legend">
-                  Full description of the event and its purpose. Max {{ crate::validation::MAX_LEN_DESCRIPTION }} characters.
-                </p>
-              </div>
-              {# End Event Description -#}
-              </div>
-            </div>
-
-          {# Additional Information section -#}
-          <div class="border-t border-stone-900/10 pt-12">
-            {{ dashboard::form_title(title = "Additional Information", description = "Optional event settings and external links.") -}}
-
-            <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-6xl">
-              {# Capacity -#}
-              <div class="col-span-full lg:col-span-4">
-                <label for="capacity" class="form-label">
-                  Capacity
-                  {%- if meetings_enabled %}
-                    <span class="asterisk">* <sup class="text-xs font-normal">(required when requesting automatic meeting creation)</sup></span>
-                  {%- endif -%}
-                </label>
-                <div class="mt-2">
-                  <input type="number"
-                         name="capacity"
-                         id="capacity"
-                         min="1"
-                         class="input-primary"
-                         placeholder="100">
-                </div>
-                <p class="form-legend">
-                  Maximum number of attendees.
-                  <br />
-                  When ticketing is configured, total capacity is derived from ticket seat counts and
-                  this field is filled automatically and disabled.
-                  {%- if meetings_enabled %}
-                    <br />
-                    Note: Meeting providers have participant limits. If capacity exceeds your provider
-                    limit, attendees may be unable to join the meeting.
-                  {%- endif -%}
-                </p>
-              </div>
-              {# End Capacity -#}
-
-              {# Registration required -#}
-              <div class="col-span-full lg:col-span-3">
-                <label for="registration_mode" class="form-label">Registration</label>
-                <div class="mt-2">
-                  <select id="registration_mode" name="registration_mode" class="input-primary">
-                    <option value="built_in" selected>Register on Goup</option>
-                    <option value="external">Register on an external site</option>
-                    <option value="none">No registration</option>
-                  </select>
-                </div>
-                <p class="form-legend">Choose where attendees complete registration.</p>
-              </div>
-              <div class="col-span-full lg:col-span-3">
-                <label for="external_registration_url" class="form-label">External registration URL</label>
-                <div class="mt-2">
-                  <input type="url"
-                         name="external_registration_url"
-                         id="external_registration_url"
-                         class="input-primary"
-                         placeholder="https://example.com/register">
-                </div>
-                <p class="form-legend">Required when registration happens on an external site.</p>
-              </div>
-              {# End registration mode -#}
-
-              {# Registration required -#}
-              <div class="col-span-full lg:col-span-3">
-                <label class="inline-flex items-center cursor-pointer">
-                  <input id="toggle_registration_required"
-                         name="toggle_registration_required"
-                         value="required"
-                         type="checkbox"
-                         class="sr-only peer">
-                  <input type="hidden"
-                         id="registration_required"
-                         name="registration_required"
-                         value="false">
-                  <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
-                  </div>
-                  <span class="ms-3 text-sm font-medium text-stone-900">Registration Required</span>
-                </label>
-                <p class="form-legend">Whether attendees must register in advance.</p>
-              </div>
-              {# End Registration required -#}
-
-              {# Test event -#}
-              <div class="col-span-full lg:col-span-3">
-                <label class="inline-flex items-center cursor-pointer">
-                  <input id="toggle_test_event"
-                         name="toggle_test_event"
-                         value="enabled"
-                         type="checkbox"
-                         class="sr-only peer">
-                  <input type="hidden" id="test_event" name="test_event" value="false">
-                  <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
-                  </div>
-                  <span class="ms-3 text-sm font-medium text-stone-900">Test Event</span>
-                </label>
-                <p class="form-legend">Exclude this event from discovery, stats, and broadcast notifications.</p>
-              </div>
-              {# End Test event -#}
-
-              {# Attendee approval required -#}
-              <div class="col-span-full lg:col-span-3">
-                <label data-enrollment-toggle-label="attendee-approval"
-                       class="inline-flex items-center cursor-pointer transition-opacity">
-                  <input id="toggle_attendee_approval_required"
-                         name="toggle_attendee_approval_required"
-                         value="required"
-                         type="checkbox"
-                         class="sr-only peer">
-                  <input type="hidden"
-                         id="attendee_approval_required"
-                         name="attendee_approval_required"
-                         value="false">
-                  <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white peer-disabled:opacity-70 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
-                  </div>
-                  <span class="ms-3 text-sm font-medium text-stone-900">Require Invitation Approval</span>
-                </label>
-                <p class="form-legend">
-                  Let people request an invitation for organizer review. This cannot be combined with
-                  waitlist or paid tickets.
-                </p>
-              </div>
-              {# End Attendee approval required -#}
-
-              {# Waitlist enabled -#}
-              <div class="col-span-full lg:col-span-3">
-                <label data-enrollment-toggle-label="waitlist"
-                       class="inline-flex items-center cursor-pointer transition-opacity">
-                  <input id="toggle_waitlist_enabled"
-                         name="toggle_waitlist_enabled"
-                         value="enabled"
-                         type="checkbox"
-                         class="sr-only peer">
-                  <input type="hidden"
-                         id="waitlist_enabled"
-                         name="waitlist_enabled"
-                         value="false">
-                  <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white peer-disabled:opacity-70 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
-                  </div>
-                  <span class="ms-3 text-sm font-medium text-stone-900">Enable Waitlist</span>
-                </label>
-                <p class="form-legend">
-                  Allow full events to add people to a waiting list instead of rejecting them.
-                  Set a capacity first to enable waitlist safely.
-                  {% if payments_enabled -%}
-                    Paid events disable waitlist automatically.
-                  {% endif -%}
-                </p>
-              </div>
-              {# End Waitlist enabled -#}
-
-              <div class="col-span-full grid grid-cols-1 gap-x-6 gap-y-8 lg:grid-cols-2">
-                {# Meetup URL -#}
-                <div>
-                  <label for="meetup_url" class="form-label">Meetup.com URL</label>
+                {# Event name -#}
+                <div class="col-span-full">
+                  <label for="name" class="form-label">
+                    Name <span class="asterisk">*</span>
+                  </label>
                   <div class="mt-2">
-                    <input type="url"
-                           name="meetup_url"
-                           id="meetup_url"
+                    <input type="text"
+                           name="name"
+                           id="name"
+                           maxlength="{{ crate::validation::MAX_LEN_ENTITY_NAME }}"
                            class="input-primary"
-                           placeholder="https://meetup.com/group/events/123456">
+                           autocomplete="off"
+                           autocorrect="off"
+                           autocapitalize="off"
+                           spellcheck="false"
+                           required>
                   </div>
-                  <p class="form-legend">Link to the Meetup.com event page.</p>
-                </div>
-                {# End Meetup URL -#}
-
-                {# Luma URL -#}
-                <div>
-                  <label for="luma_url" class="form-label">Luma URL</label>
-                  <div class="mt-2">
-                    <input type="url"
-                           name="luma_url"
-                           id="luma_url"
-                           class="input-primary"
-                           placeholder="https://luma.com/event">
-                  </div>
-                  <p class="form-legend">Link to the Luma event page.</p>
-                </div>
-                {# End Luma URL -#}
-              </div>
-
-              {# Photos -#}
-              {{ form_fields::gallery_field(legend = "Optional photos related to the event.") -}}
-              {# End Photos -#}
-
-              {# Tags -#}
-              {% let tag_legend -%}Optional tags to help categorize and find the event. Max {{ crate::validation::MAX_LEN_TAG }} characters per tag.{%- endlet %}
-              {{ form_fields::tags_field(legend = tag_legend, field_class = "col-span-3", label_text = "Tags") -}}
-              {# End Tags -#}
-            </div>
-          </div>
-          {# End additional information section -#}
-        </form>
-      </div>
-      {# End Event Details Tab -#}
-
-      {# Questions Tab -#}
-      <div data-content="questions" class="hidden">
-        <form id="questions-form">
-          <div class="pb-12">
-            {{ dashboard::form_title(title = "Registration questions", description = "Ask attendees for extra information before their registration is complete.") -}}
-            <div class="mt-10">
-              <questions-editor name="registration_questions" questions="[]"></questions-editor>
-            </div>
-          </div>
-        </form>
-      </div>
-      {# End Questions Tab -#}
-
-      {# CFS Tab -#}
-      <div data-content="cfs" class="hidden">
-        <form id="cfs-form">
-          <div class="pb-12">
-            <p class="mt-1 text-sm/6 text-stone-500">Collect session proposals ahead of the event.</p>
-
-            <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
-              {# Enable CFS toggle -#}
-              <div class="col-span-full lg:col-span-3">
-                <label class="inline-flex items-center cursor-pointer">
-                  <input id="toggle_cfs_enabled"
-                         name="toggle_cfs_enabled"
-                         value="enabled"
-                         type="checkbox"
-                         class="sr-only peer">
-                  <input type="hidden" id="cfs_enabled" name="cfs_enabled" value="false">
-                  <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
-                  </div>
-                  <span class="ms-3 text-sm font-medium text-stone-900">Enable Call for Speakers</span>
-                </label>
-                <p class="form-legend">Allow speakers to submit session proposals.</p>
-              </div>
-              {# End Enable CFS toggle -#}
-
-              <div class="hidden lg:flex col-span-3"></div>
-
-              {# Opens at -#}
-              <div class="col-span-full lg:col-span-3">
-                <label for="cfs_starts_at" class="form-label">
-                  Opens at
-                  <span class="asterisk">* <sup class="text-xs font-normal">(required when CFS is enabled)</sup></span>
-                </label>
-                <div class="mt-2">
-                  <input type="datetime-local"
-                         name="cfs_starts_at"
-                         id="cfs_starts_at"
-                         class="input-primary">
-                </div>
-                <p class="form-legend">When submissions open.</p>
-              </div>
-              {# End Opens at -#}
-
-              {# Closes at -#}
-              <div class="col-span-full lg:col-span-3">
-                <label for="cfs_ends_at" class="form-label">
-                  Closes at
-                  <span class="asterisk">* <sup class="text-xs font-normal">(required when CFS is enabled)</sup></span>
-                </label>
-                <div class="mt-2">
-                  <input type="datetime-local"
-                         name="cfs_ends_at"
-                         id="cfs_ends_at"
-                         class="input-primary">
-                </div>
-                <p class="form-legend">When submissions close.</p>
-              </div>
-              {# End Closes at -#}
-
-              {# CFS description -#}
-              <div class="col-span-full">
-                <label for="cfs_description" class="form-label">
-                  CFS description
-                  <span class="asterisk">* <sup class="text-xs font-normal">(required when CFS is enabled)</sup></span>
-                </label>
-                <div class="mt-2">
-                  <markdown-editor id="cfs_description" name="cfs_description" maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION }}"></markdown-editor>
-                </div>
-                <p class="form-legend">Shown on the event page to invite speakers.</p>
-              </div>
-              {# End CFS description -#}
-
-              {# CFS labels -#}
-              <div class="col-span-full">
-                <label for="cfs-labels-editor" class="form-label">Labels</label>
-                <p class="form-legend mt-1">
-                  Labels help categorize submitted session proposals. For example, you can use them to organize sessions by track, topic, or theme. Submitters can select one or more labels when submitting their proposals. Organizers can review and update the labels on submissions during the review process, if needed.
-                </p>
-                <div class="mt-3">
-                  <cfs-labels-editor id="cfs-labels-editor" field-name="cfs_labels" max-items="{{ crate::validation::MAX_LEN_EVENT_LABELS_PER_EVENT }}" colors="{{ crate::validation::CFS_LABEL_COLORS|json }}">
-                  <p slot="legend" class="form-legend">
-                    Use prefixes like <span class="font-semibold">track / ai + ml</span> and keep
-                    <span class="font-semibold">/</span> as the separator for consistency.
+                  <p class="form-legend">
+                    Display name of the event (e.g. Kubernetes Amsterdam Meetup). Max {{ crate::validation::MAX_LEN_ENTITY_NAME }} characters.
                   </p>
-                  </cfs-labels-editor>
                 </div>
-              </div>
-              {# End CFS labels -#}
-            </div>
-          </div>
-        </form>
-      </div>
-      {# End CFS Tab -#}
+                {# End Event name -#}
 
-      {# Date & Venue Tab -#}
+                <div class="hidden lg:flex col-span-3"></div>
+
+                {# Event kind -#}
+                <div class="col-span-full lg:col-span-3">
+                  <label for="kind_id" class="form-label">
+                    Event Type <span class="asterisk">*</span>
+                  </label>
+                  <div class="mt-2 grid grid-cols-1">
+                    <select id="kind_id" name="kind_id" class="select-primary" required>
+                      <option value="">Select an event type</option>
+                      {% for kind in event_kinds %}
+                        <option value="{{ kind.event_kind_id }}">{{ kind.display_name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <p class="form-legend">Whether this is an in-person, virtual, or hybrid event.</p>
+                </div>
+                {# End Event kind -#}
+
+                {# Event category -#}
+                <div class="col-span-full lg:col-span-3">
+                  <label for="category_id" class="form-label">
+                    Category <span class="asterisk">*</span>
+                  </label>
+                  <div class="mt-2 grid grid-cols-1">
+                    <select id="category_id" name="category_id" class="select-primary" required>
+                      <option value="">Select a category</option>
+                      {% for category in categories %}
+                        <option value="{{ category.event_category_id }}">{{ category.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <p class="form-legend">Type of event or meetup.</p>
+                </div>
+                {# End Event category -#}
+
+                {# Logo URL -#}
+                {{ form_fields::image_field(label = "Logo", name = "logo_url", image_kind = "logo", target = "logo", legend = "If this logo isn't provided, we'll fall back to the group logo, then the alliance logo if needed.", field_class = "col-span-full lg:col-span-4", input_class = "w-full block") -}}
+                {# End Logo URL -#}
+
+                {# Banner URL -#}
+                {{ form_fields::image_field(label = "Banner", name = "banner_url", image_kind = "banner", target = "banner", help_prefix_text = "Size required 2428 x 192 px.", legend = "If this banner isn't provided, we'll fall back to the group banner, then the alliance banner if needed.", input_class = "w-full block") -}}
+                {# End Banner URL -#}
+
+                {# Banner Mobile URL -#}
+                {{ form_fields::image_field(label = "Banner Mobile", name = "banner_mobile_url", image_kind = "banner", target = "banner_mobile", help_prefix_text = "Size required 1220 x 192 px.", legend = "If this banner isn't provided, we'll fall back to the group banner, then the alliance banner if needed.", input_class = "w-full block") -}}
+                {# End Banner Mobile URL -#}
+
+                {# Open Graph Image URL -#}
+                {{ form_fields::image_field(label = "Open Graph Image", name = "og_image_url", image_kind = "banner", target = "open_graph", help_prefix_text = "Size required 1200 x 630 px. Format must be PNG, JPEG, or WebP.", legend = "Shown when this event's link is shared. If not provided, we'll use the group or alliance Open Graph image, then the event logo.", input_class = "w-full block") -}}
+                {# End Open Graph Image URL -#}
+
+                {# Short Description -#}
+                <div class="col-span-full">
+                  <label for="description_short" class="form-label">Short Description</label>
+                  <div class="mt-2">
+                    <input type="text"
+                           id="description_short"
+                           name="description_short"
+                           class="input-primary"
+                           maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }}" />
+                  </div>
+                  <p class="form-legend">
+                    Brief description used in event listings and previews. Max {{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }} characters.
+                  </p>
+                </div>
+                {# End Short Description -#}
+
+                {# Event Description -#}
+                <div class="col-span-full">
+                  <label for="description" class="form-label">
+                    Description <span class="asterisk">*</span>
+                  </label>
+                  <div class="mt-2">
+                    <markdown-editor id="description" name="description" maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION }}" required></markdown-editor>
+                  </div>
+                  <p class="form-legend">
+                    Full description of the event and its purpose. Max {{ crate::validation::MAX_LEN_DESCRIPTION }} characters.
+                  </p>
+                </div>
+                {# End Event Description -#}
+              </div>
+            </div>
+
+            {# Additional Information section -#}
+            <div class="border-t border-stone-900/10 pt-12">
+              {{ dashboard::form_title(title = "Additional Information", description = "Optional event settings and external links.") -}}
+
+              <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-6xl">
+                {# Capacity -#}
+                <div class="col-span-full lg:col-span-4">
+                  <label for="capacity" class="form-label">
+                    Capacity
+                    {%- if meetings_enabled %}
+                      <span class="asterisk">* <sup class="text-xs font-normal">(required when requesting automatic meeting creation)</sup></span>
+                    {%- endif -%}
+                  </label>
+                  <div class="mt-2">
+                    <input type="number"
+                           name="capacity"
+                           id="capacity"
+                           min="1"
+                           class="input-primary"
+                           placeholder="100">
+                  </div>
+                  <p class="form-legend">
+                    Maximum number of attendees.
+                    <br />
+                    When ticketing is configured, total capacity is derived from ticket seat counts and
+                    this field is filled automatically and disabled.
+                    {%- if meetings_enabled %}
+                      <br />
+                      Note: Meeting providers have participant limits. If capacity exceeds your provider
+                      limit, attendees may be unable to join the meeting.
+                    {%- endif -%}
+                  </p>
+                </div>
+                {# End Capacity -#}
+
+                {# Registration required -#}
+                <div class="col-span-full lg:col-span-3">
+                  <label for="registration_mode" class="form-label">Registration</label>
+                  <div class="mt-2">
+                    <select id="registration_mode" name="registration_mode" class="input-primary">
+                      <option value="built_in" selected>Register on Goup</option>
+                      <option value="external">Register on an external site</option>
+                      <option value="none">No registration</option>
+                    </select>
+                  </div>
+                  <p class="form-legend">Choose where attendees complete registration.</p>
+                </div>
+                <div class="col-span-full lg:col-span-3">
+                  <label for="external_registration_url" class="form-label">External registration URL</label>
+                  <div class="mt-2">
+                    <input type="url"
+                           name="external_registration_url"
+                           id="external_registration_url"
+                           class="input-primary"
+                           placeholder="https://example.com/register">
+                  </div>
+                  <p class="form-legend">Required when registration happens on an external site.</p>
+                </div>
+                {# End registration mode -#}
+
+                {# Registration required -#}
+                <div class="col-span-full lg:col-span-3">
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input id="toggle_registration_required"
+                           name="toggle_registration_required"
+                           value="required"
+                           type="checkbox"
+                           class="sr-only peer">
+                    <input type="hidden"
+                           id="registration_required"
+                           name="registration_required"
+                           value="false">
+                    <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
+                    </div>
+                    <span class="ms-3 text-sm font-medium text-stone-900">Registration Required</span>
+                  </label>
+                  <p class="form-legend">Whether attendees must register in advance.</p>
+                </div>
+                {# End Registration required -#}
+
+                {# Test event -#}
+                <div class="col-span-full lg:col-span-3">
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input id="toggle_test_event"
+                           name="toggle_test_event"
+                           value="enabled"
+                           type="checkbox"
+                           class="sr-only peer">
+                    <input type="hidden" id="test_event" name="test_event" value="false">
+                    <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
+                    </div>
+                    <span class="ms-3 text-sm font-medium text-stone-900">Test Event</span>
+                  </label>
+                  <p class="form-legend">Exclude this event from discovery, stats, and broadcast notifications.</p>
+                </div>
+                {# End Test event -#}
+
+                {# Attendee approval required -#}
+                <div class="col-span-full lg:col-span-3">
+                  <label data-enrollment-toggle-label="attendee-approval"
+                         class="inline-flex items-center cursor-pointer transition-opacity">
+                    <input id="toggle_attendee_approval_required"
+                           name="toggle_attendee_approval_required"
+                           value="required"
+                           type="checkbox"
+                           class="sr-only peer">
+                    <input type="hidden"
+                           id="attendee_approval_required"
+                           name="attendee_approval_required"
+                           value="false">
+                    <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white peer-disabled:opacity-70 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
+                    </div>
+                    <span class="ms-3 text-sm font-medium text-stone-900">Require Invitation Approval</span>
+                  </label>
+                  <p class="form-legend">
+                    Let people request an invitation for organizer review. This cannot be combined with
+                    waitlist or paid tickets.
+                  </p>
+                </div>
+                {# End Attendee approval required -#}
+
+                {# Waitlist enabled -#}
+                <div class="col-span-full lg:col-span-3">
+                  <label data-enrollment-toggle-label="waitlist"
+                         class="inline-flex items-center cursor-pointer transition-opacity">
+                    <input id="toggle_waitlist_enabled"
+                           name="toggle_waitlist_enabled"
+                           value="enabled"
+                           type="checkbox"
+                           class="sr-only peer">
+                    <input type="hidden"
+                           id="waitlist_enabled"
+                           name="waitlist_enabled"
+                           value="false">
+                    <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white peer-disabled:opacity-70 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
+                    </div>
+                    <span class="ms-3 text-sm font-medium text-stone-900">Enable Waitlist</span>
+                  </label>
+                  <p class="form-legend">
+                    Allow full events to add people to a waiting list instead of rejecting them.
+                    Set a capacity first to enable waitlist safely.
+                    {% if payments_enabled -%}
+                      Paid events disable waitlist automatically.
+                    {% endif -%}
+                  </p>
+                </div>
+                {# End Waitlist enabled -#}
+
+                <div class="col-span-full grid grid-cols-1 gap-x-6 gap-y-8 lg:grid-cols-2">
+                  {# Meetup URL -#}
+                  <div>
+                    <label for="meetup_url" class="form-label">Meetup.com URL</label>
+                    <div class="mt-2">
+                      <input type="url"
+                             name="meetup_url"
+                             id="meetup_url"
+                             class="input-primary"
+                             placeholder="https://meetup.com/group/events/123456">
+                    </div>
+                    <p class="form-legend">Link to the Meetup.com event page.</p>
+                  </div>
+                  {# End Meetup URL -#}
+
+                  {# Luma URL -#}
+                  <div>
+                    <label for="luma_url" class="form-label">Luma URL</label>
+                    <div class="mt-2">
+                      <input type="url"
+                             name="luma_url"
+                             id="luma_url"
+                             class="input-primary"
+                             placeholder="https://luma.com/event">
+                    </div>
+                    <p class="form-legend">Link to the Luma event page.</p>
+                  </div>
+                  {# End Luma URL -#}
+                </div>
+
+                {# Photos -#}
+                {{ form_fields::gallery_field(legend = "Optional photos related to the event.") -}}
+                {# End Photos -#}
+
+                {# Tags -#}
+                {% let tag_legend -%}Optional tags to help categorize and find the event. Max {{ crate::validation::MAX_LEN_TAG }} characters per tag.{%- endlet %}
+                {{ form_fields::tags_field(legend = tag_legend, field_class = "col-span-3", label_text = "Tags") -}}
+                {# End Tags -#}
+              </div>
+            </div>
+            {# End additional information section -#}
+          </form>
+        </div>
+        {# End Event Details Tab -#}
+
+        {# Questions Tab -#}
+        <div data-content="questions" class="hidden">
+          <form id="questions-form">
+            <div class="pb-12">
+              {{ dashboard::form_title(title = "Registration questions", description = "Ask attendees for extra information before their registration is complete.") -}}
+              <div class="mt-10">
+                <questions-editor name="registration_questions" questions="[]"></questions-editor>
+              </div>
+            </div>
+          </form>
+        </div>
+        {# End Questions Tab -#}
+
+        {# CFS Tab -#}
+        <div data-content="cfs" class="hidden">
+          <form id="cfs-form">
+            <div class="pb-12">
+              <p class="mt-1 text-sm/6 text-stone-500">Collect session proposals ahead of the event.</p>
+
+              <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
+                {# Enable CFS toggle -#}
+                <div class="col-span-full lg:col-span-3">
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input id="toggle_cfs_enabled"
+                           name="toggle_cfs_enabled"
+                           value="enabled"
+                           type="checkbox"
+                           class="sr-only peer">
+                    <input type="hidden" id="cfs_enabled" name="cfs_enabled" value="false">
+                    <div class="relative w-11 h-6 bg-stone-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-stone-300 after:border after:border-stone-200 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500">
+                    </div>
+                    <span class="ms-3 text-sm font-medium text-stone-900">Enable Call for Speakers</span>
+                  </label>
+                  <p class="form-legend">Allow speakers to submit session proposals.</p>
+                </div>
+                {# End Enable CFS toggle -#}
+
+                <div class="hidden lg:flex col-span-3"></div>
+
+                {# Opens at -#}
+                <div class="col-span-full lg:col-span-3">
+                  <label for="cfs_starts_at" class="form-label">
+                    Opens at
+                    <span class="asterisk">* <sup class="text-xs font-normal">(required when CFS is enabled)</sup></span>
+                  </label>
+                  <div class="mt-2">
+                    <input type="datetime-local"
+                           name="cfs_starts_at"
+                           id="cfs_starts_at"
+                           class="input-primary">
+                  </div>
+                  <p class="form-legend">When submissions open.</p>
+                </div>
+                {# End Opens at -#}
+
+                {# Closes at -#}
+                <div class="col-span-full lg:col-span-3">
+                  <label for="cfs_ends_at" class="form-label">
+                    Closes at
+                    <span class="asterisk">* <sup class="text-xs font-normal">(required when CFS is enabled)</sup></span>
+                  </label>
+                  <div class="mt-2">
+                    <input type="datetime-local"
+                           name="cfs_ends_at"
+                           id="cfs_ends_at"
+                           class="input-primary">
+                  </div>
+                  <p class="form-legend">When submissions close.</p>
+                </div>
+                {# End Closes at -#}
+
+                {# CFS description -#}
+                <div class="col-span-full">
+                  <label for="cfs_description" class="form-label">
+                    CFS description
+                    <span class="asterisk">* <sup class="text-xs font-normal">(required when CFS is enabled)</sup></span>
+                  </label>
+                  <div class="mt-2">
+                    <markdown-editor id="cfs_description" name="cfs_description" maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION }}"></markdown-editor>
+                  </div>
+                  <p class="form-legend">Shown on the event page to invite speakers.</p>
+                </div>
+                {# End CFS description -#}
+
+                {# CFS labels -#}
+                <div class="col-span-full">
+                  <label for="cfs-labels-editor" class="form-label">Labels</label>
+                  <p class="form-legend mt-1">
+                    Labels help categorize submitted session proposals. For example, you can use them to organize sessions by track, topic, or theme. Submitters can select one or more labels when submitting their proposals. Organizers can review and update the labels on submissions during the review process, if needed.
+                  </p>
+                  <div class="mt-3">
+                    <cfs-labels-editor id="cfs-labels-editor" field-name="cfs_labels" max-items="{{ crate::validation::MAX_LEN_EVENT_LABELS_PER_EVENT }}" colors="{{ crate::validation::CFS_LABEL_COLORS|json }}">
+                    <p slot="legend" class="form-legend">
+                      Use prefixes like <span class="font-semibold">track / ai + ml</span> and keep
+                      <span class="font-semibold">/</span> as the separator for consistency.
+                    </p>
+                    </cfs-labels-editor>
+                  </div>
+                </div>
+                {# End CFS labels -#}
+              </div>
+            </div>
+          </form>
+        </div>
+        {# End CFS Tab -#}
+
+        {# Date & Venue Tab -#}
         <div data-content="date-venue" class="hidden">
           <form id="date-venue-form">
             <div class="space-y-12">
@@ -821,7 +821,9 @@
                   <div class="col-span-full lg:col-span-3">
                     <label for="tax_calculation_mode" class="form-label">Tax calculation</label>
                     <div class="mt-2">
-                      <select id="tax_calculation_mode" name="tax_calculation_mode" class="select-primary">
+                      <select id="tax_calculation_mode"
+                              name="tax_calculation_mode"
+                              class="select-primary">
                         <option value="none" selected>None</option>
                         <option value="automatic">Automatic (Stripe Tax)</option>
                         <option value="manual">Manual</option>
@@ -850,20 +852,30 @@
                                 class="input-primary"
                                 maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }}"></textarea>
                     </div>
-                    <p class="form-legend">Shown when the group has external payments enabled. Attendees pay off Stripe; organizers confirm the transfer.</p>
+                    <p class="form-legend">
+                      Shown when the group has external payments enabled. Attendees pay off Stripe; organizers confirm the transfer.
+                    </p>
                   </div>
 
                   <div class="col-span-full lg:col-span-3">
                     <label for="external_payment_url" class="form-label">External payment URL</label>
                     <div class="mt-2">
-                      <input type="url" id="external_payment_url" name="external_payment_url" class="input-primary">
+                      <input type="url"
+                             id="external_payment_url"
+                             name="external_payment_url"
+                             class="input-primary">
                     </div>
                   </div>
 
                   <div class="col-span-full lg:col-span-3">
                     <label for="external_payment_window_hours" class="form-label">External payment window (hours)</label>
                     <div class="mt-2">
-                      <input type="number" id="external_payment_window_hours" name="external_payment_window_hours" min="1" max="8760" class="input-primary">
+                      <input type="number"
+                             id="external_payment_window_hours"
+                             name="external_payment_window_hours"
+                             min="1"
+                             max="8760"
+                             class="input-primary">
                     </div>
                   </div>
                 </div>

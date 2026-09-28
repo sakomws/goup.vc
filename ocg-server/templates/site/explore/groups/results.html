@@ -8,7 +8,12 @@
 {% match view_mode -%}
 {% when ViewMode::List -%}
 {# List view -#}
-<div class="mt-4 flex flex-col divide-y divide-[#E2DDD8] {% if groups.len() > 0 %}border-y border-[#E2DDD8]{% else %}border-t border-[#E2DDD8]{% endif %}">
+<div class="mt-4 flex flex-col divide-y divide-[#E2DDD8]
+            {% if groups.len() > 0 %}
+              border-y border-[#E2DDD8]
+            {% else %}
+              border-t border-[#E2DDD8]
+            {% endif %}">
   {# Placeholder cards -#}
   {% if groups.len() == 0 -%}
     <div class="py-6">
