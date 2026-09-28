@@ -45,7 +45,9 @@
             {% if let Some(starts_at) = report.starts_at -%}
               <span>{{ starts_at.format("%B %-d, %Y") }}</span>
             {% endif -%}
-            <span>{{ report.sponsor_count }} sponsor{% if report.sponsor_count != 1 %}s{% endif %}</span>
+            <span>{{ report.sponsor_count }} sponsor
+              {% if report.sponsor_count != 1 %}s{% endif %}
+            </span>
             <span>Aggregate results only</span>
           </div>
           <p class="mt-5 max-w-2xl text-sm leading-6 text-white/60">
@@ -155,12 +157,18 @@
                 </div>
                 <div>
                   <p class="text-emerald-800/70">Promoter / passive / detractor</p>
-                  <p class="mt-1 text-xl font-bold">{{ survey.promoters }} / {{ survey.passives }} / {{ survey.detractors }}</p>
+                  <p class="mt-1 text-xl font-bold">
+                    {{ survey.promoters }} / {{ survey.passives }} / {{ survey.detractors }}
+                  </p>
                 </div>
                 <div>
                   <p class="text-emerald-800/70">Average rating</p>
                   <p class="mt-1 text-2xl font-bold">
-                    {% if let Some(average) = survey.average_rating %}{{ average }} / 5{% else %}—{% endif %}
+                    {% if let Some(average) = survey.average_rating %}
+                      {{ average }} / 5
+                    {% else %}
+                      —
+                    {% endif %}
                   </p>
                 </div>
               </div>

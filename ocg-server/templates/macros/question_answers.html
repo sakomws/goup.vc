@@ -102,9 +102,7 @@
                        value="{{ value }}"
                        class="peer sr-only"
                        {{ answer_attr|safe }}
-                       {% if question.required %}
-                         required aria-required="true"
-                       {% endif %}>
+                       {% if question.required %}required aria-required="true"{% endif %}>
                 <span class="flex min-h-11 items-center justify-center rounded-xl border border-[#D8CEC2] bg-[#FFFCF8] text-sm font-bold text-[#3A2F25] shadow-sm transition hover:border-[#3D7EFF] hover:bg-[#EFF5FF] peer-checked:border-[#2461D1] peer-checked:bg-[#3D7EFF] peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#2461D1]">
                   {{ value }}
                 </span>
@@ -126,9 +124,7 @@
                        value="{{ value }}"
                        class="peer sr-only"
                        {{ answer_attr|safe }}
-                       {% if question.required %}
-                         required aria-required="true"
-                       {% endif %}>
+                       {% if question.required %}required aria-required="true"{% endif %}>
                 <span class="flex min-h-11 items-center justify-center rounded-xl border border-[#D8CEC2] bg-[#FFFCF8] text-sm font-bold text-[#3A2F25] shadow-sm transition hover:border-[#3D7EFF] hover:bg-[#EFF5FF] peer-checked:border-[#2461D1] peer-checked:bg-[#3D7EFF] peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#2461D1]">
                   {{ value }}
                 </span>
@@ -150,9 +146,7 @@
                      class="radio-primary focus:ring-[#3D7EFF]"
                      {{ answer_attr|safe }}
                      {% if question.is_option_selected(*answers, option.id) %}checked{% endif %}
-                     {% if question.required %}
-                       required aria-required="true"
-                     {% endif %}>
+                     {% if question.required %}required aria-required="true"{% endif %}>
               <span>{{ option.label }}</span>
             </label>
           {% endfor -%}
