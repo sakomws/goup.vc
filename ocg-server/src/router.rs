@@ -382,6 +382,36 @@ pub(crate) async fn setup(
             "/dashboard/jobs/{job_id}/unpublish",
             put(crate::handlers::dashboard::jobs::unpublish),
         )
+        .route(
+            "/dashboard/opportunities",
+            get(crate::handlers::dashboard::opportunities::page)
+                .post(crate::handlers::dashboard::opportunities::add),
+        )
+        .route(
+            "/dashboard/opportunities/{opportunity_id}",
+            put(crate::handlers::dashboard::opportunities::update)
+                .delete(crate::handlers::dashboard::opportunities::delete),
+        )
+        .route(
+            "/dashboard/opportunities/{opportunity_id}/publish",
+            put(crate::handlers::dashboard::opportunities::publish),
+        )
+        .route(
+            "/dashboard/opportunities/{opportunity_id}/unpublish",
+            put(crate::handlers::dashboard::opportunities::unpublish),
+        )
+        .route(
+            "/dashboard/opportunities/searches",
+            post(crate::handlers::dashboard::opportunities::save_search),
+        )
+        .route(
+            "/dashboard/opportunities/searches/{saved_search_id}/activate",
+            post(crate::handlers::dashboard::opportunities::activate_search),
+        )
+        .route(
+            "/dashboard/opportunities/searches/{saved_search_id}",
+            delete(crate::handlers::dashboard::opportunities::delete_search),
+        )
         .nest("/dashboard/alliance", alliance_dashboard_router)
         .nest("/dashboard/group", group_dashboard_router)
         .nest("/dashboard/user", user_dashboard_router)
@@ -455,6 +485,12 @@ pub(crate) async fn setup(
             get(site::jobs::mock_interviews_page),
         )
         .route("/jobs/{slug}", get(site::jobs::details))
+        .route("/opportunities", get(site::opportunities::page))
+        .route("/opportunities.csv", get(site::opportunities::csv))
+        .route(
+            "/opportunities/{source_kind}/{source_id}",
+            get(site::opportunities::details),
+        )
         .route("/landscape", get(site::landscape::page))
         .route("/privacy", get(site::privacy::page))
         .route("/profiles/{username}", get(site::profile::page))

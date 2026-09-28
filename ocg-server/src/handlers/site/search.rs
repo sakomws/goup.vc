@@ -25,8 +25,8 @@ use crate::{
         },
     },
     types::{
-        jobs::{JobsFilters, JobsOutput},
         landscape::{LandscapeFilters, LandscapeOutput},
+        opportunities::{OpportunitiesOutput, OpportunityFilters},
         search::{SearchEventsFilters, SearchGroupsFilters},
     },
 };
@@ -85,11 +85,11 @@ async fn search_all(db: &DynDB, query: &str, encoded_query: &str) -> Vec<SearchS
         offset: Some(0),
         ..SearchGroupsFilters::default()
     };
-    let jobs_filters = JobsFilters {
+    let opportunity_filters = OpportunityFilters {
         query: Some(query.to_string()),
         limit: Some(SEARCH_LIMIT),
         offset: Some(0),
-        ..JobsFilters::default()
+        ..OpportunityFilters::default()
     };
     let landscape_filters = LandscapeFilters {
         query: Some(query.to_string()),
@@ -98,10 +98,10 @@ async fn search_all(db: &DynDB, query: &str, encoded_query: &str) -> Vec<SearchS
         ..LandscapeFilters::default()
     };
 
-    let (events, groups, jobs, landscape, wiki_sections) = tokio::join!(
+    let (events, groups, opportunities, landscape, wiki_sections) = tokio::join!(
         db.search_events(&events_filters),
         db.search_groups(&groups_filters),
-        db.search_jobs(&jobs_filters),
+        db.search_opportunities(&opportunity_filters),
         db.search_landscape_entries(&landscape_filters),
         crate::handlers::site::wiki::load_wiki_sections(),
     );
@@ -113,9 +113,9 @@ async fn search_all(db: &DynDB, query: &str, encoded_query: &str) -> Vec<SearchS
         warn!("site search groups source failed: {error}");
         SearchGroupsOutput::default()
     });
-    let jobs = jobs.unwrap_or_else(|error| {
-        warn!("site search jobs source failed: {error}");
-        JobsOutput::default()
+    let opportunities = opportunities.unwrap_or_else(|error| {
+        warn!("site search opportunities source failed: {error}");
+        OpportunitiesOutput::default()
     });
     let landscape = landscape.unwrap_or_else(|error| {
         warn!("site search landscape source failed: {error}");
@@ -177,18 +177,26 @@ async fn search_all(db: &DynDB, query: &str, encoded_query: &str) -> Vec<SearchS
             .collect(),
     });
     sections.push(SearchSection {
-        title: "Jobs".to_string(),
-        href: format!("/jobs?query={encoded_query}"),
-        total: jobs.total,
-        results: jobs
-            .jobs
+        title: "Opportunities".to_string(),
+        href: format!("/opportunities?query={encoded_query}"),
+        total: opportunities.total,
+        results: opportunities
+            .opportunities
             .into_iter()
-            .map(|job| SearchResult {
-                title: job.title,
-                href: format!("/jobs/{}", job.slug),
-                summary: job.summary,
-                eyebrow: job.company_name,
-                hx_boost: true,
+            .map(|opportunity| {
+                let href = opportunity.details_url();
+                let eyebrow = format!(
+                    "{} · {}",
+                    opportunity.kind_label(),
+                    opportunity.organization_name
+                );
+                SearchResult {
+                    title: opportunity.title,
+                    href,
+                    summary: opportunity.summary,
+                    eyebrow,
+                    hx_boost: true,
+                }
             })
             .collect(),
     });

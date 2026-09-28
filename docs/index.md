@@ -13,7 +13,7 @@ or contributing to the codebase.
 | --- | --- |
 | Get productive quickly | [Quickstart](getting-started/quickstart.md) |
 | Choose the right dashboard | [Choose Your Dashboard](getting-started/choose-dashboard.md) |
-| Discover groups and events | [Public Site Guide](guides/public-site.md) |
+| Discover groups, events, and opportunities | [Public Site Guide](guides/public-site.md) |
 | Participate as a member | [Group Members Runbook](guides/group-members-runbook.md) |
 | Lead a group | [Group Leads Runbook](guides/group-leads-runbook.md) |
 | Run alliance operations | [Alliance Dashboard Guide](guides/alliance-dashboard.md) |
@@ -33,7 +33,9 @@ read docs, view platform stats, find jobs, and learn about sponsorship.
 Important pages:
 
 - [Explore](/explore) for groups and events.
-- [Jobs](/jobs) for public and member-only roles.
+- [Opportunities](/opportunities) for grants, funding, partnerships, research,
+  jobs, and open calls for speakers.
+- [Jobs](/jobs) for the dedicated role workflow.
 - [Landscape](/landscape) for startups, GitHub projects, partner communities, and podcast leads.
 - [Stats](/stats) for platform activity and engagement.
 - [Sponsor](/sponsor) for partnership inquiries.
@@ -76,11 +78,15 @@ Alliance-level features include:
 - Landscape management.
 - Alliance and group role permissions.
 
-### Jobs, Mentorship, and Sponsorship
+### Opportunities, Mentorship, and Sponsorship
 
 GOUP supports practical community opportunities:
 
 - Members can post public or member-only jobs.
+- Members can create native opportunity listings and save daily or weekly
+  opportunity searches.
+- Published jobs and open CFS windows are projected into the unified board
+  without duplicating their source workflows.
 - Applicants can save interest so posters can follow up.
 - Members can offer individual or business mentorship from their profile.
 - Mentorship requests are tracked and emailed to mentors.

@@ -547,6 +547,43 @@
     "action": "search_jobs"
   },
   {
+    "name": "goup_search_opportunities",
+    "title": "GOUP Search Opportunities",
+    "description": "Search the unified public board across native grants, funding, partnerships, research, published jobs, and open calls for speakers.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Optional search text."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["grant", "funding", "partnership", "research", "job", "cfs"],
+          "description": "Optional opportunity kind."
+        },
+        "location": {
+          "type": "string",
+          "description": "Optional location filter."
+        },
+        "remote": {
+          "type": "boolean",
+          "description": "Optional remote-friendly filter."
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum results, 1 to 100. Defaults to 20."
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Pagination offset. Defaults to 0."
+        }
+      },
+      "additionalProperties": false
+    },
+    "action": "search_opportunities"
+  },
+  {
     "name": "goup_search_landscape",
     "title": "GOUP Search Landscape",
     "description": "Search published GOUP landscape entries for startups, open source projects, partner communities, podcast leads, and tools.",
@@ -800,19 +837,12 @@
                 "description": "Optional per-entry alliance that overrides the shared alliance_id."
               }
             },
-            "required": [
-              "name",
-              "summary"
-            ],
+            "required": ["name", "summary"],
             "additionalProperties": false
           }
         }
       },
-      "required": [
-        "actor_user_id",
-        "alliance_id",
-        "entries"
-      ],
+      "required": ["actor_user_id", "alliance_id", "entries"],
       "additionalProperties": false
     },
     "action": "create_startups_bulk"
@@ -889,14 +919,7 @@
           "description": "Optional CFS label IDs."
         }
       },
-      "required": [
-        "actor_user_id",
-        "alliance_id",
-        "event_id",
-        "title",
-        "description",
-        "duration_minutes"
-      ],
+      "required": ["actor_user_id", "alliance_id", "event_id", "title", "description", "duration_minutes"],
       "additionalProperties": false
     },
     "action": "submit_talk"
