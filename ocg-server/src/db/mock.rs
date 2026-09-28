@@ -87,6 +87,7 @@ mock! {
         async fn get_group_collaboration_dashboard(
             &self,
             group_id: Uuid,
+            actor_user_id: Uuid,
         ) -> Result<crate::templates::dashboard::group::projects::CollaborationDashboard>;
         async fn create_collaboration_project(
             &self,

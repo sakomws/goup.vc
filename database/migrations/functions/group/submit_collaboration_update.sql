@@ -10,12 +10,14 @@ declare
     v_member_id uuid;
     v_update_id uuid;
 begin
-    select collaboration_project_member_id into v_member_id
-    from collaboration_project_member
-    where collaboration_project_id = p_project_id
-      and user_id = p_user_id
-      and invitation_status = 'accepted'
-      and role in ('owner', 'contributor');
+    select m.collaboration_project_member_id into v_member_id
+    from collaboration_project_member m
+    join collaboration_project p using (collaboration_project_id)
+    where m.collaboration_project_id = p_project_id
+      and m.user_id = p_user_id
+      and m.invitation_status = 'accepted'
+      and m.role in ('owner', 'contributor')
+      and p.lifecycle not in ('completed', 'archived');
 
     if v_member_id is null then
         raise exception 'accepted owner or contributor membership required'
@@ -26,8 +28,8 @@ begin
         collaboration_project_id, collaboration_project_member_id,
         body, blockers, next_steps
     ) values (
-        p_project_id, v_member_id, p_body,
-        nullif(p_blockers, ''), nullif(p_next_steps, '')
+        p_project_id, v_member_id, btrim(p_body),
+        nullif(btrim(p_blockers), ''), nullif(btrim(p_next_steps), '')
     ) returning collaboration_project_update_id into v_update_id;
 
     insert into collaboration_project_activity (

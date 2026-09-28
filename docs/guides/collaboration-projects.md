@@ -44,7 +44,5 @@ met, and evidence links for dashboard and public profile rendering.
 
 ## Migration compatibility
 
-Migration `0124_collaboration_projects.sql` intentionally references only
-objects introduced before migration 0123. It is valid when 0123 is absent so
-the collaboration and opportunity branches can be reviewed and merged
-independently.
+Migration `0123_collaboration_projects.sql` references only objects available
+in the preceding migration sequence.

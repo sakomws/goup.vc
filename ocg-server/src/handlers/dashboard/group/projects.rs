@@ -83,7 +83,7 @@ pub(crate) async fn prepare_page(
             &user_id,
             GroupPermission::ProjectsWrite,
         ),
-        db.get_group_collaboration_dashboard(group_id),
+        db.get_group_collaboration_dashboard(group_id, user_id),
     )?;
     Ok(projects::Page {
         can_manage_projects,

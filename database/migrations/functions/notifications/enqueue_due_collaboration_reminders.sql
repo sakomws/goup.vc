@@ -8,12 +8,14 @@ begin
             p.collaboration_project_id,
             m.user_id,
             s.collaboration_office_hour_session_id,
-            b.collaboration_office_hour_booking_id
+            b.collaboration_office_hour_booking_id,
+            b.booking_attempt
         from collaboration_office_hour_booking b
         join collaboration_office_hour_session s using (collaboration_office_hour_session_id)
         join collaboration_project p using (collaboration_project_id)
         join collaboration_project_member m using (collaboration_project_member_id)
         where b.status = 'booked'
+          and m.invitation_status = 'accepted'
           and s.status = 'scheduled'
           and s.starts_at > p_now
           and s.starts_at <= p_now + interval '24 hours'
@@ -26,7 +28,8 @@ begin
             collaboration_project_id,
             user_id,
             'session_reminder',
-            'session-reminder:' || collaboration_office_hour_booking_id::text,
+            'session-reminder:' || collaboration_office_hour_booking_id::text
+                || ':' || booking_attempt::text,
             jsonb_build_object(
                 'booking_id', collaboration_office_hour_booking_id,
                 'session_id', collaboration_office_hour_session_id

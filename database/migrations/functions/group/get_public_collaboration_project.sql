@@ -17,14 +17,11 @@ returns jsonb as $$
         ), '[]'::jsonb),
         'updates', coalesce((
             select jsonb_agg(jsonb_build_object(
-                'body', update.body, 'blockers', update.blockers,
+                'body', update.body,
                 'next_steps', update.next_steps,
-                'created_at', extract(epoch from update.created_at)::bigint,
-                'member_name', u.name
+                'created_at', extract(epoch from update.created_at)::bigint
             ) order by update.created_at, update.collaboration_project_update_id)
             from collaboration_project_update update
-            join collaboration_project_member m using (collaboration_project_member_id)
-            join "user" u using (user_id)
             where update.collaboration_project_id = p.collaboration_project_id
         ), '[]'::jsonb),
         'outcome_summary', get_collaboration_outcome_summary(p.collaboration_project_id)

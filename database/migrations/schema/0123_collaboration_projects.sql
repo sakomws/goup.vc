@@ -29,6 +29,10 @@ create table collaboration_project (
     constraint collaboration_project_dates_check check (
         starts_on is null or target_ends_on is null or starts_on <= target_ends_on
     ),
+    constraint collaboration_project_completion_check check (
+        (lifecycle <> 'completed' or completed_at is not null)
+        and (completed_at is null or lifecycle in ('completed', 'archived'))
+    ),
     unique (group_id, slug)
 );
 
@@ -45,6 +49,7 @@ create table collaboration_project_member (
     invited_by uuid references "user" (user_id) on delete set null,
     invited_at timestamptz default current_timestamp not null,
     responded_at timestamptz,
+    invitation_attempt integer default 1 not null check (invitation_attempt > 0),
     unique (collaboration_project_id, user_id)
 );
 
@@ -79,7 +84,10 @@ create table collaboration_project_task (
     due_on date,
     completed_at timestamptz,
     created_at timestamptz default current_timestamp not null,
-    updated_at timestamptz default current_timestamp not null
+    updated_at timestamptz default current_timestamp not null,
+    constraint collaboration_project_task_completion_check check (
+        (status = 'done') = (completed_at is not null)
+    )
 );
 
 create index collaboration_project_task_project_status_idx
@@ -122,6 +130,75 @@ $$ language plpgsql;
 create trigger collaboration_project_activity_append_only
 before update or delete on collaboration_project_activity
 for each row execute function prevent_collaboration_activity_mutation();
+
+create or replace function validate_collaboration_project_task_references()
+returns trigger as $$
+begin
+    if new.collaboration_project_goal_id is not null and not exists (
+        select 1
+        from collaboration_project_goal g
+        where g.collaboration_project_goal_id = new.collaboration_project_goal_id
+          and g.collaboration_project_id = new.collaboration_project_id
+    ) then
+        raise exception 'task goal must belong to the same project';
+    end if;
+    if new.assigned_member_id is not null and not exists (
+        select 1
+        from collaboration_project_member m
+        where m.collaboration_project_member_id = new.assigned_member_id
+          and m.collaboration_project_id = new.collaboration_project_id
+          and m.invitation_status = 'accepted'
+    ) then
+        raise exception 'task assignee must be an accepted member of the same project';
+    end if;
+    return new;
+end;
+$$ language plpgsql;
+
+create or replace function validate_collaboration_project_update_reference()
+returns trigger as $$
+begin
+    if not exists (
+        select 1
+        from collaboration_project_member m
+        where m.collaboration_project_member_id = new.collaboration_project_member_id
+          and m.collaboration_project_id = new.collaboration_project_id
+          and m.invitation_status = 'accepted'
+          and m.role in ('owner', 'contributor')
+    ) then
+        raise exception 'update author must be an accepted owner or contributor of the same project';
+    end if;
+    return new;
+end;
+$$ language plpgsql;
+
+create or replace function validate_collaboration_office_hour_booking_reference()
+returns trigger as $$
+begin
+    if not exists (
+        select 1
+        from collaboration_office_hour_session s
+        join collaboration_project_member m
+          on m.collaboration_project_member_id = new.collaboration_project_member_id
+         and m.collaboration_project_id = s.collaboration_project_id
+         and m.invitation_status = 'accepted'
+        where s.collaboration_office_hour_session_id = new.collaboration_office_hour_session_id
+    ) then
+        raise exception 'booking member must be accepted in the session project';
+    end if;
+    return new;
+end;
+$$ language plpgsql;
+
+create trigger collaboration_project_task_reference_check
+before insert or update of collaboration_project_id, collaboration_project_goal_id, assigned_member_id
+on collaboration_project_task
+for each row execute function validate_collaboration_project_task_references();
+
+create trigger collaboration_project_update_reference_check
+before insert or update of collaboration_project_id, collaboration_project_member_id
+on collaboration_project_update
+for each row execute function validate_collaboration_project_update_reference();
 
 create table collaboration_project_outcome (
     collaboration_project_outcome_id uuid primary key default gen_random_uuid(),
@@ -171,8 +248,14 @@ create table collaboration_office_hour_booking (
     status text default 'booked' not null check (status in ('booked', 'cancelled', 'attended', 'no_show')),
     booked_at timestamptz default current_timestamp not null,
     cancelled_at timestamptz,
+    booking_attempt integer default 1 not null check (booking_attempt > 0),
     unique (collaboration_office_hour_session_id, collaboration_project_member_id)
 );
+
+create trigger collaboration_office_hour_booking_reference_check
+before insert or update of collaboration_office_hour_session_id, collaboration_project_member_id
+on collaboration_office_hour_booking
+for each row execute function validate_collaboration_office_hour_booking_reference();
 
 -- Delivery keys make invitation, booking, and reminder scheduling retry-safe.
 create table collaboration_notification_delivery (

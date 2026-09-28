@@ -47,28 +47,6 @@
           <p class="mt-1 text-sm text-stone-600">Metrics and linked evidence are summarized from the workspace.</p>
         </div>
       </div>
-      {% if user.logged_in -%}
-        <form hx-post="/projects/{{ project.project.collaboration_project_id }}/updates"
-              hx-swap="none"
-              class="border-t border-stone-100 p-7 sm:p-10">
-          <h2 class="text-lg font-semibold text-stone-950">Share a project update</h2>
-          <p class="mt-1 text-sm text-stone-600">Available to accepted owners and contributors.</p>
-          <textarea class="input-primary mt-4 w-full"
-                    name="body"
-                    required
-                    maxlength="5000"
-                    placeholder="What changed?"></textarea>
-          <div class="mt-3 grid gap-3 sm:grid-cols-2">
-            <input class="input-primary"
-                   name="blockers"
-                   placeholder="Blockers (optional)">
-            <input class="input-primary"
-                   name="next_steps"
-                   placeholder="Next steps (optional)">
-          </div>
-          <button class="btn-primary mt-4" type="submit">Post update</button>
-        </form>
-      {% endif -%}
     </article>
   </main>
 {% endblock content -%}

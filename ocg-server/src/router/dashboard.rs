@@ -422,7 +422,6 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         )
         .route("/logs", get(dashboard::group::logs::list_page))
         .route("/members", get(dashboard::group::members::list_page))
-        .route("/projects", get(dashboard::group::projects::page))
         .route(
             "/book-exchange",
             get(dashboard::group::book_exchange::list_page),
@@ -676,9 +675,12 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             GroupPermission::MembersWrite,
         ));
 
-    // Group settings management endpoints
+    // Group project management endpoints
     let projects_management = Router::new()
-        .route("/projects", post(dashboard::group::projects::create))
+        .route(
+            "/projects",
+            get(dashboard::group::projects::page).post(dashboard::group::projects::create),
+        )
         .route(
             "/projects/{project_id}/members",
             post(dashboard::group::projects::invite_member),

@@ -1,7 +1,7 @@
 import { expect } from "@open-wc/testing";
 
 describe("collaboration project templates", () => {
-  it("exposes organizer and self-service workflows", async () => {
+  it("exposes organizer workflows without leaking member controls", async () => {
     const [dashboardResponse, publicResponse] = await Promise.all([
       fetch("/ocg-server/templates/dashboard/group/projects.html"),
       fetch("/ocg-server/templates/group/project.html"),
@@ -15,8 +15,6 @@ describe("collaboration project templates", () => {
 
     expect(dashboard).to.include('hx-post="/dashboard/group/projects"');
     expect(dashboard).to.include("/projects/office-hours/");
-    expect(profile).to.include(
-      "/projects/{{ project.project.collaboration_project_id }}/updates",
-    );
+    expect(profile).not.to.include('hx-post="/projects/');
   });
 });

@@ -91,6 +91,9 @@ pub(crate) struct CollaborationSession {
     pub starts_at: DateTime<Utc>,
     pub ends_at: DateTime<Utc>,
     pub capacity: i32,
+    pub booked_count: i64,
+    pub available_capacity: i64,
+    pub can_book: bool,
     pub status: String,
 }
 

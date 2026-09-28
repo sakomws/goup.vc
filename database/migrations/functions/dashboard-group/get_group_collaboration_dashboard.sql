@@ -1,4 +1,7 @@
-create or replace function get_group_collaboration_dashboard(p_group_id uuid)
+create or replace function get_group_collaboration_dashboard(
+    p_group_id uuid,
+    p_actor_user_id uuid
+)
 returns jsonb as $$
     select jsonb_build_object(
         'projects', coalesce((
@@ -51,7 +54,45 @@ returns jsonb as $$
             where p.group_id = p_group_id
         ), '[]'::jsonb),
         'sessions', coalesce((
-            select jsonb_agg(to_jsonb(s) order by s.starts_at)
+            select jsonb_agg(
+                to_jsonb(s) || jsonb_build_object(
+                    'booked_count', (
+                        select count(*)
+                        from collaboration_office_hour_booking b
+                        where b.collaboration_office_hour_session_id =
+                            s.collaboration_office_hour_session_id
+                          and b.status = 'booked'
+                    ),
+                    'available_capacity', greatest(
+                        s.capacity - (
+                            select count(*)
+                            from collaboration_office_hour_booking b
+                            where b.collaboration_office_hour_session_id =
+                                s.collaboration_office_hour_session_id
+                              and b.status = 'booked'
+                        ),
+                        0
+                    ),
+                    'can_book',
+                        s.status = 'scheduled'
+                        and s.starts_at > current_timestamp
+                        and (
+                            select count(*)
+                            from collaboration_office_hour_booking b
+                            where b.collaboration_office_hour_session_id =
+                                s.collaboration_office_hour_session_id
+                              and b.status = 'booked'
+                        ) < s.capacity
+                        and exists (
+                            select 1
+                            from collaboration_project_member m
+                            where m.collaboration_project_id = s.collaboration_project_id
+                              and m.user_id = p_actor_user_id
+                              and m.invitation_status = 'accepted'
+                        )
+                )
+                order by s.starts_at
+            )
             from collaboration_office_hour_session s
             join collaboration_project p using (collaboration_project_id)
             where p.group_id = p_group_id

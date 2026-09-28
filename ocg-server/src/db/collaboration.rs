@@ -20,6 +20,7 @@ pub(crate) trait DBCollaboration {
     async fn get_group_collaboration_dashboard(
         &self,
         group_id: Uuid,
+        actor_user_id: Uuid,
     ) -> Result<CollaborationDashboard>;
     async fn create_collaboration_project(
         &self,
@@ -63,10 +64,11 @@ where
     async fn get_group_collaboration_dashboard(
         &self,
         group_id: Uuid,
+        actor_user_id: Uuid,
     ) -> Result<CollaborationDashboard> {
         self.fetch_json_one(
-            "select get_group_collaboration_dashboard($1::uuid)",
-            &[&group_id],
+            "select get_group_collaboration_dashboard($1::uuid, $2::uuid)",
+            &[&group_id, &actor_user_id],
         )
         .await
     }
