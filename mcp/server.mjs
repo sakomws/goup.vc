@@ -254,6 +254,8 @@ async function runAction(action, args) {
       return searchTeams(args);
     case "search_jobs":
       return searchJobs(args);
+    case "search_opportunities":
+      return searchOpportunities(args);
     case "search_landscape":
       return searchLandscape(args);
     case "create_startup":
@@ -370,7 +372,9 @@ async function searchAll(args) {
 
 async function queryCommunityAnalytics(args) {
   const filters = buildCommunityAnalyticsFilters(args);
-  const sql = sqlWithJsonArgs(filters, `
+  const sql = sqlWithJsonArgs(
+    filters,
+    `
 select query_community_analytics(
   (j->>'start_at')::timestamptz,
   (j->>'end_at')::timestamptz,
@@ -382,7 +386,8 @@ select query_community_analytics(
   (j->>'limit')::int
 )::text
 from args;
-`);
+`,
+  );
 
   return (await runPsql(sql)).trim();
 }
@@ -395,9 +400,32 @@ async function searchJobs(args) {
     limit: normalizeLimit(args.limit),
     offset: normalizeOffset(args.offset),
   };
-  const sql = sqlWithJsonArgs(filters, `
+  const sql = sqlWithJsonArgs(
+    filters,
+    `
 select search_jobs(j)::text from args;
-`);
+`,
+  );
+
+  return (await runPsql(sql)).trim();
+}
+
+async function searchOpportunities(args) {
+  const filters = {
+    query: optionalString(args.query),
+    kind: optionalString(args.kind),
+    location: optionalString(args.location),
+    remote: typeof args.remote === "boolean" ? args.remote : undefined,
+    include_members_only: false,
+    limit: normalizeLimit(args.limit),
+    offset: normalizeOffset(args.offset),
+  };
+  const sql = sqlWithJsonArgs(
+    filters,
+    `
+select search_opportunities(j)::text from args;
+`,
+  );
 
   return (await runPsql(sql)).trim();
 }
@@ -411,9 +439,12 @@ async function searchLeads(args) {
     group_id: optionalString(args.group_id),
     limit: normalizeLimit(args.limit),
   };
-  const sql = sqlWithJsonArgs(filters, `
+  const sql = sqlWithJsonArgs(
+    filters,
+    `
 select list_gtm_leads('${allianceId}'::uuid, j)::text from args;
-`);
+`,
+  );
   return (await runPsql(sql)).trim();
 }
 
@@ -454,9 +485,7 @@ async function deleteLead(args) {
   const allianceId = requireUuid(args.alliance_id, "alliance_id");
   const leadId = requireUuid(args.gtm_lead_id, "gtm_lead_id");
   const groupId = optionalString(args.group_id);
-  const groupSql = groupId
-    ? `'${requireUuid(groupId, "group_id")}'::uuid`
-    : "null::uuid";
+  const groupSql = groupId ? `'${requireUuid(groupId, "group_id")}'::uuid` : "null::uuid";
   const sql = `
 select delete_gtm_lead(
   '${actorUserId}'::uuid,
@@ -510,7 +539,8 @@ async function runGtmAgent(args) {
     group_id: groupId,
     title,
     body: reply || `Operator-requested ${agentId} draft. Review before any stage change.`,
-    suggested_stage: agentId === "won_lost" ? "won" : agentId === "lead_generation" ? "lead_generation" : agentId,
+    suggested_stage:
+      agentId === "won_lost" ? "won" : agentId === "lead_generation" ? "lead_generation" : agentId,
     payload: reply ? { reply } : {},
   };
   const inputJson = Buffer.from(JSON.stringify(input), "utf8").toString("base64");
@@ -559,16 +589,21 @@ async function searchLandscape(args) {
     limit: normalizeLimit(args.limit),
     offset: normalizeOffset(args.offset),
   };
-  const sql = sqlWithJsonArgs(filters, `
+  const sql = sqlWithJsonArgs(
+    filters,
+    `
 select search_landscape_entries(j)::text from args;
-`);
+`,
+  );
 
   return (await runPsql(sql)).trim();
 }
 
 async function createLandscapeEntry(args, kind) {
   if (!ENABLE_MUTATIONS) {
-    throw new Error("Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow landscape entry creation.");
+    throw new Error(
+      "Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow landscape entry creation.",
+    );
   }
 
   if (!LANDSCAPE_KINDS.includes(kind)) {
@@ -580,12 +615,13 @@ async function createLandscapeEntry(args, kind) {
   const entry = buildLandscapeEntryPayload(args, kind);
   const tags = normalizeTags(args.tags);
   const entryJsonBase64 = Buffer.from(JSON.stringify(entry), "utf8").toString("base64");
-  const tagArray = tags.length ? `array[${tags.map((tag) => sqlStringLiteral(tag)).join(", ")}]` : "array[]::text[]";
+  const tagArray = tags.length
+    ? `array[${tags.map((tag) => sqlStringLiteral(tag)).join(", ")}]`
+    : "array[]::text[]";
   const published = args.published !== false;
-  const publishSql =
-    published
-      ? ""
-      : `,
+  const publishSql = published
+    ? ""
+    : `,
 unpublished as (
   select
     created.landscape_entry_id,
@@ -626,7 +662,9 @@ from created${resultJoin};
 
 async function createLandscapeEntriesBulk(args, kind) {
   if (!ENABLE_MUTATIONS) {
-    throw new Error("Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow landscape entry creation.");
+    throw new Error(
+      "Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow landscape entry creation.",
+    );
   }
 
   const actorUserId = requireUuid(args.actor_user_id, "actor_user_id");
@@ -709,19 +747,25 @@ async function searchWiki(args) {
 
 async function submitTalk(args) {
   if (!ENABLE_MUTATIONS) {
-    throw new Error("Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow talk submissions.");
+    throw new Error(
+      "Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow talk submissions.",
+    );
   }
 
   const actorUserId = requireUuid(args.actor_user_id, "actor_user_id");
   const allianceId = requireUuid(args.alliance_id, "alliance_id");
   const eventId = requireUuid(args.event_id, "event_id");
-  const labelIds = Array.isArray(args.label_ids) ? args.label_ids.map((id) => requireUuid(id, "label_ids")) : [];
+  const labelIds = Array.isArray(args.label_ids)
+    ? args.label_ids.map((id) => requireUuid(id, "label_ids"))
+    : [];
   const proposal = {
     title: requireString(args.title, "title"),
     description: requireString(args.description, "description"),
     duration_minutes: normalizeDuration(args.duration_minutes),
     session_proposal_level_id: requireProposalLevel(args.session_proposal_level_id || "intermediate"),
-    co_speaker_user_id: args.co_speaker_user_id ? requireUuid(args.co_speaker_user_id, "co_speaker_user_id") : "",
+    co_speaker_user_id: args.co_speaker_user_id
+      ? requireUuid(args.co_speaker_user_id, "co_speaker_user_id")
+      : "",
   };
   const proposalJsonBase64 = Buffer.from(JSON.stringify(proposal), "utf8").toString("base64");
   const labelArray = labelIds.length
@@ -759,7 +803,9 @@ from submission;
 
 async function searchGroups(args) {
   const filters = buildSearchFilters(args);
-  const sql = sqlWithJsonArgs(filters, `
+  const sql = sqlWithJsonArgs(
+    filters,
+    `
 , rows as (
   select
     a.alliance_id,
@@ -791,14 +837,17 @@ async function searchGroups(args) {
   limit (select (j->>'limit')::int from args)
 )
 select coalesce(json_agg(row_to_json(rows)), '[]'::json)::text from rows;
-`);
+`,
+  );
 
   return (await runPsql(sql)).trim();
 }
 
 async function searchEvents(args) {
   const filters = buildSearchFilters(args);
-  const sql = sqlWithJsonArgs(filters, `
+  const sql = sqlWithJsonArgs(
+    filters,
+    `
 , rows as (
   select
     a.alliance_id,
@@ -841,14 +890,17 @@ async function searchEvents(args) {
   limit (select (j->>'limit')::int from args)
 )
 select coalesce(json_agg(row_to_json(rows)), '[]'::json)::text from rows;
-`);
+`,
+  );
 
   return (await runPsql(sql)).trim();
 }
 
 async function searchMembers(args) {
   const filters = buildSearchFilters(args);
-  const sql = sqlWithJsonArgs(filters, `
+  const sql = sqlWithJsonArgs(
+    filters,
+    `
 , rows as (
   select
     a.alliance_id,
@@ -885,7 +937,8 @@ async function searchMembers(args) {
   limit (select (j->>'limit')::int from args)
 )
 select coalesce(json_agg(row_to_json(rows)), '[]'::json)::text from rows;
-`);
+`,
+  );
 
   return (await runPsql(sql)).trim();
 }
@@ -898,7 +951,9 @@ async function searchTeams(args) {
   }
   filters.scope = scope;
 
-  const sql = sqlWithJsonArgs(filters, `
+  const sql = sqlWithJsonArgs(
+    filters,
+    `
 , group_rows as (
   select
     'group' as scope,
@@ -971,14 +1026,17 @@ rows as (
   limit (select (j->>'limit')::int from args)
 )
 select coalesce(json_agg(row_to_json(rows)), '[]'::json)::text from rows;
-`);
+`,
+  );
 
   return (await runPsql(sql)).trim();
 }
 
 async function createEvent(args) {
   if (!ENABLE_MUTATIONS) {
-    throw new Error("Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow event creation.");
+    throw new Error(
+      "Mutating MCP tools are disabled. Set MCP_ENABLE_MUTATIONS=true to allow event creation.",
+    );
   }
 
   const event = buildEventPayload(args);

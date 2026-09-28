@@ -1,0 +1,266 @@
+{% extends "dashboard/dashboard_base.html" -%}
+{% import "macros/dashboard.html" as dashboard -%}
+{% import "macros/feedback.html" as feedback -%}
+{% import "macros/pagination.html" as pagination -%}
+
+{% block menu -%}
+  <div class="mt-3 mb-6 px-3 text-lg font-semibold text-stone-900 lg:px-5">Opportunities</div>
+  <div class="flex flex-1 flex-col space-y-5 overflow-y-auto px-3 lg:px-5">
+    <div class="grid gap-y-0.5">
+      {{ dashboard::menu_title(text = "Manage", extra_styles = "py-1.5") -}}
+      {{ dashboard::menu_item(name = "Listings & saved searches", icon = "search", is_active = true, href = "/dashboard/opportunities") -}}
+      {{ dashboard::menu_item(name = "Public opportunity board", icon = "external-link", is_active = false, href = "/opportunities") -}}
+    </div>
+    <div class="border-t border-stone-200 pt-6">
+      {{ dashboard::menu_item(name = "User Dashboard", icon = "user-small", is_active = false, href = "/dashboard/user") -}}
+    </div>
+  </div>
+{% endblock menu -%}
+
+{% block dashboard_main -%}
+  <div class="p-4 sm:p-6 lg:p-12">
+    {{ dashboard::page_title(title = "Opportunity board", description = "Create and moderate native grants, funding, partnership, and research listings. Jobs and CFS stay in their existing workflows.") -}}
+    {% if !messages.is_empty() %}<div class="mt-6">{{ feedback::alerts(messages) -}}</div>{% endif %}
+
+    <section class="mt-8 rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm sm:p-7">
+      <h2 class="text-xl font-black text-stone-950">Create a draft</h2>
+      <form class="mt-5 grid gap-4 lg:grid-cols-2"
+            action="/dashboard/opportunities"
+            method="post"
+            hx-post="/dashboard/opportunities"
+            hx-target="body">
+        <label class="space-y-2">
+          <span class="form-label">Kind</span>
+          <select name="kind" class="input-primary" required>
+            <option value="grant">Grant</option>
+            <option value="funding">Funding</option>
+            <option value="partnership">Partnership</option>
+            <option value="research">Research</option>
+          </select>
+        </label>
+        <label class="space-y-2">
+          <span class="form-label">Title</span>
+          <input name="title" class="input-primary" required />
+        </label>
+        <label class="space-y-2">
+          <span class="form-label">Organization</span>
+          <input name="organization_name" class="input-primary" required />
+        </label>
+        <label class="space-y-2">
+          <span class="form-label">Application URL</span>
+          <input name="apply_url" type="url" class="input-primary" required />
+        </label>
+        <label class="space-y-2 lg:col-span-2">
+          <span class="form-label">Summary</span>
+          <input name="summary" maxlength="500" class="input-primary" required />
+        </label>
+        <label class="space-y-2 lg:col-span-2">
+          <span class="form-label">Description</span><textarea name="description" rows="6" class="input-primary" required></textarea>
+        </label>
+        <label class="space-y-2">
+          <span class="form-label">Location</span>
+          <input name="location" class="input-primary" />
+        </label>
+        <label class="space-y-2">
+          <span class="form-label">Tags</span>
+          <input name="tags"
+                 class="input-primary"
+                 placeholder="AI, climate, open source" />
+        </label>
+        <label class="space-y-2">
+          <span class="form-label">Opens</span>
+          <input name="opens_at" type="datetime-local" class="input-primary" />
+        </label>
+        <label class="space-y-2">
+          <span class="form-label">Closes</span>
+          <input name="closes_at" type="datetime-local" class="input-primary" />
+        </label>
+        <div class="flex flex-wrap items-center gap-5 lg:col-span-2">
+          <label class="inline-flex items-center gap-2">
+            <input type="checkbox" name="remote" value="true" />
+            Remote
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="checkbox" name="members_only" value="true" />
+            Members only
+          </label>
+          <button class="btn-primary ms-auto" type="submit">Create draft</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="mt-8">
+      <h2 class="text-xl font-black text-stone-950">Your listings</h2>
+      <p class="mt-1 text-sm text-stone-600">
+        {{ total }} native listing
+        {% if total != 1 %}s{% endif %}
+      </p>
+      <div class="mt-5 grid gap-5">
+        {% for opportunity in opportunities -%}
+          <article class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="font-bold text-stone-950">{{ opportunity.title }}</h3>
+                <p class="text-sm text-stone-500">{{ opportunity.kind_label() }} · {{ opportunity.organization_name }}</p>
+              </div>
+              <span class="rounded-full px-3 py-1 text-xs font-bold
+                           {% if opportunity.published %}
+                             bg-emerald-50 text-emerald-700
+                           {% else %}
+                             bg-stone-100 text-stone-700
+                           {% endif %}">
+                {% if opportunity.published %}
+                  Published
+                {% else %}
+                  Draft
+                {% endif %}
+              </span>
+            </div>
+            <form class="grid gap-3 lg:grid-cols-2"
+                  hx-put="/dashboard/opportunities/{{ opportunity.source_id }}"
+                  hx-target="body">
+              <select name="kind" class="input-primary">
+                <option value="grant" {% if opportunity.kind == "grant" %}selected{% endif %}>Grant</option>
+                <option value="funding"
+                        {% if opportunity.kind == "funding" %}selected{% endif %}>Funding</option>
+                <option value="partnership"
+                        {% if opportunity.kind == "partnership" %}selected{% endif %}>Partnership</option>
+                <option value="research"
+                        {% if opportunity.kind == "research" %}selected{% endif %}>Research</option>
+              </select>
+              <input name="title"
+                     value="{{ opportunity.title }}"
+                     class="input-primary"
+                     required />
+              <input name="organization_name"
+                     value="{{ opportunity.organization_name }}"
+                     class="input-primary"
+                     required />
+              <input name="apply_url"
+                     value="{{ opportunity.apply_url }}"
+                     class="input-primary"
+                     required />
+              <input name="summary"
+                     value="{{ opportunity.summary }}"
+                     class="input-primary lg:col-span-2"
+                     required />
+              <textarea name="description"
+                        rows="4"
+                        class="input-primary lg:col-span-2"
+                        required>{{ opportunity.description }}</textarea>
+              <input name="location"
+                     value="{{ opportunity.location.as_deref().unwrap_or("") }}"
+                     class="input-primary"
+                     placeholder="Location" />
+              <input name="tags"
+                     value="{{ opportunity.tags.join(", ") }}"
+                     class="input-primary"
+                     placeholder="Tags" />
+              <input name="opens_at"
+                     type="datetime-local"
+                     value="{% if let Some(date) = opportunity.opens_at %}
+                              {{ date.format("%Y-%m-%dT%H:%M") }}
+                            {% endif %}"
+                     class="input-primary" />
+              <input name="closes_at"
+                     type="datetime-local"
+                     value="{% if let Some(date) = opportunity.closes_at %}
+                              {{ date.format("%Y-%m-%dT%H:%M") }}
+                            {% endif %}"
+                     class="input-primary" />
+              <div class="flex flex-wrap items-center gap-4 lg:col-span-2">
+                <label>
+                  <input type="checkbox"
+                         name="remote"
+                         value="true"
+                         {% if opportunity.remote %}checked{% endif %} />
+                  Remote
+                </label>
+                <label>
+                  <input type="checkbox"
+                         name="members_only"
+                         value="true"
+                         {% if opportunity.members_only %}checked{% endif %} />
+                  Members only
+                </label>
+                <button class="btn-primary" type="submit">Save</button>
+                {% if opportunity.published -%}
+                  <button class="btn-secondary"
+                          type="button"
+                          hx-put="/dashboard/opportunities/{{ opportunity.source_id }}/unpublish"
+                          hx-target="body">Unpublish</button>
+                {% else -%}
+                  <button class="btn-secondary"
+                          type="button"
+                          hx-put="/dashboard/opportunities/{{ opportunity.source_id }}/publish"
+                          hx-target="body">Publish</button>
+                {% endif -%}
+                <button class="btn-tertiary"
+                        type="button"
+                        hx-delete="/dashboard/opportunities/{{ opportunity.source_id }}"
+                        hx-confirm="Delete this opportunity?"
+                        hx-target="body">Delete</button>
+              </div>
+            </form>
+          </article>
+        {% else -%}
+          <div class="rounded-2xl border border-dashed border-stone-300 bg-white p-10 text-center text-stone-600">
+            No native listings yet.
+          </div>
+        {% endfor -%}
+      </div>
+      {{ pagination::navigation_links(links = navigation_links, hx_target = "body") }}
+    </section>
+
+    <section class="mt-10 rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm sm:p-7">
+      <h2 class="text-xl font-black text-stone-950">Saved searches</h2>
+      <p class="mt-2 text-sm text-stone-600">
+        Previewing is required before activation. Digests respect optional-notification preferences.
+      </p>
+      {% if let Some(name) = &preview_name -%}
+        <div class="mt-5 rounded-2xl border border-sky-200 bg-sky-50 p-4">
+          <h3 class="font-bold text-sky-950">Preview: {{ name }}</h3>
+          {% if let Some(results) = &preview %}
+            <p class="mt-1 text-sm text-sky-800">
+              {{ results.total }} current match
+              {% if results.total != 1 %}es{% endif %}
+              .
+            </p>
+          {% endif %}
+        </div>
+      {% endif -%}
+      <div class="mt-5 grid gap-3">
+        {% for search in saved_searches -%}
+          <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-stone-200 p-4">
+            <div>
+              <div class="font-bold text-stone-900">{{ search.name }}</div>
+              <div class="text-sm text-stone-500">
+                {{ search.frequency }} ·
+                {% if search.active %}
+                  active
+                {% else %}
+                  not active
+                {% endif %}
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <a class="btn-secondary"
+                 href="/dashboard/opportunities?preview={{ search.opportunity_saved_search_id }}">Preview</a>
+              {% if !search.active %}
+                <button class="btn-primary"
+                        hx-post="/dashboard/opportunities/searches/{{ search.opportunity_saved_search_id }}/activate"
+                        hx-target="body">Activate</button>
+              {% endif %}
+              <button class="btn-tertiary"
+                      hx-delete="/dashboard/opportunities/searches/{{ search.opportunity_saved_search_id }}"
+                      hx-confirm="Delete this saved search?"
+                      hx-target="body">Delete</button>
+            </div>
+          </div>
+        {% else -%}
+          <p class="text-sm text-stone-500">Save a filtered search from the public board to preview it here.</p>
+        {% endfor -%}
+      </div>
+    </section>
+  </div>
+{% endblock dashboard_main -%}

@@ -72,6 +72,8 @@
 {{ template "jobs/update_job.sql" }}
 {{ template "jobs/update_job_published.sql" }}
 
+{{ template "opportunities/opportunity_board.sql" }}
+
 {{ template "landscape/landscape_entry_json.sql" }}
 {{ template "landscape/add_landscape_entry.sql" }}
 {{ template "landscape/delete_landscape_entry.sql" }}
@@ -321,10 +323,11 @@
 {{ template "meetings/update_meeting.sql" }}
 
 {{ template "notifications/claim_pending_notification.sql" }}
+{{ template "notifications/enqueue_notification.sql" }} -- Dependency for due, tracked custom and auth notification helpers
 {{ template "notifications/enqueue_due_coffee_meet_suggestions.sql" }}
+{{ template "notifications/enqueue_due_opportunity_digests.sql" }}
 {{ template "notifications/enqueue_due_event_reminders.sql" }}
 {{ template "notifications/enqueue_due_collaboration_reminders.sql" }}
-{{ template "notifications/enqueue_notification.sql" }} -- Dependency for tracked custom and auth notification helpers
 {{ template "notifications/manual_requeue_notifications.sql" }}
 {{ template "notifications/mark_stale_processing_notifications_unknown.sql" }}
 {{ template "notifications/requeue_notification.sql" }}

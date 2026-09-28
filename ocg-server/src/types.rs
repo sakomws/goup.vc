@@ -9,6 +9,7 @@ pub(crate) mod jobs;
 pub(crate) mod landscape;
 pub mod location;
 pub(crate) mod mock_interviews;
+pub(crate) mod opportunities;
 pub mod pagination;
 pub(crate) mod partner_integration;
 pub mod payments;

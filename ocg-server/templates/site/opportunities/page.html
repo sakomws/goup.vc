@@ -1,0 +1,151 @@
+{% extends "common/base.html" -%}
+{% import "macros/pagination.html" as pagination -%}
+
+{% block jumbotron -%}
+  <section class="container mx-auto max-w-7xl px-4 pt-10 pb-6 sm:px-6 lg:px-8 lg:pt-16">
+    <div class="rounded-[2.25rem] border border-stone-200 bg-white/95 p-6 shadow-xl shadow-stone-200/60 sm:p-8 lg:p-10">
+      <p class="mb-4 inline-flex rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-stone-700">
+        Opportunity board
+      </p>
+      <h1 class="mb-4 text-balance text-4xl font-black tracking-[-0.045em] text-stone-950 sm:text-5xl lg:text-6xl">
+        Find ways to build together
+      </h1>
+      <p class="max-w-3xl text-base/7 font-medium text-stone-600">
+        Search grants, funding, partnerships, research calls, jobs, and open calls for speakers in one place.
+      </p>
+    </div>
+  </section>
+{% endblock jumbotron -%}
+
+{% block content -%}
+  <div class="container mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+    <form method="get"
+          action="/opportunities"
+          hx-get="/opportunities"
+          hx-target="body"
+          hx-push-url="true"
+          class="mb-6 grid gap-3 rounded-[1.75rem] border border-stone-200 bg-white p-4 shadow-lg md:grid-cols-[1fr_190px_220px_auto]">
+      <label class="sr-only" for="opportunity-query">Search opportunities</label>
+      <input id="opportunity-query"
+             name="query"
+             type="search"
+             value="{{ filters.query.as_deref().unwrap_or("") }}"
+             class="input"
+             placeholder="Search title, organization, summary, or tags" />
+      <label class="sr-only" for="opportunity-kind">Kind</label>
+      <select id="opportunity-kind" name="kind" class="input">
+        <option value="">All kinds</option>
+        <option value="grant"
+                {% if filters.kind.as_deref() == Some("grant") %}selected{% endif %}>Grant</option>
+        <option value="funding"
+                {% if filters.kind.as_deref() == Some("funding") %}selected{% endif %}>Funding</option>
+        <option value="partnership"
+                {% if filters.kind.as_deref() == Some("partnership") %}selected{% endif %}>Partnership</option>
+        <option value="research"
+                {% if filters.kind.as_deref() == Some("research") %}selected{% endif %}>Research</option>
+        <option value="job"
+                {% if filters.kind.as_deref() == Some("job") %}selected{% endif %}>Job</option>
+        <option value="cfs"
+                {% if filters.kind.as_deref() == Some("cfs") %}selected{% endif %}>Call for speakers</option>
+      </select>
+      <label class="sr-only" for="opportunity-location">Location</label>
+      <input id="opportunity-location"
+             name="location"
+             value="{{ filters.location.as_deref().unwrap_or("") }}"
+             class="input"
+             placeholder="Location" />
+      <button class="btn-primary justify-center" type="submit">Search</button>
+      <label class="inline-flex items-center gap-2 text-sm text-stone-700">
+        <input type="checkbox"
+               name="remote"
+               value="true"
+               {% if filters.remote == Some(true) %}checked{% endif %} />
+        Remote only
+      </label>
+    </form>
+
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div class="text-sm text-stone-600">
+        {{ pagination::range_display(offset = filters.offset.unwrap_or(0) , count = opportunities.len(), total = total, label = "opportunity") }}
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <a class="btn-secondary" href="{{ csv_url }}" hx-boost="false">Export CSV</a>
+        {% if user.logged_in -%}
+          <a class="btn-secondary" href="/dashboard/opportunities" hx-boost="true">Manage opportunities</a>
+        {% else -%}
+          <a class="btn-secondary"
+             href="/log-in?next_url=/dashboard/opportunities"
+             hx-boost="false">Manage opportunities</a>
+        {% endif -%}
+      </div>
+    </div>
+
+    {% if user.logged_in -%}
+      <details class="mb-8 rounded-2xl border border-stone-200 bg-stone-50 p-5">
+        <summary class="cursor-pointer font-bold text-stone-900">Save this search</summary>
+        <form class="mt-4 grid gap-3 sm:grid-cols-4"
+              action="/dashboard/opportunities/searches"
+              method="post"
+              hx-post="/dashboard/opportunities/searches"
+              hx-target="body">
+          <input name="name" class="input bg-white" placeholder="Search name" required />
+          <select name="frequency" class="input bg-white">
+            <option value="daily">Daily digest</option>
+            <option value="weekly">Weekly digest</option>
+          </select>
+          <input type="hidden"
+                 name="query"
+                 value="{{ filters.query.as_deref().unwrap_or("") }}" />
+          <input type="hidden"
+                 name="kind"
+                 value="{{ filters.kind.as_deref().unwrap_or("") }}" />
+          <input type="hidden"
+                 name="location"
+                 value="{{ filters.location.as_deref().unwrap_or("") }}" />
+          {% if filters.remote == Some(true) %}<input type="hidden" name="remote" value="true" />{% endif %}
+          <button class="btn-primary" type="submit">Preview before activation</button>
+        </form>
+      </details>
+    {% endif -%}
+
+    {% if opportunities.is_empty() -%}
+      <div class="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-6 py-16 text-center">
+        <h2 class="text-lg font-semibold text-stone-900">No opportunities found</h2>
+        <p class="mt-2 text-sm text-stone-600">Try a broader search or clear a filter.</p>
+      </div>
+    {% else -%}
+      <div class="grid gap-4 lg:grid-cols-2">
+        {% for opportunity in opportunities -%}
+          <article class="flex flex-col rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+            <div class="mb-3 flex flex-wrap gap-2 text-xs font-semibold">
+              <span class="rounded-full bg-stone-950 px-2.5 py-1 text-white">{{ opportunity.kind_label() }}</span>
+              <span class="rounded-full bg-stone-100 px-2.5 py-1 text-stone-700">{{ opportunity.organization_name }}</span>
+              {% if opportunity.remote %}
+                <span class="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">Remote</span>
+              {% endif %}
+              {% if opportunity.members_only %}
+                <span class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-800">Members only</span>
+              {% endif %}
+            </div>
+            <h2 class="text-xl font-bold text-stone-950">
+              <a href="{{ opportunity.details_url() }}" class="hover:text-stone-600">{{ opportunity.title }}</a>
+            </h2>
+            <p class="mt-2 grow text-sm/6 text-stone-600">{{ opportunity.summary }}</p>
+            <div class="mt-5 flex items-center justify-between gap-3 text-sm">
+              <span class="text-stone-500">
+                {% if let Some(closes_at) = opportunity.closes_at %}
+                  Closes {{ closes_at.format("%b %d, %Y") }}
+                {% else %}
+                  Open opportunity
+                {% endif %}
+              </span>
+              <a class="font-bold text-stone-900"
+                 href="{{ opportunity.details_url() }}">View details</a>
+            </div>
+          </article>
+        {% endfor -%}
+      </div>
+      {{ pagination::navigation_links(links = navigation_links, hx_target = "body") }}
+    {% endif -%}
+  </div>
+{% endblock content -%}

@@ -42,6 +42,7 @@ pub(crate) async fn sitemap(State(state): State<RouterState>) -> Result<Response
         "/explore".to_string(),
         "/jobs".to_string(),
         "/landscape".to_string(),
+        "/opportunities".to_string(),
         "/privacy".to_string(),
         "/stats".to_string(),
         "/wiki".to_string(),
