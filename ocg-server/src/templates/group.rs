@@ -7,8 +7,8 @@ use crate::{
     db::dashboard::common::BookExchangeMember,
     templates::dashboard::group::accelerator::AcceleratorDashboard,
     templates::dashboard::group::{
-        analytics::GroupDashboardStats, members::GroupMember, spotlights::GroupMemberSpotlight,
-        store::GroupStoreItem,
+        analytics::GroupDashboardStats, members::GroupMember, projects::PublicCollaborationProject,
+        spotlights::GroupMemberSpotlight, store::GroupStoreItem,
     },
     templates::{
         PageId,
@@ -98,6 +98,19 @@ pub(crate) struct AcceleratorPage {
     /// Global site settings.
     pub site_settings: SiteSettings,
     /// Authenticated user information.
+    pub user: User,
+}
+
+/// Public collaboration project profile.
+#[derive(Debug, Clone, Template)]
+#[template(path = "group/project.html")]
+pub(crate) struct CollaborationProjectPage {
+    pub group: GroupFull,
+    #[allow(dead_code)]
+    pub page_id: PageId,
+    pub path: String,
+    pub project: PublicCollaborationProject,
+    pub site_settings: SiteSettings,
     pub user: User,
 }
 

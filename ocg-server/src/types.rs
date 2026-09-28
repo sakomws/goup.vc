@@ -16,4 +16,5 @@ pub mod permissions;
 pub mod questionnaire;
 pub mod search;
 pub mod site;
+pub(crate) mod survey;
 pub mod user;

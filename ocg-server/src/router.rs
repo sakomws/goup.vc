@@ -239,6 +239,10 @@ pub(crate) async fn setup(
             post(event::request_refund),
         )
         .route(
+            "/{alliance}/event/{event_id}/survey/{audience}",
+            get(event::survey_page).post(event::submit_survey),
+        )
+        .route(
             "/{alliance}/event/{event_id}/cfs-submissions",
             post(event::submit_cfs_submission),
         )
@@ -247,6 +251,14 @@ pub(crate) async fn setup(
             post(group::submit_cfs_submission),
         )
         .route("/{alliance}/group/{group_id}/join", post(group::join_group))
+        .route(
+            "/projects/{project_id}/updates",
+            post(group::submit_collaboration_update),
+        )
+        .route(
+            "/projects/office-hours/{session_id}/book",
+            post(group::book_collaboration_office_hour),
+        )
         .route(
             "/{alliance}/group/{group_id}/accelerator/cohorts/{cohort_id}/apply",
             post(group::apply_to_accelerator_cohort),
@@ -454,6 +466,14 @@ pub(crate) async fn setup(
         .route("/landscape", get(site::landscape::page))
         .route("/privacy", get(site::privacy::page))
         .route("/profiles/{username}", get(site::profile::page))
+        .route(
+            "/event-sponsors/{event_id}/{group_sponsor_id}/engagement",
+            post(event::sponsor_engagement),
+        )
+        .route(
+            "/sponsor-reports/{token}",
+            get(event::public_sponsor_report),
+        )
         .route("/search", get(site::search::page))
         .route(
             "/sponsor",
@@ -478,6 +498,10 @@ pub(crate) async fn setup(
         .route(
             "/{alliance}/group/{group_slug}/accelerator",
             get(group::accelerator_page),
+        )
+        .route(
+            "/{alliance}/group/{group_slug}/projects/{project_slug}",
+            get(group::collaboration_project_page),
         )
         .route("/{alliance}/group/{group_slug}/cfs", get(group::cfs_page))
         .route("/{alliance}/group/{group_slug}", get(group::page))

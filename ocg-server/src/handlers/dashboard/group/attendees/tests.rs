@@ -758,6 +758,8 @@ async fn test_download_csv_with_answers_success() {
             kind: QuestionnaireQuestionKind::FreeText,
             prompt: "Dietary restrictions?".to_string(),
             required: false,
+            min: None,
+            max: None,
 
             options: vec![],
         },
@@ -766,6 +768,8 @@ async fn test_download_csv_with_answers_success() {
             kind: QuestionnaireQuestionKind::SingleSelect,
             prompt: "Meal preference".to_string(),
             required: true,
+            min: None,
+            max: None,
 
             options: vec![QuestionnaireOption {
                 id: single_option_id,
@@ -777,6 +781,8 @@ async fn test_download_csv_with_answers_success() {
             kind: QuestionnaireQuestionKind::MultiSelect,
             prompt: "Topics".to_string(),
             required: false,
+            min: None,
+            max: None,
 
             options: vec![
                 QuestionnaireOption {

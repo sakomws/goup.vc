@@ -128,6 +128,7 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
     // Alliance GTM management endpoints
     let gtm_management = Router::new()
         .route("/gtm/add", post(dashboard::alliance::gtm::add))
+        .route("/gtm/packages", post(dashboard::alliance::gtm::add_package))
         .route("/gtm/agents/run", post(dashboard::alliance::gtm::run_agent))
         .route(
             "/gtm/{lead_id}",
@@ -144,6 +145,38 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
         .route(
             "/gtm/drafts/{draft_id}/review",
             post(dashboard::alliance::gtm::review_draft),
+        )
+        .route(
+            "/gtm/{lead_id}/contacts",
+            post(dashboard::alliance::gtm::add_contact),
+        )
+        .route(
+            "/gtm/{lead_id}/proposals",
+            post(dashboard::alliance::gtm::add_proposal),
+        )
+        .route(
+            "/gtm/{lead_id}/tasks",
+            post(dashboard::alliance::gtm::add_task),
+        )
+        .route(
+            "/gtm/{lead_id}/deliverables",
+            post(dashboard::alliance::gtm::add_deliverable),
+        )
+        .route(
+            "/gtm/{lead_id}/activities",
+            post(dashboard::alliance::gtm::add_activity),
+        )
+        .route(
+            "/gtm/tasks/{task_id}/state",
+            post(dashboard::alliance::gtm::set_task_state),
+        )
+        .route(
+            "/gtm/proposals/{proposal_id}/state",
+            post(dashboard::alliance::gtm::set_proposal_state),
+        )
+        .route(
+            "/gtm/deliverables/{deliverable_id}/state",
+            post(dashboard::alliance::gtm::set_deliverable_state),
         )
         .route_layer(check_selected_alliance_permission(
             AlliancePermission::GtmWrite,
@@ -357,6 +390,26 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             get(dashboard::group::events::details),
         )
         .route(
+            "/events/{event_id}/growth",
+            get(dashboard::group::events::growth_page),
+        )
+        .route(
+            "/events/{event_id}/growth.csv",
+            get(dashboard::group::events::download_growth_csv),
+        )
+        .route(
+            "/events/{event_id}/surveys",
+            get(dashboard::group::events::surveys_page),
+        )
+        .route(
+            "/events/{event_id}/surveys.csv",
+            get(dashboard::group::events::download_surveys_csv),
+        )
+        .route(
+            "/events/{event_id}/sponsor-report",
+            get(dashboard::group::events::sponsor_report_preview),
+        )
+        .route(
             "/events/{event_id}/submissions",
             get(dashboard::group::submissions::list_page),
         )
@@ -525,6 +578,23 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             put(dashboard::group::events::set_group_defaults),
         )
         .route(
+            "/events/{event_id}/finance-entries",
+            post(dashboard::group::events::add_finance_entry),
+        )
+        .route(
+            "/events/{event_id}/finance-entries/{entry_id}",
+            delete(dashboard::group::events::delete_finance_entry),
+        )
+        .route(
+            "/events/{event_id}/sponsors/{group_sponsor_id}/engagement",
+            put(dashboard::group::events::update_sponsor_engagement),
+        )
+        .route(
+            "/events/{event_id}/sponsor-report/share",
+            post(dashboard::group::events::create_sponsor_report_share)
+                .delete(dashboard::group::events::revoke_sponsor_report_share),
+        )
+        .route(
             "/events/{event_id}/submissions/{cfs_submission_id}",
             put(dashboard::group::submissions::update),
         )
@@ -622,6 +692,20 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             GroupPermission::MembersWrite,
         ));
 
+    // Group project management endpoints
+    let projects_management = Router::new()
+        .route(
+            "/projects",
+            get(dashboard::group::projects::page).post(dashboard::group::projects::create),
+        )
+        .route(
+            "/projects/{project_id}/members",
+            post(dashboard::group::projects::invite_member),
+        )
+        .route_layer(check_selected_group_permission(
+            GroupPermission::ProjectsWrite,
+        ));
+
     // Group settings management endpoints
     let settings_management = Router::new()
         .route(
@@ -655,6 +739,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
     // Group GTM management endpoints
     let gtm_management = Router::new()
         .route("/gtm/add", post(dashboard::group::gtm::add))
+        .route("/gtm/packages", post(dashboard::group::gtm::add_package))
         .route("/gtm/agents/run", post(dashboard::group::gtm::run_agent))
         .route(
             "/gtm/{lead_id}",
@@ -671,6 +756,38 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .route(
             "/gtm/drafts/{draft_id}/review",
             post(dashboard::group::gtm::review_draft),
+        )
+        .route(
+            "/gtm/{lead_id}/contacts",
+            post(dashboard::group::gtm::add_contact),
+        )
+        .route(
+            "/gtm/{lead_id}/proposals",
+            post(dashboard::group::gtm::add_proposal),
+        )
+        .route(
+            "/gtm/{lead_id}/tasks",
+            post(dashboard::group::gtm::add_task),
+        )
+        .route(
+            "/gtm/{lead_id}/deliverables",
+            post(dashboard::group::gtm::add_deliverable),
+        )
+        .route(
+            "/gtm/{lead_id}/activities",
+            post(dashboard::group::gtm::add_activity),
+        )
+        .route(
+            "/gtm/tasks/{task_id}/state",
+            post(dashboard::group::gtm::set_task_state),
+        )
+        .route(
+            "/gtm/proposals/{proposal_id}/state",
+            post(dashboard::group::gtm::set_proposal_state),
+        )
+        .route(
+            "/gtm/deliverables/{deliverable_id}/state",
+            post(dashboard::group::gtm::set_deliverable_state),
         )
         .route_layer(check_selected_group_permission(GroupPermission::GtmWrite));
 
@@ -717,6 +834,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .merge(events_management)
         .merge(event_move_management)
         .merge(members_management)
+        .merge(projects_management)
         .merge(gtm_management)
         .merge(settings_management)
         .merge(sponsors_management)

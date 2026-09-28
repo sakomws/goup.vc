@@ -53,6 +53,8 @@
   <script type="module" src="/static/js/common/modals/user-info-modal.js"></script>
   <script type="module" src="/static/js/common/modals/share-modal.js"></script>
   <script type="module" src="/static/js/common/cfs-label-selector.js"></script>
+  <script type="module" src="/static/js/event/registration-attribution.js"></script>
+  <script type="module" src="/static/js/event/sponsor-engagement.js"></script>
   <script type="module" src="/static/js/event/attendance.js"></script>
   <script type="module" src="/static/js/event/agenda-tabs.js"></script>
   <script type="module" src="/static/js/event/cfs.js"></script>
@@ -734,7 +736,11 @@
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for sponsor in event.sponsors -%}
-              {{ badges::sponsor_badge(name = sponsor.name, logo_url = sponsor.logo_url, website_url = sponsor.website_url, level = sponsor.level, with_level = true) -}}
+              <div data-sponsor-placement
+                   data-event-id="{{ event.event_id }}"
+                   data-sponsor-id="{{ sponsor.group_sponsor_id }}">
+                {{ badges::sponsor_badge(name = sponsor.name, logo_url = sponsor.logo_url, website_url = sponsor.website_url, level = sponsor.level, with_level = true) -}}
+              </div>
             {% endfor -%}
           </div>
         </div>

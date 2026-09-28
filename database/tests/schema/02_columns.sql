@@ -801,6 +801,7 @@ select columns_are('gtm_lead', array[
     'next_action_at',
     'renewal_at',
     'lost_reason',
+    'lost_reason_detail',
     'source',
     'notes',
     'payload',
