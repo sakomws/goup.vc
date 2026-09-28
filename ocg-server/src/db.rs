@@ -10,11 +10,11 @@ use tokio_postgres::types::{FromSql, Json, ToSql};
 
 use crate::db::{
     accelerator::DBAccelerator, activity_tracker::DBActivityTracker, alliance::DBAlliance,
-    auth::DBAuth, common::DBCommon, custom_domains::DBCustomDomains, dashboard::DBDashboard,
-    event::DBEvent, group::DBGroup, gtm::DBGtm, images::DBImages, jobs::DBJobs,
-    landscape::DBLandscape, meetings::DBMeetings, mock_interviews::DBMockInterviews,
-    notifications::DBNotifications, opportunities::DBOpportunities, payments::DBPayments,
-    site::DBSite, survey::DBSurvey,
+    auth::DBAuth, collaboration::DBCollaboration, common::DBCommon,
+    custom_domains::DBCustomDomains, dashboard::DBDashboard, event::DBEvent, group::DBGroup,
+    gtm::DBGtm, images::DBImages, jobs::DBJobs, landscape::DBLandscape, meetings::DBMeetings,
+    mock_interviews::DBMockInterviews, notifications::DBNotifications,
+    opportunities::DBOpportunities, payments::DBPayments, site::DBSite, survey::DBSurvey,
 };
 
 /// Module containing database functionality for accelerator management.
@@ -25,6 +25,9 @@ pub(crate) mod auth;
 
 /// Module containing common database operations.
 pub(crate) mod common;
+
+/// Module containing collaboration project operations.
+pub(crate) mod collaboration;
 
 /// Module containing custom hostname operations.
 pub(crate) mod custom_domains;
@@ -91,6 +94,7 @@ pub(crate) mod survey;
 pub(crate) trait DBOperations:
     DBAuth
     + DBAccelerator
+    + DBCollaboration
     + DBActivityTracker
     + DBCommon
     + DBCustomDomains
@@ -117,6 +121,7 @@ pub(crate) trait DBOperations:
 impl<T> DBOperations for T where
     T: DBAuth
         + DBAccelerator
+        + DBCollaboration
         + DBActivityTracker
         + DBCommon
         + DBCustomDomains

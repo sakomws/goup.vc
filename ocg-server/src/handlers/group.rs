@@ -33,9 +33,10 @@ use crate::{
             AcceleratorApplicationInput, AcceleratorWeeklyUpdateInput,
         },
         dashboard::group::members::GroupMembersFilters,
+        dashboard::group::projects::{CollaborationBookingInput, CollaborationUpdateInput},
         group::{
-            self, AcceleratorPage, BookExchangePage, CfsPage, MembersPage, Page, ReportPage,
-            SpotlightsPage, StorePage,
+            self, AcceleratorPage, BookExchangePage, CfsPage, CollaborationProjectPage,
+            MembersPage, Page, ReportPage, SpotlightsPage, StorePage,
         },
         notifications::{GroupWelcome, MockInterviewMatched},
     },
@@ -142,6 +143,70 @@ pub(crate) async fn page(
     };
 
     Ok((response_headers, Html(template.render()?)).into_response())
+}
+
+/// Renders a public collaboration project profile.
+#[instrument(skip_all)]
+pub(crate) async fn collaboration_project_page(
+    auth_session: AuthSession,
+    State(db): State<DynDB>,
+    Path((alliance_name, group_slug, project_slug)): Path<(String, String, String)>,
+    uri: Uri,
+) -> Result<impl IntoResponse, HandlerError> {
+    let (alliance_id, site_settings) = tokio::try_join!(
+        db.get_alliance_id_by_name(&alliance_name),
+        db.get_site_settings()
+    )?;
+    let Some(alliance_id) = alliance_id else {
+        return not_found::render(site_settings);
+    };
+    let (group, project) = tokio::try_join!(
+        db.get_group_full_by_slug(alliance_id, &group_slug),
+        db.get_public_collaboration_project(alliance_id, &group_slug, &project_slug)
+    )?;
+    let (Some(group), Some(project)) = (group, project) else {
+        return not_found::render(site_settings);
+    };
+    let user = User::from_session(auth_session).await?;
+    let template = CollaborationProjectPage {
+        group,
+        page_id: PageId::Group,
+        path: uri.path().to_string(),
+        project,
+        site_settings,
+        user,
+    };
+    Ok((
+        public_page_cache_headers(&template.user),
+        Html(template.render()?),
+    )
+        .into_response())
+}
+
+/// Posts a chronological update as an accepted project owner or contributor.
+#[instrument(skip_all, err)]
+pub(crate) async fn submit_collaboration_update(
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    Path(project_id): Path<Uuid>,
+    ValidatedForm(input): ValidatedForm<CollaborationUpdateInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.submit_collaboration_update(user.user_id, project_id, &input)
+        .await?;
+    Ok((StatusCode::CREATED, [("HX-Trigger", "refresh-body")]))
+}
+
+/// Books an expert office-hour session as an accepted project member.
+#[instrument(skip_all, err)]
+pub(crate) async fn book_collaboration_office_hour(
+    CurrentUser(user): CurrentUser,
+    State(db): State<DynDB>,
+    Path(session_id): Path<Uuid>,
+    ValidatedForm(input): ValidatedForm<CollaborationBookingInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.book_collaboration_office_hour(user.user_id, session_id, &input)
+        .await?;
+    Ok((StatusCode::CREATED, [("HX-Trigger", "refresh-body")]))
 }
 
 /// Renders a group's public, date-flexible Call for Speakers.

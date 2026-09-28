@@ -252,6 +252,14 @@ pub(crate) async fn setup(
         )
         .route("/{alliance}/group/{group_id}/join", post(group::join_group))
         .route(
+            "/projects/{project_id}/updates",
+            post(group::submit_collaboration_update),
+        )
+        .route(
+            "/projects/office-hours/{session_id}/book",
+            post(group::book_collaboration_office_hour),
+        )
+        .route(
             "/{alliance}/group/{group_id}/accelerator/cohorts/{cohort_id}/apply",
             post(group::apply_to_accelerator_cohort),
         )
@@ -526,6 +534,10 @@ pub(crate) async fn setup(
         .route(
             "/{alliance}/group/{group_slug}/accelerator",
             get(group::accelerator_page),
+        )
+        .route(
+            "/{alliance}/group/{group_slug}/projects/{project_slug}",
+            get(group::collaboration_project_page),
         )
         .route("/{alliance}/group/{group_slug}/cfs", get(group::cfs_page))
         .route("/{alliance}/group/{group_slug}", get(group::page))

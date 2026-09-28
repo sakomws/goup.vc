@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(149);
+select plan(167);
 
 -- ============================================================================
 -- VARIABLES
@@ -328,6 +328,7 @@ with tested_permissions (
         ('group.events.write'),
         ('group.gtm.write'),
         ('group.members.write'),
+        ('group.projects.write'),
         ('group.read'),
         ('group.settings.write'),
         ('group.sponsors.write'),
@@ -376,6 +377,7 @@ with actors (
                 'group.events.write',
                 'group.gtm.write',
                 'group.members.write',
+                'group.projects.write',
                 'group.read',
                 'group.settings.write',
                 'group.sponsors.write',
@@ -391,6 +393,7 @@ with actors (
                 'group.events.write',
                 'group.gtm.write',
                 'group.members.write',
+                'group.projects.write',
                 'group.read',
                 'group.settings.write',
                 'group.sponsors.write',
@@ -406,6 +409,7 @@ with actors (
                 'group.events.write',
                 'group.gtm.write',
                 'group.members.write',
+                'group.projects.write',
                 'group.read',
                 'group.settings.write',
                 'group.sponsors.write',
@@ -451,6 +455,7 @@ with actors (
                 'group.events.write',
                 'group.gtm.write',
                 'group.members.write',
+                'group.projects.write',
                 'group.read',
                 'group.settings.write',
                 'group.sponsors.write',
@@ -466,6 +471,7 @@ with actors (
                 'group.events.write',
                 'group.gtm.write',
                 'group.members.write',
+                'group.projects.write',
                 'group.read',
                 'group.settings.write',
                 'group.sponsors.write',
@@ -507,6 +513,7 @@ with actors (
                 'group.events.write',
                 'group.gtm.write',
                 'group.members.write',
+                'group.projects.write',
                 'group.read',
                 'group.settings.write',
                 'group.sponsors.write',
@@ -555,6 +562,7 @@ with actors (
         ('group.events.write'),
         ('group.gtm.write'),
         ('group.members.write'),
+        ('group.projects.write'),
         ('group.read'),
         ('group.settings.write'),
         ('group.sponsors.write'),
