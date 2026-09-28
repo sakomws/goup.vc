@@ -61,7 +61,11 @@
             {% if !can_manage_gtm || has_pending_lead_generation_draft() %}disabled{% endif %}
             class="btn-secondary
                    {% if !can_manage_gtm || has_pending_lead_generation_draft() %}opacity-50 cursor-not-allowed{% endif %}">
-      {% if has_pending_lead_generation_draft() %}Draft awaiting review{% else %}Run lead-gen agent{% endif %}
+      {% if has_pending_lead_generation_draft() %}
+        Draft awaiting review
+      {% else %}
+        Run lead-gen agent
+      {% endif %}
       <span class="hx-spinner" role="status">Preparing suggestions…</span>
     </button>
   </div>

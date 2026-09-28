@@ -92,7 +92,7 @@ pub(crate) enum Content {
     /// Events management page.
     Events(Box<events::ListPage>),
     /// GTM pipeline page.
-    Gtm(gtm::ListPage),
+    Gtm(Box<gtm::ListPage>),
     /// `CoffeeMeet` subscriber page.
     CoffeeMeet(coffee_meet::ListPage),
     /// Event co-host invitation inbox.
