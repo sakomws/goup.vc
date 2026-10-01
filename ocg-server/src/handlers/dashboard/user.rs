@@ -4,6 +4,7 @@ pub(crate) mod affiliations;
 pub(crate) mod coffee_meet;
 pub(crate) mod events;
 pub(crate) mod home;
+pub(crate) mod inbox;
 pub(crate) mod invitations;
 pub(crate) mod logs;
 pub(crate) mod mentorship;
