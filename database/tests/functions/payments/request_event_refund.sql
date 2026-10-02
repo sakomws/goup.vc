@@ -158,6 +158,18 @@ insert into alliance_team (accepted, alliance_id, role, user_id) values
     (true, :'allianceID', 'groups-manager', :'allianceManagerID'),
     (true, :'allianceID', 'viewer', :'allianceViewerID');
 
+-- Full opt-outs for organizer recipients prove refund requests are always sent
+insert into user_notification_opt_out (notification_category_id, user_id)
+select nc.notification_category_id, recipient.user_id
+from notification_category nc
+cross join (values (:'communityManagerID'::uuid), (:'teamUser1ID'::uuid)) as recipient(user_id);
+
+-- Group mutes for organizer recipients prove refund requests ignore mutes
+insert into user_group_notification_mute (group_id, user_id)
+values
+    (:'groupID', :'communityManagerID'),
+    (:'groupID', :'teamUser1ID');
+
 -- Events
 insert into event (
     event_id,
@@ -434,7 +446,7 @@ select results_eq(
     'Should create the expected audit row'
 );
 
--- Should only enqueue notifications for verified users who can review refunds
+-- Should enqueue refund request notifications despite opt-outs and mutes
 select results_eq(
     $$
         select u.username, n.kind, td.data
@@ -447,7 +459,7 @@ select results_eq(
         ('alliance-manager'::text, 'event-refund-requested'::text, '{"event":"refund"}'::jsonb),
         ('organizer-1'::text, 'event-refund-requested'::text, '{"event":"refund"}'::jsonb)
     $$,
-    'Should only enqueue notifications for verified users who can review refunds'
+    'Should enqueue refund request notifications despite opt-outs and mutes'
 );
 
 -- Should allow refund requests after the event is canceled
