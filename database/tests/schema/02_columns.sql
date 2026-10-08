@@ -219,6 +219,7 @@ select columns_are('alliance_views', array[
 -- Test: custom_notification columns should match expected
 select columns_are('custom_notification', array[
     'custom_notification_id',
+    'community_id',
     'created_at',
     'created_by',
     'event_id',
