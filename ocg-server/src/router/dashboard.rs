@@ -375,6 +375,10 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .route("/integrations", get(dashboard::group::integrations::page))
         .route("/events/add", get(dashboard::group::events::add_page))
         .route(
+            "/events/{event_id}/analytics",
+            get(dashboard::group::event_analytics::page),
+        )
+        .route(
             "/events/{event_id}/attendees",
             get(dashboard::group::attendees::list_page),
         )
