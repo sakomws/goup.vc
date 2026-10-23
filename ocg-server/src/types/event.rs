@@ -278,7 +278,7 @@ pub struct EventFull {
     pub og_image_url: Option<String>,
     /// Event title.
     pub name: String,
-    /// Event organizers snapshotted at creation time.
+    /// Event organizers, in display order.
     pub organizers: Vec<User>,
     /// Whether the event is published.
     pub published: bool,
