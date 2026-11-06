@@ -18,7 +18,7 @@ jobs:
       github.event.client_payload.model != '' &&
       github.event.client_payload.channel != '' &&
       github.event.client_payload.thread_ts != ''
-    uses: sakomws/slack-agent-runtime/.github/workflows/pr-review-reusable.yml@508cd5dc32fcb9fa46cdeb9b8ff7fee7bb3e8507
+    uses: sakomws/slack-agent-runtime/.github/workflows/pr-review-reusable.yml@2489244997b8cc48222230dee1dd9b4ac12a5553
     with:
       job_id: ${{ github.event.client_payload.job_id }}
       pull_request_number: ${{ fromJSON(github.event.client_payload.pull_request_number) }}
@@ -28,7 +28,7 @@ jobs:
       slack_thread_ts: ${{ github.event.client_payload.thread_ts }}
       require_successful_checks: true
       runtime_repository: sakomws/slack-agent-runtime
-      runtime_ref: 508cd5dc32fcb9fa46cdeb9b8ff7fee7bb3e8507
+      runtime_ref: 2489244997b8cc48222230dee1dd9b4ac12a5553
     secrets:
       INFERENCE_ROUTER_BASE_URL: ${{ secrets.INFERENCE_ROUTER_BASE_URL }}
       INFERENCE_ROUTER_API_KEY: ${{ secrets.INFERENCE_ROUTER_API_KEY }}
