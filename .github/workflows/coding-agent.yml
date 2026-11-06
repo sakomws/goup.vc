@@ -1,0 +1,32 @@
+name: Slack coding agent
+run-name: Slack coding ${{ github.event.client_payload.job_id }}
+
+on:
+  repository_dispatch:
+    types: [slack_agent_coding_job]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  coding-agent:
+    if: >-
+      github.event.client_payload.job_id != '' &&
+      github.event.client_payload.prompt != '' &&
+      github.event.client_payload.channel != '' &&
+      github.event.client_payload.thread_ts != ''
+    uses: sakomws/slack-agent-runtime/.github/workflows/coding-job-reusable.yml@810d8ab65aa2762f16067a60664bb5c64b802082
+    with:
+      job_id: ${{ github.event.client_payload.job_id }}
+      prompt: ${{ github.event.client_payload.prompt }}
+      slack_channel: ${{ github.event.client_payload.channel }}
+      slack_thread_ts: ${{ github.event.client_payload.thread_ts }}
+      base_ref: ${{ github.event.repository.default_branch }}
+      runtime_repository: sakomws/slack-agent-runtime
+      runtime_ref: 810d8ab65aa2762f16067a60664bb5c64b802082
+    secrets:
+      INFERENCE_ROUTER_BASE_URL: ${{ secrets.INFERENCE_ROUTER_BASE_URL }}
+      INFERENCE_ROUTER_API_KEY: ${{ secrets.INFERENCE_ROUTER_API_KEY }}
+      INFERENCE_ROUTER_MODEL: ${{ secrets.INFERENCE_ROUTER_MODEL }}
+      SLACK_CODING_BOT_TOKEN: ${{ secrets.SLACK_CODING_BOT_TOKEN }}
