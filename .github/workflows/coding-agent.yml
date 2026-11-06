@@ -16,7 +16,7 @@ jobs:
       github.event.client_payload.prompt != '' &&
       github.event.client_payload.channel != '' &&
       github.event.client_payload.thread_ts != ''
-    uses: sakomws/slack-agent-runtime/.github/workflows/coding-job-reusable.yml@4286129036b05949be491d273ec03407d41b35b7
+    uses: sakomws/slack-agent-runtime/.github/workflows/coding-job-reusable.yml@eb7704feb32953c68d7ac30177e55ee8ee611bca
     with:
       job_id: ${{ github.event.client_payload.job_id }}
       prompt: ${{ github.event.client_payload.prompt }}
@@ -24,7 +24,7 @@ jobs:
       slack_thread_ts: ${{ github.event.client_payload.thread_ts }}
       base_ref: ${{ github.event.repository.default_branch }}
       runtime_repository: sakomws/slack-agent-runtime
-      runtime_ref: 4286129036b05949be491d273ec03407d41b35b7
+      runtime_ref: eb7704feb32953c68d7ac30177e55ee8ee611bca
     secrets:
       INFERENCE_ROUTER_BASE_URL: ${{ secrets.INFERENCE_ROUTER_BASE_URL }}
       INFERENCE_ROUTER_API_KEY: ${{ secrets.INFERENCE_ROUTER_API_KEY }}
