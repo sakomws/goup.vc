@@ -17,7 +17,7 @@ jobs:
       github.event.client_payload.profile != '' &&
       github.event.client_payload.budget != '' &&
       github.event.client_payload.scope != ''
-    uses: sakomws/slack-agent-runtime/.github/workflows/security-audit-reusable.yml@40b059f2bc623c84d94cf7cf2c545e5f1a3e8859
+    uses: sakomws/slack-agent-runtime/.github/workflows/security-audit-reusable.yml@dbd1774c0296205ba40585c0d5e7e8a21b7cfa0a
     with:
       job_id: ${{ github.event.client_payload.job_id }}
       slack_channel: ${{ github.event.client_payload.channel }}
@@ -27,7 +27,7 @@ jobs:
       budget: ${{ fromJSON(github.event.client_payload.budget) }}
       scope: ${{ github.event.client_payload.scope }}
       runtime_repository: sakomws/slack-agent-runtime
-      runtime_ref: 40b059f2bc623c84d94cf7cf2c545e5f1a3e8859
+      runtime_ref: dbd1774c0296205ba40585c0d5e7e8a21b7cfa0a
     secrets:
       INFERENCE_ROUTER_BASE_URL: ${{ secrets.INFERENCE_ROUTER_BASE_URL }}
       INFERENCE_ROUTER_API_KEY: ${{ secrets.INFERENCE_ROUTER_API_KEY }}
