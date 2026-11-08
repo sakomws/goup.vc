@@ -23,3 +23,5 @@
 
 - Developers
   - [Development Guide](/development.md)
+  - [Security](/security.md)
+  - [November 2026 Security Audit](/security-audit-2026-11-08.md)

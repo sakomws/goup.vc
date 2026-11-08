@@ -49,7 +49,11 @@ The token is generated during EC2 setup by `scripts/setup-mcp-ec2.sh` and stored
 
 ## Route protection
 
-Protected routes use `axum-login`'s `login_required!` macro. The router in `ocg-server/src/router.rs` applies this middleware to all dashboard and user routes. Admin-only API endpoints check the user's role via the `AuthnBackend` before executing the handler.
+Protected routes use `axum-login`'s `login_required!` macro. The router in
+`ocg-server/src/router.rs` applies this middleware to dashboard and user routes. Dashboard route
+buckets also apply resource permission middleware. The JSON API uses bearer-token scopes; whether
+all mutation paths also enforce per-resource authorization is one of the leads documented in the
+[November 2026 audit](security-audit-2026-11-08.md).
 
 ## Secrets management
 
@@ -58,3 +62,8 @@ Secrets (OAuth client secrets, SMTP credentials, Stripe keys, Google API credent
 ## Dependency auditing
 
 `cargo audit` runs in CI on every change to `Cargo.lock` or `Cargo.toml`. The audit config is in `.cargo/audit.toml`.
+
+## Published audits
+
+- [November 2026 automated security audit](security-audit-2026-11-08.md) — no confirmed
+  vulnerabilities; two authorization leads require validation.
