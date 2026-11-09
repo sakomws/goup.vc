@@ -28,8 +28,12 @@ pub(crate) struct User {
     pub github_url: Option<String>,
     /// `LinkedIn` profile URL.
     pub linkedin_url: Option<String>,
+    /// `Mastodon` profile URL.
+    pub mastodon_url: Option<String>,
     /// User's name.
     pub name: Option<String>,
+    /// `Omicron` profile URL.
+    pub omicron_url: Option<String>,
     /// URL to the user's profile photo.
     pub photo_url: Option<String>,
     /// External provider metadata.
@@ -70,6 +74,8 @@ pub(crate) struct PublicUserProfile {
     pub github_url: Option<String>,
     /// `LinkedIn` profile URL.
     pub linkedin_url: Option<String>,
+    /// `Mastodon` profile URL.
+    pub mastodon_url: Option<String>,
     /// Whether this member offers mentorship services for businesses.
     #[serde(default)]
     pub mentorship_businesses: bool,
@@ -82,6 +88,8 @@ pub(crate) struct PublicUserProfile {
     pub mentorship_price: Option<String>,
     /// Full name.
     pub name: Option<String>,
+    /// `Omicron` profile URL.
+    pub omicron_url: Option<String>,
     /// URL to user's avatar.
     pub photo_url: Option<String>,
     /// `Substack` publication URL.

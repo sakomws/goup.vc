@@ -23,10 +23,12 @@ begin
         intentional_dating_goals = nullif(p_user->>'intentional_dating_goals', ''),
         intentional_dating_preferences = nullif(p_user->>'intentional_dating_preferences', ''),
         linkedin_url = nullif(p_user->>'linkedin_url', ''),
+        mastodon_url = nullif(p_user->>'mastodon_url', ''),
         mentorship_businesses = coalesce((p_user->>'mentorship_businesses')::boolean, false),
         mentorship_individuals = coalesce((p_user->>'mentorship_individuals')::boolean, false),
         mentorship_note = nullif(p_user->>'mentorship_note', ''),
         mentorship_price = nullif(p_user->>'mentorship_price', ''),
+        omicron_url = nullif(p_user->>'omicron_url', ''),
         optional_notifications_enabled = coalesce(
             (p_user->>'optional_notifications_enabled')::boolean,
             optional_notifications_enabled

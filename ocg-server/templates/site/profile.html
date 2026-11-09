@@ -209,6 +209,12 @@
             {% if let Some(bluesky_url) = &profile.bluesky_url -%}
               {{ social_link(url = bluesky_url, icon = "bluesky", label = "Bluesky") }}
             {% endif -%}
+            {% if let Some(mastodon_url) = &profile.mastodon_url -%}
+              {{ social_link(url = mastodon_url, icon = "mastodon", label = "Mastodon") }}
+            {% endif -%}
+            {% if let Some(omicron_url) = &profile.omicron_url -%}
+              {{ social_link(url = omicron_url, icon = "omicron", label = "Omicron") }}
+            {% endif -%}
             {% if let Some(twitter_url) = &profile.twitter_url -%}
               {{ social_link(url = twitter_url, icon = "twitter", label = "X") }}
             {% endif -%}

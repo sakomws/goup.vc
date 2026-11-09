@@ -619,6 +619,8 @@ pub(crate) struct User {
     pub intentional_dating_preferences: Option<String>,
     /// User's `LinkedIn` URL.
     pub linkedin_url: Option<String>,
+    /// User's `Mastodon` profile URL.
+    pub mastodon_url: Option<String>,
     /// Whether the user offers mentorship services for businesses.
     #[serde(default)]
     pub mentorship_businesses: bool,
@@ -629,6 +631,8 @@ pub(crate) struct User {
     pub mentorship_note: Option<String>,
     /// Optional price or pricing guidance for mentorship.
     pub mentorship_price: Option<String>,
+    /// User's `Omicron` profile URL.
+    pub omicron_url: Option<String>,
     /// User's password hash (if present).
     pub password: Option<String>,
     /// User's photo URL.
