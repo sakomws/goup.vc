@@ -1,10 +1,9 @@
 import { html } from "/static/vendor/js/lit-all.v3.3.1.min.js";
 
 const TAB_BUTTON_CLASS =
-  "cursor-pointer inline-flex items-center justify-center p-2 sm:p-3 border-b-2 " +
+  "cursor-pointer inline-flex w-full min-w-0 items-center justify-center px-2 py-2 sm:p-3 border-b-2 " +
   "border-transparent rounded-t-lg hover:text-stone-600 hover:border-stone-300 " +
-  "data-[active=true]:text-primary-500 data-[active=true]:border-primary-500 " +
-  "text-nowrap w-32";
+  "data-[active=true]:text-primary-500 data-[active=true]:border-primary-500";
 
 /**
  * Renders pending changes alert for the review footer.
@@ -18,11 +17,11 @@ export const renderCfsPendingChangesAlert = (hasPendingChanges) => {
 
   return html`
     <div
-      class="inline-flex items-center gap-3 rounded-md border border-primary-200
+      class="flex max-w-full min-w-0 items-center gap-3 rounded-md border border-primary-200
       bg-primary-50 px-3 py-2 text-primary-900"
     >
       <div class="svg-icon size-4 bg-primary-700 icon-clock shrink-0"></div>
-      <p class="text-sm">You have pending changes. Click Save to apply these updates.</p>
+      <p class="min-w-0 text-sm">You have pending changes. Click Save to apply these updates.</p>
     </div>
   `;
 };
@@ -36,7 +35,7 @@ const renderReviewTabButton = (tab) => {
   const isActive = tab.id === tab.activeTab;
 
   return html`
-    <li>
+    <li class="min-w-0 flex-1">
       <button
         type="button"
         role="tab"
@@ -78,8 +77,7 @@ export const renderCfsReviewTabsNavigation = (state) => {
 
   return html`
     <ul
-      class="flex flex-wrap space-x-2 -mb-px text-sm font-medium text-center
-        border-b border-stone-200"
+      class="flex w-full min-w-0 -mb-px border-b border-stone-200 text-center text-sm font-medium"
       role="tablist"
       aria-label="Submission review tabs"
     >

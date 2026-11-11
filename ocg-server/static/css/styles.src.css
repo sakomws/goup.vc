@@ -362,6 +362,22 @@
     @apply overflow-visible;
   }
 
+  user-chip {
+    display: block;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  user-chip[small] {
+    display: inline-block;
+  }
+
+  selected-user-pill {
+    display: inline-block;
+    max-width: 100%;
+    min-width: 0;
+  }
+
   .featured-speakers-grid:empty {
     display: none;
     margin: 0;

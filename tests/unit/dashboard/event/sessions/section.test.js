@@ -366,6 +366,12 @@ describe("sessions-section", () => {
     expect(element.textContent).to.include(
       "Zoom can send multiple raw recordings when participants join before or after the main meeting.",
     );
+    expect(element.querySelector("#session-0-kind").parentElement.parentElement.className).to.include(
+      "col-span-full",
+    );
+    expect(element.querySelector("#session-0-kind").parentElement.parentElement.className).to.include(
+      "sm:col-span-2",
+    );
   });
 
   it("adds new sessions with the next numeric id and updates existing ones in place", async () => {

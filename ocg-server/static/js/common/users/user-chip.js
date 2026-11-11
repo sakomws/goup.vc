@@ -84,7 +84,7 @@ export class UserChip extends LitWrapper {
     if (this.small) {
       return html`
         <div
-          class="inline-flex items-center gap-2 rounded-full ps-1 pe-2 py-1 ${
+          class="inline-flex max-w-full min-w-0 items-center gap-2 rounded-full ps-1 pe-2 py-1 ${
             this.featured
               ? "bg-amber-50/50 border border-amber-200 text-amber-800"
               : "bg-stone-100 text-stone-700"
@@ -108,7 +108,7 @@ export class UserChip extends LitWrapper {
           >
           </logo-image>
           ${this.featured ? html`<div class="svg-icon size-3 icon-star bg-amber-500"></div>` : ""}
-          <span class="text-sm pe-1">${displayName}</span>
+          <span class="min-w-0 truncate text-sm pe-1">${displayName}</span>
         </div>
       `;
     }

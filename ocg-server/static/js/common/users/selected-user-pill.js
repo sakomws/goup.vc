@@ -69,7 +69,8 @@ export class SelectedUserPill extends LitWrapper {
 
     return html`
       <div
-        class="inline-flex items-center gap-2 bg-stone-100 rounded-full ps-1 ${containerEndPaddingClass} py-1"
+        class=${"inline-flex max-w-full min-w-0 items-center gap-2 rounded-full bg-stone-100 ps-1 py-1 " +
+        containerEndPaddingClass}
       >
         <logo-image
           image-url=${this.user.photo_url || ""}
@@ -80,7 +81,7 @@ export class SelectedUserPill extends LitWrapper {
         >
         </logo-image>
         ${this.featured ? html`<div class="svg-icon size-3 icon-star bg-amber-500"></div>` : ""}
-        <span class="text-sm text-stone-700 ${nameEndPaddingClass}">${displayName}</span>
+        <span class="min-w-0 truncate text-sm text-stone-700 ${nameEndPaddingClass}">${displayName}</span>
         <button
           type="button"
           class="p-1 hover:bg-stone-200 rounded-full transition-colors"
