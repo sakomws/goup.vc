@@ -273,6 +273,8 @@ describe("review-submission-modal", () => {
       buildSubmission({
         speaker: {
           name: "Ada Lovelace with a very long speaker name that must stay on screen",
+          title: "Principal Community Architect and International Speaker Relations Lead",
+          company: "GOUP Alliance Community Programs",
           username: "ada",
         },
       }),
@@ -280,7 +282,7 @@ describe("review-submission-modal", () => {
     await element.updateComplete;
 
     const dialog = element.querySelector('[role="dialog"]');
-    const speakerName = element.querySelector("#cfs-submission-tabpanel-details span.truncate");
+    const speakerName = element.querySelector("#cfs-submission-tabpanel-details span.break-words");
     const decisionGrid = element.querySelector("#cfs-submission-tabpanel-decision .grid");
     const tabList = element.querySelector('[role="tablist"]');
 
@@ -289,7 +291,9 @@ describe("review-submission-modal", () => {
     expect(dialog.className.split(/\s+/)).to.include("inset-0");
     expect(dialog.className.split(/\s+/)).to.not.include("md:inset-0");
     expect(speakerName.className.split(/\s+/)).to.include("min-w-0");
+    expect(speakerName.className.split(/\s+/)).to.not.include("truncate");
     expect(speakerName.textContent).to.include("Ada Lovelace");
+    expect(speakerName.textContent).to.include("Principal Community Architect");
     expect(decisionClasses).to.include("grid-cols-1");
     expect(decisionClasses).to.include("sm:grid-cols-3");
     expect(decisionClasses).to.not.include("grid-cols-3");

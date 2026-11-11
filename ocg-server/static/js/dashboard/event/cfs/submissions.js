@@ -98,6 +98,33 @@ export class ReviewSubmissionModal extends LitWrapper {
     this._removeDismissListeners = bindModalDismissListeners({ onKeydown: this._handleKeydown });
   }
 
+  /**
+   * Moves the modal to the document body so page overflow cannot clip it.
+   */
+  _portalToBody() {
+    if (this.parentElement === document.body) {
+      return;
+    }
+
+    this._portalHome = this.parentElement;
+    this._portalNext = this.nextSibling;
+    document.body.append(this);
+  }
+
+  /**
+   * Puts the modal back where the page rendered it.
+   */
+  _restorePortal() {
+    const home = this._portalHome;
+    const next = this._portalNext;
+    this._portalHome = null;
+    this._portalNext = null;
+
+    if (home?.isConnected) {
+      home.insertBefore(this, next);
+    }
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
     this._isOpen = closeModalBodyScroll(this._isOpen);
@@ -126,6 +153,7 @@ export class ReviewSubmissionModal extends LitWrapper {
     this._selectedLabelIds = openState.selectedLabelIds;
     this._statusId = openState.statusId;
     this._initialFormSnapshot = this._buildFormStateSnapshot();
+    this._portalToBody();
     this._isOpen = openModalBodyScroll(this._isOpen);
   }
 
@@ -140,6 +168,7 @@ export class ReviewSubmissionModal extends LitWrapper {
     this._removeAfterRequestListener();
     this._applyModalState(getReviewModalClosedState(REVIEW_TABS.DETAILS));
     this._isOpen = closeModalBodyScroll(wasOpen);
+    this._restorePortal();
   }
 
   /**
@@ -465,18 +494,16 @@ export class ReviewSubmissionModal extends LitWrapper {
 
     return html`
       <div
-        class="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto overflow-x-hidden
-          sm:items-center"
+        class="fixed inset-0 z-[1000] overflow-x-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="cfs-submission-modal-title"
       >
-        <div
-          class="modal-overlay absolute w-full h-full bg-stone-950 opacity-[0.35]"
-          @click=${() => this.close()}
-        ></div>
-        <div class="modal-panel p-4 max-w-5xl">
-          <div class="modal-card rounded-2xl">
+        <div class="modal-overlay absolute inset-0 bg-stone-950 opacity-[0.35]" @click=${() => this.close()}></div>
+        <div class="absolute inset-0 overflow-y-auto overflow-x-hidden">
+          <div class="flex min-h-full items-start justify-center sm:items-center">
+        <div class="modal-panel relative z-[1] w-full max-w-5xl p-4">
+          <div class="modal-card rounded-2xl" style="max-height: none; overflow: visible;">
             <div
               class="flex items-center justify-between gap-3 border-b border-stone-200 p-4 shrink-0 sm:p-5"
             >
@@ -532,6 +559,8 @@ export class ReviewSubmissionModal extends LitWrapper {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
           </div>
         </div>
       </div>
