@@ -114,16 +114,24 @@ description = "Review and manage call for speakers submissions.") -}}
             <tr class="odd:bg-white even:bg-stone-50/50 border-b border-stone-200">
               {# Speaker -#}
               <td class="min-w-0 overflow-hidden px-3 xl:px-5 py-4">
-                <div class="flex min-w-0 items-center gap-3">
+                <div class="flex min-w-0 items-start gap-3">
                   <logo-image
-                  class="shrink-0"
+                  class="mt-0.5 shrink-0"
                   {% if let Some(photo_url) = &submission.speaker.photo_url -%}
                     image-url="{{ photo_url }}"
                   {% endif -%}
                   size="size-8" placeholder="{{ self::user_initials(submission.speaker.name.as_deref() , submission.speaker.username.as_str()) }}">
                   </logo-image>
-                  <div class="min-w-0 font-medium text-stone-900 truncate">
-                    {{ submission.speaker.name.as_deref().unwrap_or(&submission.speaker.username) }}
+                  <div class="min-w-0">
+                    <div class="break-words font-medium text-stone-900">
+                      {{ submission.speaker.name.as_deref().unwrap_or(&submission.speaker.username) }}
+                    </div>
+                    {% if let Some(title) = submission.speaker.title.as_deref() -%}
+                      <div class="mt-0.5 break-words text-stone-500">{{ title }}</div>
+                    {% endif -%}
+                    {% if let Some(company) = submission.speaker.company.as_deref() -%}
+                      <div class="break-words text-stone-500">{{ company }}</div>
+                    {% endif -%}
                   </div>
                 </div>
                 <div class="mt-3 min-w-0 2xl:hidden">
