@@ -14,7 +14,7 @@ export const renderCfsPersonRow = (person) => {
 
   return html`
     <div
-      class="inline-flex items-center gap-2 bg-stone-100 rounded-full ps-1 pe-2 py-1 max-w-full"
+      class="flex max-w-full min-w-0 items-center gap-2 bg-stone-100 rounded-full ps-1 pe-2 py-1"
       title=${name}
     >
       <logo-image
@@ -25,7 +25,7 @@ export const renderCfsPersonRow = (person) => {
         font-size="text-xs"
         hide-border
       ></logo-image>
-      <span class="text-sm text-stone-700 truncate">${name}</span>
+      <span class="min-w-0 truncate text-sm text-stone-700">${name}</span>
     </div>
   `;
 };
@@ -112,12 +112,12 @@ export const renderCfsDetailsPanel = (state) => {
         <div class="flex-1 space-y-4 min-w-0">
           <div>
             <div class="proposal-section-title">Title</div>
-            <div class="mt-2 text-lg text-stone-800 font-medium">${proposal?.title || ""}</div>
+            <div class="mt-2 break-words text-lg font-medium text-stone-800">${proposal?.title || ""}</div>
           </div>
 
           <div>
             <div class="proposal-section-title">Description</div>
-            <div class="mt-2 max-h-[200px] overflow-y-auto text-stone-700 text-sm/6 markdown">
+            <div class="mt-2 max-h-[200px] overflow-y-auto break-words text-stone-700 text-sm/6 markdown">
               ${
                 proposal?.description_html
                   ? renderTrustedHtml(proposal.description_html)

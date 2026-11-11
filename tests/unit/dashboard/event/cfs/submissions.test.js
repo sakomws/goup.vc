@@ -256,6 +256,47 @@ describe("review-submission-modal", () => {
     expect(document.body.style.overflow).to.equal("");
   });
 
+  it("keeps review sections and speaker details inside a narrow screen", async () => {
+    const element = await renderModal({
+      statuses: [
+        { cfs_submission_status_id: "not-reviewed", display_name: "Not reviewed" },
+        { cfs_submission_status_id: "approved", display_name: "Approved" },
+        {
+          cfs_submission_status_id: "information-requested",
+          display_name: "Information requested",
+        },
+        { cfs_submission_status_id: "rejected", display_name: "Rejected" },
+      ],
+    });
+
+    element.open(
+      buildSubmission({
+        speaker: {
+          name: "Ada Lovelace with a very long speaker name that must stay on screen",
+          username: "ada",
+        },
+      }),
+    );
+    await element.updateComplete;
+
+    const dialog = element.querySelector('[role="dialog"]');
+    const speakerName = element.querySelector("#cfs-submission-tabpanel-details span.truncate");
+    const decisionGrid = element.querySelector("#cfs-submission-tabpanel-decision .grid");
+    const tabList = element.querySelector('[role="tablist"]');
+
+    const decisionClasses = decisionGrid.className.split(/\s+/);
+
+    expect(dialog.className.split(/\s+/)).to.include("inset-0");
+    expect(dialog.className.split(/\s+/)).to.not.include("md:inset-0");
+    expect(speakerName.className.split(/\s+/)).to.include("min-w-0");
+    expect(speakerName.textContent).to.include("Ada Lovelace");
+    expect(decisionClasses).to.include("grid-cols-1");
+    expect(decisionClasses).to.include("sm:grid-cols-3");
+    expect(decisionClasses).to.not.include("grid-cols-3");
+    expect(tabList.className.split(/\s+/)).to.include("min-w-0");
+    expect(element.querySelector('[role="tab"]').className.split(/\s+/)).to.not.include("w-32");
+  });
+
   it("builds submission endpoints and emits approved submission updates", async () => {
     // Render the modal fixture.
     const element = await renderModal();

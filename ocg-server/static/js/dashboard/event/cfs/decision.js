@@ -15,7 +15,7 @@ const renderStatusBoxes = ({ onStatusCheckChange, statusId: selectedStatusId, st
   const isLinked = isLinkedToSession(submission);
 
   return html`
-    <div class="grid grid-cols-3 gap-3">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
       ${reviewStatuses.map((status) => {
         const statusId = status?.cfs_submission_status_id || "";
         const isSelected = selectedStatusId === statusId;
@@ -23,7 +23,7 @@ const renderStatusBoxes = ({ onStatusCheckChange, statusId: selectedStatusId, st
         const isDisabled = isLinked && statusId !== "approved";
 
         return html`
-          <label class="block ${isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}">
+          <label class="block min-w-0 ${isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}">
             <input
               type="checkbox"
               value=${statusId}
@@ -33,18 +33,20 @@ const renderStatusBoxes = ({ onStatusCheckChange, statusId: selectedStatusId, st
               ?disabled=${isDisabled}
             />
             <div
-              class="rounded-lg border p-3 transition bg-white ${
+              class="min-w-0 rounded-lg border bg-white p-3 transition ${
                 isSelected ? `${color.border} ${color.ring}` : "border-stone-200"
               }"
             >
-              <div class="flex items-center gap-2">
+              <div class="flex min-w-0 items-center gap-2">
                 <span
-                  class="relative flex h-4 w-4 items-center justify-center rounded border
+                  class="relative flex h-4 w-4 shrink-0 items-center justify-center rounded border
                     ${isSelected ? color.border : "border-stone-200"}"
                 >
                   ${isSelected ? html`<div class="svg-icon size-3 icon-check ${color.dot}"></div>` : ""}
                 </span>
-                <span class="text-sm font-medium text-stone-700"> ${status?.display_name || ""} </span>
+                <span class="min-w-0 break-words text-sm font-medium text-stone-700">
+                  ${status?.display_name || ""}
+                </span>
               </div>
             </div>
           </label>

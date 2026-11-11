@@ -261,7 +261,7 @@ class SessionItem extends LitWrapper {
         </div>
       </div>
 
-      <div class="col-span-2">
+      <div class="col-span-full sm:col-span-2">
         <label for=${sessionKindId} class="form-label"> Session Type <span class="asterisk">*</span> </label>
         <div class="mt-2">
           <select
@@ -284,7 +284,7 @@ class SessionItem extends LitWrapper {
         </div>
       </div>
 
-      <div class="col-span-2">
+      <div class="col-span-full sm:col-span-2">
         <label for=${sessionStartsAtId} class="form-label">
           Start Time <span class="asterisk">*</span>
         </label>
@@ -323,7 +323,7 @@ class SessionItem extends LitWrapper {
         </div>
       </div>
 
-      <div class="col-span-2">
+      <div class="col-span-full sm:col-span-2">
         <label for=${sessionEndsAtId} class="form-label"> End Time </label>
         <div class="mt-2">
           ${

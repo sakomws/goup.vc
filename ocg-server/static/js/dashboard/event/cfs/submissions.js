@@ -465,7 +465,8 @@ export class ReviewSubmissionModal extends LitWrapper {
 
     return html`
       <div
-        class="fixed top-0 right-0 left-0 justify-center items-center w-full md:inset-0 overflow-y-auto overflow-x-hidden flex z-[1000]"
+        class="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto overflow-x-hidden
+          sm:items-center"
         role="dialog"
         aria-modal="true"
         aria-labelledby="cfs-submission-modal-title"
@@ -476,8 +477,13 @@ export class ReviewSubmissionModal extends LitWrapper {
         ></div>
         <div class="modal-panel p-4 max-w-5xl">
           <div class="modal-card rounded-2xl">
-            <div class="flex items-center justify-between p-5 border-b border-stone-200 shrink-0">
-              <h3 id="cfs-submission-modal-title" class="text-xl font-semibold text-stone-900">
+            <div
+              class="flex items-center justify-between gap-3 border-b border-stone-200 p-4 shrink-0 sm:p-5"
+            >
+              <h3
+                id="cfs-submission-modal-title"
+                class="min-w-0 text-lg font-semibold text-stone-900 sm:text-xl"
+              >
                 Review submission
               </h3>
               <button
@@ -500,7 +506,7 @@ export class ReviewSubmissionModal extends LitWrapper {
               hx-indicator="#dashboard-spinner"
               hx-disabled-elt="#cfs-submission-submit"
             >
-              <div class="px-8 pt-5 shrink-0">
+              <div class="shrink-0 px-4 pt-5 sm:px-8">
                 ${renderCfsReviewTabsNavigation({
                   activeTab: this._activeTab,
                   onSelect: (tabId) => this._setActiveTab(tabId),
@@ -508,17 +514,17 @@ export class ReviewSubmissionModal extends LitWrapper {
                 })}
               </div>
 
-              <div class="px-8 py-5 min-h-0 flex-1 overflow-y-auto">
+              <div class="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">
                 ${this._renderDetailsPanel()} ${this._renderRatingsPanel()} ${this._renderDecisionPanel()}
               </div>
 
-              <div class="px-8 pb-5 pt-3 border-t border-stone-100 shrink-0">
-                <div class="flex items-center justify-between gap-3">
+              <div class="shrink-0 border-t border-stone-100 px-4 pb-5 pt-3 sm:px-8">
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div class="min-w-0">${renderCfsPendingChangesAlert(this._hasPendingChanges())}</div>
                   <button
                     id="cfs-submission-submit"
                     type="submit"
-                    class="btn-primary"
+                    class="btn-primary shrink-0 self-end sm:self-auto"
                     ?disabled=${!submissionEndpoint || !isStatusAllowed(this._submission, this._statusId)}
                   >
                     Save
