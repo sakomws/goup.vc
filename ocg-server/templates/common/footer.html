@@ -24,7 +24,7 @@
           </a>
         {% endif -%}
 
-        <p class="font-metrophobic text-base leading-[1.7] text-[#9A9088]">
+        <p class="font-metrophobic text-base leading-[1.7] text-[#9A9088]" data-i18n="footer.tagline">
           A warm builder community for people who dream, connect, achieve, and help each
           other move forward.
         </p>
@@ -33,6 +33,7 @@
           <a href="/explore?alliance[0]=goup&entity=events"
              hx-boost="true"
              hx-target="body"
+             data-i18n="footer.explore_btn"
              class="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/[.059] px-5 py-3 text-sm font-bold text-[#F0EBE4] backdrop-blur transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/40">
             Explore events & groups
           </a>
@@ -40,12 +41,14 @@
             <a href="/dashboard/jobs"
                hx-boost="true"
                hx-target="body"
+               data-i18n="footer.post_role_btn"
                class="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/[.059] px-5 py-3 text-sm font-bold text-[#F0EBE4] backdrop-blur transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/40">
               Post a role
             </a>
           {% else -%}
             <a href="/log-in?next_url=/dashboard/jobs"
                hx-boost="false"
+               data-i18n="footer.post_role_btn"
                class="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/[.059] px-5 py-3 text-sm font-bold text-[#F0EBE4] backdrop-blur transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/40">
               Post a role
             </a>
@@ -57,66 +60,75 @@
       {# Navigation section -#}
       <div class="flex flex-col gap-8 sm:flex-row sm:justify-between sm:gap-16">
         <div>
-          <h2 class="text-[11px] font-semibold uppercase tracking-[2.5px] text-[#6B6058]">Community</h2>
+          <h2 class="text-[11px] font-semibold uppercase tracking-[2.5px] text-[#6B6058]" data-i18n="footer.community">Community</h2>
           <ul class="mt-5 flex flex-col gap-5 text-[15px]">
             <li>
               <a href="/explore?alliance[0]=goup&entity=events"
                  hx-boost="true"
                  hx-target="body"
+                 data-i18n="nav.events_groups"
                  class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Events & Groups</a>
             </li>
             <li>
               <a href="/landscape"
                  hx-boost="true"
                  hx-target="body"
+                 data-i18n="footer.ecosystem"
                  class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Ecosystem</a>
             </li>
             <li>
               <a href="/stats"
                  hx-boost="true"
                  hx-target="body"
+                 data-i18n="nav.stats"
                  class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Stats</a>
             </li>
             <li>
               <a href="/about"
                  hx-boost="true"
                  hx-target="body"
+                 data-i18n="footer.about_goup"
                  class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">About GOUP</a>
             </li>
             <li>
               <a href="/privacy"
                  hx-boost="true"
                  hx-target="body"
+                 data-i18n="footer.privacy_policy"
                  class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Privacy Policy</a>
             </li>
             <li>
               <a href="/goup/brand"
                  hx-boost="true"
                  hx-target="body"
+                 data-i18n="footer.brand"
                  class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Brand</a>
             </li>
             <li>
               <a href="/search"
                  hx-boost="true"
                  hx-target="body"
+                 data-i18n="nav.search"
                  class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Search GOUP</a>
             </li>
           </ul>
         </div>
 
         <div>
-          <h2 class="text-[11px] font-semibold uppercase tracking-[2.5px] text-[#6B6058]">Jobs</h2>
+          <h2 class="text-[11px] font-semibold uppercase tracking-[2.5px] text-[#6B6058]" data-i18n="footer.jobs">Jobs</h2>
           <ul class="mt-5 flex flex-col gap-5 text-[15px]">
             <li>
               <a href="/jobs"
                  hx-boost="true"
                  hx-target="body"
+                 data-i18n="nav.browse_roles"
                  class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Browse roles</a>
             </li>
             <li>
               <a href="/jobs?remote=true"
                  hx-boost="true"
                  hx-target="body"
+                 data-i18n="nav.remote_roles"
                  class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Remote roles</a>
             </li>
             <li>
@@ -124,10 +136,12 @@
                 <a href="/dashboard/jobs"
                    hx-boost="true"
                    hx-target="body"
+                   data-i18n="nav.post_role"
                    class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Post a role</a>
               {% else -%}
                 <a href="/log-in?next_url=/dashboard/jobs"
                    hx-boost="false"
+                   data-i18n="nav.post_role"
                    class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Post a role</a>
               {% endif -%}
             </li>
@@ -135,13 +149,14 @@
               <a href="/wiki"
                  hx-boost="true"
                  hx-target="body"
+                 data-i18n="footer.tech_news"
                  class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Tech News</a>
             </li>
           </ul>
         </div>
 
         <div>
-          <h2 class="text-[11px] font-semibold uppercase tracking-[2.5px] text-[#6B6058]">Connect</h2>
+          <h2 class="text-[11px] font-semibold uppercase tracking-[2.5px] text-[#6B6058]" data-i18n="footer.connect">Connect</h2>
           <div class="mt-5 flex items-center gap-3">
             <a href="https://github.com/sakomws/goup.vc"
                target="_blank"
@@ -159,7 +174,7 @@
                aria-label="GOUP on LinkedIn">
               <div class="svg-icon size-5 bg-[#C8C0B8] icon-linkedin transition group-hover:bg-white"></div>
             </a>
-            <a href="https://www.instagram.com/goupaz/"
+            <a href="https://www.instagram.com/goup.vc/"
                target="_blank"
                rel="noopener noreferrer"
                class="group flex h-9 w-9 items-center justify-center rounded-full border border-white/[.145] bg-white/[.078] transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/40"
@@ -176,12 +191,13 @@
               <div class="svg-icon size-5 bg-[#C8C0B8] icon-youtube transition group-hover:bg-white"></div>
             </a>
           </div>
-          <p class="mt-4 font-metrophobic text-sm leading-[1.65] text-[#9A9088]">
+          <p class="mt-4 font-metrophobic text-sm leading-[1.65] text-[#9A9088]" data-i18n="footer.open_source_note">
             Open source, community-led, and built for people who ship.
           </p>
           <a href="https://github.com/sakomws/goup.vc/blob/main/docs/development.md"
              target="_blank"
              rel="noopener noreferrer"
+             data-i18n="footer.developer_guide"
              class="mt-4 inline-flex text-sm font-semibold text-[#F0EBE4] transition hover:text-white">
             Developer Guide
           </a>
@@ -198,11 +214,11 @@
         {% if let Some(copyright_notice) = &self.site_settings.copyright_notice -%}
           <div class="copyright">{{ copyright_notice|md_to_html|safe }}</div>
         {% else -%}
-          <p>{{ site_settings.title }}. All rights reserved.</p>
+          <p>{{ site_settings.title }}. <span data-i18n="footer.rights_reserved">All rights reserved.</span></p>
         {% endif -%}
       </div>
       <p>
-        Powered by <a href="https://github.com/sakomws/goup.vc"
+        <span data-i18n="footer.powered_by">Powered by</span> <a href="https://github.com/sakomws/goup.vc"
     class="font-bold text-[#F0EBE4] decoration-white/20 transition hover:decoration-white/40"
     target="_blank"
     rel="noopener noreferrer">GOUP</a>.

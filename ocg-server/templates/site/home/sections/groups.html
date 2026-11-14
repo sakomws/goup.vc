@@ -7,19 +7,23 @@
     {# Header row -#}
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <div class="inline-flex rounded-full border border-[#C8BDB3] px-[14px] py-[6px] text-[11px] font-semibold tracking-[2px] text-[#8A7A6E]">
+        <div data-i18n="home.groups_badge"
+             class="inline-flex rounded-full border border-[#C8BDB3] px-[14px] py-[6px] text-[11px] font-semibold tracking-[2px] text-[#8A7A6E]">
           GROUPS
         </div>
-        <h2 class="mt-3 font-amethysta text-[40px] font-bold leading-[1.12] text-[#1A1510] sm:text-5xl">
+        <h2 data-i18n="home.groups_title"
+            class="mt-3 font-amethysta text-[40px] font-bold leading-[1.12] text-[#1A1510] sm:text-5xl">
           Find your circle
         </h2>
-        <p class="mt-2 max-w-2xl font-metrophobic text-[17px] leading-[1.65] text-[#6B6058]">
+        <p data-i18n="home.groups_desc"
+           class="mt-2 max-w-2xl font-metrophobic text-[17px] leading-[1.65] text-[#6B6058]">
           Join a local chapter or interest group and start building.
         </p>
       </div>
       <a href="{{ explore_groups }}"
          hx-boost="true"
          hx-target="body"
+         data-i18n="home.explore_all_groups"
          class="inline-flex rounded-full border border-[#2461D1] bg-[#3D7EFF] px-[26px] py-[13px] text-[15px] font-medium text-white shadow-[0_0_0_2px_#90BBFF80,0_7px_18px_-2px_#3D7EFF45] [text-shadow:0_4px_4px_#00000040]">
         Explore all groups
       </a>
