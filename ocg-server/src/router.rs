@@ -117,7 +117,8 @@ pub(crate) const PUBLIC_SHARED_CACHE_HEADERS: [(HeaderName, &str); 2] = [
 ];
 
 /// Vary header value for public shared-cache responses.
-pub(crate) const PUBLIC_SHARED_CACHE_VARY: &str = "x-ocg-commit-sha, hx-request, x-ocg-fetch";
+pub(crate) const PUBLIC_SHARED_CACHE_VARY: &str =
+    "cookie, x-ocg-commit-sha, hx-request, x-ocg-fetch";
 
 /// Static file embedder using rust-embed.
 ///

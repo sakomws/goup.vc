@@ -81,6 +81,10 @@ The nginx config template is in `scripts/nginx-goup.conf`. It proxies:
 - `/mcp` to `goup-mcp` on port 8787
 
 SSL termination is handled by nginx; both services listen on localhost only.
+nginx also caches `GET` and `HEAD` responses that `ocg-server` explicitly marks
+as public. Session cookies, bearer credentials, and protocol upgrades bypass
+the cache. `scripts/deploy-ec2.sh` validates and reloads this configuration on
+each production deployment.
 
 ## Docker images
 

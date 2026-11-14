@@ -14,7 +14,7 @@ use tracing::{instrument, warn};
 use crate::{
     auth::AuthSession,
     db::DynDB,
-    handlers::error::HandlerError,
+    handlers::{error::HandlerError, public_page_cache_headers},
     router::CACHE_CONTROL_PRIVATE_NO_STORE,
     templates::{PageId, auth::User, site::home},
     types::{
@@ -47,7 +47,19 @@ pub(crate) async fn page(
             .into_response());
     }
 
-    // Prepare template
+    let user = User::from_session(auth_session).await?;
+    let opportunity_filters = OpportunityFilters {
+        limit: Some(2),
+        offset: Some(0),
+        ..OpportunityFilters::default()
+    };
+    let landscape_filters = LandscapeFilters {
+        limit: Some(2),
+        offset: Some(0),
+        ..LandscapeFilters::default()
+    };
+
+    // Load independent page data concurrently so the feed does not add a second query phase.
     let (
         alliances,
         recently_added_groups,
@@ -55,16 +67,42 @@ pub(crate) async fn page(
         stats,
         upcoming_in_person_events,
         upcoming_virtual_events,
-    ) = tokio::try_join!(
+        opportunities,
+        landscape,
+        wiki_sections,
+    ) = tokio::join!(
         db.list_alliances(),
         db.get_site_recently_added_groups(),
         db.get_site_settings(),
         db.get_site_home_stats(),
         db.get_site_upcoming_events(vec![EventKind::InPerson, EventKind::Hybrid]),
         db.get_site_upcoming_events(vec![EventKind::Virtual, EventKind::Hybrid]),
-    )?;
-    let latest_feed =
-        load_latest_feed(&db, &upcoming_in_person_events, &upcoming_virtual_events).await;
+        db.search_opportunities(&opportunity_filters),
+        db.search_landscape_entries(&landscape_filters),
+        load_home_wiki_sections(),
+    );
+    let alliances = alliances?;
+    let recently_added_groups = recently_added_groups?;
+    let site_settings = site_settings?;
+    let stats = stats?;
+    let upcoming_in_person_events = upcoming_in_person_events?;
+    let upcoming_virtual_events = upcoming_virtual_events?;
+    let opportunities = opportunities.unwrap_or_else(|error| {
+        warn!("home latest feed opportunities source failed: {error}");
+        OpportunitiesOutput::default()
+    });
+    let landscape = landscape.unwrap_or_else(|error| {
+        warn!("home latest feed landscape source failed: {error}");
+        LandscapeOutput::default()
+    });
+    let latest_feed = build_latest_feed(
+        &upcoming_in_person_events,
+        &upcoming_virtual_events,
+        opportunities,
+        landscape,
+        &wiki_sections,
+    );
+    let response_headers = public_page_cache_headers(&user);
     let template = home::Page {
         alliances,
         latest_feed,
@@ -84,14 +122,10 @@ pub(crate) async fn page(
             .into_iter()
             .map(|event| home::EventCard { event })
             .collect(),
-        user: User::from_session(auth_session).await?,
+        user,
     };
 
-    Ok((
-        [(CACHE_CONTROL, CACHE_CONTROL_PRIVATE_NO_STORE)],
-        Html(template.render()?),
-    )
-        .into_response())
+    Ok((response_headers, Html(template.render()?)).into_response())
 }
 
 fn accepts_markdown(headers: &HeaderMap) -> bool {
@@ -109,36 +143,13 @@ fn accepts_markdown(headers: &HeaderMap) -> bool {
         })
 }
 
-async fn load_latest_feed(
-    db: &DynDB,
+fn build_latest_feed(
     upcoming_in_person_events: &[EventSummary],
     upcoming_virtual_events: &[EventSummary],
+    opportunities: OpportunitiesOutput,
+    landscape: LandscapeOutput,
+    wiki_sections: &[crate::templates::site::wiki::WikiSection],
 ) -> Vec<home::HomeFeedItem> {
-    let opportunity_filters = OpportunityFilters {
-        limit: Some(2),
-        offset: Some(0),
-        ..OpportunityFilters::default()
-    };
-    let landscape_filters = LandscapeFilters {
-        limit: Some(2),
-        offset: Some(0),
-        ..LandscapeFilters::default()
-    };
-
-    let (opportunities, landscape, wiki_sections) = tokio::join!(
-        db.search_opportunities(&opportunity_filters),
-        db.search_landscape_entries(&landscape_filters),
-        load_home_wiki_sections(),
-    );
-    let opportunities = opportunities.unwrap_or_else(|error| {
-        warn!("home latest feed opportunities source failed: {error}");
-        OpportunitiesOutput::default()
-    });
-    let landscape = landscape.unwrap_or_else(|error| {
-        warn!("home latest feed landscape source failed: {error}");
-        LandscapeOutput::default()
-    });
-
     let mut feed = Vec::new();
     feed.extend(
         upcoming_in_person_events
