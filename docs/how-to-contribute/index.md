@@ -4,8 +4,8 @@ Welcome to the Open Alliance Groups (GOUP) project. Contributions are accepted v
 
 ## Finding work
 
-- Browse open issues at <https://github.com/goup/open-alliance-groups/issues>.
-- Start a discussion before investing significant effort on a new feature — use <https://github.com/goup/open-alliance-groups/discussions>.
+- Browse open issues at <https://github.com/sakomws/goup.vc/issues>.
+- Start a discussion before investing significant effort on a new feature — use <https://github.com/sakomws/goup.vc/discussions>.
 - If you want to add a third-party service integration, read `docs/guides/integrations.md` first.
 
 ## Setting up your environment

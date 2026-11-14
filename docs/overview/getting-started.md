@@ -20,7 +20,7 @@ Optional tools used in development:
 ## Clone and build
 
 ```sh
-git clone https://github.com/goup-vc/goup.vc.git
+git clone https://github.com/sakomws/goup.vc.git
 cd goup.vc
 
 # Build both binaries
