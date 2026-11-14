@@ -11,7 +11,7 @@ begin
     perform 1
     from jsonb_array_elements_text(coalesce(p_filters->'group_category_ids', '[]')) as input(value)
     where case
-        when coalesce(pg_input_is_valid(input.value, 'uuid'), false) then not exists (
+        when input.value ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then not exists (
             select 1
             from group_category gc
             where gc.alliance_id = p_alliance_id
@@ -29,7 +29,7 @@ begin
     perform 1
     from jsonb_array_elements_text(coalesce(p_filters->'group_ids', '[]')) as input(value)
     where case
-        when coalesce(pg_input_is_valid(input.value, 'uuid'), false) then not exists (
+        when input.value ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then not exists (
             select 1
             from "group" g
             where g.alliance_id = p_alliance_id
@@ -47,7 +47,7 @@ begin
     perform 1
     from jsonb_array_elements_text(coalesce(p_filters->'regions', '[]')) as input(value)
     where input.value is distinct from 'none'
-    and not coalesce(pg_input_is_valid(input.value, 'uuid'), false);
+    and input.value !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 
     -- Reject malformed region values
     if found then
