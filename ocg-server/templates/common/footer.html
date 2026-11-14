@@ -89,15 +89,12 @@
                  hx-target="body"
                  class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Privacy Policy</a>
             </li>
-            {% let alliance_brand_path = path|alliance_brand_path -%}
-            {% if !alliance_brand_path.is_empty() -%}
-              <li>
-                <a href="{{ alliance_brand_path }}"
-                   hx-boost="true"
-                   hx-target="body"
-                   class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Brand</a>
-              </li>
-            {% endif -%}
+            <li>
+              <a href="/goup/brand"
+                 hx-boost="true"
+                 hx-target="body"
+                 class="text-[#C8C0B8] transition hover:text-[#F0EBE4]">Brand</a>
+            </li>
             <li>
               <a href="/search"
                  hx-boost="true"

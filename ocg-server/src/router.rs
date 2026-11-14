@@ -496,6 +496,10 @@ pub(crate) async fn setup(
         .route("/opportunities", get(site::opportunities::page))
         .route("/opportunities.csv", get(site::opportunities::csv))
         .route(
+            "/opportunities/brand",
+            get(|| async { Redirect::permanent("/goup/brand") }),
+        )
+        .route(
             "/opportunities/{source_kind}/{source_id}",
             get(site::opportunities::details),
         )
