@@ -188,7 +188,7 @@ describe("dashboard group event analytics template", () => {
 
     // Assert the macro contracts.
     expect(macros).to.include(
-      '{% macro analytics_chart(chart_id, data, class = "h-80", min_points = 0, wrapper_class = "", has_data = true, summary = "") -%}',
+      '{% macro analytics_chart(chart_id, data, class = "h-80", min_points = 0, wrapper_class = "", has_data = true, summary = "", href = "") -%}',
     );
     expect(macros).to.include("{% if has_data && data.len() > min_points + 0 -%}");
     expect(macros).to.include('<p class="sr-only">{{ summary }}</p>');

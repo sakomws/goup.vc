@@ -1,17 +1,23 @@
 {# Analytics chart container #}
 {# Used by public stats and dashboard analytics pages. #}
-{% macro analytics_chart(chart_id, data, class = "h-80", min_points = 0, wrapper_class = "", has_data = true, summary = "") -%}
+{% macro analytics_chart(chart_id, data, class = "h-80", min_points = 0, wrapper_class = "", has_data = true, summary = "", href = "") -%}
   <div class="bg-white border border-stone-200 rounded-lg px-2 py-4 md:p-6 {{ wrapper_class }}">
-    {% if has_data && data.len() > min_points + 0 -%}
-      <div id="{{ chart_id }}" class="{{ class }}">
-        <svg-spinner size="size-10" class="flex items-center justify-center h-full text-gray-500">
-        </svg-spinner>
-      </div>
-    {%- else -%}
-      <div class="chart-empty-state {{ class }}">No data available yet</div>
-    {%- endif %}
-    {% if !summary.is_empty() -%}
-      <p class="sr-only">{{ summary }}</p>
+    {% if !href.is_empty() -%}
+      <a href="{{ href }}" class="block">
+      {% endif -%}
+      {% if has_data && data.len() > min_points + 0 -%}
+        <div id="{{ chart_id }}" class="{{ class }}">
+          <svg-spinner size="size-10" class="flex items-center justify-center h-full text-gray-500">
+          </svg-spinner>
+        </div>
+      {%- else -%}
+        <div class="chart-empty-state {{ class }}">No data available yet</div>
+      {%- endif %}
+      {% if !summary.is_empty() -%}
+        <p class="sr-only">{{ summary }}</p>
+      {% endif -%}
+      {% if !href.is_empty() -%}
+      </a>
     {% endif -%}
   </div>
 {% endmacro analytics_chart -%}
