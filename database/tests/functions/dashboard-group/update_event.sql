@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(23);
+select plan(24);
 
 -- ============================================================================
 -- VARIABLES
@@ -481,6 +481,7 @@ select lives_ok(
             "venue_state": "TK",
             "venue_zip_code": "100-0001",
             "hosts": ["3a390000-0000-0000-0000-000000000017", "3a390000-0000-0000-0000-000000000018"],
+            "organizers": ["3a390000-0000-0000-0000-000000000018", "3a390000-0000-0000-0000-000000000017"],
             "speakers": [
                 {"user_id": "3a390000-0000-0000-0000-000000000017", "featured": true},
                 {"user_id": "3a390000-0000-0000-0000-000000000018", "featured": false}
@@ -576,6 +577,22 @@ select is(
         ]
     }'::jsonb,
     'Should update all fields (excluding sessions)'
+);
+
+-- Should replace public event organizers while preserving the selected order
+select results_eq(
+    $$
+        select user_id
+        from event_organizer
+        where event_id = '3a390000-0000-0000-0000-000000000004'::uuid
+        order by "order"
+    $$,
+    $$
+        values
+            ('3a390000-0000-0000-0000-000000000018'::uuid),
+            ('3a390000-0000-0000-0000-000000000017'::uuid)
+    $$,
+    'Should replace public event organizers in the selected order'
 );
 
 -- Should contain expected session rows (ignoring session_id)

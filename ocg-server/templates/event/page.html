@@ -58,6 +58,7 @@
   <script type="module" src="/static/js/event/attendance.js"></script>
   <script type="module" src="/static/js/event/agenda-tabs.js"></script>
   <script type="module" src="/static/js/event/cfs.js"></script>
+  <script type="module" src="/static/js/event/speakers-search.js"></script>
 {% endblock scripts -%}
 
 {% block content -%}
@@ -659,6 +660,15 @@
 
       {# Event speakers section -#}
       {% if !event.speakers.is_empty() -%}
+        <div>
+          <label for="event-speakers-search" class="sr-only">Search speakers</label>
+          <input id="event-speakers-search"
+                 type="search"
+                 class="input-primary max-w-xl"
+                 placeholder="Search speakers"
+                 autocomplete="off">
+          <p class="mt-3 hidden text-sm text-stone-500" data-speakers-empty>No speakers match your search.</p>
+        </div>
         <div class="featured-speakers-section hidden has-[user-chip]:block">
           <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-8 lg:pt-2 lg:pb-14">
             Featured speakers
@@ -666,7 +676,9 @@
           <div class="featured-speakers-grid grid grid-cols-1 md:grid-cols-2 gap-4">
             {% for speaker in event.speakers -%}
               {% if speaker.featured && speaker.user.name.is_some() -%}
-                <user-chip user='{{ speaker.user|json }}' featured display-modal></user-chip>
+                <div data-speaker-card data-speaker-search="{{ speaker.user.name.as_deref().unwrap_or(&speaker.user.username)|lower }}">
+                  <user-chip user='{{ speaker.user|json }}' featured display-modal></user-chip>
+                </div>
               {% endif -%}
             {% endfor -%}
           </div>
@@ -680,13 +692,17 @@
             {% if let Some(legacy_speakers) = &event.legacy_speakers -%}
               {% for speaker in legacy_speakers -%}
                 {% if speaker.name.is_some() -%}
-                  <user-chip user='{{ speaker|json }}' bio-is-html display-modal></user-chip>
+                  <div data-speaker-card data-speaker-search="{{ speaker.name.as_deref().unwrap_or("")|lower }}">
+                    <user-chip user='{{ speaker|json }}' bio-is-html display-modal></user-chip>
+                  </div>
                 {% endif -%}
               {% endfor -%}
             {% endif -%}
             {% for speaker in event.speakers -%}
               {% if !speaker.featured && speaker.user.name.is_some() -%}
-                <user-chip user='{{ speaker.user|json }}' display-modal></user-chip>
+                <div data-speaker-card data-speaker-search="{{ speaker.user.name.as_deref().unwrap_or(&speaker.user.username)|lower }}">
+                  <user-chip user='{{ speaker.user|json }}' display-modal></user-chip>
+                </div>
               {% endif -%}
             {% endfor -%}
           </div>
@@ -695,13 +711,24 @@
         {% if let Some(legacy_speakers) = &event.legacy_speakers -%}
           {% if !legacy_speakers.is_empty() -%}
             <div>
+              <div class="mb-8">
+                <label for="event-speakers-search" class="sr-only">Search speakers</label>
+                <input id="event-speakers-search"
+                       type="search"
+                       class="input-primary max-w-xl"
+                       placeholder="Search speakers"
+                       autocomplete="off">
+                <p class="mt-3 hidden text-sm text-stone-500" data-speakers-empty>No speakers match your search.</p>
+              </div>
               <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-8 lg:pt-2 lg:pb-14">
                 Speakers
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {% for speaker in legacy_speakers -%}
                   {% if speaker.name.is_some() -%}
-                    <user-chip user='{{ speaker|json }}' bio-is-html display-modal></user-chip>
+                    <div data-speaker-card data-speaker-search="{{ speaker.name.as_deref().unwrap_or("")|lower }}">
+                      <user-chip user='{{ speaker|json }}' bio-is-html display-modal></user-chip>
+                    </div>
                   {% endif -%}
                 {% endfor -%}
               </div>

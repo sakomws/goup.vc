@@ -29,6 +29,32 @@ returns json as $$
                 from jsonb_array_elements_text(coalesce(p_filters->'label_ids', '[]'::jsonb))
             ) input_labels
         ),
+        -- Count active submissions for every event label, independent of the current filters
+        label_counts as (
+            select coalesce(
+                json_agg(
+                    json_build_object(
+                        'event_cfs_label_id', counts.event_cfs_label_id,
+                        'submissions_count', counts.submissions_count
+                    )
+                    order by counts.event_cfs_label_id
+                ),
+                '[]'::json
+            ) as label_counts
+            from (
+                select
+                    ecl.event_cfs_label_id,
+                    count(cs.cfs_submission_id)::int as submissions_count
+                from event_cfs_label ecl
+                left join cfs_submission_label csl
+                    on csl.event_cfs_label_id = ecl.event_cfs_label_id
+                left join cfs_submission cs
+                    on cs.cfs_submission_id = csl.cfs_submission_id
+                    and cs.status_id <> 'withdrawn'
+                where ecl.event_id = p_event_id
+                group by ecl.event_cfs_label_id
+            ) counts
+        ),
         -- Filter submissions for the event
         filtered_submissions as (
             select
@@ -223,8 +249,9 @@ returns json as $$
             join paginated_submission_ids psi using (cfs_submission_id)
         )
     select json_build_object(
+        'label_counts', label_counts.label_counts,
         'submissions', submissions_json.submissions,
         'total', totals.total
     )
-    from submissions_json, totals;
+    from submissions_json, totals, label_counts;
 $$ language sql;

@@ -53,7 +53,7 @@ test.describe("event page call for speakers", () => {
     await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   });
 
-  test("logged in users without proposals see a link to manage session proposals", async ({
+  test("logged in users without proposals can create one without leaving the event", async ({
     adminAlliancePage,
   }) => {
     // Load the CFS event as a logged-in user without proposals.
@@ -69,24 +69,22 @@ test.describe("event page call for speakers", () => {
       .getByRole("button", { name: "Submit session proposal" })
       .click();
 
-    // Target the empty proposal modal and manage link.
+    // Target the empty proposal modal and create action.
     const modal = adminAlliancePage.getByRole("dialog", {
       name: "Submit a proposal",
     });
-    const manageLink = modal.getByRole("link", {
-      name: "Manage session proposals",
-    });
+    const createButton = modal.getByRole("button", { name: "Create proposal" });
 
-    // Verify members without proposals can reach proposal management.
+    // Verify members without proposals can open proposal creation in place.
     await expect(
       modal.getByText(
         "It looks like you haven't created any session proposals yet.",
       ),
     ).toBeVisible();
-    await expect(manageLink).toHaveAttribute(
-      "href",
-      "/dashboard/user?tab=session-proposals",
-    );
+    await createButton.click();
+    await expect(
+      adminAlliancePage.getByRole("dialog", { name: "New session proposal" }),
+    ).toBeVisible();
   });
 
   test("the submit proposal modal distinguishes eligible and already-submitted proposals", async ({

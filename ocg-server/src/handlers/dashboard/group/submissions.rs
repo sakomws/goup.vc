@@ -19,7 +19,9 @@ use crate::{
     router::serde_qs_config,
     services::notifications::{DynNotificationsManager, NewNotification, NotificationKind},
     templates::{
-        dashboard::group::submissions::{self, CfsSubmissionUpdate, CfsSubmissionsFilters},
+        dashboard::group::submissions::{
+            self, CfsLabelFilterOption, CfsSubmissionUpdate, CfsSubmissionsFilters,
+        },
         notifications::CfsSubmissionUpdated,
     },
     types::{
@@ -64,9 +66,29 @@ pub(crate) async fn list_page(
     let navigation_links =
         NavigationLinks::from_filters(&filters, submissions.total, &base_path, &base_path)?;
     let refresh_url = pagination::build_url(&base_path, &filters)?;
+    let event_cfs_labels = labels
+        .into_iter()
+        .map(|label| {
+            let submissions_count = label
+                .event_cfs_label_id
+                .and_then(|label_id| {
+                    submissions
+                        .label_counts
+                        .iter()
+                        .find(|count| count.event_cfs_label_id == label_id)
+                })
+                .map_or(0, |count| count.submissions_count);
+            CfsLabelFilterOption {
+                color: label.color,
+                event_cfs_label_id: label.event_cfs_label_id,
+                name: label.name,
+                submissions_count,
+            }
+        })
+        .collect();
     let template = submissions::ListPage {
         can_manage_events,
-        event_cfs_labels: labels,
+        event_cfs_labels,
         event_id,
         statuses,
         submissions: submissions.submissions,

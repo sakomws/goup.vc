@@ -179,7 +179,7 @@ pub(crate) async fn cfs_modal(
     let user = User::from_session(auth_session).await?;
 
     // Get event details, labels and user's session proposals
-    let (event, labels, session_proposals) = tokio::try_join!(
+    let (event, labels, session_proposals, session_proposal_levels) = tokio::try_join!(
         db.get_event_summary_by_id(alliance_id, event_id),
         db.list_event_cfs_labels(event_id),
         async {
@@ -188,14 +188,23 @@ pub(crate) async fn cfs_modal(
             } else {
                 Ok(vec![])
             }
+        },
+        async {
+            if user_id.is_some() {
+                db.list_session_proposal_levels().await
+            } else {
+                Ok(vec![])
+            }
         }
     )?;
 
     // Prepare template
     let template = CfsModal {
+        current_user_id: user_id.map_or_else(String::new, |id| id.to_string()),
         event,
         labels,
         session_proposals,
+        session_proposal_levels,
         user,
         notice: None,
     };
@@ -758,15 +767,18 @@ pub(crate) async fn submit_cfs_submission(
     .await?;
 
     // Prepare template
-    let (event, labels, session_proposals) = tokio::try_join!(
+    let (event, labels, session_proposals, session_proposal_levels) = tokio::try_join!(
         db.get_event_summary_by_id(alliance_id, event_id),
         db.list_event_cfs_labels(event_id),
         db.list_user_session_proposals_for_cfs_event(user_id, event_id),
+        db.list_session_proposal_levels(),
     )?;
     let template = CfsModal {
+        current_user_id: user_id.to_string(),
         event,
         labels,
         session_proposals,
+        session_proposal_levels,
         user,
         notice: Some("Submission received. We'll review it soon.".to_string()),
     };

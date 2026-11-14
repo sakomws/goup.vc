@@ -263,6 +263,16 @@ insert into cfs_submission_rating (
 select is(
     list_event_cfs_submissions(:'eventID'::uuid, '{"limit": 10, "offset": 0}'::jsonb)::jsonb,
     jsonb_build_object(
+        'label_counts', jsonb_build_array(
+            jsonb_build_object(
+                'event_cfs_label_id', :'label1ID'::uuid,
+                'submissions_count', 2
+            ),
+            jsonb_build_object(
+                'event_cfs_label_id', :'label2ID'::uuid,
+                'submissions_count', 1
+            )
+        ),
         'submissions', jsonb_build_array(
             jsonb_build_object(
                 'action_required_message', 'Looks good',
@@ -386,6 +396,7 @@ select is(
 select is(
     list_event_cfs_submissions(:'eventEmptyID'::uuid, '{"limit": 10, "offset": 0}'::jsonb)::jsonb,
     jsonb_build_object(
+        'label_counts', '[]'::jsonb,
         'submissions', '[]'::jsonb,
         'total', 0
     ),

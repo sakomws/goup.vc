@@ -32,7 +32,7 @@ pub(crate) struct ListPage {
     /// Whether the current user can manage events.
     pub can_manage_events: bool,
     /// Event CFS labels available for filtering and submission updates.
-    pub event_cfs_labels: Vec<EventCfsLabel>,
+    pub event_cfs_labels: Vec<CfsLabelFilterOption>,
     /// Event identifier.
     pub event_id: Uuid,
     /// Pagination navigation links.
@@ -57,6 +57,19 @@ pub(crate) struct ListPage {
 }
 
 // Types.
+
+/// Event CFS label shown in the submissions filter.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct CfsLabelFilterOption {
+    /// Label color.
+    pub color: String,
+    /// Event CFS label identifier.
+    pub event_cfs_label_id: Option<Uuid>,
+    /// Label name.
+    pub name: String,
+    /// Number of active submissions assigned to the label.
+    pub submissions_count: usize,
+}
 
 /// Session proposal summary for a submission.
 #[skip_serializing_none]
@@ -169,10 +182,21 @@ crate::impl_pagination_and_raw_query!(CfsSubmissionsFilters, limit, offset);
 /// Paginated submissions response data.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CfsSubmissionsOutput {
+    /// Submission counts grouped by event CFS label.
+    pub label_counts: Vec<CfsLabelSubmissionCount>,
     /// List of submissions.
     pub submissions: Vec<CfsSubmission>,
     /// Total number of submissions.
     pub total: usize,
+}
+
+/// Number of active submissions assigned to an event CFS label.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct CfsLabelSubmissionCount {
+    /// Event CFS label identifier.
+    pub event_cfs_label_id: Uuid,
+    /// Number of active submissions assigned to the label.
+    pub submissions_count: usize,
 }
 
 /// Submission update payload.

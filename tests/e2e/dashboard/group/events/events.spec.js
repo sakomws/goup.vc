@@ -247,6 +247,15 @@ const setRegistrationQuestions = async (page, questions) => {
 
 // Set event hosts and speakers through selector APIs and assert submitted inputs.
 const setEventPeople = async (page, values) => {
+  const organizerSelector = page.locator(
+    'user-search-selector[field-name="organizers"]',
+  );
+  if (values.organizers && (await organizerSelector.count()) > 0) {
+    await organizerSelector.evaluate(async (element, organizers) => {
+      element.selectedUsers = organizers;
+      await element.updateComplete;
+    }, values.organizers);
+  }
   await page
     .locator('user-search-selector[field-name="hosts"]')
     .evaluate(async (element, hosts) => {
@@ -269,6 +278,11 @@ const setEventPeople = async (page, values) => {
       'user-search-selector[field-name="hosts"] input[name="hosts[]"]',
     ),
   ).toHaveCount(values.hosts.length);
+  if (values.organizers && (await organizerSelector.count()) > 0) {
+    await expect(
+      organizerSelector.locator('input[name="organizers[]"]'),
+    ).toHaveCount(values.organizers.length);
+  }
   await expect(
     page.locator(
       'speakers-selector[field-name-prefix="speakers"] input[name^="speakers"][name$="[user_id]"]',
@@ -1820,6 +1834,13 @@ test.describe("group dashboard events view", () => {
           username: "e2e-pending-2",
         },
       ],
+      organizers: [
+        {
+          name: "E2E Pending Two",
+          user_id: TEST_USER_IDS.pending2,
+          username: "e2e-pending-2",
+        },
+      ],
       kindId: "hybrid",
       logoPath: TEST_UPLOAD_ASSET_PATHS.logo,
       lumaUrl: "https://luma.com/e2e-rich-event-updated",
@@ -2128,6 +2149,11 @@ test.describe("group dashboard events view", () => {
     await expect(organizerGroupPage.locator("#luma_url")).toHaveValue(
       updatedValues.lumaUrl,
     );
+    await expect(
+      organizerGroupPage.locator(
+        'user-search-selector[field-name="organizers"] input[name="organizers[]"]',
+      ),
+    ).toHaveValue(updatedValues.organizers[0].user_id);
     await expect(
       organizerGroupPage.locator(
         'image-field[name="logo_url"] input[name="logo_url"]',

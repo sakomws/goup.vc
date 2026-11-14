@@ -33,7 +33,7 @@
               class="select-primary w-full sm:w-sm xl:hidden">
         {{ event_form::tab_option(section = "details", label = "Details", active = true) -}}
         {{ event_form::tab_option(section = "date-venue", label = "Date & Venue") -}}
-        {{ event_form::tab_option(section = "hosts-sponsors", label = "Contributors") -}}
+        {{ event_form::tab_option(section = "hosts-sponsors", label = "People & Sponsors") -}}
         {% if can_manage_events -%}
           {{ event_form::tab_option(section = "cohosts", label = "Co-hosts") -}}
         {% endif -%}
@@ -54,7 +54,7 @@
       <ul class="hidden min-w-max flex-nowrap gap-1 border-b border-stone-900/10 text-center font-medium xl:inline-flex [&>li]:w-auto [&>li]:shrink-0 [&>li>div>button]:w-auto [&>li>div>button]:whitespace-nowrap lg:gap-2">
         {{ event_form::tab_button(section = "details", icon = "event", label = "Details", active = true) -}}
         {{ event_form::tab_button(section = "date-venue", icon = "calendar", label = "Date & Venue") -}}
-        {{ event_form::tab_button(section = "hosts-sponsors", icon = "user-plus", label = "Hosts & Speakers") -}}
+        {{ event_form::tab_button(section = "hosts-sponsors", icon = "user-plus", label = "People & Sponsors") -}}
         {% if can_manage_events -%}
           {% let cohosts_attrs -%}hx-get="/dashboard/group/events/{{ event.event_id }}/cohosts" hx-trigger="click once" hx-target="#event-cohosts-content" hx-swap="innerHTML" hx-indicator="#event-cohosts-loading"{%- endlet %}
           {{ event_form::tab_button(section = "cohosts", icon = "team", label = "Co-hosts", extra_attrs = cohosts_attrs) -}}
@@ -1182,6 +1182,15 @@
     <div data-content="hosts-sponsors" class="hidden">
       <form id="hosts-sponsors-form">
         <div class="space-y-12">
+          {# Organizers Section -#}
+          <div class="border-b border-stone-900/10 pb-12">
+            <div class="text-xl lg:text-2xl font-medium text-stone-900">Event Organizers</div>
+            <div class="mt-5">
+              <user-search-selector selected-users="{{ event.organizers|json }}" field-name="organizers" dashboard-type="group" label="organizer" legend="Choose the people shown in the Organizers section of the public event page."></user-search-selector>
+            </div>
+          </div>
+          {# End Organizers Section -#}
+
           {# Hosts Section -#}
           <div class="border-b border-stone-900/10 pb-12">
             <div class="text-xl lg:text-2xl font-medium text-stone-900">Event Hosts</div>

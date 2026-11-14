@@ -12,6 +12,7 @@ use crate::{
     templates::{
         PageId,
         auth::User,
+        dashboard::user::session_proposals::SessionProposalLevel,
         filters,
         helpers::{self, user_initials},
     },
@@ -184,12 +185,16 @@ pub(crate) struct CheckInPage {
 #[derive(Debug, Clone, Template)]
 #[template(path = "event/cfs_modal.html")]
 pub(crate) struct CfsModal {
+    /// Current authenticated user identifier, or an empty string for guests.
+    pub current_user_id: String,
     /// Event summary information.
     pub event: EventSummary,
     /// Labels available for the event.
     pub labels: Vec<EventCfsLabel>,
     /// List of session proposals for the current user.
     pub session_proposals: Vec<SessionProposal>,
+    /// Available levels when creating a session proposal.
+    pub session_proposal_levels: Vec<SessionProposalLevel>,
     /// Authenticated user information.
     pub user: User,
 
