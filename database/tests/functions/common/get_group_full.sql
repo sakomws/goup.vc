@@ -307,6 +307,7 @@ select is(
             "normalized_name": "technology"
         },
         "created_at": 1705312800,
+        "external_payments_enabled": false,
         "group_id": "0c0a0000-0000-0000-0000-000000000003",
         "members_count": 4,
         "membership_approval_required": false,

@@ -223,6 +223,11 @@ const AUDIT_ACTION_DEFINITIONS: &[AuditActionDefinition] = &[
         value: "event_published",
     },
     AuditActionDefinition {
+        label: "Event external payment completed",
+        scopes: GROUP_SCOPES,
+        value: "event_purchase_external_payment_completed",
+    },
+    AuditActionDefinition {
         label: "Event refund approved",
         scopes: GROUP_SCOPES,
         value: "event_refund_approved",
@@ -293,6 +298,11 @@ const AUDIT_ACTION_DEFINITIONS: &[AuditActionDefinition] = &[
         value: "group_deleted",
     },
     AuditActionDefinition {
+        label: "Group external payments updated",
+        scopes: ALLIANCE_GROUP_SCOPES,
+        value: "group_external_payments_updated",
+    },
+    AuditActionDefinition {
         label: "Group payment recipient updated",
         scopes: ALLIANCE_GROUP_SCOPES,
         value: "group_payment_recipient_updated",
@@ -341,6 +351,41 @@ const AUDIT_ACTION_DEFINITIONS: &[AuditActionDefinition] = &[
         label: "Group updated",
         scopes: ALLIANCE_GROUP_SCOPES,
         value: "group_updated",
+    },
+    AuditActionDefinition {
+        label: "Inbox conversation closed",
+        scopes: GROUP_SCOPES,
+        value: "inbox_conversation_closed",
+    },
+    AuditActionDefinition {
+        label: "Inbox conversation marked as spam",
+        scopes: GROUP_SCOPES,
+        value: "inbox_conversation_marked_as_spam",
+    },
+    AuditActionDefinition {
+        label: "Inbox conversation reopened",
+        scopes: GROUP_SCOPES,
+        value: "inbox_conversation_reopened",
+    },
+    AuditActionDefinition {
+        label: "Inbox conversation started",
+        scopes: USER_SCOPES,
+        value: "inbox_conversation_started",
+    },
+    AuditActionDefinition {
+        label: "Inbox conversation unmarked as spam",
+        scopes: GROUP_SCOPES,
+        value: "inbox_conversation_unmarked_as_spam",
+    },
+    AuditActionDefinition {
+        label: "Inbox message sent",
+        scopes: USER_SCOPES,
+        value: "inbox_message_sent",
+    },
+    AuditActionDefinition {
+        label: "Inbox reply sent",
+        scopes: GROUP_SCOPES,
+        value: "inbox_reply_sent",
     },
     AuditActionDefinition {
         label: "Region added",
@@ -668,6 +713,7 @@ fn resource_type_label(resource_type: &str) -> &'static str {
         "group" => "Group",
         "group_category" => "Group category",
         "group_sponsor" => "Group sponsor",
+        "inbox_conversation" => "Inbox conversation",
         "region" => "Region",
         "session_proposal" => "Session proposal",
         "user" => "User",

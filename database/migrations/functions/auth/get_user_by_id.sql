@@ -11,8 +11,18 @@ returns json as $$
         'auth_hash', auth_hash,
         'email', email,
         'email_verified', email_verified,
-        'optional_notifications_enabled', optional_notifications_enabled,
         'name', name,
+        'optional_notifications_enabled', not exists (
+            select 1
+            from user_notification_opt_out uo
+            where uo.user_id = u.user_id
+            and uo.notification_category_id in (
+                'event-reminders',
+                'group-announcements',
+                'new-events',
+                'organizer-messages'
+            )
+        ),
         'platform_admin', platform_admin,
         'user_id', user_id,
         'username', username,

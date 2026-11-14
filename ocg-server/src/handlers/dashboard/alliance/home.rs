@@ -11,7 +11,7 @@ use axum::{
 use axum_messages::Messages;
 use tracing::instrument;
 
-use super::{groups, gtm, landscape, logs, members, team};
+use super::{contact, groups, gtm, landscape, logs, members, team};
 
 use crate::{
     auth::AuthSession,
@@ -71,6 +71,9 @@ pub(crate) async fn page(
                 stats,
             }))
         }
+        Tab::Contact => Content::Contact(
+            contact::prepare_page(&db, alliance_id, user_id, alliance.display_name.clone()).await?,
+        ),
         Tab::CreateAlliance => {
             if !auth_session.user.as_ref().is_some_and(|user| user.platform_admin) {
                 return Err(HandlerError::Forbidden);

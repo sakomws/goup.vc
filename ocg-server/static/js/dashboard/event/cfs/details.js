@@ -131,7 +131,9 @@ export const renderCfsDetailsPanel = (state) => {
           </div>
         </div>
 
-        <div class="order-1 w-full shrink-0 space-y-4 md:order-2 md:w-72 md:border-l md:border-stone-100 md:pl-6">
+        <div
+          class="order-1 w-full shrink-0 space-y-4 md:order-2 md:w-72 md:border-l md:border-stone-100 md:pl-6"
+        >
           ${renderCfsProposalMeta(proposal)}
 
           <div>

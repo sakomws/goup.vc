@@ -12,6 +12,7 @@ use crate::{
         audit::{AuditLogFilters, AuditLogsOutput},
         user::{
             affiliations::{LandscapeEntryOption, UserAffiliation, UserAffiliationForm},
+            check_in::UserCheckInEvent,
             coffee_meet::{CoffeeMeetSubscription, CoffeeMeetSubscriptionForm},
             events::{UserEventsFilters, UserEventsOutput},
             invitations::{
@@ -25,7 +26,12 @@ use crate::{
             submissions::{CfsSubmissionsFilters, CfsSubmissionsOutput},
         },
     },
-    types::questionnaire::QuestionnaireAnswers,
+    types::{
+        dashboard::user::notifications::{
+            NotificationGroupOption, NotificationPreferences, NotificationPreferencesInput,
+        },
+        questionnaire::QuestionnaireAnswers,
+    },
 };
 
 /// Database trait for user dashboard operations.
@@ -103,6 +109,15 @@ pub(crate) trait DBDashboardUser {
         session_proposal_id: Uuid,
     ) -> Result<Option<SessionProposalCoSpeakerUser>>;
 
+    /// Gets the current user's confirmed attendee credential for an event.
+    async fn get_user_check_in_code(&self, event_id: Uuid, user_id: Uuid) -> Result<Option<Uuid>>;
+
+    /// Gets the user's notification category opt-outs and muted groups.
+    async fn get_user_notification_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> Result<NotificationPreferences>;
+
     /// Lists published landscape entries available for affiliation selection.
     async fn list_landscape_entry_options(&self) -> Result<Vec<LandscapeEntryOption>>;
 
@@ -122,6 +137,9 @@ pub(crate) trait DBDashboardUser {
         user_id: Uuid,
         filters: &CfsSubmissionsFilters,
     ) -> Result<CfsSubmissionsOutput>;
+
+    /// Lists current and upcoming events carrying the user's credential.
+    async fn list_user_check_in_events(&self, user_id: Uuid) -> Result<Vec<UserCheckInEvent>>;
 
     /// Lists the user's affiliations.
     async fn list_user_affiliations(&self, user_id: Uuid) -> Result<Vec<UserAffiliation>>;
@@ -154,6 +172,12 @@ pub(crate) trait DBDashboardUser {
         user_id: Uuid,
     ) -> Result<Vec<GroupTeamInvitation>>;
 
+    /// Lists the connected groups the user can mute.
+    async fn list_user_notification_group_options(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<NotificationGroupOption>>;
+
     /// Lists `CoffeeMeet` subscriptions available to a user.
     async fn list_user_coffee_meet_subscriptions(
         &self,
@@ -171,6 +195,9 @@ pub(crate) trait DBDashboardUser {
         &self,
         user_id: Uuid,
     ) -> Result<Vec<PendingCoSpeakerInvitation>>;
+
+    /// Mutes optional notifications from a connected group for the user.
+    async fn mute_user_group_notifications(&self, user_id: Uuid, group_id: Uuid) -> Result<()>;
 
     /// Lists session proposals for the user.
     async fn list_user_session_proposals(
@@ -227,6 +254,9 @@ pub(crate) trait DBDashboardUser {
         subscription: &CoffeeMeetSubscriptionForm,
     ) -> Result<()>;
 
+    /// Unmutes optional notifications from a group for the user.
+    async fn unmute_user_group_notifications(&self, user_id: Uuid, group_id: Uuid) -> Result<()>;
+
     /// Unsubscribes from `CoffeeMeet` for a group.
     async fn unsubscribe_coffee_meet(&self, actor_user_id: Uuid, group_id: Uuid) -> Result<()>;
 
@@ -236,6 +266,13 @@ pub(crate) trait DBDashboardUser {
         actor_user_id: Uuid,
         session_proposal_id: Uuid,
         session_proposal: &SessionProposalInput,
+    ) -> Result<()>;
+
+    /// Updates the submitted notification category preferences for the user.
+    async fn update_user_notification_preferences(
+        &self,
+        user_id: Uuid,
+        input: &NotificationPreferencesInput,
     ) -> Result<()>;
 
     /// Withdraws a CFS submission for the user.
@@ -417,6 +454,35 @@ where
         }))
     }
 
+    /// [`DBDashboardUser::get_user_check_in_code`].
+    #[instrument(skip(self), err)]
+    async fn get_user_check_in_code(&self, event_id: Uuid, user_id: Uuid) -> Result<Option<Uuid>> {
+        self.fetch_scalar_opt(
+            "
+            select check_in_code
+            from event_attendee
+            where event_id = $1::uuid
+              and user_id = $2::uuid
+              and status = 'confirmed'
+            ",
+            &[&event_id, &user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::get_user_notification_preferences`].
+    #[instrument(skip(self), err)]
+    async fn get_user_notification_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> Result<NotificationPreferences> {
+        self.fetch_json_one(
+            "select get_user_notification_preferences($1::uuid)",
+            &[&user_id],
+        )
+        .await
+    }
+
     /// [`DBDashboardUser::list_landscape_entry_options`]
     #[instrument(skip(self), err)]
     async fn list_landscape_entry_options(&self) -> Result<Vec<LandscapeEntryOption>> {
@@ -457,6 +523,13 @@ where
             &[&user_id, &Json(filters)],
         )
         .await
+    }
+
+    /// [`DBDashboardUser::list_user_check_in_events`].
+    #[instrument(skip(self), err)]
+    async fn list_user_check_in_events(&self, user_id: Uuid) -> Result<Vec<UserCheckInEvent>> {
+        self.fetch_json_one("select list_user_check_in_events($1::uuid)", &[&user_id])
+            .await
     }
 
     /// [`DBDashboardUser::list_user_affiliations`]
@@ -521,6 +594,19 @@ where
     ) -> Result<Vec<GroupTeamInvitation>> {
         self.fetch_json_one(
             "select list_user_group_team_invitations($1::uuid)",
+            &[&user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::list_user_notification_group_options`].
+    #[instrument(skip(self), err)]
+    async fn list_user_notification_group_options(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<NotificationGroupOption>> {
+        self.fetch_json_one(
+            "select list_user_notification_group_options($1::uuid)",
             &[&user_id],
         )
         .await
@@ -602,6 +688,16 @@ where
         self.fetch_json_one(
             "select list_user_pending_session_proposal_co_speaker_invitations($1::uuid)",
             &[&user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::mute_user_group_notifications`].
+    #[instrument(skip(self), err)]
+    async fn mute_user_group_notifications(&self, user_id: Uuid, group_id: Uuid) -> Result<()> {
+        self.execute(
+            "select mute_user_group_notifications($1::uuid, $2::uuid)",
+            &[&user_id, &group_id],
         )
         .await
     }
@@ -739,6 +835,16 @@ where
         .await
     }
 
+    /// [`DBDashboardUser::unmute_user_group_notifications`].
+    #[instrument(skip(self), err)]
+    async fn unmute_user_group_notifications(&self, user_id: Uuid, group_id: Uuid) -> Result<()> {
+        self.execute(
+            "select unmute_user_group_notifications($1::uuid, $2::uuid)",
+            &[&user_id, &group_id],
+        )
+        .await
+    }
+
     /// [`DBDashboardUser::update_session_proposal`]
     #[instrument(skip(self, session_proposal), err)]
     async fn update_session_proposal(
@@ -754,6 +860,20 @@ where
                 &session_proposal_id,
                 &Json(session_proposal),
             ],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::update_user_notification_preferences`].
+    #[instrument(skip(self, input), err)]
+    async fn update_user_notification_preferences(
+        &self,
+        user_id: Uuid,
+        input: &NotificationPreferencesInput,
+    ) -> Result<()> {
+        self.execute(
+            "select update_user_notification_preferences($1::uuid, $2::jsonb)",
+            &[&user_id, &Json(&input.preferences)],
         )
         .await
     }

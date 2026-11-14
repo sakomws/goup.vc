@@ -5,6 +5,7 @@ import { playwrightLauncher } from "@web/test-runner-playwright";
 
 const configDir = dirname(fileURLToPath(import.meta.url));
 const repoRootDir = resolve(configDir, "../..");
+const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
 
 const importMap = JSON.stringify({
   imports: {
@@ -17,7 +18,12 @@ export default {
   files: `${repoRootDir}/tests/unit/**/*.test.js`,
   hostname: "127.0.0.1",
   nodeResolve: true,
-  browsers: [playwrightLauncher({ product: "chromium" })],
+  browsers: [
+    playwrightLauncher({
+      product: "chromium",
+      launchOptions: executablePath ? { executablePath } : undefined,
+    }),
+  ],
   testRunnerHtml: (testFrameworkImport) => `<!DOCTYPE html>
 <html lang="en">
   <head>

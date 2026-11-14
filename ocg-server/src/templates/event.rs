@@ -18,6 +18,7 @@ use crate::{
     },
     types::{
         event::{EventCfsLabel, EventFull, EventKind, EventSponsorReport, EventSummary},
+        inbox::InboxContactContext,
         site::SiteSettings,
         survey::EventSurvey,
         user::UserSummary,
@@ -63,6 +64,19 @@ pub(crate) struct SponsorReportPage {
 pub(crate) struct SurveyPage {
     pub survey: EventSurvey,
     pub notice: Option<String>,
+}
+
+/// Contact organizers modal.
+#[derive(Debug, Clone, Template)]
+#[template(path = "event/contact_modal.html")]
+pub(crate) struct ContactModal {
+    /// Authenticated viewer state.
+    pub user: User,
+
+    /// Event contact context, absent after a message is sent.
+    pub context: Option<InboxContactContext>,
+    /// Conversation created by the submitted message.
+    pub sent_inbox_conversation_id: Option<Uuid>,
 }
 
 impl Page {

@@ -1,8 +1,18 @@
 import "/static/js/common/svg-spinner.js";
-import { clearChartElement, initChart, showChartEmptyState } from "/static/js/common/charts/charts.js";
+import {
+  clearChartElement,
+  initChart,
+  loadEChartsScript,
+  showChartEmptyState,
+} from "/static/js/common/charts/charts.js";
 import { debounce } from "/static/js/common/common.js";
-import { isDatasetReady, markDatasetReady } from "/static/js/common/dom.js";
+import { getElementById, isDatasetReady, markDatasetReady } from "/static/js/common/dom.js";
 import { parseJsonText } from "/static/js/common/utils.js";
+
+const CHART_RESIZE_DELAY = 200;
+const chartRegistry = new Map();
+const markersInFlight = new WeakSet();
+let chartResizeObserver = null;
 
 /**
  * Render a chart or show an empty state based on data availability.
@@ -20,6 +30,7 @@ export const renderChart = (elementId, option, hasData, options = {}) => {
   const canRender = hasData && (!needsTrendLine || seriesData.length >= minTimeSeriesPoints);
 
   if (!canRender) {
+    unregisterChart(getElementById(document, elementId));
     showChartEmptyState(elementId);
     return null;
   }
@@ -29,7 +40,11 @@ export const renderChart = (elementId, option, hasData, options = {}) => {
     return null;
   }
 
-  return initChart(elementId, option);
+  const chart = initChart(elementId, option);
+  if (chart) {
+    registerChart(element, chart);
+  }
+  return chart;
 };
 
 /**
@@ -45,6 +60,20 @@ export const addRenderedChart = (charts, elementId, chartOptions, hasData) => {
   if (chart) {
     charts.push(chart);
   }
+};
+
+/**
+ * Disposes registered charts rendered inside an element.
+ * @param {Element} root Element being removed or cleaned up.
+ * @returns {void}
+ */
+export const disposeChartsWithin = (root) => {
+  if (!(root instanceof Element) || chartRegistry.size === 0) {
+    return;
+  }
+  Array.from(chartRegistry.keys())
+    .filter((element) => root === element || root.contains(element))
+    .forEach((element) => unregisterChart(element));
 };
 
 /**
@@ -100,7 +129,7 @@ export const initializeChartsFromJsonMarker = async ({
   force = false,
 }) => {
   const marker = getStatsMarker(root, selector);
-  if (!marker || (!force && isDatasetReady(marker, readyKey))) {
+  if (!marker || markersInFlight.has(marker) || (!force && isDatasetReady(marker, readyKey))) {
     return;
   }
 
@@ -111,12 +140,19 @@ export const initializeChartsFromJsonMarker = async ({
     return;
   }
 
-  markDatasetReady(marker, readyKey);
-
+  markersInFlight.add(marker);
   try {
-    await initialize(stats);
+    await loadEChartsScript();
+    if (!marker.isConnected) {
+      return;
+    }
+
+    await initialize(stats, { marker });
+    markDatasetReady(marker, readyKey);
   } catch (error) {
     console.error(initErrorMessage, error);
+  } finally {
+    markersInFlight.delete(marker);
   }
 };
 
@@ -147,3 +183,51 @@ export const getTimeSplitNumber = (count) => {
 
   return Math.min(6, Math.max(3, Math.round(count / 6)));
 };
+
+const getChartResizeObserver = () => {
+  if (!chartResizeObserver && typeof ResizeObserver !== "undefined") {
+    chartResizeObserver = new ResizeObserver((entries) => {
+      entries.forEach((entry) => chartRegistry.get(entry.target)?.scheduleResize());
+    });
+  }
+  return chartResizeObserver;
+};
+
+const unregisterChart = (element, { keepChart = null } = {}) => {
+  const entry = element ? chartRegistry.get(element) : null;
+  if (!entry) {
+    return;
+  }
+  entry.cancelResize();
+  chartRegistry.delete(element);
+  chartResizeObserver?.unobserve(element);
+  if (entry.chart !== keepChart && !entry.chart.isDisposed?.()) {
+    entry.chart.dispose?.();
+  }
+};
+
+const pruneDetachedCharts = () => {
+  Array.from(chartRegistry.keys())
+    .filter((element) => !element.isConnected)
+    .forEach((element) => unregisterChart(element));
+};
+
+const registerChart = (element, chart) => {
+  pruneDetachedCharts();
+  unregisterChart(element, { keepChart: chart });
+
+  let timeoutId = null;
+  chartRegistry.set(element, {
+    cancelResize: () => clearTimeout(timeoutId),
+    chart,
+    scheduleResize: () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => chart.resize(), CHART_RESIZE_DELAY);
+    },
+  });
+  getChartResizeObserver()?.observe(element);
+};
+
+document.addEventListener("htmx:beforeCleanupElement", (event) => {
+  disposeChartsWithin(event.target);
+});

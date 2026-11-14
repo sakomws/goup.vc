@@ -206,6 +206,7 @@ select is(
         $json$
     {
         "active": true,
+        "external_payments_enabled": false,
         "city": "New York",
         "name": "Kubernetes NYC",
         "slug": "abc1234",

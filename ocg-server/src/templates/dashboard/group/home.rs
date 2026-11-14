@@ -13,10 +13,10 @@ use crate::{
             audit,
             group::{
                 accelerator, analytics, book_exchange, coffee_meet, cohosts, distribution, events,
-                integrations, intentional_dating, members, projects, settings, sponsors,
+                integrations, intentional_dating, members, projects, refunds, settings, sponsors,
                 spotlights, store, team,
             },
-            gtm,
+            gtm, inbox,
         },
         filters,
         helpers::user_initials,
@@ -28,10 +28,14 @@ use crate::{
 #[derive(Debug, Clone, Template)]
 #[template(path = "dashboard/group/home.html")]
 pub(crate) struct Page {
+    /// Whether the viewer may manage the selected group's inbox.
+    pub can_manage_inbox: bool,
     /// Main content section for the page.
     pub content: Content,
     /// Groups organized by alliance.
     pub groups_by_alliance: Vec<UserGroupsByAlliance>,
+    /// Number of open conversations for the selected group.
+    pub inbox_open_count: usize,
     /// Flash or status messages to display.
     pub messages: Vec<Message>,
     /// Identifier for the current page.
@@ -103,12 +107,18 @@ pub(crate) enum Content {
     IntentionalDating(intentional_dating::ListPage),
     /// Event discovery integration settings.
     Integrations(integrations::Page),
+    /// Inbox conversations page.
+    Inbox(inbox::ListPage),
+    /// Inbox conversation thread page.
+    InboxConversation(Box<inbox::ConversationPage>),
     /// Audit logs page.
     Logs(audit::ListPage),
     /// Members list page.
     Members(members::ListPage),
     /// Collaboration projects page.
     Projects(projects::Page),
+    /// Durable payment refund operations page.
+    Refunds(refunds::ListPage),
     /// Settings management page.
     Settings(Box<settings::UpdatePage>),
     /// Sponsors management page.
@@ -169,6 +179,11 @@ impl Content {
         matches!(self, Content::Integrations(_))
     }
 
+    /// Check if the content is an inbox page.
+    fn is_inbox(&self) -> bool {
+        matches!(self, Content::Inbox(_) | Content::InboxConversation(_))
+    }
+
     /// Check if the content is the logs page.
     fn is_logs(&self) -> bool {
         matches!(self, Content::Logs(_))
@@ -182,6 +197,11 @@ impl Content {
     /// Check if the content is the projects page.
     fn is_projects(&self) -> bool {
         matches!(self, Content::Projects(_))
+    }
+
+    /// Check if the content is the refunds page.
+    fn is_refunds(&self) -> bool {
+        matches!(self, Content::Refunds(_))
     }
 
     /// Check if the content is the settings page.
@@ -223,9 +243,12 @@ impl std::fmt::Display for Content {
             Content::Gtm(template) => write!(f, "{}", template.render()?),
             Content::IntentionalDating(template) => write!(f, "{}", template.render()?),
             Content::Integrations(template) => write!(f, "{}", template.render()?),
+            Content::Inbox(template) => write!(f, "{}", template.render()?),
+            Content::InboxConversation(template) => write!(f, "{}", template.render()?),
             Content::Logs(template) => write!(f, "{}", template.render()?),
             Content::Members(template) => write!(f, "{}", template.render()?),
             Content::Projects(template) => write!(f, "{}", template.render()?),
+            Content::Refunds(template) => write!(f, "{}", template.render()?),
             Content::Settings(template) => write!(f, "{}", template.render()?),
             Content::Sponsors(template) => write!(f, "{}", template.render()?),
             Content::Spotlights(template) => write!(f, "{}", template.render()?),
@@ -263,12 +286,16 @@ pub(crate) enum Tab {
     IntentionalDating,
     /// Event discovery integration settings tab.
     Integrations,
+    /// Group inbox tab.
+    Inbox,
     /// Audit logs tab.
     Logs,
     /// Members list tab.
     Members,
     /// Collaboration projects tab.
     Projects,
+    /// Durable payment refund operations tab.
+    Refunds,
     /// Settings management tab.
     Settings,
     /// Sponsors management tab.

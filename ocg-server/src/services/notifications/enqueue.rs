@@ -2,27 +2,35 @@
 
 use std::collections::{HashMap, HashSet};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use chrono::{TimeDelta, Utc};
+use tracing::warn;
 use uuid::Uuid;
 
 use crate::{
     config::HttpServerConfig,
-    db::DBOperations,
+    db::{
+        DBOperations, inbox::PostedInboxMessage, notifications::AllianceCustomNotificationEnqueue,
+    },
     services::notifications::{
         NewNotification, NotificationKind,
         payloads::{
             build_event_attendance_canceled_notification, build_event_canceled_notification,
             build_event_published_notification, build_event_rescheduled_notification,
             build_event_waitlist_promoted_notification, build_event_welcome_notification,
+            build_inbox_message_received_notification, build_inbox_reply_received_notification,
             build_speaker_welcome_notification, should_send_waitlist_promoted_notification,
         },
     },
     templates::notifications::{
-        EventSeriesCanceled, EventSeriesNotificationItem, EventSeriesPublished,
+        AllianceCustom, EventSeriesCanceled, EventSeriesNotificationItem, EventSeriesPublished,
         SpeakerSeriesWelcome,
     },
-    types::event::{EventFull, EventSummary},
+    types::{
+        event::{EventFull, EventSummary},
+        inbox::{InboxConversation, InboxMessage},
+        notifications::AllianceCustomNotificationInput,
+    },
     util::build_event_page_link,
 };
 
@@ -481,6 +489,87 @@ pub(crate) async fn enqueue_event_welcome_notification(
     Ok(())
 }
 
+/// Enqueues the email telling group team members that a user wrote to the inbox.
+pub(crate) async fn enqueue_inbox_message_received_notification(
+    db: &dyn DBOperations,
+    posted: &PostedInboxMessage,
+) -> Result<()> {
+    let (conversation, recipient_ids, site_settings) = tokio::try_join!(
+        db.get_group_inbox_conversation(posted.group_id, posted.inbox_conversation_id),
+        db.list_inbox_recipient_ids(posted.group_id),
+        db.get_site_settings()
+    )?;
+    let conversation = conversation.ok_or_else(|| anyhow!("inbox conversation not found"))?;
+    let message = find_inbox_message(&conversation, posted.inbox_message_id)?;
+    let author_user_id = message.author.as_ref().map(|author| author.user_id);
+    let recipients = recipient_ids
+        .into_iter()
+        .filter(|user_id| Some(*user_id) != author_user_id)
+        .collect::<Vec<_>>();
+    if recipients.is_empty() {
+        warn!(
+            group_id = %posted.group_id,
+            inbox_conversation_id = %posted.inbox_conversation_id,
+            "inbox message has no recipient to notify"
+        );
+        return Ok(());
+    }
+
+    let notification = build_inbox_message_received_notification(
+        &conversation,
+        message,
+        recipients,
+        &site_settings,
+    )?;
+    db.enqueue_notification(&notification).await
+}
+
+/// Enqueues the email telling the user that the group replied.
+pub(crate) async fn enqueue_inbox_reply_received_notification(
+    db: &dyn DBOperations,
+    posted: &PostedInboxMessage,
+) -> Result<()> {
+    let (conversation, site_settings) = tokio::try_join!(
+        db.get_group_inbox_conversation(posted.group_id, posted.inbox_conversation_id),
+        db.get_site_settings()
+    )?;
+    let conversation = conversation.ok_or_else(|| anyhow!("inbox conversation not found"))?;
+    let message = find_inbox_message(&conversation, posted.inbox_message_id)?;
+    let notification =
+        build_inbox_reply_received_notification(&conversation, message, &site_settings)?;
+    db.enqueue_notification(&notification).await
+}
+
+/// Resolves, enqueues, and audits an alliance Contact notification atomically.
+pub(crate) async fn enqueue_tracked_alliance_custom_notification(
+    db: &dyn DBOperations,
+    server_cfg: &HttpServerConfig,
+    input: &AllianceCustomNotificationInput,
+) -> Result<usize> {
+    let (alliance, site_settings) = tokio::try_join!(
+        db.get_alliance_summary(input.alliance_id),
+        db.get_site_settings()
+    )?;
+    let base_url = server_cfg.base_url.trim_end_matches('/');
+    let template_data = AllianceCustom {
+        alliance_display_name: alliance.display_name,
+        body: input.content.body.clone(),
+        link: format!("{base_url}/{}", alliance.name),
+        subject: input.content.subject.clone(),
+        theme: site_settings.theme,
+    };
+
+    db.enqueue_tracked_alliance_custom_notification(&AllianceCustomNotificationEnqueue {
+        alliance_id: input.alliance_id,
+        body: input.content.body.clone(),
+        created_by: input.actor_user_id,
+        filters: input.filters.clone(),
+        subject: input.content.subject.clone(),
+        template_data: serde_json::to_value(template_data)?,
+    })
+    .await
+}
+
 // Types.
 
 /// Recipient group sharing the same event list for one aggregate notification.
@@ -492,6 +581,17 @@ struct EventSeriesNotificationGroup {
 }
 
 // Helpers.
+
+fn find_inbox_message(
+    conversation: &InboxConversation,
+    inbox_message_id: Uuid,
+) -> Result<&InboxMessage> {
+    conversation
+        .messages
+        .iter()
+        .find(|message| message.inbox_message_id == inbox_message_id)
+        .ok_or_else(|| anyhow!("inbox message not found"))
+}
 
 /// Builds one aggregate notification item from full event data.
 fn event_series_notification_item(

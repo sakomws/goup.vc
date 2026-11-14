@@ -106,6 +106,7 @@ insert into event (
     ends_at,
 
     deleted,
+    canceled,
     published
 ) values
     (
@@ -122,6 +123,7 @@ insert into event (
         now() + interval '1 day 1 hour',
 
         false,
+        true,
         true
     ),
     (
@@ -138,6 +140,7 @@ insert into event (
         now() + interval '8 days 1 hour',
 
         false,
+        true,
         true
     );
 

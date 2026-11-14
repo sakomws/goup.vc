@@ -96,12 +96,46 @@ describe("dashboard group event update template", () => {
     expect(template).to.include(
       'hx-get="/dashboard/group/events/{{ event.event_id }}/attendees" hx-trigger="click once" hx-target="#attendees-content"',
     );
+    expect(template).to.include('<div id="attendees-content" data-group-check-in-root>');
     expect(template).to.include(
       'hx-get="/dashboard/group/events/{{ event.event_id }}/invitation-requests" hx-trigger="click once" hx-target="#invitation-requests-content"',
     );
     expect(template).to.include(
       'hx-get="/dashboard/group/events/{{ event.event_id }}/waitlist" hx-trigger="click once" hx-target="#waitlist-content"',
     );
+  });
+
+  it("adds the analytics tab last with a loader outside the read-only form", async () => {
+    // Load the event update template before checking the analytics tab contract.
+    const template = normalizeWhitespace(await loadTemplate());
+
+    // Assert the analytics tab is the last option and button, without HTMX attributes.
+    expect(template).to.include(
+      '{{ event_form::tab_option(section = "analytics", label = "Analytics") -}}',
+    );
+    expect(template).to.include(
+      '{{ event_form::tab_button(section = "analytics", icon = "charts", label = "Analytics") -}}',
+    );
+
+    // Assert the loader lives after the waitlist tab, outside the inert form wrapper.
+    const inertFormIndex = template.indexOf('<div class="inert-form"');
+    const formEndIndex = template.indexOf("{# End Hosts & Speakers Tab -#}");
+    const analyticsIndex = template.indexOf('<div data-content="analytics"');
+    expect(inertFormIndex).to.be.greaterThan(-1);
+    expect(formEndIndex).to.be.greaterThan(inertFormIndex);
+    expect(analyticsIndex).to.be.greaterThan(template.indexOf("{# End Growth & Finances Tab -#}"));
+    expect(analyticsIndex).to.be.greaterThan(formEndIndex);
+    expect(template).to.include(
+      '<p id="analytics-status" class="sr-only" role="status"></p> <div id="analytics-content" data-analytics-url="/dashboard/group/events/{{ event.event_id }}/analytics" data-analytics-state="idle">',
+    );
+    expect(template).to.include(
+      'dashboard::page_title(title = "Analytics", docs_href = "/docs#/guides/event-operations?id=analytics"',
+    );
+    expect(template).to.include('<div id="analytics-loading" class="flex items-center justify-center py-12">');
+    expect(template).to.include(
+      '<div id="analytics-error" class="hidden mt-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert"',
+    );
+    expect(template).to.include("data-analytics-retry>Retry</button>");
   });
 
   it("keeps review tabs and bottom actions in the main grid column", async () => {
@@ -129,5 +163,17 @@ describe("dashboard group event update template", () => {
     expect(template).to.include('<div class="inert-form"');
     expect(template).to.include('<div data-content="details">');
     expect(template).to.not.include("lg:border-b-0");
+  });
+
+  it("submits organizer selection explicitly without affecting cohosts", async () => {
+    const template = normalizeWhitespace(await loadTemplate());
+
+    expect(template).to.include('id="event-organizers-selector"');
+    expect(template).to.include('selected-users="{{ event.organizers|json }}"');
+    expect(template).to.include('available-users="{{ team_members|json }}"');
+    expect(template).to.include(
+      '<input type="hidden" name="organizers_present" value="true">',
+    );
+    expect(template).to.include('data-content="cohosts"');
   });
 });

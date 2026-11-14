@@ -12,7 +12,7 @@ use crate::db::{
     accelerator::DBAccelerator, activity_tracker::DBActivityTracker, alliance::DBAlliance,
     auth::DBAuth, collaboration::DBCollaboration, common::DBCommon,
     custom_domains::DBCustomDomains, dashboard::DBDashboard, distribution::DBDistribution,
-    event::DBEvent, group::DBGroup, gtm::DBGtm, images::DBImages, jobs::DBJobs,
+    event::DBEvent, group::DBGroup, gtm::DBGtm, images::DBImages, inbox::DBInbox, jobs::DBJobs,
     landscape::DBLandscape, meetings::DBMeetings, mock_interviews::DBMockInterviews,
     notifications::DBNotifications, opportunities::DBOpportunities, payments::DBPayments,
     site::DBSite, survey::DBSurvey,
@@ -38,7 +38,7 @@ pub(crate) mod distribution;
 
 /// Module containing database contract tests.
 #[cfg(test)]
-mod contract_tests;
+pub(crate) mod contract_tests;
 
 /// Module containing database functionality for the alliance site.
 pub(crate) mod alliance;
@@ -60,6 +60,9 @@ pub(crate) mod gtm;
 
 /// Module containing database functionality for storing images.
 pub(crate) mod images;
+
+/// Module containing database functionality for managed inbox conversations.
+pub(crate) mod inbox;
 
 /// Module containing database functionality for jobs.
 pub(crate) mod jobs;
@@ -109,6 +112,7 @@ pub(crate) trait DBOperations:
     + DBGroup
     + DBGtm
     + DBImages
+    + DBInbox
     + DBJobs
     + DBLandscape
     + DBMeetings
@@ -137,6 +141,7 @@ impl<T> DBOperations for T where
         + DBGroup
         + DBGtm
         + DBImages
+        + DBInbox
         + DBJobs
         + DBLandscape
         + DBMeetings

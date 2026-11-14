@@ -27,10 +27,6 @@ begin
         mentorship_individuals = coalesce((p_user->>'mentorship_individuals')::boolean, false),
         mentorship_note = nullif(p_user->>'mentorship_note', ''),
         mentorship_price = nullif(p_user->>'mentorship_price', ''),
-        optional_notifications_enabled = coalesce(
-            (p_user->>'optional_notifications_enabled')::boolean,
-            optional_notifications_enabled
-        ),
         photo_url = nullif(p_user->>'photo_url', ''),
         phone_country_code = nullif(p_user->>'phone_country_code', ''),
         phone_number = nullif(p_user->>'phone_number', ''),
@@ -41,6 +37,31 @@ begin
         website_url = nullif(p_user->>'website_url', ''),
         youtube_url = nullif(p_user->>'youtube_url', '')
     where user_id = p_actor_user_id;
+
+    -- Preserve the legacy profile toggle over the member notification categories.
+    if p_user ? 'optional_notifications_enabled' then
+        if (p_user->>'optional_notifications_enabled')::boolean then
+            delete from user_notification_opt_out
+            where user_id = p_actor_user_id
+            and notification_category_id in (
+                'event-reminders',
+                'group-announcements',
+                'new-events',
+                'organizer-messages'
+            );
+        else
+            insert into user_notification_opt_out (notification_category_id, user_id)
+            select notification_category_id, p_actor_user_id
+            from notification_category
+            where notification_category_id in (
+                'event-reminders',
+                'group-announcements',
+                'new-events',
+                'organizer-messages'
+            )
+            on conflict do nothing;
+        end if;
+    end if;
 
     -- Track the profile update
     perform insert_audit_log(

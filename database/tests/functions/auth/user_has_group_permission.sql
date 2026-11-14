@@ -325,9 +325,11 @@ with tested_permissions (
     permission
 ) as (
     values
+        ('group.check-ins.write'),
         ('group.distribution.write'),
         ('group.events.write'),
         ('group.gtm.write'),
+        ('group.inbox.write'),
         ('group.members.write'),
         ('group.projects.write'),
         ('group.read'),

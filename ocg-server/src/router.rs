@@ -46,8 +46,11 @@ use crate::{
         distribution, event, group, images, meetings, payments, site,
     },
     services::{
-        event_discovery::ManualEventDiscovery, images::DynImageStorage,
-        job_discovery::ManualJobDiscovery, notifications::DynNotificationsManager,
+        event_discovery::ManualEventDiscovery,
+        images::DynImageStorage,
+        inbox::{DynInboxManager, PgInboxManager},
+        job_discovery::ManualJobDiscovery,
+        notifications::DynNotificationsManager,
         payments::DynPaymentsManager,
     },
     types::custom_domain::CustomDomainTarget,
@@ -136,6 +139,8 @@ pub(crate) struct State {
     pub db: DynDB,
     /// Image storage provider handle.
     pub image_storage: DynImageStorage,
+    /// Inbox workflow manager.
+    pub inbox_manager: DynInboxManager,
     /// Optional You.com discovery runner for authorized dashboard actions.
     pub manual_event_discovery: Option<ManualEventDiscovery>,
     /// Optional You.com discovery runner for global jobs dashboard actions.
@@ -171,6 +176,7 @@ pub(crate) async fn setup(
     payments_cfg: Option<PaymentsConfig>,
     payments_manager: DynPaymentsManager,
     notifications_manager: DynNotificationsManager,
+    inbox_manager: Option<DynInboxManager>,
     server_cfg: &HttpServerConfig,
 ) -> Result<Router> {
     // Check whether the Zoom meetings provider is enabled
@@ -183,10 +189,13 @@ pub(crate) async fn setup(
     let payments_enabled = payments_cfg.is_some();
 
     // Setup router state
+    let inbox_manager =
+        inbox_manager.unwrap_or_else(|| std::sync::Arc::new(PgInboxManager::new(db.clone())));
     let state = State {
         db: db.clone(),
         activity_tracker,
         image_storage,
+        inbox_manager,
         manual_event_discovery: you_com_cfg
             .clone()
             .zip(manual_event_discovery_db.clone())
@@ -238,6 +247,10 @@ pub(crate) async fn setup(
         .route(
             "/{alliance}/event/{event_id}/refund-request",
             post(event::request_refund),
+        )
+        .route(
+            "/{alliance}/event/{event_id}/contact",
+            post(event::send_contact_message),
         )
         .route(
             "/{alliance}/event/{event_id}/survey/{audience}",
@@ -550,6 +563,10 @@ pub(crate) async fn setup(
         .route(
             "/{alliance}/event/{event_id}/cfs-modal",
             get(event::cfs_modal),
+        )
+        .route(
+            "/{alliance}/event/{event_id}/contact-modal",
+            get(event::contact_modal),
         )
         .route(
             "/{alliance}/group/{group_slug}/event/{event_slug}/availability",

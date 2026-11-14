@@ -12,7 +12,7 @@ begin
     and sp.user_id = p_actor_user_id;
 
     if not found then
-        raise exception 'session proposal not found';
+        raise exception 'session proposal not found' using errcode = 'OCG01';
     end if;
 
     -- Do not allow deletion if there are associated submissions
@@ -21,7 +21,7 @@ begin
     where cs.session_proposal_id = p_session_proposal_id;
 
     if found then
-        raise exception 'session proposal has submissions';
+        raise exception 'session proposal has submissions' using errcode = 'OCG01';
     end if;
 
     -- Proceed to delete the session proposal
@@ -30,7 +30,7 @@ begin
     and user_id = p_actor_user_id;
 
     if not found then
-        raise exception 'session proposal not found';
+        raise exception 'session proposal not found' using errcode = 'OCG01';
     end if;
 
     -- Track the deleted session proposal

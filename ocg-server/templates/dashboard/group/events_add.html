@@ -928,6 +928,19 @@
       <div data-content="hosts-sponsors" class="hidden">
         <form id="hosts-sponsors-form">
           <div class="space-y-12">
+            {# Organizers Section -#}
+            <div class="border-b border-stone-900/10 pb-12">
+              <div class="text-xl lg:text-2xl font-medium text-stone-900">Event Organizers</div>
+              <p class="mt-2 text-sm text-stone-500">
+                Organizers are listed on the public event page. New events start with the accepted group team selected.
+              </p>
+              <div class="mt-5">
+                <user-search-selector id="event-organizers-selector" selected-users="{{ team_members|json }}" available-users="{{ team_members|json }}" field-name="organizers" dashboard-type="group" label="organizer" legend="Search group team members by name or username"></user-search-selector>
+                <input type="hidden" name="organizers_present" value="true">
+              </div>
+            </div>
+            {# End Organizers Section -#}
+
             {# Hosts Section -#}
             <div class="border-b border-stone-900/10 pb-12">
               <div class="text-xl lg:text-2xl font-medium text-stone-900">Event Hosts</div>

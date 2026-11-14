@@ -7,6 +7,7 @@ import {
 } from "/static/js/common/dom.js";
 import { parseJsonAttribute } from "/static/js/common/utils.js";
 import "/static/js/common/modals/share-modal.js";
+import { loadEventAnalyticsTab } from "/static/js/dashboard/group/event-analytics-tab.js";
 import { initializeSessionsRemovalWarning } from "/static/js/dashboard/group/event-form-helpers.js";
 import { initializeEventPreview } from "/static/js/dashboard/group/event-preview.js";
 import "/static/js/dashboard/group/questions-editor.js";
@@ -184,6 +185,10 @@ export const initializeEventUpdatePage = (root = document) => {
 
       if (sectionName === "sessions") {
         syncSessionsDateRange();
+      }
+
+      if (sectionName === "analytics") {
+        loadEventAnalyticsTab(pageRoot);
       }
 
       // Canceled/read-only pages still allow specific review-only sections.

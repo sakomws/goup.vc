@@ -19,6 +19,7 @@ import { LitWrapper } from "/static/js/common/lit-wrapper.js";
 export class GroupSelector extends LitWrapper {
   static properties = {
     groups: { type: Array, attribute: "groups" },
+    idPrefix: { type: String, attribute: "id-prefix" },
     selectedGroupId: { type: String, attribute: "selected-group-id" },
     _isSubmitting: { state: true },
   };
@@ -26,6 +27,7 @@ export class GroupSelector extends LitWrapper {
   constructor() {
     super();
     this.groups = [];
+    this.idPrefix = "";
     this.selectedGroupId = "";
     this._isSubmitting = false;
     this._combobox = new ComboboxController(this, {
@@ -35,7 +37,7 @@ export class GroupSelector extends LitWrapper {
       resetQueryOnToggle: true,
       onOpen: () => {
         this.updateComplete.then(() => {
-          focusElementById(this, "group-search-input");
+          focusElementById(this, this._elementId("group-search-input"));
         });
       },
       onSelect: (index, event) => {
@@ -125,6 +127,10 @@ export class GroupSelector extends LitWrapper {
     return String(group.group_id) === String(this.selectedGroupId || "");
   }
 
+  _elementId(id) {
+    return this.idPrefix ? id.replace(/^group-/, `${this.idPrefix}-`) : id;
+  }
+
   render() {
     const selectedGroup = this._findSelectedGroup();
     const isDisabled = this.groups.length === 0 || this._isSubmitting;
@@ -133,7 +139,7 @@ export class GroupSelector extends LitWrapper {
         <div class="my-4">
           <div class="relative">
             <button
-              id="group-selector-button"
+              id=${this._elementId("group-selector-button")}
               type="button"
               class="select select-primary relative text-left pe-9 ${
                 isDisabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
@@ -164,7 +170,7 @@ export class GroupSelector extends LitWrapper {
                     <div class="svg-icon size-4 icon-search bg-stone-300"></div>
                   </div>
                   <input
-                    id="group-search-input"
+                    id=${this._elementId("group-search-input")}
                     type="search"
                     class="input-primary w-full ps-9"
                     placeholder="Search groups"
@@ -182,7 +188,7 @@ export class GroupSelector extends LitWrapper {
                 this._filteredGroups.length > 0
                   ? html`
                       <ul
-                        id="group-selector-list"
+                        id=${this._elementId("group-selector-list")}
                         class="max-h-48 overflow-y-auto text-stone-700"
                         role="listbox"
                       >
@@ -207,7 +213,7 @@ export class GroupSelector extends LitWrapper {
                             return html`
                               <li role="presentation" data-index=${index}>
                                 <button
-                                  id="group-option-${group.group_id}"
+                                  id=${this._elementId(`group-option-${group.group_id}`)}
                                   type="button"
                                   class="group-button w-full px-4 py-2 whitespace-normal min-h-10 flex flex-col justify-center text-left focus:outline-none ${statusClass}"
                                   role="option"

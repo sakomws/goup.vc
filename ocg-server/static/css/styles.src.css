@@ -224,6 +224,10 @@
     @apply block w-full rounded-xl bg-white px-3 py-2 text-base text-stone-900 border border-stone-200 placeholder:text-stone-500/75 shadow-sm focus:outline-2 focus:-outline-offset-2 focus:outline-stone-400 focus:ring-transparent sm:text-sm/6;
   }
 
+  textarea.input-primary {
+    @apply resize-y;
+  }
+
   .select-primary {
     @apply relative col-start-1 row-start-1 w-full appearance-none rounded-xl bg-white py-2 pl-3 pr-8 text-base text-stone-900 border border-stone-200 shadow-sm focus:outline-2 focus:-outline-offset-2 focus:outline-stone-400 focus:ring-transparent sm:text-sm/6;
   }
@@ -893,6 +897,7 @@ input:placeholder-shown {
 .icon-attendees { --icon-url: url('/static/images/icons/attendees.svg'); }
 .icon-ban { --icon-url: url('/static/images/icons/ban.svg'); }
 .icon-broken-image { --icon-url: url('/static/images/icons/broken_image.svg'); }
+.icon-bell { --icon-url: url('/static/images/icons/bell.svg'); }
 .icon-bluesky { --icon-url: url('/static/images/icons/bluesky.svg'); }
 .icon-buildings { --icon-url: url('/static/images/icons/buildings.svg'); }
 .icon-handshake { --icon-url: url('/static/images/icons/handshake.svg'); }

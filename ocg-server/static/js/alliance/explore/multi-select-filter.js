@@ -1,6 +1,7 @@
 import { html, nothing, repeat } from "/static/vendor/js/lit-all.v3.3.1.min.js";
 import { FILTER_CHANGE_EVENT } from "/static/js/alliance/explore/filters.js";
 import { ComboboxController } from "/static/js/common/combobox.js";
+import { DropdownPlacementController } from "/static/js/common/dropdown-placement.js";
 import { LitWrapper } from "/static/js/common/lit-wrapper.js";
 
 /**
@@ -33,6 +34,10 @@ export class MultiSelectFilter extends LitWrapper {
           this._toggleOption(opt.value);
         }
       },
+    });
+    this._dropdownPlacement = new DropdownPlacementController(this, {
+      getAnchor: () => this.querySelector("[data-multi-select-search]"),
+      getDropdown: () => this.querySelector("[data-multi-select-dropdown]"),
     });
   }
 
@@ -186,6 +191,7 @@ export class MultiSelectFilter extends LitWrapper {
 
         <div class="relative">
           <div
+            data-multi-select-search
             class="flex items-center gap-2 min-h-[46px] px-4 py-2 bg-white border border-[#eadcc9] rounded-full"
           >
             <div class="svg-icon size-3.5 icon-search bg-stone-400 shrink-0"></div>
@@ -226,6 +232,7 @@ export class MultiSelectFilter extends LitWrapper {
             this._combobox.isOpen
               ? html`
                   <div
+                    data-multi-select-dropdown
                     class="absolute top-full left-0 right-0 z-10 mt-1 bg-white rounded-lg shadow-lg border border-[#C8BDB3] max-h-48 overflow-y-auto"
                   >
                     ${

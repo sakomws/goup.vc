@@ -23,6 +23,7 @@ use crate::{
         payments::EventDiscountType,
         questionnaire::QuestionnaireQuestion,
         survey::EventSurveyDashboard,
+        user::User,
     },
     validation::{
         MAX_LEN_COUNTRY_CODE, MAX_LEN_DESCRIPTION, MAX_LEN_DESCRIPTION_SHORT, MAX_LEN_ENTITY_NAME,
@@ -66,6 +67,8 @@ pub(crate) struct AddPage {
     pub session_kinds: Vec<SessionKindSummary>,
     /// List of sponsors available for this group.
     pub sponsors: Vec<GroupSponsor>,
+    /// Accepted group team members available as event organizers.
+    pub team_members: Vec<User>,
     /// List of available timezones.
     pub timezones: Vec<String>,
 }
@@ -130,6 +133,8 @@ pub(crate) struct UpdatePage {
     pub session_kinds: Vec<SessionKindSummary>,
     /// List of sponsors available for this group.
     pub sponsors: Vec<GroupSponsor>,
+    /// Accepted group team members available as event organizers.
+    pub team_members: Vec<User>,
     /// List of available timezones.
     pub timezones: Vec<String>,
 }
@@ -322,6 +327,9 @@ pub(crate) struct Event {
     /// User IDs shown as event organizers.
     #[garde(skip)]
     pub organizers: Option<Vec<Uuid>>,
+    /// Whether the organizers section was explicitly submitted.
+    #[garde(skip)]
+    pub organizers_present: Option<bool>,
     /// Latitude coordinate of the event location.
     #[garde(custom(valid_latitude))]
     pub latitude: Option<f64>,
@@ -496,6 +504,8 @@ impl Event {
         payload.remove("recurrence_pattern");
         payload.remove("registration_questions");
         payload.remove("registration_questions_present");
+        payload.remove("organizers");
+        payload.remove("organizers_present");
         payload.remove("ticket_types");
         payload.remove("ticket_types_present");
 
@@ -505,6 +515,13 @@ impl Event {
             payload.insert(
                 "registration_questions".to_string(),
                 serde_json::to_value(&self.registration_questions)?,
+            );
+        }
+
+        if self.organizers_present.is_some() {
+            payload.insert(
+                "organizers".to_string(),
+                serde_json::to_value(self.organizers.as_deref().unwrap_or_default())?,
             );
         }
 
@@ -964,6 +981,28 @@ sponsors[0][level]=Gold",
         let payload = event.to_db_payload().unwrap();
 
         assert_eq!(payload["registration_questions"], Value::Array(Vec::new()));
+    }
+
+    #[test]
+    fn to_db_payload_preserves_organizers_when_section_is_omitted() {
+        let mut event = sample_event();
+        event.organizers = Some(vec![uuid::Uuid::new_v4()]);
+
+        let payload = event.to_db_payload().unwrap();
+
+        assert!(payload.get("organizers").is_none());
+    }
+
+    #[test]
+    fn to_db_payload_includes_explicit_empty_organizer_selection() {
+        let mut event = sample_event();
+        event.organizers = Some(Vec::new());
+        event.organizers_present = Some(true);
+
+        let payload = event.to_db_payload().unwrap();
+
+        assert_eq!(payload["organizers"], Value::Array(Vec::new()));
+        assert!(payload.get("organizers_present").is_none());
     }
 
     #[test]

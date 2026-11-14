@@ -16,6 +16,17 @@ returns jsonb as $$
 
             'completed_at', extract(epoch from ep.completed_at)::bigint,
             'discount_code', ep.discount_code,
+            'external_payment_instructions',
+                case
+                    -- Expose live event instructions only for external holds
+                    when ep.charge_model = 'external'
+                        then e.external_payment_instructions
+                end,
+            'external_payment_url',
+                case
+                    -- Expose the live event payment URL only for external holds
+                    when ep.charge_model = 'external' then e.external_payment_url
+                end,
             'hold_expires_at', extract(epoch from ep.hold_expires_at)::bigint,
             'platform_fee_amount_minor', ep.platform_fee_amount_minor,
             'provider_checkout_url', ep.provider_checkout_url,
@@ -27,5 +38,6 @@ returns jsonb as $$
         )
     )
     from event_purchase ep
+    join event e using (event_id)
     where ep.event_purchase_id = p_event_purchase_id;
 $$ language sql;

@@ -543,13 +543,8 @@ select results_eq(
 -- Should require refund for expired local holds
 select is(
     reconcile_event_purchase_for_checkout_session('stripe', 'cs_expired', null)::jsonb,
-    jsonb_build_object(
-        'amount_minor', 2000,
-        'event_purchase_id', :'purchaseExpiredID'::uuid,
-        'outcome', 'refund_required',
-        'provider_payment_reference', 'pi_expired'
-    ),
-    'Should require refund for expired local holds'
+    jsonb_build_object('outcome', 'refund_queued'),
+    'Should queue a refund for expired local holds'
 );
 
 -- Should persist the refund-pending purchase fields and restore discount availability
@@ -574,13 +569,8 @@ select results_eq(
 -- Should keep requiring refund for refund-pending purchases after the refund handoff
 select is(
     reconcile_event_purchase_for_checkout_session('stripe', 'cs_expired', null)::jsonb,
-    jsonb_build_object(
-        'amount_minor', 2000,
-        'event_purchase_id', :'purchaseExpiredID'::uuid,
-        'outcome', 'refund_required',
-        'provider_payment_reference', 'pi_expired'
-    ),
-    'Should keep requiring refund for refund-pending purchases after the refund handoff'
+    jsonb_build_object('outcome', 'refund_queued'),
+    'Should keep the refund queued after the refund handoff'
 );
 
 -- Should not restore discount availability twice for already expired purchases
@@ -597,25 +587,15 @@ select is(
 -- Should require refund when the event can no longer be fulfilled
 select is(
     reconcile_event_purchase_for_checkout_session('stripe', 'cs_canceled', null)::jsonb,
-    jsonb_build_object(
-        'amount_minor', 2500,
-        'event_purchase_id', :'purchaseCanceledID'::uuid,
-        'outcome', 'refund_required',
-        'provider_payment_reference', 'pi_canceled'
-    ),
-    'Should require refund when the event can no longer be fulfilled'
+    jsonb_build_object('outcome', 'refund_queued'),
+    'Should queue a refund when the event can no longer be fulfilled'
 );
 
 -- Should require refund when the event has already started
 select is(
     reconcile_event_purchase_for_checkout_session('stripe', 'cs_started', 'pi_started')::jsonb,
-    jsonb_build_object(
-        'amount_minor', 2500,
-        'event_purchase_id', :'purchaseStartedID'::uuid,
-        'outcome', 'refund_required',
-        'provider_payment_reference', 'pi_started'
-    ),
-    'Should require refund when the event has already started'
+    jsonb_build_object('outcome', 'refund_queued'),
+    'Should queue a refund when the event has already started'
 );
 
 -- Should complete active holds after an open-only registration window reaches the event start
@@ -739,13 +719,8 @@ select throws_ok(
 -- Should require refund when the attendee row cannot be confirmed
 select is(
     reconcile_event_purchase_for_checkout_session('stripe', 'cs_invited', null)::jsonb,
-    jsonb_build_object(
-        'amount_minor', 2500,
-        'event_purchase_id', :'purchaseInvitedID'::uuid,
-        'outcome', 'refund_required',
-        'provider_payment_reference', 'pi_invited'
-    ),
-    'Should require refund when the attendee row cannot be confirmed'
+    jsonb_build_object('outcome', 'refund_queued'),
+    'Should queue a refund when the attendee row cannot be confirmed'
 );
 
 -- Should persist the refunding purchase fields and keep the invitation row

@@ -147,4 +147,15 @@ describe("dashboard group event add template", () => {
     );
     expect(template).to.include('class="min-w-0 overflow-x-auto"');
   });
+
+  it("defaults organizers to selectable group team members", async () => {
+    const template = normalizeWhitespace(await loadTemplate());
+
+    expect(template).to.include('id="event-organizers-selector"');
+    expect(template).to.include('selected-users="{{ team_members|json }}"');
+    expect(template).to.include('available-users="{{ team_members|json }}"');
+    expect(template).to.include(
+      '<input type="hidden" name="organizers_present" value="true">',
+    );
+  });
 });

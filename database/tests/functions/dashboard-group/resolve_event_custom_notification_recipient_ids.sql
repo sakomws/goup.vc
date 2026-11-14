@@ -126,16 +126,18 @@ insert into "user" (
     auth_hash,
     email,
     email_verified,
-    optional_notifications_enabled,
     username
 ) values
-    (:'eligibleUserID', gen_random_bytes(32), 'eligible@example.com', true, true, 'eligible'),
-    (:'optedOutUserID', gen_random_bytes(32), 'opted-out@example.com', true, false, 'opted-out'),
-    (:'otherEventUserID', gen_random_bytes(32), 'other@example.com', true, true, 'other'),
-    (:'pendingCheckoutUserID', gen_random_bytes(32), 'pending-checkout@example.com', true, true, 'pending-checkout'),
-    (:'pendingQuestionsUserID', gen_random_bytes(32), 'questions-pending@example.com', true, true, 'questions-pending'),
-    (:'pendingUserID', gen_random_bytes(32), 'pending@example.com', true, true, 'pending'),
-    (:'unverifiedUserID', gen_random_bytes(32), 'unverified@example.com', false, true, 'unverified');
+    (:'eligibleUserID', gen_random_bytes(32), 'eligible@example.com', true, 'eligible'),
+    (:'optedOutUserID', gen_random_bytes(32), 'opted-out@example.com', true, 'opted-out'),
+    (:'otherEventUserID', gen_random_bytes(32), 'other@example.com', true, 'other'),
+    (:'pendingCheckoutUserID', gen_random_bytes(32), 'pending-checkout@example.com', true, 'pending-checkout'),
+    (:'pendingQuestionsUserID', gen_random_bytes(32), 'questions-pending@example.com', true, 'questions-pending'),
+    (:'pendingUserID', gen_random_bytes(32), 'pending@example.com', true, 'pending'),
+    (:'unverifiedUserID', gen_random_bytes(32), 'unverified@example.com', false, 'unverified');
+
+insert into user_notification_opt_out (notification_category_id, user_id)
+values ('organizer-messages', :'optedOutUserID');
 
 -- Attendees
 insert into event_attendee (event_id, user_id, status)

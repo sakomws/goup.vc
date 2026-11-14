@@ -6,6 +6,11 @@
 {# Header -#}
 {{ dashboard::page_title(title = "Submissions",
 description = "Review and manage call for speakers submissions.") -}}
+<div class="mt-4 flex justify-end">
+  <a href="/dashboard/group/events/{{ event_id }}/submissions.csv"
+     class="btn-primary-outline btn-mini"
+     download>Export CSV</a>
+</div>
 {# End header -#}
 
 {# Refresh trigger -#}
@@ -40,7 +45,9 @@ description = "Review and manage call for speakers submissions.") -}}
       </div>
       <div class="flex min-w-0 items-center gap-2 md:ms-auto md:justify-end">
         <label for="submissions-sort"
-               class="shrink-0 font-semibold text-[0.775rem] text-nowrap text-black leading-6">Sort by</label>
+               class="shrink-0 font-semibold text-[0.775rem] text-nowrap text-black leading-6">
+          Sort by
+        </label>
         <select id="submissions-sort"
                 name="sort"
                 class="block min-w-0 w-full sm:w-56 px-3 text-sm h-[42px] text-stone-900 bg-white border border-stone-200 rounded-full focus:outline-none focus:ring-0 focus:border-stone-200 hover:border-primary-500 focus:hover:border-primary-500 transition-colors">
@@ -98,9 +105,8 @@ description = "Review and manage call for speakers submissions.") -}}
             <td class="sm:hidden px-8 py-16 text-center" colspan="2">
               {% include "dashboard/placeholders/group_event_submissions_table.html" -%}
             </td>
-            <td class="hidden sm:table-cell xl:hidden px-8 py-16 text-center" colspan="3">
-              {% include "dashboard/placeholders/group_event_submissions_table.html" -%}
-            </td>
+            <td class="hidden sm:table-cell xl:hidden px-8 py-16 text-center"
+                colspan="3">{% include "dashboard/placeholders/group_event_submissions_table.html" -%}</td>
             <td class="hidden xl:table-cell 2xl:hidden px-8 py-16 text-center"
                 colspan="4">{% include "dashboard/placeholders/group_event_submissions_table.html" -%}</td>
             <td class="hidden 2xl:table-cell px-8 py-16 text-center" colspan="6">
@@ -115,8 +121,7 @@ description = "Review and manage call for speakers submissions.") -}}
               {# Speaker -#}
               <td class="min-w-0 overflow-hidden px-3 xl:px-5 py-4">
                 <div class="flex min-w-0 items-start gap-3">
-                  <logo-image
-                  class="mt-0.5 shrink-0"
+                  <logo-image class="mt-0.5 shrink-0"
                   {% if let Some(photo_url) = &submission.speaker.photo_url -%}
                     image-url="{{ photo_url }}"
                   {% endif -%}
@@ -135,7 +140,9 @@ description = "Review and manage call for speakers submissions.") -}}
                   </div>
                 </div>
                 <div class="mt-3 min-w-0 2xl:hidden">
-                  <div class="font-medium text-stone-900 break-words line-clamp-2">{{ submission.session_proposal.title }}</div>
+                  <div class="font-medium text-stone-900 break-words line-clamp-2">
+                    {{ submission.session_proposal.title }}
+                  </div>
                   {% if !submission.labels.is_empty() -%}
                     <div class="mt-2 flex flex-wrap gap-1.5 min-w-0">
                       {% for label in submission.labels -%}

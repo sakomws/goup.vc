@@ -1,0 +1,150 @@
+-- Tests describing alliance contact filters with readable names.
+
+-- ============================================================================
+-- SETUP
+-- ============================================================================
+
+begin;
+select plan(4);
+
+-- ============================================================================
+-- VARIABLES
+-- ============================================================================
+
+\set alphaCategoryID '8a0d0000-0000-0000-0000-000000000002'
+\set betaCategoryID '8a0d0000-0000-0000-0000-000000000003'
+\set allianceID '8a0d0000-0000-0000-0000-000000000001'
+\set deletedGroupID '8a0d0000-0000-0000-0000-000000000009'
+\set eastRegionID '8a0d0000-0000-0000-0000-000000000006'
+\set kubernetesGroupID '8a0d0000-0000-0000-0000-000000000010'
+\set rustGroupID '8a0d0000-0000-0000-0000-000000000011'
+\set unselectedCategoryID '8a0d0000-0000-0000-0000-000000000005'
+\set unselectedGroupID '8a0d0000-0000-0000-0000-000000000012'
+\set unselectedRegionID '8a0d0000-0000-0000-0000-000000000008'
+\set zetaCategoryID '8a0d0000-0000-0000-0000-000000000004'
+\set zuluRegionID '8a0d0000-0000-0000-0000-000000000007'
+
+-- ============================================================================
+-- SEED DATA
+-- ============================================================================
+
+-- Alliance whose contact filters are described
+select fx_alliance(:'allianceID');
+
+-- Unordered group category sorted by name
+select fx_group_category(:'alphaCategoryID', :'allianceID', jsonb_build_object('name', 'Alpha'));
+
+-- Second unordered group category sorted by name
+select fx_group_category(:'betaCategoryID', :'allianceID', jsonb_build_object('name', 'Beta'));
+
+-- Group category left out of the selected filters
+select fx_group_category(:'unselectedCategoryID', :'allianceID', jsonb_build_object('name', 'Unselected'));
+
+-- Ordered group category sorted before unordered ones
+select fx_group_category(
+    :'zetaCategoryID',
+    :'allianceID',
+    jsonb_build_object('name', 'Zeta', 'order', 1)
+);
+
+-- Unordered region sorted by name
+insert into region (region_id, alliance_id, name)
+values (:'eastRegionID', :'allianceID', 'East');
+
+-- Region left out of the selected filters
+insert into region (region_id, alliance_id, name)
+values (:'unselectedRegionID', :'allianceID', 'West');
+
+-- Ordered region sorted before unordered ones
+insert into region (region_id, alliance_id, name, "order")
+values (:'zuluRegionID', :'allianceID', 'Zulu', 1);
+
+-- Deleted group still described when selected
+select fx_group(
+    :'deletedGroupID',
+    :'allianceID',
+    :'betaCategoryID',
+    jsonb_build_object('active', false, 'deleted', true, 'name', 'Archived', 'region_id', :'zuluRegionID')
+);
+
+-- Group in the alpha category and the east region
+select fx_group(
+    :'kubernetesGroupID',
+    :'allianceID',
+    :'alphaCategoryID',
+    jsonb_build_object('name', 'Kubernetes', 'region_id', :'eastRegionID')
+);
+
+-- Group in the zeta category without region
+select fx_group(:'rustGroupID', :'allianceID', :'zetaCategoryID', jsonb_build_object('name', 'Rust'));
+
+-- Group left out of the selected filters
+select fx_group(:'unselectedGroupID', :'allianceID', :'alphaCategoryID', jsonb_build_object('name', 'Unselected'));
+
+-- ============================================================================
+-- TESTS
+-- ============================================================================
+
+-- Should describe empty filter lists as All
+select is(
+    describe_alliance_contact_filters(
+        :'allianceID'::uuid,
+        '{"group_category_ids": [], "group_ids": [], "regions": [], "roles": []}'::jsonb
+    ),
+    '{"group_categories": "All", "groups": "All", "regions": "All", "roles": "All"}'::jsonb,
+    'Should describe empty filter lists as All'
+);
+
+-- Should describe missing filter lists as All
+select is(
+    describe_alliance_contact_filters(:'allianceID'::uuid, '{}'::jsonb),
+    '{"group_categories": "All", "groups": "All", "regions": "All", "roles": "All"}'::jsonb,
+    'Should describe missing filter lists as All'
+);
+
+-- Should describe selected filter values with ordered names and group labels
+select is(
+    describe_alliance_contact_filters(
+        :'allianceID'::uuid,
+        jsonb_build_object(
+            'group_category_ids', jsonb_build_array(
+                :'betaCategoryID',
+                :'alphaCategoryID',
+                :'zetaCategoryID',
+                :'betaCategoryID'
+            ),
+            'group_ids', jsonb_build_array(
+                :'rustGroupID',
+                :'kubernetesGroupID',
+                :'deletedGroupID',
+                :'rustGroupID'
+            ),
+            'regions', jsonb_build_array('none', :'eastRegionID', :'zuluRegionID'),
+            'roles', jsonb_build_array('viewer', 'check-in-manager', 'admin', 'events-manager')
+        )
+    ),
+    '{
+        "group_categories": ["Zeta", "Alpha", "Beta"],
+        "groups": ["Archived · Beta · Zulu", "Kubernetes · Alpha · East", "Rust · Zeta"],
+        "regions": ["Zulu", "East", "No region"],
+        "roles": ["Admin", "Events Manager", "Check-In Manager", "Viewer"]
+    }'::jsonb,
+    'Should describe selected filter values with ordered names and group labels'
+);
+
+-- Should describe the no region option alone
+select is(
+    describe_alliance_contact_filters(
+        :'allianceID'::uuid,
+        '{"regions": ["none"], "roles": ["viewer"]}'::jsonb
+    ),
+    '{"group_categories": "All", "groups": "All", "regions": ["No region"], "roles": ["Viewer"]}'::jsonb,
+    'Should describe the no region option alone'
+);
+
+-- ============================================================================
+-- CLEANUP
+-- ============================================================================
+
+select * from finish();
+rollback;

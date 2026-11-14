@@ -91,12 +91,19 @@ pub(crate) async fn list_page(
         ts_query: page_filters.ts_query.clone(),
     };
     let (
+        can_manage_check_ins,
         can_manage_events,
         event,
         registration_questions,
         search_attendees_results,
         scheduled_emails,
     ) = tokio::try_join!(
+        db.user_has_group_permission(
+            &alliance_id,
+            &group_id,
+            &user.user_id,
+            GroupPermission::CheckInsWrite
+        ),
         db.user_has_group_permission(
             &alliance_id,
             &group_id,
@@ -124,6 +131,7 @@ pub(crate) async fn list_page(
         all_attendees_email_recipient_total: search_attendees_results
             .all_attendees_email_recipient_total,
         attendees: search_attendees_results.attendees,
+        can_manage_check_ins,
         can_manage_events,
         event,
         navigation_links,
@@ -194,19 +202,20 @@ pub(crate) async fn accept_invitation_request(
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn approve_refund_request(
     CurrentUser(user): CurrentUser,
-    SelectedAllianceId(alliance_id): SelectedAllianceId,
     SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
     State(payments_manager): State<DynPaymentsManager>,
     Path((event_id, user_id)): Path<(Uuid, Uuid)>,
     ValidatedForm(review): ValidatedForm<RefundReviewInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
+    let event_purchase_id = db
+        .get_event_purchase_id_for_refund(group_id, event_id, user_id)
+        .await?;
     payments_manager
         .approve_refund_request(&ApproveRefundRequestInput {
             actor_user_id: user.user_id,
-            alliance_id,
-            event_id,
+            event_purchase_id,
             group_id,
-            user_id,
 
             review_note: review.review_note.clone(),
         })
@@ -215,6 +224,34 @@ pub(crate) async fn approve_refund_request(
     Ok((
         StatusCode::NO_CONTENT,
         [("HX-Trigger", "refresh-event-attendees")],
+    )
+        .into_response())
+}
+
+/// Approves a refund selected from the managed refunds dashboard.
+#[instrument(skip_all, err)]
+pub(crate) async fn approve_refund_by_purchase(
+    CurrentUser(user): CurrentUser,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(payments_manager): State<DynPaymentsManager>,
+    Path(event_purchase_id): Path<Uuid>,
+    ValidatedForm(review): ValidatedForm<RefundReviewInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    payments_manager
+        .approve_refund_request(&ApproveRefundRequestInput {
+            actor_user_id: user.user_id,
+            event_purchase_id,
+            group_id,
+            review_note: review.review_note,
+        })
+        .await?;
+
+    Ok((
+        StatusCode::NO_CONTENT,
+        [(
+            "HX-Trigger",
+            "refresh-event-attendees, refresh-group-refunds",
+        )],
     )
         .into_response())
 }
@@ -259,14 +296,12 @@ pub(crate) async fn cancel_event_attendee_attendance(
         })
         .await?;
 
-    if cancel_result.refund_event_purchase_id.is_some()
+    if let Some(event_purchase_id) = cancel_result.refund_event_purchase_id
         && let Err(err) = payments_manager
             .approve_refund_request(&ApproveRefundRequestInput {
                 actor_user_id,
-                alliance_id,
-                event_id,
+                event_purchase_id,
                 group_id,
-                user_id,
 
                 review_note: Some("Attendance canceled by organizer".to_string()),
             })
@@ -501,19 +536,20 @@ pub(crate) async fn reject_invitation_request(
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn reject_refund_request(
     CurrentUser(user): CurrentUser,
-    SelectedAllianceId(alliance_id): SelectedAllianceId,
     SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
     State(payments_manager): State<DynPaymentsManager>,
     Path((event_id, user_id)): Path<(Uuid, Uuid)>,
     ValidatedForm(review): ValidatedForm<RefundReviewInput>,
 ) -> Result<impl IntoResponse, HandlerError> {
+    let event_purchase_id = db
+        .get_event_purchase_id_for_refund(group_id, event_id, user_id)
+        .await?;
     payments_manager
         .reject_refund_request(&RejectRefundRequestInput {
             actor_user_id: user.user_id,
-            alliance_id,
-            event_id,
+            event_purchase_id,
             group_id,
-            user_id,
 
             review_note: review.review_note.clone(),
         })
@@ -522,6 +558,53 @@ pub(crate) async fn reject_refund_request(
     Ok((
         StatusCode::NO_CONTENT,
         [("HX-Trigger", "refresh-event-attendees")],
+    )
+        .into_response())
+}
+
+/// Rejects a refund selected from the managed refunds dashboard.
+#[instrument(skip_all, err)]
+pub(crate) async fn reject_refund_by_purchase(
+    CurrentUser(user): CurrentUser,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(payments_manager): State<DynPaymentsManager>,
+    Path(event_purchase_id): Path<Uuid>,
+    ValidatedForm(review): ValidatedForm<RefundReviewInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    payments_manager
+        .reject_refund_request(&RejectRefundRequestInput {
+            actor_user_id: user.user_id,
+            event_purchase_id,
+            group_id,
+            review_note: review.review_note,
+        })
+        .await?;
+
+    Ok((
+        StatusCode::NO_CONTENT,
+        [(
+            "HX-Trigger",
+            "refresh-event-attendees, refresh-group-refunds",
+        )],
+    )
+        .into_response())
+}
+
+/// Requeues an exhausted retryable attendee refund.
+#[instrument(skip_all, err)]
+pub(crate) async fn retry_refund(
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(event_purchase_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    db.requeue_event_purchase_refund(group_id, event_purchase_id).await?;
+
+    Ok((
+        StatusCode::NO_CONTENT,
+        [(
+            "HX-Trigger",
+            "refresh-event-attendees, refresh-group-refunds",
+        )],
     )
         .into_response())
 }
@@ -567,7 +650,7 @@ pub(crate) async fn send_event_custom_notification(
     if event_attendees_ids.is_empty() {
         let message = match notification.recipient_scope {
             EventCustomNotificationRecipientScope::All => {
-                "No attendees with verified email addresses and email notifications enabled."
+                "No attendees with verified email addresses who accept messages from event organizers."
             }
             EventCustomNotificationRecipientScope::Selected => {
                 "No selected attendees can receive this email."

@@ -36,14 +36,17 @@ import {
   JOIN_WAITLIST_LABEL,
   LEAVE_WAITLIST_LABEL,
   REQUEST_INVITATION_LABEL,
+  closeRefundModal,
   closeQuestionsModal,
   closeTicketModal,
   initializeAttendanceContainer,
+  openRefundModal,
   openQuestionsModal,
   openTicketModal,
   renderMeetingDetails,
   restoreCheckoutModalControls,
   restorePrimaryRequestControl,
+  restoreRefundModalControls,
   showCheckoutLoadingState,
   showAttendeeState,
   showGuestAttendanceState,
@@ -51,6 +54,7 @@ import {
   showPendingApprovalAttendanceState,
   showPendingPaymentState,
   showPrimaryRequestLoading,
+  showRefundLoadingState,
   showRegistrationQuestionsPendingState,
   showRejectedInvitationState,
   showSignedOutAttendanceState,
@@ -64,7 +68,7 @@ import {
 const PAYMENT_RETURN_PARAM = "payment";
 const PAYMENT_RETURN_POLL_ATTEMPTS = 8;
 const PAYMENT_RETURN_POLL_INTERVAL_MS = 2000;
-const PRIMARY_REQUEST_ROLES = new Set(["attend-btn", "checkout-cancel-btn", "leave-btn", "refund-btn"]);
+const PRIMARY_REQUEST_ROLES = new Set(["attend-btn", "checkout-cancel-btn", "leave-btn"]);
 const QUESTIONS_CONTINUE_ACTION_ATTEND = "attend";
 const QUESTIONS_CONTINUE_ACTION_TICKET = "ticket";
 const PENDING_ATTENDANCE_CHECK_RESPONSE = "__ocgPendingAttendanceCheckResponse";
@@ -113,13 +117,6 @@ const PRIMARY_ACTION_CONFIG = {
     errorMessage: "Something went wrong canceling your checkout. Please try again later.",
     onSuccess: () => {
       showInfoAlert("Your checkout has been canceled. You can choose a different ticket.");
-      return true;
-    },
-  },
-  "refund-btn": {
-    errorMessage: "Something went wrong requesting your refund. Please try again later.",
-    onSuccess: () => {
-      showInfoAlert("Your refund request has been sent to the organizers.");
       return true;
     },
   },
@@ -565,6 +562,32 @@ const handleCheckoutConfigRequest = (event) => {
   }
 };
 
+const handleRefundConfigRequest = (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement) || target.dataset.attendanceRole !== "refund-form") {
+    return;
+  }
+
+  const container = getAttendanceContainer(target);
+  const params = event.detail?.parameters;
+  const refundReasonInput = container && getAttendanceControl(container, "refund-reason-input");
+  if (!(refundReasonInput instanceof HTMLTextAreaElement) || !params || typeof params !== "object") {
+    return;
+  }
+
+  const normalizedReason = refundReasonInput.value.trim();
+  refundReasonInput.value = normalizedReason;
+  [params, event.detail?.unfilteredParameters]
+    .filter((parameters) => parameters && typeof parameters === "object")
+    .forEach((parameters) => {
+      if (normalizedReason) {
+        parameters.requested_reason = normalizedReason;
+      } else {
+        delete parameters.requested_reason;
+      }
+    });
+};
+
 /**
  * Handles the questions modal submit flow.
  * @param {Event} event - Submit event
@@ -735,6 +758,33 @@ const handleCheckoutAfterRequest = (event) => {
   refreshAvailabilityAndRenderAttendance(container);
 };
 
+const handleRefundAfterRequest = (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLFormElement) || target.dataset.attendanceRole !== "refund-form") {
+    return;
+  }
+
+  const container = getAttendanceContainer(target);
+  if (!container) {
+    return;
+  }
+
+  restoreRefundModalControls(container);
+  const ok = handleHtmxResponse({
+    xhr: event.detail?.xhr,
+    successMessage: "",
+    errorMessage: "Something went wrong requesting your refund. Please try again later.",
+  });
+  if (!ok) {
+    return;
+  }
+
+  closeRefundModal(container);
+  target.reset();
+  showInfoAlert("Your refund request has been sent to the organizers.");
+  refreshAvailabilityAndRenderAttendance(container);
+};
+
 /**
  * Handles htmx:beforeRequest events for attendance controls.
  * @param {Event} event - htmx:beforeRequest event
@@ -751,6 +801,11 @@ const handleBeforeRequest = (event) => {
   }
 
   if (blockAttendRequestForQuestions(event, target, container)) {
+    return;
+  }
+
+  if (target.dataset.attendanceRole === "refund-form") {
+    showRefundLoadingState(container);
     return;
   }
 
@@ -780,6 +835,11 @@ const handleAfterRequest = (event) => {
     return;
   }
 
+  if (target.dataset.attendanceRole === "refund-form") {
+    handleRefundAfterRequest(event);
+    return;
+  }
+
   if (PRIMARY_REQUEST_ROLES.has(target.dataset.attendanceRole)) {
     handlePrimaryActionAfterRequest(event);
     return;
@@ -794,6 +854,7 @@ const handleAfterRequest = (event) => {
  */
 const handleConfigRequest = (event) => {
   handleCheckoutConfigRequest(event);
+  handleRefundConfigRequest(event);
 };
 
 /**
@@ -901,7 +962,18 @@ const handleAttendanceClick = (event) => {
 
   const refundButton = closestElement(event.target, '[data-attendance-role="refund-btn"]');
   if (refundButton instanceof HTMLElement) {
-    showConfirmAlert("Are you sure you want to request a refund for this ticket?", refundButton.id, "Yes");
+    event.preventDefault();
+    openRefundModal(container, refundButton);
+    return;
+  }
+
+  const closeRefundModalTrigger = closestElement(
+    event.target,
+    '[data-attendance-role="refund-modal-close"], [data-attendance-role="refund-modal-cancel"], [data-attendance-role="refund-modal-overlay"]',
+  );
+  if (closeRefundModalTrigger) {
+    closeRefundModal(container);
+    return;
   }
 
   const closeTicketModalTrigger = closestElement(
@@ -942,6 +1014,11 @@ const handleAttendanceKeydown = (event) => {
     if (ticketModal && !isElementHidden(ticketModal)) {
       restoreCheckoutModalControls(container);
       closeTicketModal(container);
+    }
+
+    const refundModal = getAttendanceControl(container, "refund-modal");
+    if (refundModal && !isElementHidden(refundModal)) {
+      closeRefundModal(container);
     }
 
     const questionsModal = getAttendanceControl(container, "registration-modal");

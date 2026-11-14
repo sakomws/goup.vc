@@ -35,6 +35,7 @@ pub enum EventPurchaseStatus {
     #[default]
     Pending,
     RefundPending,
+    RefundRecoveryPending,
     RefundRequested,
     Refunded,
 }
@@ -88,6 +89,15 @@ pub enum PaymentMode {
 pub enum PaymentProvider {
     #[default]
     Stripe,
+}
+
+/// Durable provider-mediated payment job kind.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, strum::Display)]
+#[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
+pub enum PaymentJobKind {
+    /// Customer refund processing and local finalization.
+    EventPurchaseRefund,
 }
 
 /// Discount code configuration for a ticketed event.

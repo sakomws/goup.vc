@@ -2,10 +2,18 @@ import { expect } from "@open-wc/testing";
 
 import { waitForMicrotask } from "/tests/unit/test-utils/async.js";
 import { resetDom } from "/tests/unit/test-utils/dom.js";
+import { mockHtmx } from "/tests/unit/test-utils/globals.js";
 import { dispatchHtmxAfterSwap } from "/tests/unit/test-utils/htmx.js";
 
 describe("event cfs modal", () => {
+  let htmx;
+
+  beforeEach(() => {
+    htmx = mockHtmx();
+  });
+
   afterEach(() => {
+    htmx.restore();
     resetDom();
   });
 

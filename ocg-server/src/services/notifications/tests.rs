@@ -999,6 +999,29 @@ fn test_delivery_worker_prepare_content_event_welcome_renders_dashboard_cancella
 }
 
 #[test]
+fn test_delivery_worker_prepare_content_footer_points_to_notification_preferences() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventPublished,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_reminder_template_data()),
+    };
+
+    // Prepare content
+    let (_, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check the footer explains where preferences are managed
+    let body = body.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(body.contains(
+        "You can choose which optional emails you receive, and mute specific groups, from the \
+         Notifications section of your user dashboard."
+    ));
+    assert!(!body.contains("Profile section"));
+}
+
+#[test]
 fn test_delivery_worker_prepare_content_group_custom() {
     // Setup notification
     let notification = Notification {

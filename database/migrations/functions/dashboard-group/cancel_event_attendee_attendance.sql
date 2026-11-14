@@ -57,11 +57,25 @@ begin
     order by ep.created_at desc, ep.event_purchase_id desc
     limit 1;
 
-    -- Remove only confirmed attendees
-    delete from event_attendee
-    where event_id = p_event_id
-    and user_id = p_user_id
-    and status = 'confirmed';
+    -- Preserve RSVP history for non-purchase attendance. Purchase-backed
+    -- attendance is removed while its refund lifecycle remains authoritative.
+    if v_purchase_id is null then
+        update event_attendee
+        set
+            attendance_canceled_at = current_timestamp,
+            attendance_canceled_by_user_id = p_actor_user_id,
+            checked_in = false,
+            checked_in_at = null,
+            status = 'attendance-canceled'
+        where event_id = p_event_id
+        and user_id = p_user_id
+        and status = 'confirmed';
+    else
+        delete from event_attendee
+        where event_id = p_event_id
+        and user_id = p_user_id
+        and status = 'confirmed';
+    end if;
 
     if not found then
         raise exception 'confirmed event attendee not found';

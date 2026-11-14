@@ -182,7 +182,12 @@ jobs:
       - name: Install pgTAP extension in PostgreSQL service
         run: |
           docker exec -u root ${{ job.services.postgres.id }} sh -lc \
-            'apt-get update && (apt-get install -y postgresql-17-pgtap || apt-get install -y pgtap)'
+            'if grep -Rqs "bullseye-pgdg" /etc/apt/sources.list /etc/apt/sources.list.d; then
+               sed -i "s|http://apt.postgresql.org/pub/repos/apt|https://apt-archive.postgresql.org/pub/repos/apt|g" \
+                 /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
+             fi
+             apt-get update &&
+             (apt-get install -y postgresql-17-pgtap || apt-get install -y pgtap)'
       - name: Create database test tern config
         run: |
           cat >/tmp/ocg-tern-tests.conf <<EOF
@@ -215,6 +220,18 @@ jobs:
             /tmp/ocg-tern-legacy-migration-tests.conf
       - name: Install pgtap database extension
         run: PGPASSWORD=tests psql -h 127.0.0.1 -p ${{ job.services.postgres.ports[5432] }} -U tests tests -c 'create extension pgtap;'
+      - name: Load database test fixtures
+        working-directory: ./database/tests
+        run: |
+          for fixture in fixtures/*.sql; do
+            PGPASSWORD=tests psql \
+              -h 127.0.0.1 \
+              -p ${{ job.services.postgres.ports[5432] }} \
+              -U tests \
+              -d tests \
+              -v ON_ERROR_STOP=1 \
+              -f "$fixture"
+          done
       - name: Run database tests
         working-directory: ./database/tests
         run: PGPASSWORD=tests pg_prove --host 127.0.0.1 --port ${{ job.services.postgres.ports[5432] }} --dbname tests --username tests --verbose schema/*.sql functions/*/*.sql

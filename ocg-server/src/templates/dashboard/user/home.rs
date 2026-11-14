@@ -9,10 +9,10 @@ use crate::{
         PageId,
         auth::{self, User},
         dashboard::{
-            audit,
+            audit, inbox,
             user::{
                 affiliations, coffee_meet, events, invitations, mentorship, mock_interviews,
-                session_proposals, submissions,
+                notifications, session_proposals, submissions,
             },
         },
         filters,
@@ -51,6 +51,10 @@ pub(crate) enum Content {
     Affiliations(affiliations::ListPage),
     /// User upcoming events page.
     Events(events::ListPage),
+    /// Inbox conversations page.
+    Inbox(inbox::ListPage),
+    /// Inbox conversation thread page.
+    InboxConversation(Box<inbox::ConversationPage>),
     /// `CoffeeMeet` subscriptions page.
     CoffeeMeet(coffee_meet::ListPage),
     /// Invitations page.
@@ -61,6 +65,8 @@ pub(crate) enum Content {
     Mentorship(mentorship::ListPage),
     /// Mock interview matches page.
     MockInterviews(mock_interviews::ListPage),
+    /// Notification preferences page.
+    Notifications(notifications::Page),
     /// Session proposals page.
     SessionProposals(session_proposals::ListPage),
     /// Submissions page.
@@ -81,6 +87,11 @@ impl Content {
     /// Check if the content is the events page.
     fn is_events(&self) -> bool {
         matches!(self, Content::Events(_))
+    }
+
+    /// Check if the content is an inbox page.
+    fn is_inbox(&self) -> bool {
+        matches!(self, Content::Inbox(_) | Content::InboxConversation(_))
     }
 
     /// Check if the content is the `CoffeeMeet` page.
@@ -108,6 +119,11 @@ impl Content {
         matches!(self, Content::MockInterviews(_))
     }
 
+    /// Check if the content is the notification preferences page.
+    fn is_notifications(&self) -> bool {
+        matches!(self, Content::Notifications(_))
+    }
+
     /// Check if the content is the session proposals page.
     fn is_session_proposals(&self) -> bool {
         matches!(self, Content::SessionProposals(_))
@@ -126,10 +142,13 @@ impl std::fmt::Display for Content {
             Content::Affiliations(template) => write!(f, "{}", template.render()?),
             Content::CoffeeMeet(template) => write!(f, "{}", template.render()?),
             Content::Events(template) => write!(f, "{}", template.render()?),
+            Content::Inbox(template) => write!(f, "{}", template.render()?),
+            Content::InboxConversation(template) => write!(f, "{}", template.render()?),
             Content::Invitations(template) => write!(f, "{}", template.render()?),
             Content::Logs(template) => write!(f, "{}", template.render()?),
             Content::Mentorship(template) => write!(f, "{}", template.render()?),
             Content::MockInterviews(template) => write!(f, "{}", template.render()?),
+            Content::Notifications(template) => write!(f, "{}", template.render()?),
             Content::SessionProposals(template) => write!(f, "{}", template.render()?),
             Content::Submissions(template) => write!(f, "{}", template.render()?),
         }
@@ -150,6 +169,8 @@ pub(crate) enum Tab {
     Affiliations,
     /// Events tab.
     Events,
+    /// Inbox tab.
+    Inbox,
     /// `CoffeeMeet` tab.
     CoffeeMeet,
     /// Invitations tab.
@@ -160,6 +181,8 @@ pub(crate) enum Tab {
     Mentorship,
     /// Mock interviews tab.
     MockInterviews,
+    /// Notification preferences tab.
+    Notifications,
     /// Session proposals tab.
     SessionProposals,
     /// Submissions tab.

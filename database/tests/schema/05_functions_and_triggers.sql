@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(330);
+select plan(325);
 
 -- ============================================================================
 -- VARIABLES
@@ -116,12 +116,10 @@ select has_function('add_meeting', array['text', 'text', 'text', 'text', 'text',
 select has_function('add_region', array['uuid', 'uuid', 'jsonb']::name[]);
 select has_function('add_session_proposal', array['uuid', 'jsonb']::name[]);
 select has_function('append_meeting_recording_url', array['text', 'text', 'text']::name[]);
-select has_function('approve_event_refund_request', array['uuid', 'uuid', 'uuid', 'uuid', 'text', 'text']::name[]);
 select has_function('approve_group_member_phone_request', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('assign_zoom_host_user', array['uuid', 'uuid', 'timestamp with time zone', 'text[]', 'integer', 'timestamp with time zone', 'timestamp with time zone']::name[]);
 select has_function('attach_checkout_session_to_event_purchase', array['uuid', 'text', 'text', 'text']::name[]);
 select has_function('attend_event', array['uuid', 'uuid', 'uuid', 'jsonb']::name[]);
-select has_function('begin_event_refund_approval', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('cancel_event', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('cancel_event_attendee_attendance', array['uuid', 'uuid', 'uuid', 'uuid']::name[]);
 select has_function('cancel_event_attendee_invitation', array['uuid', 'uuid', 'uuid', 'uuid']::name[]);
@@ -151,8 +149,11 @@ select has_function('delete_region', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('delete_session_proposal', array['uuid', 'uuid']::name[]);
 select has_function('enqueue_due_coffee_meet_suggestions', array['text']::name[]);
 select has_function('enqueue_due_event_reminders', array['text']::name[]);
-select has_function('enqueue_notification', array['text', 'jsonb', 'jsonb', 'uuid[]']::name[]);
-select has_function('enqueue_tracked_custom_notification', array['text', 'jsonb', 'jsonb', 'uuid[]', 'uuid', 'uuid', 'uuid', 'integer', 'text', 'text']::name[]);
+select has_function('enqueue_notification', array['text', 'jsonb', 'jsonb', 'uuid[]', 'uuid[]']::name[]);
+select has_function('enqueue_tracked_custom_notification', array[
+    'text', 'jsonb', 'jsonb', 'uuid[]', 'uuid', 'uuid', 'uuid', 'uuid',
+    'integer', 'text', 'text', 'jsonb'
+]::name[]);
 select has_function('ensure_event_is_active', array['uuid', 'uuid']::name[]);
 select has_function('escape_ilike_pattern', array['text']::name[]);
 select has_function('expire_event_purchase_for_checkout_session', array['text', 'text']::name[]);
@@ -203,7 +204,10 @@ select has_function('get_user_by_id', array['uuid', 'boolean']::name[]);
 select has_function('get_user_by_id_verified', array['uuid']::name[]);
 select has_function('get_user_by_username', array['text']::name[]);
 select has_function('i_array_to_string', array['text[]', 'text']::name[]);
-select has_function('insert_audit_log', array['text', 'uuid', 'text', 'uuid', 'uuid', 'uuid', 'uuid', 'jsonb']::name[]);
+select has_function('insert_audit_log', array[
+    'text', 'uuid', 'text', 'uuid', 'uuid', 'uuid', 'uuid', 'jsonb',
+    'timestamp with time zone'
+]::name[]);
 select has_function('approve_group_join_request', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('invite_event_attendee', array['uuid', 'uuid', 'uuid', 'uuid', 'text']::name[]);
 select has_function('is_event_check_in_window_open', array['uuid', 'uuid']::name[]);
@@ -292,12 +296,10 @@ select has_function('publish_event', array['uuid', 'uuid', 'uuid', 'text']::name
 select has_function('publish_event_series_events', array['uuid', 'uuid', 'uuid[]', 'text']::name[]);
 select has_function('questionnaire_answers_exist_for_event', array['uuid']::name[]);
 select has_function('reconcile_event_purchase_for_checkout_session', array['text', 'text', 'text']::name[]);
-select has_function('record_automatic_refund_for_event_purchase', array['uuid', 'text']::name[]);
 select has_function('refund_free_event_purchase', array['uuid']::name[]);
 select has_function('reject_alliance_team_invitation', array['uuid', 'uuid']::name[]);
 select has_function('reject_event_attendee_invitation', array['uuid', 'uuid']::name[]);
 select has_function('reject_event_invitation_request', array['uuid', 'uuid', 'uuid', 'uuid']::name[]);
-select has_function('reject_event_refund_request', array['uuid', 'uuid', 'uuid', 'uuid', 'text']::name[]);
 select has_function('reject_group_join_request', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('reject_group_team_invitation', array['uuid', 'uuid']::name[]);
 select has_function('reject_session_proposal_co_speaker_invitation', array['uuid', 'uuid']::name[]);
@@ -313,7 +315,6 @@ select has_function('resolve_active_custom_domain', array['text']::name[]);
 select has_function('request_group_member_phone', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('resolve_unique_username', array['text', 'uuid']::name[]);
 select has_function('resubmit_cfs_submission', array['uuid', 'uuid']::name[]);
-select has_function('revert_event_refund_approval', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('search_event_attendees', array['uuid', 'jsonb']::name[]);
 select has_function('search_event_invitation_requests', array['uuid', 'jsonb']::name[]);
 select has_function('search_event_waitlist', array['uuid', 'jsonb']::name[]);
@@ -335,7 +336,9 @@ select has_function('sync_event_discount_codes', array['uuid', 'jsonb']::name[])
 select has_function('sync_event_hosts_speakers_sponsors', array['uuid', 'jsonb']::name[]);
 select has_function('sync_event_sessions', array['uuid', 'jsonb', 'jsonb']::name[]);
 select has_function('sync_event_ticket_types', array['uuid', 'jsonb']::name[]);
-select has_function('track_custom_notification', array['uuid', 'uuid', 'uuid', 'integer', 'text', 'text']::name[]);
+select has_function('track_custom_notification', array[
+    'uuid', 'uuid', 'uuid', 'uuid', 'integer', 'text', 'text', 'jsonb'
+]::name[]);
 select has_function('unpublish_event', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('unpublish_event_series_events', array['uuid', 'uuid', 'uuid[]']::name[]);
 select has_function('upsert_coffee_meet_subscription', array['uuid', 'uuid', 'text']::name[]);

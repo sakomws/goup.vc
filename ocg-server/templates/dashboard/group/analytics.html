@@ -2,311 +2,43 @@
 {% import "macros/stats.html" as stats_macro -%}
 
 {# Page title #}
-{{ dashboard::page_title(title = "Analytics",
-description = "Group statistics and growth trends. Analytics are cached for a few minutes and may not display up to date information.") }}
+{{ dashboard::page_title(title = "Analytics", docs_href = "/docs#/guides/group-dashboard?id=analytics-delivery-health",
+description = "Group statistics and growth trends. Analytics are cached for up to an hour and may not display up to date information.") }}
 {# End page title #}
 
-<div class="mt-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-  <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-    <div>
-      <div class="text-xs font-bold uppercase tracking-[0.18em] text-stone-500">Public report</div>
-      <h2 class="mt-2 text-lg font-black text-stone-950">Share group performance</h2>
-      <p class="mt-1 text-sm/6 text-stone-600">
-        Generate a PDF-ready report and publish it on the group public page when it is ready.
-      </p>
-      {% if group.report_public_enabled -%}
-        <a href="/{{ group.alliance.name }}/group/{{ group.public_slug() }}/reports"
-           class="mt-3 inline-flex text-sm font-semibold text-primary-700 hover:text-primary-800"
-           target="_blank"
-           rel="noopener noreferrer">/{{ group.alliance.name }}/group/{{ group.public_slug() }}/reports</a>
-      {% endif -%}
-    </div>
-    <div class="flex flex-wrap gap-2">
-      <a href="/{{ group.alliance.name }}/group/{{ group.public_slug() }}/reports?print=1"
-         target="_blank"
-         rel="noopener noreferrer"
-         class="btn-secondary-anchor">Generate PDF</a>
-      {% if group.report_public_enabled -%}
-        <form hx-delete="/dashboard/group/analytics/report/public" hx-swap="none">
-          <button type="submit" class="btn-secondary">Unpublish</button>
-        </form>
-      {% else -%}
-        <form hx-put="/dashboard/group/analytics/report/public" hx-swap="none">
-          <button type="submit" class="btn-primary">Publish to public page</button>
-        </form>
-      {% endif -%}
-    </div>
-  </div>
-</div>
+{% if has_subgroups -%}
+  <form class="mt-8"
+        hx-get="/dashboard/group/analytics"
+        hx-trigger="change"
+        hx-target="#dashboard-content"
+        hx-indicator="#dashboard-spinner"
+        hx-swap="innerHTML show:body:top">
+    <label class="inline-flex items-center cursor-pointer">
+      <input id="include_subgroups"
+             name="include_subgroups"
+             value="true"
+             type="checkbox"
+             class="sr-only peer"
+             {% if include_subgroups -%}
+               checked
+             {% endif -%}>
+      <div class="toggle-track"></div>
+      <span class="ms-3 text-sm font-medium text-stone-900">Include subgroups</span>
+    </label>
+    <p class="form-legend">
+      When enabled, every statistic on this page includes active subgroups. Members are counted as unique people across the hierarchy.
+    </p>
+  </form>
+{% endif -%}
 
 {# Summary stat cards #}
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-10">
-  <div class="bg-white border border-stone-200 text-start rounded-lg p-5">
-    <div class="text-sm text-stone-600">Members</div>
-    <div class="mt-2 ps-px text-3xl leading-tight font-semibold text-stone-900">
-      {{ stats.members.total|num_fmt }}
-    </div>
-    <div class="mt-1 text-xs text-stone-500">People in this group</div>
-  </div>
-  <div class="bg-white border border-stone-200 text-start rounded-lg p-5">
-    <div class="text-sm text-stone-600">Events</div>
-    <div class="mt-2 ps-px text-3xl leading-tight font-semibold text-stone-900">
-      {{ stats.events.total|num_fmt }}
-    </div>
-    <div class="mt-1 text-xs text-stone-500">Published and past events</div>
-  </div>
-  <div class="bg-white border border-stone-200 text-start rounded-lg p-5">
-    <div class="text-sm text-stone-600">Attendees</div>
-    <div class="mt-2 ps-px text-3xl leading-tight font-semibold text-stone-900">
-      {{ stats.attendees.total|num_fmt }}
-    </div>
-    <div class="mt-1 text-xs text-stone-500">Total RSVPs</div>
-  </div>
-  <div class="bg-white border border-stone-200 text-start rounded-lg p-5">
-    <div class="text-sm text-stone-600">Page views</div>
-    <div class="mt-2 ps-px text-3xl leading-tight font-semibold text-stone-900">
-      {{ stats.page_views.total_views|num_fmt }}
-    </div>
-    <div class="mt-1 text-xs text-stone-500">Group and event page views</div>
-  </div>
+  {{ stats_macro::stat_card(title = "Members", value = stats.members.total|num_fmt, description = "People in this group") -}}
+  {{ stats_macro::stat_card(title = "Events", value = stats.events.total|num_fmt, description = "Published and past events") -}}
+  {{ stats_macro::stat_card(title = "Attendees", value = stats.attendees.total|num_fmt, description = "Total RSVPs") -}}
+  {{ stats_macro::stat_card(title = "Page views", value = stats.page_views.total_views|num_fmt, description = "Group and event page views") -}}
 </div>
 {# End summary stat cards #}
-
-{# Gamification section #}
-<div class="mt-10 overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
-  <div class="border-b border-stone-200 bg-stone-50/80 p-6">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-      <div>
-        <p class="text-xs font-bold uppercase tracking-[0.2em] text-stone-500">Gamification</p>
-        <h2 class="mt-2 text-2xl font-black tracking-tight text-stone-950">See gamification in action</h2>
-        <p class="mt-2 max-w-3xl text-sm/6 text-stone-600">
-          Watch how member activity turns into visible recognition with points, streaks, and badges.
-        </p>
-      </div>
-      <div class="grid grid-cols-3 gap-3 text-center">
-        <div class="rounded-2xl bg-white px-4 py-3 ring-1 ring-stone-200">
-          <div class="text-2xl font-black text-stone-950">{{ stats.gamification.total_points|num_fmt }}</div>
-          <div class="mt-1 text-[0.68rem] font-bold uppercase tracking-wide text-stone-500">Points</div>
-        </div>
-        <div class="rounded-2xl bg-white px-4 py-3 ring-1 ring-stone-200">
-          <div class="text-2xl font-black text-stone-950">{{ stats.gamification.active_contributors|num_fmt }}</div>
-          <div class="mt-1 text-[0.68rem] font-bold uppercase tracking-wide text-stone-500">Contributors</div>
-        </div>
-        <div class="rounded-2xl bg-white px-4 py-3 ring-1 ring-stone-200">
-          <div class="text-2xl font-black text-stone-950">{{ stats.gamification.badges_awarded|num_fmt }}</div>
-          <div class="mt-1 text-[0.68rem] font-bold uppercase tracking-wide text-stone-500">Badges</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="grid gap-6 p-6 xl:grid-cols-[1.25fr_0.75fr]">
-    <div class="space-y-6">
-      <div class="grid gap-4 md:grid-cols-3">
-        <section class="rounded-2xl border border-stone-200 bg-stone-50 p-5">
-          <h3 class="text-base font-black text-stone-950">More repeat visitors</h3>
-          <p class="mt-2 text-sm/6 text-stone-600">Users come back to climb the ranks.</p>
-        </section>
-        <section class="rounded-2xl border border-stone-200 bg-stone-50 p-5">
-          <h3 class="text-base font-black text-stone-950">More high-quality contributions</h3>
-          <p class="mt-2 text-sm/6 text-stone-600">Leaderboards encourage helpful posts.</p>
-        </section>
-        <section class="rounded-2xl border border-stone-200 bg-stone-50 p-5">
-          <h3 class="text-base font-black text-stone-950">More recognition, less churn</h3>
-          <p class="mt-2 text-sm/6 text-stone-600">Let every member know they matter.</p>
-        </section>
-      </div>
-
-      <section>
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <h3 class="text-lg font-black text-stone-950">Climb the leaderboard</h3>
-            <p class="mt-1 text-sm/6 text-stone-600">Highlight top contributors every day.</p>
-          </div>
-        </div>
-        <div class="mt-4 overflow-hidden rounded-2xl border border-stone-200">
-          {% if stats.gamification.leaderboard.is_empty() -%}
-            <div class="bg-stone-50 px-5 py-8 text-center text-sm text-stone-500">
-              Member recognition will appear once this group has activity.
-            </div>
-          {% else -%}
-            <div class="divide-y divide-stone-200 bg-white">
-              {% for entry in stats.gamification.leaderboard -%}
-                <article class="grid gap-4 p-4 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
-                  <div class="flex items-center gap-3">
-                    <div class="flex size-10 items-center justify-center rounded-full bg-stone-950 text-sm font-black text-white">
-                      #{{ entry.rank }}
-                    </div>
-                    <logo-image
-                    {% if let Some(photo_url) = &entry.photo_url -%}
-                      image-url="{{ photo_url }}"
-                    {% endif -%}
-                    size="size-12" placeholder="{{ crate::templates::helpers::user_initials(entry.name.as_deref() , entry.username.as_str()) }}">
-                    </logo-image>
-                  </div>
-                  <div class="min-w-0">
-                    <div class="truncate text-sm font-black text-stone-950">
-                      {{ entry.name.as_deref().unwrap_or(&entry.username) }}
-                    </div>
-                    <div class="mt-0.5 truncate text-xs font-medium text-stone-500">@{{ entry.username }}</div>
-                    {% if !entry.badges.is_empty() -%}
-                      <div class="mt-2 flex flex-wrap gap-1.5">
-                        {% for badge in entry.badges -%}
-                          <span class="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-bold text-primary-700 ring-1 ring-inset ring-primary-100">{{ badge }}</span>
-                        {% endfor -%}
-                      </div>
-                    {% endif -%}
-                  </div>
-                  <div class="text-start md:text-end">
-                    <div class="text-2xl font-black text-stone-950">{{ entry.points|num_fmt }}</div>
-                    <div class="text-xs font-bold uppercase tracking-wide text-stone-500">points</div>
-                    <div class="mt-2 text-xs text-stone-500">{{ entry.recent_activity_count|num_fmt }} contribution signals</div>
-                  </div>
-                </article>
-              {% endfor -%}
-            </div>
-          {% endif -%}
-        </div>
-      </section>
-    </div>
-
-    <aside class="space-y-6">
-      <section class="rounded-2xl border border-stone-200 bg-stone-50 p-5">
-        <h3 class="text-lg font-black text-stone-950">Earn points & badges</h3>
-        <p class="mt-2 text-sm/6 text-stone-600">For events, chats, posts, polls & more.</p>
-        <div class="mt-4 space-y-2">
-          {% for rule in stats.gamification.rules -%}
-            <div class="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 ring-1 ring-stone-200">
-              <div class="min-w-0">
-                <div class="truncate text-sm font-semibold text-stone-800">{{ rule.label }}</div>
-                {% if !rule.active -%}
-                  <div class="mt-0.5 text-xs font-medium text-stone-400">Coming soon</div>
-                {% endif -%}
-              </div>
-              <span class="shrink-0 rounded-full bg-stone-950 px-2.5 py-1 text-xs font-black text-white">
-                +{{ rule.points }}
-              </span>
-            </div>
-          {% endfor -%}
-        </div>
-      </section>
-
-      <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-        <h3 class="text-lg font-black text-stone-950">Track progress with clarity</h3>
-        <p class="mt-2 text-sm/6 text-stone-600">Clear dashboards track user activity.</p>
-        <div class="mt-4 flex flex-wrap gap-2">
-          {% for source in stats.gamification.future_sources -%}
-            <span class="rounded-full bg-stone-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-stone-500 ring-1 ring-inset ring-stone-200">{{ source }}</span>
-          {% endfor -%}
-        </div>
-      </section>
-    </aside>
-  </div>
-</div>
-{# End gamification section #}
-
-{# Reporting overview #}
-<div class="mt-10 space-y-6">
-  <div class="grid gap-4 lg:grid-cols-3">
-    <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-      <div class="text-xs font-bold uppercase tracking-[0.18em] text-stone-500">Members</div>
-      <h3 class="mt-2 text-lg font-black text-stone-950">Membership growth</h3>
-      <p class="mt-2 text-sm/6 text-stone-600">
-        Track recent chapter membership growth and compare it against the previous 90 days.
-      </p>
-      <div class="mt-5 grid grid-cols-2 gap-3">
-        <div class="rounded-xl bg-stone-50 p-3">
-          <div class="text-xs font-semibold text-stone-500">Latest 90 days</div>
-          <div class="mt-1 text-2xl font-black">{{ stats.reports.members.recent_growth|num_fmt }}</div>
-        </div>
-        <div class="rounded-xl bg-stone-50 p-3">
-          <div class="text-xs font-semibold text-stone-500">Prior 90 days</div>
-          <div class="mt-1 text-2xl font-black">{{ stats.reports.members.previous_growth|num_fmt }}</div>
-        </div>
-      </div>
-    </section>
-    <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-      <div class="text-xs font-bold uppercase tracking-[0.18em] text-stone-500">Leaders</div>
-      <h3 class="mt-2 text-lg font-black text-stone-950">Chapter leader growth</h3>
-      <p class="mt-2 text-sm/6 text-stone-600">See how the accepted team of chapter leaders is growing.</p>
-      <div class="mt-5 grid grid-cols-2 gap-3">
-        <div class="rounded-xl bg-stone-50 p-3">
-          <div class="text-xs font-semibold text-stone-500">Total leaders</div>
-          <div class="mt-1 text-2xl font-black">{{ stats.reports.members.leaders_total|num_fmt }}</div>
-        </div>
-        <div class="rounded-xl bg-stone-50 p-3">
-          <div class="text-xs font-semibold text-stone-500">90-day growth</div>
-          <div class="mt-1 text-2xl font-black">{{ stats.reports.members.leaders_recent_growth|num_fmt }}</div>
-        </div>
-      </div>
-    </section>
-    <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-      <div class="text-xs font-bold uppercase tracking-[0.18em] text-stone-500">Events</div>
-      <h3 class="mt-2 text-lg font-black text-stone-950">Hosted and upcoming</h3>
-      <p class="mt-2 text-sm/6 text-stone-600">
-        See how many events this chapter has hosted and how many are upcoming.
-      </p>
-      <div class="mt-5 grid grid-cols-2 gap-3">
-        <div class="rounded-xl bg-stone-50 p-3">
-          <div class="text-xs font-semibold text-stone-500">Hosted</div>
-          <div class="mt-1 text-2xl font-black">{{ stats.reports.events.hosted_total|num_fmt }}</div>
-        </div>
-        <div class="rounded-xl bg-stone-50 p-3">
-          <div class="text-xs font-semibold text-stone-500">Upcoming</div>
-          <div class="mt-1 text-2xl font-black">{{ stats.reports.events.upcoming_total|num_fmt }}</div>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <div class="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
-    <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-      <div class="text-sm font-bold text-stone-500">Events by city</div>
-      <div class="mt-4 space-y-2">
-        {% for (label, count) in stats.reports.events.by_city -%}
-          <div class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 px-3 py-2">
-            <span class="truncate text-sm font-semibold text-stone-700">{{ label }}</span>
-            <span class="text-sm font-black text-stone-950">{{ count|num_fmt }}</span>
-          </div>
-        {% endfor -%}
-      </div>
-    </section>
-    <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-      <div class="text-sm font-bold text-stone-500">Events by country</div>
-      <div class="mt-4 space-y-2">
-        {% for (label, count) in stats.reports.events.by_country -%}
-          <div class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 px-3 py-2">
-            <span class="truncate text-sm font-semibold text-stone-700">{{ label }}</span>
-            <span class="text-sm font-black text-stone-950">{{ count|num_fmt }}</span>
-          </div>
-        {% endfor -%}
-      </div>
-    </section>
-    <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-      <div class="text-sm font-bold text-stone-500">Events by kind</div>
-      <div class="mt-4 space-y-2">
-        {% for (label, count) in stats.reports.events.by_kind -%}
-          <div class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 px-3 py-2">
-            <span class="truncate text-sm font-semibold text-stone-700">{{ label }}</span>
-            <span class="text-sm font-black text-stone-950">{{ count|num_fmt }}</span>
-          </div>
-        {% endfor -%}
-      </div>
-    </section>
-    <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-      <div class="text-sm font-bold text-stone-500">Events by category</div>
-      <div class="mt-4 space-y-2">
-        {% for (label, count) in stats.reports.events.by_category -%}
-          <div class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 px-3 py-2">
-            <span class="truncate text-sm font-semibold text-stone-700">{{ label }}</span>
-            <span class="text-sm font-black text-stone-950">{{ count|num_fmt }}</span>
-          </div>
-        {% endfor -%}
-      </div>
-    </section>
-  </div>
-</div>
-{# End reporting overview #}
 
 {# Charts sections #}
 <div class="space-y-12 mt-10">
@@ -314,11 +46,11 @@ description = "Group statistics and growth trends. Analytics are cached for a fe
     {{ dashboard::form_title(title = "Members") }}
     <div class="mt-6 grid grid-cols-1 gap-6">
       <div>
-        <div class="text-sm font-semibold text-stone-500">Running total</div>
+        <div class="text-sm font-semibold uppercase text-stone-500">Running total</div>
         {{ stats_macro::analytics_chart(chart_id = "members-running-chart", data = stats.members.running_total, min_points = 1, wrapper_class = "mt-3") -}}
       </div>
       <div>
-        <div class="text-sm font-semibold text-stone-500">Per month</div>
+        <div class="text-sm font-semibold uppercase text-stone-500">Per month</div>
         {{ stats_macro::analytics_chart(chart_id = "members-monthly-chart", data = stats.members.per_month, wrapper_class = "mt-3") -}}
       </div>
     </div>
@@ -328,25 +60,41 @@ description = "Group statistics and growth trends. Analytics are cached for a fe
     {{ dashboard::form_title(title = "Events") }}
     <div class="mt-6 grid grid-cols-1 gap-6">
       <div>
-        <div class="text-sm font-semibold text-stone-500">Running total</div>
+        <div class="text-sm font-semibold uppercase text-stone-500">Running total</div>
         {{ stats_macro::analytics_chart(chart_id = "events-running-chart", data = stats.events.running_total, min_points = 1, wrapper_class = "mt-3") -}}
       </div>
       <div>
-        <div class="text-sm font-semibold text-stone-500">Per month</div>
+        <div class="text-sm font-semibold uppercase text-stone-500">Per month</div>
         {{ stats_macro::analytics_chart(chart_id = "events-monthly-chart", data = stats.events.per_month, wrapper_class = "mt-3") -}}
       </div>
     </div>
   </div>
 
+  {% if stats.cohosted_events.total > 0 -%}
+    <div>
+      {{ dashboard::form_title(title = "Co-hosted events") }}
+      <div class="mt-6 grid grid-cols-1 gap-6">
+        <div>
+          <div class="text-sm font-semibold uppercase text-stone-500">Running total</div>
+          {{ stats_macro::analytics_chart(chart_id = "cohosted-events-running-chart", data = stats.cohosted_events.running_total, min_points = 1, wrapper_class = "mt-3") -}}
+        </div>
+        <div>
+          <div class="text-sm font-semibold uppercase text-stone-500">Per month</div>
+          {{ stats_macro::analytics_chart(chart_id = "cohosted-events-monthly-chart", data = stats.cohosted_events.per_month, wrapper_class = "mt-3") -}}
+        </div>
+      </div>
+    </div>
+  {% endif -%}
+
   <div>
     {{ dashboard::form_title(title = "Attendees") }}
     <div class="mt-6 grid grid-cols-1 gap-6">
       <div>
-        <div class="text-sm font-semibold text-stone-500">Running total</div>
+        <div class="text-sm font-semibold uppercase text-stone-500">Running total</div>
         {{ stats_macro::analytics_chart(chart_id = "attendees-running-chart", data = stats.attendees.running_total, min_points = 1, wrapper_class = "mt-3") -}}
       </div>
       <div>
-        <div class="text-sm font-semibold text-stone-500">Per month</div>
+        <div class="text-sm font-semibold uppercase text-stone-500">Per month</div>
         {{ stats_macro::analytics_chart(chart_id = "attendees-monthly-chart", data = stats.attendees.per_month, wrapper_class = "mt-3") -}}
       </div>
     </div>
@@ -356,21 +104,21 @@ description = "Group statistics and growth trends. Analytics are cached for a fe
     {{ dashboard::form_title(title = "Page views") }}
     <div class="mt-6 grid grid-cols-1 gap-6">
       <div>
-        <div class="text-sm font-semibold text-stone-500">Total</div>
+        <div class="text-sm font-semibold uppercase text-stone-500">Total</div>
         <div class="mt-3 grid grid-cols-1 xl:grid-cols-2 gap-6">
           {{ stats_macro::analytics_chart(chart_id = "total-views-monthly-chart", data = stats.page_views.total.per_month_views) -}}
           {{ stats_macro::analytics_chart(chart_id = "total-views-daily-chart", data = stats.page_views.total.per_day_views) -}}
         </div>
       </div>
       <div>
-        <div class="text-sm font-semibold text-stone-500">Group page</div>
+        <div class="text-sm font-semibold uppercase text-stone-500">Group page</div>
         <div class="mt-3 grid grid-cols-1 xl:grid-cols-2 gap-6">
           {{ stats_macro::analytics_chart(chart_id = "group-views-monthly-chart", data = stats.page_views.group.per_month_views) -}}
           {{ stats_macro::analytics_chart(chart_id = "group-views-daily-chart", data = stats.page_views.group.per_day_views) -}}
         </div>
       </div>
       <div>
-        <div class="text-sm font-semibold text-stone-500">Event pages</div>
+        <div class="text-sm font-semibold uppercase text-stone-500">Event pages</div>
         <div class="mt-3 grid grid-cols-1 xl:grid-cols-2 gap-6">
           {{ stats_macro::analytics_chart(chart_id = "event-views-monthly-chart", data = stats.page_views.events.per_month_views) -}}
           {{ stats_macro::analytics_chart(chart_id = "event-views-daily-chart", data = stats.page_views.events.per_day_views) -}}

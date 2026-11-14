@@ -294,6 +294,10 @@ async fn test_add_page_success() {
     db.expect_list_timezones()
         .times(1)
         .returning(move || Ok(timezones.clone()));
+    db.expect_list_group_organizers()
+        .times(1)
+        .withf(move |gid| *gid == group_id)
+        .returning(|_| Ok(vec![]));
     db.expect_get_group_payment_recipient()
         .times(1)
         .withf(move |cid, gid| *cid == alliance_id && *gid == group_id)
@@ -529,6 +533,10 @@ async fn test_update_page_hides_clear_ticketing_when_event_has_ticket_purchases(
     db.expect_list_timezones()
         .times(1)
         .returning(move || Ok(timezones.clone()));
+    db.expect_list_group_organizers()
+        .times(1)
+        .withf(move |gid| *gid == group_id)
+        .returning(|_| Ok(vec![]));
     db.expect_get_group_payment_recipient()
         .times(1)
         .withf(move |cid, gid| *cid == alliance_id && *gid == group_id)
@@ -668,6 +676,10 @@ async fn test_update_page_success() {
     db.expect_list_timezones()
         .times(1)
         .returning(move || Ok(timezones.clone()));
+    db.expect_list_group_organizers()
+        .times(1)
+        .withf(move |gid| *gid == group_id)
+        .returning(|_| Ok(vec![]));
     db.expect_get_group_payment_recipient()
         .times(1)
         .withf(move |cid, gid| *cid == alliance_id && *gid == group_id)

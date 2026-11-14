@@ -1,12 +1,14 @@
 import { setImageFieldValue, setSelectValue, setTextValue } from "/static/js/common/utils.js";
 import {
   appendCopySuffix,
+  getAvailableOrganizers,
   setAttendeeApprovalRequired,
   setCategoryValue,
   setDiscountCodes,
   setEventReminderEnabled,
   setGalleryImages,
   setHosts,
+  setOrganizers,
   setPaymentCurrencyCode,
   setRegistrationQuestions,
   setRegistrationRequired,
@@ -117,6 +119,12 @@ const applyEventDetails = async (details, { appendNameSuffix = false } = {}) => 
   copyAutomaticMeetingFields(details);
   copyManualMeetingFields(details);
   setHosts(details.hosts);
+  const teamMembers = getAvailableOrganizers();
+  const teamUserIds = new Set(teamMembers.map((user) => user.user_id));
+  const organizers = (Array.isArray(details.organizers) ? details.organizers : [])
+    .map((organizer) => organizer?.user || organizer)
+    .filter((organizer) => organizer && teamUserIds.has(organizer.user_id));
+  setOrganizers(organizers.length > 0 ? organizers : teamMembers);
   setSponsors(details.sponsors);
   setSessions([]);
 };

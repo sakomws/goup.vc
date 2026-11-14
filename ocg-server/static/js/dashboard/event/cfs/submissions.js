@@ -499,68 +499,71 @@ export class ReviewSubmissionModal extends LitWrapper {
         aria-modal="true"
         aria-labelledby="cfs-submission-modal-title"
       >
-        <div class="modal-overlay absolute inset-0 bg-stone-950 opacity-[0.35]" @click=${() => this.close()}></div>
+        <div
+          class="modal-overlay absolute inset-0 bg-stone-950 opacity-[0.35]"
+          @click=${() => this.close()}
+        ></div>
         <div class="absolute inset-0 overflow-y-auto overflow-x-hidden">
           <div class="flex min-h-full items-start justify-center sm:items-center">
-        <div class="modal-panel relative z-[1] w-full max-w-5xl p-4">
-          <div class="modal-card rounded-2xl" style="max-height: none; overflow: visible;">
-            <div
-              class="flex items-center justify-between gap-3 border-b border-stone-200 p-4 shrink-0 sm:p-5"
-            >
-              <h3
-                id="cfs-submission-modal-title"
-                class="min-w-0 text-lg font-semibold text-stone-900 sm:text-xl"
-              >
-                Review submission
-              </h3>
-              <button
-                type="button"
-                class="group text-stone-400 bg-transparent hover:bg-stone-100 transition-colors rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center"
-                @click=${() => this.close()}
-              >
+            <div class="modal-panel relative z-[1] w-full max-w-5xl p-4">
+              <div class="modal-card rounded-2xl" style="max-height: none; overflow: visible;">
                 <div
-                  class="svg-icon w-4 h-4 bg-stone-400 group-hover:bg-stone-600 transition-colors icon-close"
-                ></div>
-                <span class="sr-only">Close modal</span>
-              </button>
-            </div>
-
-            <form
-              id="cfs-submission-form"
-              class="flex min-h-0 flex-1 flex-col"
-              hx-put=${submissionEndpoint}
-              hx-swap="none"
-              hx-indicator="#dashboard-spinner"
-              hx-disabled-elt="#cfs-submission-submit"
-            >
-              <div class="shrink-0 px-4 pt-5 sm:px-8">
-                ${renderCfsReviewTabsNavigation({
-                  activeTab: this._activeTab,
-                  onSelect: (tabId) => this._setActiveTab(tabId),
-                  tabs: REVIEW_TABS,
-                })}
-              </div>
-
-              <div class="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">
-                ${this._renderDetailsPanel()} ${this._renderRatingsPanel()} ${this._renderDecisionPanel()}
-              </div>
-
-              <div class="shrink-0 border-t border-stone-100 px-4 pb-5 pt-3 sm:px-8">
-                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div class="min-w-0">${renderCfsPendingChangesAlert(this._hasPendingChanges())}</div>
-                  <button
-                    id="cfs-submission-submit"
-                    type="submit"
-                    class="btn-primary shrink-0 self-end sm:self-auto"
-                    ?disabled=${!submissionEndpoint || !isStatusAllowed(this._submission, this._statusId)}
+                  class="flex items-center justify-between gap-3 border-b border-stone-200 p-4 shrink-0 sm:p-5"
+                >
+                  <h3
+                    id="cfs-submission-modal-title"
+                    class="min-w-0 text-lg font-semibold text-stone-900 sm:text-xl"
                   >
-                    Save
+                    Review submission
+                  </h3>
+                  <button
+                    type="button"
+                    class="group text-stone-400 bg-transparent hover:bg-stone-100 transition-colors rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center"
+                    @click=${() => this.close()}
+                  >
+                    <div
+                      class="svg-icon w-4 h-4 bg-stone-400 group-hover:bg-stone-600 transition-colors icon-close"
+                    ></div>
+                    <span class="sr-only">Close modal</span>
                   </button>
                 </div>
+
+                <form
+                  id="cfs-submission-form"
+                  class="flex min-h-0 flex-1 flex-col"
+                  hx-put=${submissionEndpoint}
+                  hx-swap="none"
+                  hx-indicator="#dashboard-spinner"
+                  hx-disabled-elt="#cfs-submission-submit"
+                >
+                  <div class="shrink-0 px-4 pt-5 sm:px-8">
+                    ${renderCfsReviewTabsNavigation({
+                      activeTab: this._activeTab,
+                      onSelect: (tabId) => this._setActiveTab(tabId),
+                      tabs: REVIEW_TABS,
+                    })}
+                  </div>
+
+                  <div class="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">
+                    ${this._renderDetailsPanel()} ${this._renderRatingsPanel()} ${this._renderDecisionPanel()}
+                  </div>
+
+                  <div class="shrink-0 border-t border-stone-100 px-4 pb-5 pt-3 sm:px-8">
+                    <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div class="min-w-0">${renderCfsPendingChangesAlert(this._hasPendingChanges())}</div>
+                      <button
+                        id="cfs-submission-submit"
+                        type="submit"
+                        class="btn-primary shrink-0 self-end sm:self-auto"
+                        ?disabled=${!submissionEndpoint || !isStatusAllowed(this._submission, this._statusId)}
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
-        </div>
+            </div>
           </div>
         </div>
       </div>

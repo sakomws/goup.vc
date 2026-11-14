@@ -91,6 +91,8 @@ pub struct EventSummary {
     pub created_by_display_name: Option<String>,
     /// Username for the user who created the event, in dashboard views.
     pub created_by_username: Option<String>,
+    /// Dashboard deletion eligibility for this event.
+    pub delete_eligibility: Option<EventDeleteEligibility>,
     /// Brief event description for listings.
     pub description_short: Option<String>,
     /// Event end time in UTC.
@@ -146,6 +148,12 @@ pub struct EventSummary {
 }
 
 impl EventSummary {
+    /// Returns whether the event can currently be deleted.
+    pub fn can_delete(&self) -> bool {
+        self.delete_eligibility
+            .is_none_or(|eligibility| eligibility == EventDeleteEligibility::Allowed)
+    }
+
     /// Returns dashboard tooltip text for the user who created the event.
     pub fn created_by_tooltip(&self) -> Option<String> {
         match (
@@ -158,6 +166,19 @@ impl EventSummary {
             (Some(display_name), _) => Some(format!("Created by {display_name}")),
             (None, Some(username)) => Some(format!("Created by @{username}")),
             (None, None) => None,
+        }
+    }
+
+    /// Returns the dashboard explanation when deletion is unavailable.
+    pub fn delete_unavailable_title(&self) -> Option<&'static str> {
+        match self.delete_eligibility {
+            Some(EventDeleteEligibility::CancelFirst) => {
+                Some("Cancel this event before deleting it.")
+            }
+            Some(EventDeleteEligibility::RefundsPending) => {
+                Some("Resolve pending checkouts and refunds before deleting this event.")
+            }
+            Some(EventDeleteEligibility::Allowed) | None => None,
         }
     }
 
@@ -278,7 +299,7 @@ pub struct EventFull {
     pub og_image_url: Option<String>,
     /// Event title.
     pub name: String,
-    /// Event organizers snapshotted at creation time.
+    /// Event organizers, in display order.
     pub organizers: Vec<User>,
     /// Whether the event is published.
     pub published: bool,
@@ -584,6 +605,25 @@ impl EventFull {
         ids
     }
 
+    /// Groups submitted talks and their speakers by call-for-speakers track.
+    pub fn talks_by_track(&self) -> BTreeMap<String, Vec<Session>> {
+        let mut talks = BTreeMap::new();
+        for session in self.sessions.values().flatten() {
+            if session.cfs_submission_id.is_none() || session.speakers.is_empty() {
+                continue;
+            }
+            let tracks = if session.tracks.is_empty() {
+                vec!["General".to_string()]
+            } else {
+                session.tracks.clone()
+            };
+            for track in tracks {
+                talks.entry(track).or_insert_with(Vec::new).push(session.clone());
+            }
+        }
+        talks
+    }
+
     /// Returns active ticket types shown in the tickets modal, sorted by price.
     pub fn visible_ticket_types(&self) -> Vec<&EventTicketType> {
         let mut ticket_types: Vec<_> = self
@@ -632,6 +672,7 @@ impl From<&EventFull> for EventSummary {
             capacity: event.capacity,
             created_by_display_name: None,
             created_by_username: None,
+            delete_eligibility: None,
             description_short: event.description_short.clone(),
             ends_at: event.ends_at,
             event_series_id: event.event_series_id,
@@ -928,6 +969,18 @@ pub struct EventCfsLabel {
     pub event_cfs_label_id: Option<Uuid>,
 }
 
+/// Dashboard eligibility for deleting an event.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum EventDeleteEligibility {
+    /// The event can be deleted now.
+    Allowed,
+    /// The event must be canceled before deletion.
+    CancelFirst,
+    /// Checkout or refund work must settle before deletion.
+    RefundsPending,
+}
+
 /// Status of an event invitation request.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, strum::Display)]
 #[serde(rename_all = "kebab-case")]
@@ -950,6 +1003,19 @@ pub enum EventKind {
     #[default]
     InPerson,
     Virtual,
+}
+
+/// Origin of an event admission offer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, strum::Display)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum EventAdmissionOfferSource {
+    /// Offer created after an organizer approved an attendance request.
+    Approval,
+    /// Offer created directly by an organizer.
+    OrganizerInvitation,
+    /// Offer created after promotion from a ticket waiting list.
+    Waitlist,
 }
 
 /// Registration ownership for an event.
@@ -1029,6 +1095,9 @@ pub struct Session {
     pub session_id: Uuid,
     /// Session speakers.
     pub speakers: Vec<Speaker>,
+    /// Submission tracks assigned to this talk.
+    #[serde(default)]
+    pub tracks: Vec<String>,
     /// Session start time in UTC.
     #[serde(with = "chrono::serde::ts_seconds")]
     pub starts_at: DateTime<Utc>,

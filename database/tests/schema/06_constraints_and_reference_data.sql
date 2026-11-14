@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(72);
+select plan(78);
 
 -- ============================================================================
 -- VARIABLES
@@ -209,6 +209,7 @@ select results_eq(
         where conname = 'event_attendee_status_chk'
     $$,
     $$ values
+        ('attendance-canceled'),
         ('confirmed'),
         ('invitation-canceled'),
         ('invitation-pending'),
@@ -295,6 +296,23 @@ select results_eq(
 select has_check('notification', 'notification_delivery_attempts_chk');
 select has_check('notification', 'notification_delivery_status_chk');
 select has_check('notification', 'notification_next_delivery_attempt_at_chk');
+select has_check('notification_category', 'notification_category_display_name_check');
+
+-- Test: inbox expected constraints and statuses exist
+select has_check('inbox_conversation_status', 'inbox_conversation_status_display_name_check');
+select has_check('inbox_message', 'inbox_message_body_chk');
+select has_check('inbox_message', 'inbox_message_kind_chk');
+
+select results_eq(
+    'select * from inbox_conversation_status order by inbox_conversation_status_id',
+    $$ values
+        ('answered', 'Answered'),
+        ('closed', 'Closed'),
+        ('open', 'Open'),
+        ('spam', 'Spam')
+    $$,
+    'Inbox conversation statuses should match expected values'
+);
 
 -- Test: payment providers should match expected values
 select results_eq(
@@ -318,46 +336,67 @@ select results_eq(
     'CFS submission statuses should exist'
 );
 
--- Test: notification kinds should match expected values
+-- Test: notification categories should match expected values
 select results_eq(
-    'select name, optional_notification from notification_kind order by name',
+    'select notification_category_id, display_name, group_mutable from notification_category order by notification_category_id',
     $$ values
-        ('alliance-team-invitation', false),
-        ('cfs-submission-updated', false),
-        ('coffee-meet-suggestion', true),
-        ('distribution-content-due', true),
-        ('email-verification', false),
-        ('event-attendance-canceled', false),
-        ('event-canceled', false),
-        ('event-cohost-invitation', true),
-        ('event-custom', true),
-        ('event-external-payment-expired', false),
-        ('event-external-payment-pending', false),
-        ('event-external-payment-reminder', false),
-        ('event-invitation', false),
-        ('event-published', true),
-        ('event-refund-approved', false),
-        ('event-refund-rejected', false),
-        ('event-refund-requested', false),
-        ('event-reminder', true),
-        ('event-rescheduled', false),
-        ('event-series-canceled', false),
-        ('event-series-published', true),
-        ('event-survey-reminder', true),
-        ('event-survey-request', true),
-        ('event-waitlist-joined', false),
-        ('event-waitlist-left', false),
-        ('event-waitlist-promoted', false),
-        ('event-welcome', false),
-        ('group-custom', true),
-        ('group-team-invitation', false),
-        ('group-welcome', false),
-        ('intentional-dating-introduction', true),
-        ('opportunity-digest', true),
-        ('session-proposal-co-speaker-invitation', false),
-        ('site-onboarding', false),
-        ('speaker-series-welcome', false),
-        ('speaker-welcome', false)
+        ('attendee-activity', 'Attendee activity', false),
+        ('badges', 'Badges', true),
+        ('cohosting-updates', 'Co-hosting updates', false),
+        ('event-reminders', 'Event reminders', true),
+        ('group-announcements', 'Group announcements', true),
+        ('group-inbox', 'Group inbox', false),
+        ('new-events', 'New events', true),
+        ('opportunity-digests', 'Opportunity digests', false),
+        ('organizer-messages', 'Messages from event organizers', true),
+        ('paid-event-setups', 'Paid event setups', false)
+    $$,
+    'Notification categories should match expected values'
+);
+
+-- Test: notification kinds should match expected categories
+select results_eq(
+    'select name, notification_category_id from notification_kind order by name',
+    $$ values
+        ('alliance-custom', null::text),
+        ('alliance-team-invitation', null::text),
+        ('cfs-submission-updated', null::text),
+        ('coffee-meet-suggestion', null::text),
+        ('distribution-content-due', null::text),
+        ('email-verification', null::text),
+        ('event-attendance-canceled', null::text),
+        ('event-canceled', null::text),
+        ('event-cohost-invitation', null::text),
+        ('event-custom', 'organizer-messages'::text),
+        ('event-external-payment-expired', null::text),
+        ('event-external-payment-pending', null::text),
+        ('event-external-payment-reminder', null::text),
+        ('event-invitation', null::text),
+        ('event-published', 'new-events'::text),
+        ('event-refund-approved', null::text),
+        ('event-refund-rejected', null::text),
+        ('event-refund-requested', null::text),
+        ('event-reminder', 'event-reminders'::text),
+        ('event-rescheduled', null::text),
+        ('event-series-canceled', null::text),
+        ('event-series-published', 'new-events'::text),
+        ('event-survey-reminder', null::text),
+        ('event-survey-request', null::text),
+        ('event-waitlist-joined', null::text),
+        ('event-waitlist-left', null::text),
+        ('event-waitlist-promoted', null::text),
+        ('event-welcome', null::text),
+        ('group-custom', 'group-announcements'::text),
+        ('group-team-invitation', null::text),
+        ('group-welcome', null::text),
+        ('inbox-message-received', 'group-inbox'::text),
+        ('inbox-reply-received', null::text),
+        ('intentional-dating-introduction', null::text),
+        ('opportunity-digest', 'opportunity-digests'::text),
+        ('session-proposal-co-speaker-invitation', null::text),
+        ('site-onboarding', null::text),
+        ('speaker-series-welcome', null::text),
+        ('speaker-welcome', null::text)
     $$,
     'Notification kinds should exist'
 );
@@ -468,18 +507,22 @@ select results_eq(
 select results_eq(
     'select alliance_role_id, group_permission_id from alliance_role_group_permission order by alliance_role_id, group_permission_id',
     $$ values
+        ('admin', 'group.check-ins.write'),
         ('admin', 'group.distribution.write'),
         ('admin', 'group.events.write'),
         ('admin', 'group.gtm.write'),
+        ('admin', 'group.inbox.write'),
         ('admin', 'group.members.write'),
         ('admin', 'group.projects.write'),
         ('admin', 'group.read'),
         ('admin', 'group.settings.write'),
         ('admin', 'group.sponsors.write'),
         ('admin', 'group.team.write'),
+        ('groups-manager', 'group.check-ins.write'),
         ('groups-manager', 'group.distribution.write'),
         ('groups-manager', 'group.events.write'),
         ('groups-manager', 'group.gtm.write'),
+        ('groups-manager', 'group.inbox.write'),
         ('groups-manager', 'group.members.write'),
         ('groups-manager', 'group.projects.write'),
         ('groups-manager', 'group.read'),
@@ -495,9 +538,11 @@ select results_eq(
 select results_eq(
     'select group_permission_id, display_name from group_permission order by group_permission_id',
     $$ values
+        ('group.check-ins.write', 'Check-Ins Write'),
         ('group.distribution.write', 'Distribution Write'),
         ('group.events.write', 'Events Write'),
         ('group.gtm.write', 'GTM Write'),
+        ('group.inbox.write', 'Inbox Write'),
         ('group.members.write', 'Members Write'),
         ('group.projects.write', 'Projects Write'),
         ('group.read', 'Read'),
@@ -513,6 +558,7 @@ select results_eq(
     'select * from group_role order by group_role_id',
     $$ values
         ('admin', 'Admin'),
+        ('check-in-manager', 'Check-In Manager'),
         ('events-manager', 'Events Manager'),
         ('viewer', 'Viewer')
     $$,
@@ -523,13 +569,19 @@ select results_eq(
 select results_eq(
     'select group_permission_id, group_role_id from group_role_group_permission order by group_permission_id, group_role_id',
     $$ values
+        ('group.check-ins.write', 'admin'),
+        ('group.check-ins.write', 'check-in-manager'),
+        ('group.check-ins.write', 'events-manager'),
         ('group.distribution.write', 'admin'),
         ('group.events.write', 'admin'),
         ('group.events.write', 'events-manager'),
         ('group.gtm.write', 'admin'),
+        ('group.inbox.write', 'admin'),
+        ('group.inbox.write', 'events-manager'),
         ('group.members.write', 'admin'),
         ('group.projects.write', 'admin'),
         ('group.read', 'admin'),
+        ('group.read', 'check-in-manager'),
         ('group.read', 'events-manager'),
         ('group.read', 'viewer'),
         ('group.settings.write', 'admin'),

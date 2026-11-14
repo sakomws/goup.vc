@@ -18,8 +18,7 @@ select plan(5);
 -- ============================================================================
 
 -- User
-insert into "user" (user_id, auth_hash, email, email_verified, username)
-values (:'userID', 'hash', 'user@example.com', true, 'user');
+select fx_user(:'userID', jsonb_build_object('username', 'user-update-notification'));
 
 -- Notifications
 insert into notification (delivery_status, kind, notification_id, user_id) values

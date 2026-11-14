@@ -12,14 +12,14 @@ use axum_messages::Messages;
 use tracing::instrument;
 
 use super::{
-    affiliations, coffee_meet, events, invitations, logs, mentorship, mock_interviews,
-    session_proposals, submissions,
+    affiliations, coffee_meet, events, inbox, invitations, logs, mentorship, mock_interviews,
+    notifications, session_proposals, submissions,
 };
 
 use crate::{
     auth::AuthSession,
     db::DynDB,
-    handlers::error::HandlerError,
+    handlers::{dashboard::inbox::requested_conversation_id, error::HandlerError},
     templates::{
         PageId,
         auth::{self, User, UserDetails},
@@ -72,6 +72,19 @@ pub(crate) async fn page(
             let (_, template) = events::prepare_list_page(&db, user_id, raw_query).await?;
             Content::Events(template)
         }
+        Tab::Inbox => {
+            if let Some(conversation_id) = requested_conversation_id(&query) {
+                let Some(template) =
+                    inbox::prepare_conversation_page(&db, user_id, conversation_id, false).await?
+                else {
+                    return Err(HandlerError::NotFound);
+                };
+                Content::InboxConversation(Box::new(template))
+            } else {
+                let (_, template) = inbox::prepare_list_page(&db, user_id, raw_query).await?;
+                Content::Inbox(template)
+            }
+        }
         Tab::CoffeeMeet => Content::CoffeeMeet(coffee_meet::prepare_list_page(&db, user_id).await?),
         Tab::Invitations => {
             Content::Invitations(invitations::prepare_list_page(&db, user_id).await?)
@@ -83,6 +96,9 @@ pub(crate) async fn page(
         Tab::Mentorship => Content::Mentorship(mentorship::prepare_list_page(&db, user_id).await?),
         Tab::MockInterviews => {
             Content::MockInterviews(mock_interviews::prepare_list_page(&db, user_id).await?)
+        }
+        Tab::Notifications => {
+            Content::Notifications(notifications::prepare_page(&db, &user).await?)
         }
         Tab::SessionProposals => {
             let (_, template) =

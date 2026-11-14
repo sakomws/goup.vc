@@ -1,5 +1,7 @@
 import { getElementById } from "/static/js/common/dom.js";
 
+const INTERCEPTED_XHR_HEADERS = ["HX-Refresh", "X-OCG-Refresh"];
+
 /**
  * Checks if the provided value is a string.
  * @param {*} value Incoming value
@@ -165,8 +167,37 @@ const toBoolean = (value, fallback = false) => {
   return fallback;
 };
 
+/**
+ * Checks if an HTTP status code indicates success.
+ * @param {number} status HTTP status code
+ * @returns {boolean} True when the status is in the 2xx range
+ */
+const isSuccessfulXHRStatus = (status) => status >= 200 && status < 300;
+
+/**
+ * Checks if an HTMX response was intercepted before its handler ran.
+ * @param {XMLHttpRequest|undefined|null} xhr HTMX response XHR
+ * @returns {boolean} True when the response requests a client refresh
+ */
+const isInterceptedXHR = (xhr) => {
+  if (!xhr || typeof xhr.getResponseHeader !== "function") {
+    return false;
+  }
+  return INTERCEPTED_XHR_HEADERS.some((name) => xhr.getResponseHeader(name) === "true");
+};
+
+/**
+ * Checks if an HTMX response is a successful handler result.
+ * @param {XMLHttpRequest|undefined|null} xhr HTMX response XHR
+ * @returns {boolean} True for a non-intercepted 2xx response
+ */
+const isSuccessfulXHR = (xhr) => Boolean(xhr) && isSuccessfulXHRStatus(xhr.status) && !isInterceptedXHR(xhr);
+
 export {
+  isInterceptedXHR,
   isString,
+  isSuccessfulXHR,
+  isSuccessfulXHRStatus,
   normalizeUsers,
   parseJsonAttribute,
   parseJsonText,

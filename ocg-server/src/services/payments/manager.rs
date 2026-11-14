@@ -18,7 +18,7 @@ use crate::{
 };
 
 use super::{
-    CreateCheckoutSessionInput, DynPaymentsProvider, RefundPaymentInput,
+    CreateCheckoutSessionInput, DynPaymentsProvider,
     notification_composer::PaymentsNotificationComposer,
     webhook_reconciler::PaymentsWebhookReconciler,
 };
@@ -30,8 +30,11 @@ mod tests;
 #[async_trait]
 #[cfg_attr(test, automock)]
 pub(crate) trait PaymentsManager {
-    /// Approves a pending refund request and submits the provider refund.
+    /// Approves a pending refund request and queues the provider refund.
     async fn approve_refund_request(&self, input: &ApproveRefundRequestInput) -> Result<()>;
+
+    /// Completes an externally resolved terminal provider refund.
+    async fn complete_refund_recovery(&self, input: &CompleteRefundRecoveryInput) -> Result<()>;
 
     /// Completes a free checkout and enqueues the attendee welcome notification.
     async fn complete_free_checkout(
@@ -102,66 +105,55 @@ impl PgPaymentsManager {
         }
     }
 
-    /// Approves a pending refund request and submits the provider refund.
+    /// Approves a pending refund request and queues the provider refund.
     pub(crate) async fn approve_refund_request(
         &self,
         input: &ApproveRefundRequestInput,
     ) -> Result<()> {
-        let payments_provider = self.payments_provider()?;
-
-        // Mark the refund request as being processed and load the purchase
-        let purchase = self
-            .db
-            .begin_event_refund_approval(input.group_id, input.event_id, input.user_id)
-            .await?;
-
-        // Extract the provider payment reference or roll back the approval state
-        let provider_payment_reference = self
-            .revert_refund_approval_on_error(
-                input.group_id,
-                input.event_id,
-                input.user_id,
-                purchase
-                    .provider_payment_reference
-                    .clone()
-                    .ok_or_else(|| anyhow::anyhow!("provider payment reference is missing")),
-            )
-            .await?;
-
-        // Submit the refund to the payments provider or roll back the approval state
-        let refund = self
-            .revert_refund_approval_on_error(
-                input.group_id,
-                input.event_id,
-                input.user_id,
-                payments_provider
-                    .refund_payment(&RefundPaymentInput {
-                        amount_minor: purchase.amount_minor,
-                        provider_payment_reference,
-                        purchase_id: purchase.event_purchase_id,
-                    })
-                    .await,
-            )
-            .await?;
-
-        // Persist the refund approval in the database
+        // Persist the review decision and durable worker job atomically
         self.db
-            .approve_event_refund_request(
+            .queue_event_refund_request_approval(
                 input.actor_user_id,
                 input.group_id,
-                input.event_id,
-                input.user_id,
-                refund.provider_refund_id,
+                input.event_purchase_id,
                 input.review_note.clone(),
             )
+            .await
+    }
+
+    /// Completes an externally resolved terminal provider refund.
+    pub(crate) async fn complete_refund_recovery(
+        &self,
+        input: &CompleteRefundRecoveryInput,
+    ) -> Result<()> {
+        // Load group-scoped event context before composing attendee-facing data
+        let context = self
+            .db
+            .get_event_purchase_refund_recovery_context(input.group_id, input.event_purchase_id)
             .await?;
 
-        // Notify the attendee about the approved refund
-        self.notification_composer
-            .enqueue_refund_approval_notification(input.alliance_id, input.event_id, input.user_id)
-            .await;
+        // Compose the notification only when local finalization remains pending
+        let notification_template_data = if context.notification_required {
+            Some(
+                self.notification_composer
+                    .build_refund_approval_template_data(context.alliance_id, context.event_id)
+                    .await?,
+            )
+        } else {
+            None
+        };
 
-        Ok(())
+        // Complete local state and enqueue any notification atomically
+        self.db
+            .complete_event_purchase_refund_recovery(
+                input.actor_user_id,
+                input.group_id,
+                context.event_purchase_refund_id,
+                input.recovery_reference.clone(),
+                input.recovery_note.clone(),
+                notification_template_data,
+            )
+            .await
     }
 
     /// Completes a free checkout and enqueues the attendee welcome notification.
@@ -287,19 +279,23 @@ impl PgPaymentsManager {
         input: &RejectRefundRequestInput,
     ) -> Result<()> {
         // Persist the refund rejection in the database
-        self.db
+        let purchase = self
+            .db
             .reject_event_refund_request(
                 input.actor_user_id,
                 input.group_id,
-                input.event_id,
-                input.user_id,
+                input.event_purchase_id,
                 input.review_note.clone(),
             )
             .await?;
 
         // Notify the attendee about the rejected refund
         self.notification_composer
-            .enqueue_refund_rejection_notification(input.alliance_id, input.event_id, input.user_id)
+            .enqueue_refund_rejection_notification(
+                purchase.alliance_id,
+                purchase.event_id,
+                purchase.user_id,
+            )
             .await;
 
         Ok(())
@@ -330,34 +326,6 @@ impl PgPaymentsManager {
         self.payments_provider
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("payments are not configured"))
-    }
-
-    /// Runs a refund approval step and restores the pending state if it fails.
-    async fn revert_refund_approval_on_error<T>(
-        &self,
-        group_id: Uuid,
-        event_id: Uuid,
-        user_id: Uuid,
-        result: Result<T>,
-    ) -> Result<T> {
-        match result {
-            Ok(value) => Ok(value),
-            Err(err) => {
-                self.revert_refund_approval_state(group_id, event_id, user_id).await;
-                Err(err)
-            }
-        }
-    }
-
-    /// Reverts the temporary refund approval state after a failed provider call.
-    async fn revert_refund_approval_state(&self, group_id: Uuid, event_id: Uuid, user_id: Uuid) {
-        if let Err(revert_err) = self
-            .db
-            .revert_event_refund_approval(group_id, event_id, user_id)
-            .await
-        {
-            warn!(error = %revert_err, "failed to revert refund approval state");
-        }
     }
 
     /// Builds the webhook reconciler for the configured payments provider.
@@ -398,6 +366,11 @@ impl PaymentsManager for PgPaymentsManager {
         .await
     }
 
+    /// [`PaymentsManager::complete_refund_recovery`].
+    async fn complete_refund_recovery(&self, input: &CompleteRefundRecoveryInput) -> Result<()> {
+        PgPaymentsManager::complete_refund_recovery(self, input).await
+    }
+
     /// [`PaymentsManager::get_or_create_checkout_redirect_url`].
     async fn get_or_create_checkout_redirect_url(
         &self,
@@ -433,17 +406,28 @@ impl PaymentsManager for PgPaymentsManager {
 pub(crate) struct ApproveRefundRequestInput {
     /// User approving the refund request.
     pub actor_user_id: Uuid,
-    /// Alliance containing the event.
-    pub alliance_id: Uuid,
-    /// Event containing the purchase.
-    pub event_id: Uuid,
+    /// Purchase whose refund request is being approved.
+    pub event_purchase_id: Uuid,
     /// Group containing the event.
     pub group_id: Uuid,
-    /// Attendee receiving the refund.
-    pub user_id: Uuid,
 
     /// Optional review note stored with the approval.
     pub review_note: Option<String>,
+}
+
+/// Parameters used to complete an externally resolved refund.
+#[derive(Clone, Debug)]
+pub(crate) struct CompleteRefundRecoveryInput {
+    /// User completing the recovery.
+    pub actor_user_id: Uuid,
+    /// Purchase whose refund is being recovered.
+    pub event_purchase_id: Uuid,
+    /// Group containing the event.
+    pub group_id: Uuid,
+    /// Evidence reviewed before completing recovery.
+    pub recovery_note: String,
+    /// Reference for the external refund.
+    pub recovery_reference: String,
 }
 
 /// Errors returned while verifying or processing a webhook.
@@ -476,14 +460,10 @@ pub(crate) struct RequestRefundInput {
 pub(crate) struct RejectRefundRequestInput {
     /// User rejecting the refund request.
     pub actor_user_id: Uuid,
-    /// Alliance containing the event.
-    pub alliance_id: Uuid,
-    /// Event containing the purchase.
-    pub event_id: Uuid,
+    /// Purchase whose refund request is being rejected.
+    pub event_purchase_id: Uuid,
     /// Group containing the event.
     pub group_id: Uuid,
-    /// Attendee whose refund was rejected.
-    pub user_id: Uuid,
 
     /// Optional review note stored with the rejection.
     pub review_note: Option<String>,

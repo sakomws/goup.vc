@@ -15,6 +15,7 @@ use crate::{
         event::{EventCfsLabel, EventFull, EventSummary},
         group::{GroupFull, GroupSummary},
         search::{SearchEventsFilters, SearchGroupsFilters},
+        user::User,
     },
 };
 
@@ -52,8 +53,14 @@ pub(crate) trait DBCommon {
     /// Lists labels configured for an event.
     async fn list_event_cfs_labels(&self, event_id: Uuid) -> Result<Vec<EventCfsLabel>>;
 
+    /// Lists accepted group team members available as event organizers.
+    async fn list_group_organizers(&self, group_id: Uuid) -> Result<Vec<User>>;
+
     /// Lists all available timezones.
     async fn list_timezones(&self) -> Result<Vec<String>>;
+
+    /// Lists UTM mediums accepted by every group.
+    async fn list_utm_mediums(&self) -> Result<Vec<String>>;
 
     /// Searches for events based on provided filters.
     async fn search_events(&self, filters: &SearchEventsFilters) -> Result<SearchEventsOutput>;
@@ -138,6 +145,13 @@ where
             .await
     }
 
+    /// [`DBCommon::list_group_organizers`]
+    #[instrument(skip(self), err)]
+    async fn list_group_organizers(&self, group_id: Uuid) -> Result<Vec<User>> {
+        self.fetch_json_one("select list_group_organizers($1::uuid)", &[&group_id])
+            .await
+    }
+
     /// [`DBCommon::list_timezones`]
     #[instrument(skip(self), err)]
     async fn list_timezones(&self) -> Result<Vec<String>> {
@@ -169,6 +183,21 @@ where
 
         let db = self.client().await?;
         inner(db).await
+    }
+
+    /// [`DBCommon::list_utm_mediums`]
+    #[instrument(skip(self), err)]
+    async fn list_utm_mediums(&self) -> Result<Vec<String>> {
+        let db = self.client().await?;
+        Ok(db
+            .query(
+                "select utm_medium_id from utm_medium order by utm_medium_id asc",
+                &[],
+            )
+            .await?
+            .into_iter()
+            .map(|row| row.get("utm_medium_id"))
+            .collect())
     }
 
     /// [`DBCommon::search_events`]

@@ -25,6 +25,9 @@ use crate::{
     },
     types::{
         alliance::{AllianceRole, AllianceRoleSummary, AllianceSummary},
+        dashboard::alliance::contact::{
+            AllianceContactFilterOptions, AllianceContactFilters, AllianceContactRecipientsSummary,
+        },
         group::{GroupCategory, GroupRegion},
         partner_integration::PartnerIntegration,
     },
@@ -152,12 +155,25 @@ pub(crate) trait DBDashboardAlliance {
     /// Retrieves analytics statistics for a alliance.
     async fn get_alliance_stats(&self, alliance_id: Uuid) -> Result<AllianceDashboardStats>;
 
+    /// Summarizes group team members matching alliance contact filters.
+    async fn get_alliance_contact_recipients_summary(
+        &self,
+        alliance_id: Uuid,
+        filters: &AllianceContactFilters,
+    ) -> Result<AllianceContactRecipientsSummary>;
+
     /// Lists alliance dashboard audit log rows.
     async fn list_alliance_audit_logs(
         &self,
         alliance_id: Uuid,
         filters: &AuditLogFilters,
     ) -> Result<AuditLogsOutput>;
+
+    /// Lists filter options for the alliance Contact tab.
+    async fn list_alliance_contact_filter_options(
+        &self,
+        alliance_id: Uuid,
+    ) -> Result<AllianceContactFilterOptions>;
 
     /// Lists all available alliance roles.
     async fn list_alliance_roles(&self) -> Result<Vec<AllianceRoleSummary>>;
@@ -470,6 +486,20 @@ where
         .await
     }
 
+    /// [`DBDashboardAlliance::get_alliance_contact_recipients_summary`].
+    #[instrument(skip(self, filters), err)]
+    async fn get_alliance_contact_recipients_summary(
+        &self,
+        alliance_id: Uuid,
+        filters: &AllianceContactFilters,
+    ) -> Result<AllianceContactRecipientsSummary> {
+        self.fetch_json_one(
+            "select get_alliance_contact_recipients_summary($1::uuid, $2::jsonb)",
+            &[&alliance_id, &Json(filters)],
+        )
+        .await
+    }
+
     /// [`DBDashboardAlliance::get_alliance_stats`]
     #[instrument(skip(self), err)]
     async fn get_alliance_stats(&self, alliance_id: Uuid) -> Result<AllianceDashboardStats> {
@@ -502,6 +532,19 @@ where
         self.fetch_json_one(
             "select list_alliance_audit_logs($1::uuid, $2::jsonb)",
             &[&alliance_id, &Json(filters)],
+        )
+        .await
+    }
+
+    /// [`DBDashboardAlliance::list_alliance_contact_filter_options`].
+    #[instrument(skip(self), err)]
+    async fn list_alliance_contact_filter_options(
+        &self,
+        alliance_id: Uuid,
+    ) -> Result<AllianceContactFilterOptions> {
+        self.fetch_json_one(
+            "select list_alliance_contact_filter_options($1::uuid)",
+            &[&alliance_id],
         )
         .await
     }

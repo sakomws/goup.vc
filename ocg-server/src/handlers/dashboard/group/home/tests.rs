@@ -576,6 +576,13 @@ async fn test_page_settings_tab_success() {
         .times(1)
         .withf(move |cid| *cid == alliance_id)
         .returning(move |_| Ok(vec![region.clone()]));
+    db.expect_get_group_utm_settings()
+        .times(1)
+        .withf(move |cid, gid| *cid == alliance_id && *gid == group_id)
+        .returning(|_, _| Ok(Default::default()));
+    db.expect_list_utm_mediums()
+        .times(1)
+        .returning(|| Ok(vec!["email".to_string(), "social".to_string()]));
     db.expect_get_site_settings()
         .times(1)
         .returning(|| Ok(sample_site_settings()));
@@ -774,5 +781,90 @@ async fn test_page_team_tab_success() {
     let bytes = to_bytes(body, usize::MAX).await.unwrap();
 
     // Check response matches expectations
+    assert_html_response(&parts, &bytes, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_page_refunds_tab_success() {
+    // Setup identifiers and empty refund dashboard state
+    let community_id = Uuid::new_v4();
+    let group_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(
+        session_id,
+        user_id,
+        &auth_hash,
+        Some(community_id),
+        Some(group_id),
+    );
+    let groups = sample_user_groups_by_alliance(community_id, group_id);
+    let output = crate::templates::dashboard::group::refunds::RefundsOutput {
+        events: vec![],
+        refunds: vec![],
+        total: 0,
+    };
+
+    // Setup dashboard context, permissions, and refund list expectations
+    let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == community_id
+                && *gid == group_id
+                && *uid == user_id
+                && permission == GroupPermission::Read
+        })
+        .returning(|_, _, _, _| Ok(true));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == community_id
+                && *gid == group_id
+                && *uid == user_id
+                && permission == GroupPermission::EventsWrite
+        })
+        .returning(|_, _, _, _| Ok(true));
+    db.expect_list_user_groups()
+        .times(1)
+        .withf(move |uid| uid == &user_id)
+        .returning(move |_| Ok(groups.clone()));
+    db.expect_list_group_refunds()
+        .times(1)
+        .withf(move |gid, filters| {
+            *gid == group_id
+                && filters.limit == Some(DASHBOARD_PAGINATION_LIMIT)
+                && filters.offset == Some(0)
+                && filters.view == crate::templates::dashboard::group::refunds::RefundsView::Active
+        })
+        .returning(move |_, _| Ok(output.clone()));
+    db.expect_get_site_settings()
+        .times(1)
+        .returning(|| Ok(sample_site_settings()));
+
+    // Request the refunds tab through the full dashboard page
+    let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
+        .build()
+        .await;
+    let request = Request::builder()
+        .method("GET")
+        .uri("/dashboard/group?tab=refunds")
+        .header(COOKIE, format!("id={session_id}"))
+        .body(Body::empty())
+        .unwrap();
+    let response = router.oneshot(request).await.unwrap();
+    let (parts, body) = response.into_parts();
+    let bytes = to_bytes(body, usize::MAX).await.unwrap();
+
+    // Check the full dashboard renders the refund operations tab
     assert_html_response(&parts, &bytes, StatusCode::OK);
 }

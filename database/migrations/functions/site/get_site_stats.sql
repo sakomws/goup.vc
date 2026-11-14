@@ -515,4 +515,4 @@ select json_strip_nulls(json_build_object(
         'total', (select count(*)::int from landscape_open_source)
     )
 ));
-$$ language sql;
+$$ language sql set timezone = 'UTC';

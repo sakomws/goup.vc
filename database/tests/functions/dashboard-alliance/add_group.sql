@@ -91,6 +91,7 @@ select is(
             "name": "Technology",
             "normalized_name": "technology"
         },
+        "external_payments_enabled": false,
         "description": "A simple test group",
         "description_short": "Brief overview of the test group",
         "book_exchange_enabled": false,
@@ -212,6 +213,7 @@ select is(
             "name": "Technology",
             "normalized_name": "technology"
         },
+        "external_payments_enabled": false,
         "description": "A fully populated test group",
         "description_short": "Cloud native alliance group in Seattle",
         "banner_url": "https://example.com/banner.jpg",

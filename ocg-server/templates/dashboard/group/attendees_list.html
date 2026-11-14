@@ -225,7 +225,7 @@
               {% else if event.canceled -%}
                 disabled title="Canceled events cannot send attendee emails."
               {% else if all_attendees_email_recipient_total == 0 -%}
-                disabled title="No attendees with verified email addresses and email notifications enabled."
+                disabled title="No attendees with verified email addresses who accept messages from event organizers."
               {% endif -%}>Send email</button>
       <div id="attendee-email-actions-menu"
            data-attendee-email-actions-dropdown
