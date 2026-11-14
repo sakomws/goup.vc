@@ -5,7 +5,7 @@ use axum::{
     extract::{Path, RawQuery, State},
     http::{
         HeaderValue, StatusCode,
-        header::{CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_TYPE},
+        header::{CONTENT_DISPOSITION, CONTENT_TYPE},
     },
     response::{Html, IntoResponse, Response},
 };
@@ -16,8 +16,8 @@ use uuid::Uuid;
 use crate::{
     auth::AuthSession,
     db::DynDB,
-    handlers::error::HandlerError,
-    router::{CACHE_CONTROL_PRIVATE_NO_STORE, serde_qs_config},
+    handlers::{error::HandlerError, public_page_cache_headers},
+    router::serde_qs_config,
     templates::{PageId, auth::User, site::opportunities},
     types::{
         opportunities::OpportunityFilters,
@@ -43,21 +43,20 @@ pub(crate) async fn page(
         OPPORTUNITIES_URL,
     )?;
     let csv_url = format!("{OPPORTUNITIES_URL}.csv?{}", filters.to_raw_query()?);
+    let user = User::from_session(auth_session).await?;
+    let response_headers = public_page_cache_headers(&user);
     let template = opportunities::Page {
         page_id: PageId::SiteOpportunities,
         path: OPPORTUNITIES_URL.into(),
         site_settings: db.get_site_settings().await?,
-        user: User::from_session(auth_session).await?,
+        user,
         filters,
         csv_url,
         opportunities: output.opportunities,
         total: output.total,
         navigation_links,
     };
-    Ok((
-        [(CACHE_CONTROL, CACHE_CONTROL_PRIVATE_NO_STORE)],
-        Html(template.render()?),
-    ))
+    Ok((response_headers, Html(template.render()?)).into_response())
 }
 
 #[instrument(skip_all, err)]
@@ -72,17 +71,16 @@ pub(crate) async fn details(
         .await?
         .ok_or(HandlerError::NotFound)?;
     let path = format!("{OPPORTUNITIES_URL}/{source_kind}/{source_id}");
+    let user = User::from_session(auth_session).await?;
+    let response_headers = public_page_cache_headers(&user);
     let template = opportunities::DetailsPage {
         page_id: PageId::SiteOpportunities,
         path,
         site_settings: db.get_site_settings().await?,
-        user: User::from_session(auth_session).await?,
+        user,
         opportunity,
     };
-    Ok((
-        [(CACHE_CONTROL, CACHE_CONTROL_PRIVATE_NO_STORE)],
-        Html(template.render()?),
-    ))
+    Ok((response_headers, Html(template.render()?)).into_response())
 }
 
 /// Export the visible result set, with the same privacy and publication rules

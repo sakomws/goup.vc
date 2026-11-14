@@ -31,6 +31,12 @@ CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS}" cargo build --release -p ocg-server
 sudo systemctl restart ocg-server
 sudo systemctl --no-pager --full status ocg-server
 
+# Keep the production reverse proxy aligned with the versioned configuration.
+sudo install -d -o www-data -g www-data /var/cache/nginx/goup-pages
+sudo install -m 0644 scripts/nginx-goup.conf /etc/nginx/conf.d/goup.conf
+sudo nginx -t
+sudo systemctl reload nginx
+
 # Restart MCP only when that service exists and mcp/ files changed.
 if systemctl list-unit-files --type=service --no-legend | grep -q '^goup-mcp.service'; then
     mcp_changed="false"
