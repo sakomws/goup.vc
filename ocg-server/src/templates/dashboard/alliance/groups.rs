@@ -19,7 +19,7 @@ use crate::{
         MAX_LEN_COUNTRY_CODE, MAX_LEN_DESCRIPTION, MAX_LEN_ENTITY_NAME, MAX_LEN_L, MAX_LEN_M,
         MAX_LEN_S, MAX_PAGINATION_LIMIT, ga4_measurement_id, image_url_opt, image_url_vec,
         trimmed_non_empty, trimmed_non_empty_opt, trimmed_non_empty_tag_vec, url_map_values,
-        valid_group_pretty_slug, valid_latitude, valid_longitude,
+        utm_value_vec, valid_group_pretty_slug, valid_latitude, valid_longitude,
     },
 };
 
@@ -140,10 +140,6 @@ pub(crate) struct Group {
     /// Additional links as key-value pairs.
     #[garde(custom(url_map_values))]
     pub extra_links: Option<BTreeMap<String, String>>,
-    /// Whether the group collects paid tickets outside the platform.
-    #[serde(default)]
-    #[garde(skip)]
-    pub external_payments_enabled: Option<bool>,
     /// Facebook profile URL.
     #[garde(url, length(max = MAX_LEN_L))]
     pub facebook_url: Option<String>,
@@ -227,6 +223,18 @@ pub(crate) struct Group {
     /// Twitter profile URL.
     #[garde(url, length(max = MAX_LEN_L))]
     pub twitter_url: Option<String>,
+    /// Whether the UTM settings section was submitted.
+    #[garde(skip)]
+    pub utm_present: Option<bool>,
+    /// Event attribution campaign allowlist.
+    #[garde(custom(utm_value_vec))]
+    pub utm_campaigns: Option<Vec<String>>,
+    /// Additional event attribution medium allowlist.
+    #[garde(custom(utm_value_vec))]
+    pub utm_mediums: Option<Vec<String>>,
+    /// Event attribution source allowlist.
+    #[garde(custom(utm_value_vec))]
+    pub utm_sources: Option<Vec<String>>,
     /// Group website URL.
     #[garde(url, length(max = MAX_LEN_L))]
     pub website_url: Option<String>,

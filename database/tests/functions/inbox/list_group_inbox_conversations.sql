@@ -11,7 +11,7 @@ select plan(3);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '1b0f0000-0000-0000-0000-000000000001'
+\set allianceID '1b0f0000-0000-0000-0000-000000000001'
 \set conversationClosedID '1b0f0000-0000-0000-0000-000000000002'
 \set conversationOpenID '1b0f0000-0000-0000-0000-000000000003'
 \set conversationOtherID '1b0f0000-0000-0000-0000-000000000004'
@@ -25,8 +25,8 @@ select plan(3);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- Another user
 select fx_user(:'otherUserID');
@@ -35,13 +35,13 @@ select fx_user(:'otherUserID');
 select fx_user(:'userID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group contacted by the user
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Another group contacted by another user
-select fx_group(:'otherGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'otherGroupID', :'allianceID', :'groupCategoryID');
 
 -- Closed conversation of the user with the group
 insert into inbox_conversation (inbox_conversation_id, group_id, inbox_conversation_status_id, last_message_at, user_id)

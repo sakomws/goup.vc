@@ -1,32 +1,116 @@
+-- Tests enqueueing notifications for accepting recipients.
+
 -- ============================================================================
 -- SETUP
 -- ============================================================================
 
 begin;
-select plan(13);
+select plan(28);
 
 -- ============================================================================
 -- VARIABLES
 -- ============================================================================
 
+\set allianceID '8a030000-0000-0000-0000-000000000006'
+\set groupCategoryID '8a030000-0000-0000-0000-000000000007'
+\set groupID '8a030000-0000-0000-0000-000000000008'
 \set userID1 '8a030000-0000-0000-0000-000000000001'
 \set userID2 '8a030000-0000-0000-0000-000000000002'
 \set userID3 '8a030000-0000-0000-0000-000000000003'
+\set userID4 '8a030000-0000-0000-0000-000000000004'
+\set userID5 '8a030000-0000-0000-0000-000000000005'
 
 -- ============================================================================
 -- SEED DATA
 -- ============================================================================
 
--- Baseline users
+-- Alliance containing the notification group scope
+select fx_alliance(:'allianceID');
+
+-- Group category containing the notification group scope
+select fx_group_category(:'groupCategoryID', :'allianceID');
+
+-- Group named by group-mutable notification scenarios
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
+
+-- User who receives category notifications
 select fx_user(:'userID1');
 
-select fx_user(:'userID2', jsonb_build_object('optional_notifications_enabled', false));
--- user
+-- User opted out of new event notifications
+select fx_user(:'userID2');
+
+-- Unverified user used by unchanged enqueue behavior
 select fx_user(:'userID3', jsonb_build_object('email_verified', false));
+
+-- User muted for the notification group
+select fx_user(:'userID4');
+
+-- User opted out of every category and muted for the notification group
+select fx_user(:'userID5');
+
+-- New events opt-out used by category filtering
+insert into user_notification_opt_out (notification_category_id, user_id)
+values ('new-events', :'userID2');
+
+-- Full opt-out used by team-category and always-sent scenarios
+insert into user_notification_opt_out (notification_category_id, user_id)
+select notification_category_id, :'userID5'
+from notification_category;
+
+-- Group mute used by category filtering
+insert into user_group_notification_mute (group_id, user_id)
+values (:'groupID', :'userID4');
+
+-- Group mute used by always-sent scenarios
+insert into user_group_notification_mute (group_id, user_id)
+values (:'groupID', :'userID5');
 
 -- ============================================================================
 -- TESTS
 -- ============================================================================
+
+-- Should reject empty group scopes for group-mutable kinds
+select throws_ok(
+    $$select enqueue_notification('group-custom', null, '[]'::jsonb, array[]::uuid[], '{}'::uuid[])$$,
+    'P0001',
+    'group ids are required for notification kind: group-custom',
+    'Should reject empty group scopes for group-mutable kinds'
+);
+
+-- Should reject group scopes with null entries for group-mutable kinds
+select throws_ok(
+    $$select enqueue_notification('group-custom', null, '[]'::jsonb, array[]::uuid[], array[null]::uuid[])$$,
+    'P0001',
+    'group ids are required for notification kind: group-custom',
+    'Should reject group scopes with null entries for group-mutable kinds'
+);
+
+-- Should reject missing group scopes for group-mutable kinds
+select throws_ok(
+    $$select enqueue_notification('group-custom', null, '[]'::jsonb, array[]::uuid[])$$,
+    'P0001',
+    'group ids are required for notification kind: group-custom',
+    'Should reject missing group scopes for group-mutable kinds'
+);
+
+-- Should reject mixed null group scopes for group-mutable kinds
+select throws_ok(
+    format(
+        $$select enqueue_notification('group-custom', null, '[]'::jsonb, array[]::uuid[], array[%L, null]::uuid[])$$,
+        :'groupID'
+    ),
+    'P0001',
+    'group ids are required for notification kind: group-custom',
+    'Should reject mixed null group scopes for group-mutable kinds'
+);
+
+-- Should reject unknown notification kinds
+select throws_ok(
+    $$select enqueue_notification('unknown-kind', null, '[]'::jsonb, array[]::uuid[])$$,
+    '23503',
+    'notification kind does not exist: unknown-kind',
+    'Should reject unknown notification kinds'
+);
 
 -- Should enqueue one notification per recipient without template or attachments
 select lives_ok(
@@ -64,6 +148,98 @@ select results_eq(
     'Should create event-canceled notifications for expected recipients'
 );
 
+-- Should return one identifier per enqueued recipient
+select enqueue_notification(
+    'event-rescheduled',
+    null,
+    '[]'::jsonb,
+    array[:'userID1', :'userID3']::uuid[]
+) as "enqueuedIDs" \gset
+
+select results_eq(
+    format($$select unnest(%L::uuid[]) order by 1$$, :'enqueuedIDs'),
+    $$
+    select notification_id
+    from notification
+    where kind = 'event-rescheduled'
+    order by notification_id
+    $$,
+    'Should return one identifier per enqueued recipient'
+);
+
+-- Should return no identifiers when every recipient opted out
+select is(
+    enqueue_notification(
+        'event-published',
+        null,
+        '[]'::jsonb,
+        array[:'userID2']::uuid[],
+        array[:'groupID']::uuid[]
+    ),
+    '{}'::uuid[],
+    'Should return no identifiers when every recipient opted out'
+);
+
+-- Should write no rows when every recipient opted out
+select is(
+    (
+        select count(*)::int
+        from notification
+        where kind = 'event-published'
+    ),
+    0,
+    'Should write no rows when every recipient opted out'
+);
+
+-- Should return no identifiers for an uncategorized kind without recipients
+select is(
+    enqueue_notification(
+        'email-verification',
+        '{"link":"/verify/enqueue-notification-empty"}'::jsonb,
+        jsonb_build_array(
+            jsonb_build_object(
+                'content_type', 'text/plain',
+                'data_base64', encode(convert_to('enqueue-notification-empty', 'utf8'), 'base64'),
+                'file_name', 'empty.txt'
+            )
+        ),
+        '{}'::uuid[]
+    ),
+    '{}'::uuid[],
+    'Should return no identifiers for an uncategorized kind without recipients'
+);
+
+-- Should write no template data for an uncategorized kind without recipients
+select is(
+    (
+        select count(*)::int
+        from notification_template_data
+        where hash = encode(
+            digest(
+                convert_to('{"link":"/verify/enqueue-notification-empty"}'::jsonb::text, 'utf8'),
+                'sha256'
+            ),
+            'hex'
+        )
+    ),
+    0,
+    'Should write no template data for an uncategorized kind without recipients'
+);
+
+-- Should write no attachments for an uncategorized kind without recipients
+select is(
+    (
+        select count(*)::int
+        from attachment
+        where hash = encode(
+            digest(convert_to('enqueue-notification-empty', 'utf8'), 'sha256'),
+            'hex'
+        )
+    ),
+    0,
+    'Should write no attachments for an uncategorized kind without recipients'
+);
+
 -- Should enqueue optional notifications only for recipients who receive them
 select lives_ok(
     format(
@@ -71,10 +247,13 @@ select lives_ok(
             'event-published',
             null,
             '[]'::jsonb,
-            array[%L, %L]::uuid[]
+            array[%L, %L, %L]::uuid[],
+            array[%L]::uuid[]
         )$$,
         :'userID1',
-        :'userID2'
+        :'userID2',
+        :'userID4',
+        :'groupID'
     ),
     'Should enqueue optional notifications only for recipients who receive them'
 );
@@ -94,6 +273,63 @@ select results_eq(
         :'userID1'
     ),
     'Should create event-published notifications for optional notifications recipients only'
+);
+
+-- Should enqueue a team category without group ids while respecting opt-outs
+select lives_ok(
+    format(
+        $$select enqueue_notification(
+            'inbox-message-received',
+            null,
+            '[]'::jsonb,
+            array[%L, %L]::uuid[]
+        )$$,
+        :'userID5',
+        :'userID4'
+    ),
+    'Should enqueue a team category without group ids while respecting opt-outs'
+);
+
+-- Should suppress a team category by opt-out but not by mute
+select results_eq(
+    $$
+        select kind, user_id
+        from notification
+        where kind = 'inbox-message-received'
+    $$,
+    format(
+        $$ values ('inbox-message-received'::text, %L::uuid) $$,
+        :'userID4'
+    ),
+    'Should suppress a team category by opt-out but not by mute'
+);
+
+-- Should enqueue an always-sent notification despite every opt-out and mute
+select lives_ok(
+    format(
+        $$select enqueue_notification(
+            'event-refund-requested',
+            null,
+            '[]'::jsonb,
+            array[%L]::uuid[]
+        )$$,
+        :'userID5'
+    ),
+    'Should enqueue an always-sent notification despite every opt-out and mute'
+);
+
+-- Should create an always-sent notification despite every opt-out and mute
+select results_eq(
+    $$
+        select kind, user_id
+        from notification
+        where kind = 'event-refund-requested'
+    $$,
+    format(
+        $$ values ('event-refund-requested'::text, %L::uuid) $$,
+        :'userID5'
+    ),
+    'Should create an always-sent notification despite every opt-out and mute'
 );
 
 -- Should enqueue notifications with deduplicated template data

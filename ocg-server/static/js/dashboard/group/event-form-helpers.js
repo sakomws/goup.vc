@@ -1,5 +1,6 @@
 import {
   normalizeUsers,
+  parseJsonAttribute,
   sanitizeStringArray,
   toOptionalString,
   toTrimmedString,
@@ -287,6 +288,28 @@ const setHosts = (hosts) => {
 };
 
 /**
+ * Returns group team members available to the organizers selector.
+ * @returns {object[]}
+ */
+const getAvailableOrganizers = () => {
+  const selector = document.querySelector('user-search-selector[field-name="organizers"]');
+  return normalizeUsers(parseJsonAttribute(selector?.getAttribute("available-users"), []));
+};
+
+/**
+ * Sets selected organizers on the organizers selector.
+ * @param {*} organizers Organizers payload
+ */
+const setOrganizers = (organizers) => {
+  const selector = document.querySelector('user-search-selector[field-name="organizers"]');
+  if (!selector) {
+    return;
+  }
+  selector.selectedUsers = normalizeUsers(organizers);
+  selector.requestUpdate?.();
+};
+
+/**
  * Sets sponsors on the sponsors section component.
  * @param {*} sponsors Sponsors payload
  */
@@ -500,6 +523,7 @@ const initializeSessionsRemovalWarning = ({
 export {
   appendCopySuffix,
   buildSessionEntries,
+  getAvailableOrganizers,
   initializeSessionsRemovalWarning,
   normalizeSpeakers,
   setAttendeeApprovalRequired,
@@ -508,6 +532,7 @@ export {
   setEventReminderEnabled,
   setGalleryImages,
   setHosts,
+  setOrganizers,
   setPaymentCurrencyCode,
   setRegistrationRequired,
   setRegistrationQuestions,

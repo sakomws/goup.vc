@@ -333,7 +333,7 @@ async fn test_worker_auto_end_run_uses_rate_limit_retry_after() {
     let claim_released = Arc::new(Notify::new());
     let claim_released_for_mock = claim_released.clone();
     let mut sequence = Sequence::new();
-    let mut db = MockDBMeetings::new();
+    let mut db = MockDB::new();
     db.expect_claim_meeting_for_auto_end()
         .times(1)
         .in_sequence(&mut sequence)
@@ -371,7 +371,7 @@ async fn test_worker_auto_end_run_uses_rate_limit_retry_after() {
         MeetingProvider::Zoom,
         Arc::new(provider) as DynMeetingsProvider,
     );
-    let worker = MeetingsAutoEndWorker {
+    let mut worker = MeetingsAutoEndWorker {
         cancellation_token: cancellation_token.clone(),
         db: Arc::new(db),
         providers: Arc::new(providers),
@@ -514,7 +514,7 @@ async fn test_worker_sync_meeting_creates_new_meeting() {
     let mp: DynMeetingsProvider = Arc::new(mp);
 
     // Setup worker and sync meeting
-    let worker = sample_sync_worker(db, mp);
+    let mut worker = sample_sync_worker(db, mp);
     let synced = worker.sync_meeting().await.unwrap();
 
     // Check result matches expectations
@@ -569,7 +569,7 @@ async fn test_worker_sync_meeting_updates_existing_meeting() {
     let mp: DynMeetingsProvider = Arc::new(mp);
 
     // Setup worker and sync meeting
-    let worker = sample_sync_worker(db, mp);
+    let mut worker = sample_sync_worker(db, mp);
     let synced = worker.sync_meeting().await.unwrap();
 
     // Check result matches expectations
@@ -608,7 +608,7 @@ async fn test_worker_sync_meeting_deletes_meeting() {
     let mp: DynMeetingsProvider = Arc::new(mp);
 
     // Setup worker and sync meeting
-    let worker = sample_sync_worker(db, mp);
+    let mut worker = sample_sync_worker(db, mp);
     let synced = worker.sync_meeting().await.unwrap();
 
     // Check result matches expectations
@@ -647,7 +647,7 @@ async fn test_worker_sync_meeting_delete_not_found_succeeds() {
     let mp: DynMeetingsProvider = Arc::new(mp);
 
     // Setup worker and sync meeting
-    let worker = sample_sync_worker(db, mp);
+    let mut worker = sample_sync_worker(db, mp);
     let synced = worker.sync_meeting().await.unwrap();
 
     // Check result matches expectations
@@ -669,7 +669,7 @@ async fn test_worker_sync_meeting_no_pending_meeting() {
     let mp: DynMeetingsProvider = Arc::new(mp);
 
     // Setup worker and sync meeting
-    let worker = sample_sync_worker(db, mp);
+    let mut worker = sample_sync_worker(db, mp);
     let synced = worker.sync_meeting().await.unwrap();
 
     // Check result matches expectations
@@ -707,7 +707,7 @@ async fn test_worker_sync_meeting_retryable_error_releases_claim() {
     let mp: DynMeetingsProvider = Arc::new(mp);
 
     // Setup worker and sync meeting
-    let worker = sample_sync_worker(db, mp);
+    let mut worker = sample_sync_worker(db, mp);
     let result = worker.sync_meeting().await;
 
     // Check result is a retryable provider error
@@ -758,7 +758,7 @@ async fn test_worker_sync_meeting_non_retryable_error_records_error() {
     let mp: DynMeetingsProvider = Arc::new(mp);
 
     // Setup worker and sync meeting
-    let worker = sample_sync_worker(db, mp);
+    let mut worker = sample_sync_worker(db, mp);
     let synced = worker.sync_meeting().await.unwrap();
 
     // Check result matches expectations
@@ -800,7 +800,7 @@ async fn test_worker_sync_meeting_no_slots_available_records_error() {
     let mp: DynMeetingsProvider = Arc::new(mp);
 
     // Setup worker and sync meeting
-    let worker = sample_sync_worker(db, mp);
+    let mut worker = sample_sync_worker(db, mp);
     let synced = worker.sync_meeting().await.unwrap();
 
     // Check result matches expectations
@@ -835,7 +835,7 @@ async fn test_worker_sync_meeting_delete_without_provider_id() {
     let mp: DynMeetingsProvider = Arc::new(mp);
 
     // Setup worker and sync meeting
-    let worker = sample_sync_worker(db, mp);
+    let mut worker = sample_sync_worker(db, mp);
     let synced = worker.sync_meeting().await.unwrap();
 
     // Check result matches expectations
@@ -898,7 +898,7 @@ async fn test_worker_sync_meeting_delete_provider_not_configured_cleans_up_local
     let db: DynDB = Arc::new(db);
 
     // Setup worker with no providers configured
-    let worker = sample_sync_worker_no_providers(db);
+    let mut worker = sample_sync_worker_no_providers(db);
     let synced = worker.sync_meeting().await.unwrap();
 
     // Check result matches expectations

@@ -1,5 +1,26 @@
 {% import "macros/ui.html" as ui -%}
 
+{# Shared custom notification fields. #}
+{% macro custom_notification_fields(subject_id, body_id, default_subject) -%}
+  <div class="mb-4">
+    <label for="{{ subject_id }}" class="form-label">Subject <span class="asterisk">*</span></label>
+    <div class="mt-2">
+      <input type="text" id="{{ subject_id }}" name="subject" required
+             maxlength="{{ crate::validation::MAX_LEN_M }}" class="input-primary"
+             value="{{ default_subject }}" placeholder="Enter notification subject">
+    </div>
+  </div>
+  <div class="mb-6">
+    <label for="{{ body_id }}" class="form-label">Body <span class="asterisk">*</span></label>
+    <div class="mt-2">
+      <textarea id="{{ body_id }}" name="body" required rows="6"
+                maxlength="{{ crate::validation::MAX_LEN_NOTIFICATION_BODY }}"
+                class="input-primary" placeholder="Enter notification body (plain text only)"></textarea>
+      <p class="mt-1 text-xs text-stone-500">Plain text only. No HTML formatting.</p>
+    </div>
+  </div>
+{% endmacro custom_notification_fields -%}
+
 {# Menu title -#}
 {% macro menu_title(text, extra_styles = "") -%}
   <div class="text-xs/6 text-stone-500 uppercase px-3 {{ extra_styles }}">{{ text }}</div>
@@ -172,14 +193,31 @@
 {# End active table filter remove button #}
 
 {# Page title #}
-{% macro page_title(title, description = "", button = "") -%}
-  <div>
+{% macro page_title(title, description = "", button = "", docs_href = "", docs_aria_label = "", id = "", description_html = "") -%}
+  <div class="min-w-0">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="site-display text-xl lg:text-2xl font-black tracking-tight text-stone-950">{{ title }}</div>
+      {% if !docs_href.is_empty() -%}
+        <a href="{{ docs_href }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           hx-boost="false"
+           class="group inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-primary-500 bg-white transition-colors hover:bg-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-300"
+           aria-label="{% if docs_aria_label.is_empty() -%}Open documentation{% else -%}{{ docs_aria_label }}{% endif -%}">
+          <span class="svg-icon size-4 icon-question bg-primary-500 transition-colors group-hover:bg-white"></span>
+        </a>
+      {% endif -%}
     </div>
-    {% if !description.is_empty() -%}
+    {% if !description.is_empty() || !description_html.is_empty() || !id.is_empty() -%}
       <div class="mt-1 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <p class="m-0 min-w-0 text-sm/6 text-stone-500">{{ description }}</p>
+        {% if !description_html.is_empty() -%}
+          <p class="m-0 min-w-0 text-sm/6 text-stone-500">{{ description_html|safe }}</p>
+        {% elif !description.is_empty() -%}
+          <p class="m-0 min-w-0 text-sm/6 text-stone-500">{{ description }}</p>
+        {% endif -%}
+        {% if !id.is_empty() -%}
+          <p class="m-0 text-xs/6 text-stone-500">(ID: <span class="select-all font-mono">{{ id }}</span>)</p>
+        {% endif -%}
         {% if !button.is_empty() -%}
           {{ button | safe }}
         {% endif -%}
@@ -243,6 +281,65 @@
   </div>
 {% endmacro modal_header -%}
 {# End modal header #}
+
+{# Refund review modal #}
+{% macro refund_review_modal(id_prefix, title_id, close_id, title, description, attendee_field_suffix, review_note_id, submit_label, success_message, error_message, show_reason = false) -%}
+  {% let refund_review_subtitle -%}
+    <p id="{{ id_prefix }}-modal-description" class="mt-1 text-sm text-stone-600">{{ description }}</p>
+  {%- endlet %}
+  <div id="{{ id_prefix }}-modal"
+       role="dialog"
+       aria-modal="true"
+       aria-hidden="true"
+       aria-labelledby="{{ title_id }}"
+       aria-describedby="{{ id_prefix }}-modal-description"
+       class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-[1000] h-full w-full items-center justify-center">
+    <div id="overlay-{{ id_prefix }}-modal" class="modal-overlay absolute h-full w-full bg-stone-950 opacity-[0.35]"></div>
+    <div class="modal-panel p-4 max-w-2xl">
+      <div class="modal-card rounded-lg">
+        {{ modal_header(title_id = title_id, title = title, close_id = close_id, subtitle = refund_review_subtitle, align_items = "items-start") -}}
+        <form id="{{ id_prefix }}-form"
+              hx-indicator="#dashboard-spinner"
+              hx-disabled-elt="find button[type='submit']"
+              hx-ext="no-empty-vals"
+              data-htmx-response
+              data-success-message="{{ success_message }}"
+              data-error-message="{{ error_message }}">
+          <div class="modal-body p-4 md:px-6 md:py-5">
+            <dl class="grid gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm">
+              <div>
+                <dt class="text-stone-500">Attendee</dt>
+                <dd id="{{ id_prefix }}-{{ attendee_field_suffix }}" class="mt-1 font-medium text-stone-900"></dd>
+              </div>
+              <div>
+                <dt class="text-stone-500">Event</dt>
+                <dd id="{{ id_prefix }}-event" class="mt-1 font-medium text-stone-900"></dd>
+              </div>
+              {% if show_reason -%}
+                <div>
+                  <dt class="text-stone-500">Reason</dt>
+                  <dd id="{{ id_prefix }}-reason" class="mt-1 whitespace-pre-wrap break-words text-stone-900"></dd>
+                </div>
+              {% endif -%}
+            </dl>
+            <div class="mt-5">
+              <label for="{{ review_note_id }}" class="form-label">Review note (optional)</label>
+              <textarea id="{{ review_note_id }}"
+                        class="input-primary mt-2 min-h-28"
+                        name="review_note"
+                        maxlength="{{ crate::validation::MAX_LEN_DESCRIPTION_SHORT }}"></textarea>
+            </div>
+          </div>
+          <div class="flex flex-col-reverse gap-3 border-t border-stone-200 p-4 sm:flex-row sm:justify-end md:p-5">
+            <button id="cancel-{{ id_prefix }}-modal" type="button" class="btn-primary-outline">Cancel</button>
+            <button type="submit" class="btn-primary">{{ submit_label }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endmacro refund_review_modal -%}
+{# End refund review modal #}
 
 {# Permission warning #}
 {% macro permission_warning(message, extra_classes = "mb-6") -%}

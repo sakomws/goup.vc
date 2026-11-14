@@ -2,14 +2,17 @@
 
 pub mod alliance;
 pub(crate) mod custom_domain;
+pub(crate) mod dashboard;
 pub(crate) mod distribution;
 pub mod event;
 pub mod group;
 pub(crate) mod gtm;
+pub(crate) mod inbox;
 pub(crate) mod jobs;
 pub(crate) mod landscape;
 pub mod location;
 pub(crate) mod mock_interviews;
+pub(crate) mod notifications;
 pub(crate) mod opportunities;
 pub mod pagination;
 pub(crate) mod partner_integration;
@@ -20,3 +23,8 @@ pub mod search;
 pub mod site;
 pub(crate) mod survey;
 pub mod user;
+pub(crate) mod utm;
+
+#[cfg(test)]
+#[path = "types/test_fixtures.rs"]
+pub(crate) mod tests;

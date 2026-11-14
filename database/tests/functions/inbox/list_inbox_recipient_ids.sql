@@ -13,8 +13,8 @@ select plan(2);
 
 \set adminID '1b120000-0000-0000-0000-000000000001'
 \set checkInManagerID '1b120000-0000-0000-0000-000000000002'
-\set communityAdminID '1b120000-0000-0000-0000-000000000003'
-\set communityID '1b120000-0000-0000-0000-000000000004'
+\set allianceAdminID '1b120000-0000-0000-0000-000000000003'
+\set allianceID '1b120000-0000-0000-0000-000000000004'
 \set eventsManagerID '1b120000-0000-0000-0000-000000000005'
 \set groupCategoryID '1b120000-0000-0000-0000-000000000006'
 \set groupID '1b120000-0000-0000-0000-000000000007'
@@ -27,8 +27,8 @@ select plan(2);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- Accepted group admin
 select fx_user(:'adminID');
@@ -36,8 +36,8 @@ select fx_user(:'adminID');
 -- Accepted check-in manager
 select fx_user(:'checkInManagerID');
 
--- Community admin without a group team membership
-select fx_user(:'communityAdminID');
+-- Alliance admin without a group team membership
+select fx_user(:'allianceAdminID');
 
 -- Accepted events manager
 select fx_user(:'eventsManagerID');
@@ -52,17 +52,17 @@ select fx_user(:'unverifiedAdminID', jsonb_build_object('email_verified', false)
 select fx_user(:'viewerID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group receiving inbox messages
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Group without inbox recipients
-select fx_group(:'quietGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'quietGroupID', :'allianceID', :'groupCategoryID');
 
--- Community team membership of the community admin
-insert into community_team (accepted, community_id, role, user_id)
-values (true, :'communityID', 'admin', :'communityAdminID');
+-- Alliance team membership of the alliance admin
+insert into alliance_team (accepted, alliance_id, role, user_id)
+values (true, :'allianceID', 'admin', :'allianceAdminID');
 
 -- Group team memberships in every role and state
 insert into group_team (accepted, group_id, role, user_id) values

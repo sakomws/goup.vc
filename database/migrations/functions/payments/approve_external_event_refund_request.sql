@@ -9,7 +9,7 @@ create or replace function approve_external_event_refund_request(
 returns jsonb as $$
 declare
     v_charge_model text;
-    v_community_id uuid;
+    v_alliance_id uuid;
     v_event_discount_code_id uuid;
     v_event_id uuid;
     v_event_ticket_type_id uuid;
@@ -20,8 +20,8 @@ declare
     v_user_id uuid;
 begin
     -- Lock the group before the event to match dashboard event mutations
-    select g.community_id
-    into v_community_id
+    select g.alliance_id
+    into v_alliance_id
     from "group" g
     where g.group_id = p_group_id
     for update of g;
@@ -94,7 +94,7 @@ begin
 
         -- Return early on idempotent replays of an already refunded purchase
         return jsonb_build_object(
-            'community_id', v_community_id,
+            'alliance_id', v_alliance_id,
             'event_id', v_event_id,
             'transitioned', false,
             'user_id', v_user_id
@@ -129,7 +129,7 @@ begin
     -- Return early on idempotent replays of an already approved request
     if v_refund_request_status = 'approved' then
         return jsonb_build_object(
-            'community_id', v_community_id,
+            'alliance_id', v_alliance_id,
             'event_id', v_event_id,
             'transitioned', false,
             'user_id', v_user_id
@@ -194,7 +194,7 @@ begin
         p_actor_user_id,
         'event',
         v_event_id,
-        v_community_id,
+        v_alliance_id,
         p_group_id,
         v_event_id,
         jsonb_build_object(
@@ -215,7 +215,7 @@ begin
 
     -- Return the identifiers needed by the caller after approval
     return jsonb_build_object(
-        'community_id', v_community_id,
+        'alliance_id', v_alliance_id,
         'event_id', v_event_id,
         'transitioned', true,
         'user_id', v_user_id

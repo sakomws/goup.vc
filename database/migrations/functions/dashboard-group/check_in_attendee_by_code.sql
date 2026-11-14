@@ -2,7 +2,7 @@
 create or replace function check_in_attendee_by_code(
     p_actor_user_id uuid,
     p_check_in_code uuid,
-    p_community_id uuid,
+    p_alliance_id uuid,
     p_event_id uuid,
     p_group_id uuid
 )
@@ -17,7 +17,7 @@ begin
     join "group" g using (group_id)
     where e.event_id = p_event_id
     and e.group_id = p_group_id
-    and g.community_id = p_community_id
+    and g.alliance_id = p_alliance_id
     and g.active = true
     and g.deleted = false
     and e.canceled = false
@@ -43,7 +43,7 @@ begin
         ea.status,
         u.name,
         u.photo_url,
-        coalesce(purchase.ticket_title, offer.ticket_title) as ticket_title,
+        purchase.ticket_title,
         u.user_id,
         u.username
     into v_attendee
@@ -61,16 +61,6 @@ begin
         order by ep.created_at desc, ep.event_purchase_id desc
         limit 1
     ) purchase on true
-    left join lateral (
-        select coalesce(ao.ticket_title, ett.title) as ticket_title
-        from admission_offer ao
-        left join event_ticket_type ett using (event_ticket_type_id)
-        where ao.event_id = ea.event_id
-        and ao.user_id = ea.user_id
-        and ao.status = 'completed'
-        order by ao.created_at desc, ao.admission_offer_id desc
-        limit 1
-    ) offer on true
     where ea.check_in_code = p_check_in_code
     and ea.event_id = p_event_id
     for update of ea;
@@ -88,7 +78,7 @@ begin
     -- Apply the shared atomic transition and audit behavior
     v_checked_in := check_in_event(
         p_actor_user_id,
-        p_community_id,
+        p_alliance_id,
         p_event_id,
         v_attendee.user_id
     );

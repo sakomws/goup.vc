@@ -11,7 +11,7 @@ select plan(6);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '9e080000-0000-0000-0000-000000000001'
+\set allianceID '9e080000-0000-0000-0000-000000000001'
 \set connectedGroupID '9e080000-0000-0000-0000-000000000002'
 \set disconnectedGroupID '9e080000-0000-0000-0000-000000000003'
 \set groupCategoryID '9e080000-0000-0000-0000-000000000004'
@@ -23,35 +23,35 @@ select plan(6);
 -- SEED DATA
 -- ============================================================================
 
--- Community containing mute test groups
-select fx_community(:'communityID');
+-- Alliance containing mute test groups
+select fx_alliance(:'allianceID');
 
 -- Group category containing mute test groups
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- User muting groups
 select fx_user(:'userID');
 
 -- Connected group available to mute
-select fx_group(:'connectedGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'connectedGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'name', 'Connected Mute Group'
 ));
 
 -- Disconnected group rejected by mute validation
-select fx_group(:'disconnectedGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'disconnectedGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'name', 'Disconnected Mute Group'
 ));
 
 -- Unavailable group already muted before the request
-select fx_group(:'unavailableMutedGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'unavailableMutedGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'active', false,
     'name', 'Unavailable Already Muted Group'
 ));
 
 -- Groups used to prove there is no mute cap
-insert into "group" (community_id, group_category_id, group_id, name, slug)
+insert into "group" (alliance_id, group_category_id, group_id, name, slug)
 select
-    :'communityID',
+    :'allianceID',
     :'groupCategoryID',
     ('9e080000-0000-0000-0000-' || lpad(to_hex(100 + i), 12, '0'))::uuid,
     'Bulk Mute Group ' || i,

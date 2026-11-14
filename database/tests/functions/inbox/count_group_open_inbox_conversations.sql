@@ -11,7 +11,7 @@ select plan(2);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '1b110000-0000-0000-0000-000000000001'
+\set allianceID '1b110000-0000-0000-0000-000000000001'
 \set groupCategoryID '1b110000-0000-0000-0000-000000000002'
 \set groupID '1b110000-0000-0000-0000-000000000003'
 \set otherGroupID '1b110000-0000-0000-0000-000000000004'
@@ -21,20 +21,20 @@ select plan(2);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group with conversations in every status
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Another group with an open conversation
-select fx_group(:'otherGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'otherGroupID', :'allianceID', :'groupCategoryID');
 
 -- Group without conversations
-select fx_group(:'quietGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'quietGroupID', :'allianceID', :'groupCategoryID');
 
 -- Conversations of the group in every status
 insert into inbox_conversation (group_id, inbox_conversation_status_id) values

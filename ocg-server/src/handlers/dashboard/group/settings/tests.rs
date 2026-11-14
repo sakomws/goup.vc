@@ -78,6 +78,13 @@ async fn test_update_page_success() {
         .times(1)
         .withf(move |cid| *cid == alliance_id)
         .returning(move |_| Ok(vec![region.clone()]));
+    db.expect_get_group_utm_settings()
+        .times(1)
+        .withf(move |cid, gid| *cid == alliance_id && *gid == group_id)
+        .returning(|_, _| Ok(Default::default()));
+    db.expect_list_utm_mediums()
+        .times(1)
+        .returning(|| Ok(vec!["email".to_string(), "social".to_string()]));
 
     // Setup notifications manager mock
     let nm = MockNotificationsManager::new();

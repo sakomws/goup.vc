@@ -122,7 +122,7 @@ returns json as $$
                         select 1
                         from users_accepting_notification(
                             'event-custom',
-                            array[er.user_id],
+                            array[u.user_id],
                             array[e.group_id]
                         )
                     )

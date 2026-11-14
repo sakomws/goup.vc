@@ -18,7 +18,7 @@ select plan(2);
 \set cohostCanceledGroupID '9e020000-0000-0000-0000-000000000005'
 \set cohostPendingGroupID '9e020000-0000-0000-0000-000000000006'
 \set cohostRejectedGroupID '9e020000-0000-0000-0000-000000000007'
-\set communityID '9e020000-0000-0000-0000-000000000008'
+\set allianceID '9e020000-0000-0000-0000-000000000008'
 \set deletedEventGroupID '9e020000-0000-0000-0000-000000000009'
 \set deletedEventID '9e020000-0000-0000-0000-000000000010'
 \set deletedGroupID '9e020000-0000-0000-0000-000000000011'
@@ -27,16 +27,15 @@ select plan(2);
 \set eventSpeakerEventID '9e020000-0000-0000-0000-000000000014'
 \set eventSpeakerGroupID '9e020000-0000-0000-0000-000000000015'
 \set groupCategoryID '9e020000-0000-0000-0000-000000000016'
-\set inactiveCommunityGroupCategoryID '9e020000-0000-0000-0000-000000000017'
-\set inactiveCommunityGroupID '9e020000-0000-0000-0000-000000000018'
-\set inactiveCommunityID '9e020000-0000-0000-0000-000000000019'
+\set inactiveAllianceGroupCategoryID '9e020000-0000-0000-0000-000000000017'
+\set inactiveAllianceGroupID '9e020000-0000-0000-0000-000000000018'
+\set inactiveAllianceID '9e020000-0000-0000-0000-000000000019'
 \set inactiveGroupID '9e020000-0000-0000-0000-000000000020'
 \set memberGroupID '9e020000-0000-0000-0000-000000000021'
 \set pendingTeamGroupID '9e020000-0000-0000-0000-000000000022'
 \set sessionID '9e020000-0000-0000-0000-000000000023'
 \set sessionSpeakerEventID '9e020000-0000-0000-0000-000000000024'
 \set sessionSpeakerGroupID '9e020000-0000-0000-0000-000000000025'
-\set ticketTypeID '9e020000-0000-0000-0000-000000000026'
 \set userID '9e020000-0000-0000-0000-000000000027'
 \set waitlistEventID '9e020000-0000-0000-0000-000000000028'
 \set waitlistGroupID '9e020000-0000-0000-0000-000000000029'
@@ -45,20 +44,20 @@ select plan(2);
 -- SEED DATA
 -- ============================================================================
 
--- Active community containing available groups
-select fx_community(:'communityID');
+-- Active alliance containing available groups
+select fx_alliance(:'allianceID');
 
--- Inactive community containing an excluded group
-select fx_community(:'inactiveCommunityID', jsonb_build_object('active', false));
+-- Inactive alliance containing an excluded group
+select fx_alliance(:'inactiveAllianceID', jsonb_build_object('active', false));
 
 -- Event category used by event-connected groups
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
--- Group category used by active-community groups
-select fx_group_category(:'groupCategoryID', :'communityID');
+-- Group category used by active-alliance groups
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
--- Group category used by the inactive-community group
-select fx_group_category(:'inactiveCommunityGroupCategoryID', :'inactiveCommunityID');
+-- Group category used by the inactive-alliance group
+select fx_group_category(:'inactiveAllianceGroupCategoryID', :'inactiveAllianceID');
 
 -- User whose connected groups are listed
 select fx_user(:'userID');
@@ -67,30 +66,30 @@ select fx_user(:'userID');
 select fx_user(:'deletedGroupMemberUserID');
 
 -- Group connected through accepted team membership
-select fx_group(:'acceptedTeamGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'acceptedTeamGroupID', :'allianceID', :'groupCategoryID');
 
 -- Group connected through an attendee row
-select fx_group(:'attendeeGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'attendeeGroupID', :'allianceID', :'groupCategoryID');
 
 -- Group connected through approved co-hosting of an attended event
-select fx_group(:'cohostApprovedGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'cohostApprovedGroupID', :'allianceID', :'groupCategoryID');
 
 -- Canceled co-host group excluded from the result
-select fx_group(:'cohostCanceledGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'cohostCanceledGroupID', :'allianceID', :'groupCategoryID');
 
 -- Pending co-host group excluded from the result
-select fx_group(:'cohostPendingGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'cohostPendingGroupID', :'allianceID', :'groupCategoryID');
 
 -- Rejected co-host group excluded from the result
-select fx_group(:'cohostRejectedGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'cohostRejectedGroupID', :'allianceID', :'groupCategoryID');
 
 -- Group connected only through a deleted event
-select fx_group(:'deletedEventGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'deletedEventGroupID', :'allianceID', :'groupCategoryID');
 
 -- Deleted group excluded even when a user belongs to it
 select fx_group(
     :'deletedGroupID',
-    :'communityID',
+    :'allianceID',
     :'groupCategoryID',
     jsonb_build_object(
         'active', false,
@@ -100,30 +99,30 @@ select fx_group(
 );
 
 -- Group connected through event speaking
-select fx_group(:'eventSpeakerGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'eventSpeakerGroupID', :'allianceID', :'groupCategoryID');
 
--- Group excluded because its community is inactive
-select fx_group(:'inactiveCommunityGroupID', :'inactiveCommunityID', :'inactiveCommunityGroupCategoryID');
+-- Group excluded because its alliance is inactive
+select fx_group(:'inactiveAllianceGroupID', :'inactiveAllianceID', :'inactiveAllianceGroupCategoryID');
 
 -- Inactive group excluded even when a user belongs to it
 select fx_group(
     :'inactiveGroupID',
-    :'communityID',
+    :'allianceID',
     :'groupCategoryID',
     jsonb_build_object('active', false)
 );
 
 -- Group connected through membership
-select fx_group(:'memberGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'memberGroupID', :'allianceID', :'groupCategoryID');
 
 -- Pending team group excluded from the result
-select fx_group(:'pendingTeamGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'pendingTeamGroupID', :'allianceID', :'groupCategoryID');
 
 -- Group connected through session speaking
-select fx_group(:'sessionSpeakerGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'sessionSpeakerGroupID', :'allianceID', :'groupCategoryID');
 
 -- Group connected through an event waitlist row
-select fx_group(:'waitlistGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'waitlistGroupID', :'allianceID', :'groupCategoryID');
 
 -- Attended event with approved and unavailable co-host states
 select fx_event(:'attendeeEventID', :'attendeeGroupID', :'eventCategoryID');
@@ -139,9 +138,6 @@ select fx_event(:'sessionSpeakerEventID', :'sessionSpeakerGroupID', :'eventCateg
 
 -- Event connected through waitlist
 select fx_event(:'waitlistEventID', :'waitlistGroupID', :'eventCategoryID');
-
--- Ticket type required by the waitlist row
-select fx_event_ticket_type(:'ticketTypeID', :'waitlistEventID');
 
 -- Accepted team membership connection
 insert into group_team (group_id, user_id, accepted, role)
@@ -159,9 +155,9 @@ values (:'memberGroupID', :'userID');
 insert into group_member (group_id, user_id)
 values (:'deletedGroupID', :'deletedGroupMemberUserID');
 
--- Inactive community group membership excluded from the result
+-- Inactive alliance group membership excluded from the result
 insert into group_member (group_id, user_id)
-values (:'inactiveCommunityGroupID', :'userID');
+values (:'inactiveAllianceGroupID', :'userID');
 
 -- Inactive group membership excluded from the result
 insert into group_member (group_id, user_id)
@@ -176,8 +172,8 @@ insert into event_attendee (event_id, user_id, status)
 values (:'deletedEventID', :'userID', 'confirmed');
 
 -- Waitlist connection to an event owner group
-insert into event_waitlist (event_id, event_ticket_type_id, user_id)
-values (:'waitlistEventID', :'ticketTypeID', :'userID');
+insert into event_waitlist (event_id, user_id)
+values (:'waitlistEventID', :'userID');
 
 -- Event speaker connection to an event owner group
 insert into event_speaker (event_id, user_id)
@@ -192,20 +188,62 @@ insert into session_speaker (session_id, user_id)
 values (:'sessionID', :'userID');
 
 -- Approved co-host group connected through the attended event
-insert into event_cohost (approved_at, event_cohost_status_id, event_id, group_id)
-values ('2025-01-01 00:00:00+00', 'approved', :'attendeeEventID', :'cohostApprovedGroupID');
+insert into event_cohost (
+    cohost_group_id,
+    decided_at,
+    decided_by_user_id,
+    event_id,
+    requested_by_user_id,
+    status
+)
+values (
+    :'cohostApprovedGroupID',
+    '2025-01-01 00:00:00+00',
+    :'userID',
+    :'attendeeEventID',
+    :'userID',
+    'approved'
+);
 
--- Canceled co-host group excluded from connections
-insert into event_cohost (event_cohost_status_id, event_id, group_id)
-values ('canceled', :'attendeeEventID', :'cohostCanceledGroupID');
+-- Revoked co-host group excluded from connections
+insert into event_cohost (
+    cohost_group_id,
+    decided_at,
+    decided_by_user_id,
+    event_id,
+    requested_by_user_id,
+    status
+)
+values (
+    :'cohostCanceledGroupID',
+    '2025-01-01 00:00:00+00',
+    :'userID',
+    :'attendeeEventID',
+    :'userID',
+    'revoked'
+);
 
 -- Pending co-host group excluded from connections
-insert into event_cohost (event_cohost_status_id, event_id, group_id)
-values ('pending', :'attendeeEventID', :'cohostPendingGroupID');
+insert into event_cohost (cohost_group_id, event_id, requested_by_user_id, status)
+values (:'cohostPendingGroupID', :'attendeeEventID', :'userID', 'pending');
 
 -- Rejected co-host group excluded from connections
-insert into event_cohost (event_cohost_status_id, event_id, group_id)
-values ('rejected', :'attendeeEventID', :'cohostRejectedGroupID');
+insert into event_cohost (
+    cohost_group_id,
+    decided_at,
+    decided_by_user_id,
+    event_id,
+    requested_by_user_id,
+    status
+)
+values (
+    :'cohostRejectedGroupID',
+    '2025-01-01 00:00:00+00',
+    :'userID',
+    :'attendeeEventID',
+    :'userID',
+    'rejected'
+);
 
 -- ============================================================================
 -- TESTS

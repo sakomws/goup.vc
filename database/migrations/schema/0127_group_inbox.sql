@@ -13,6 +13,11 @@ insert into inbox_conversation_status (inbox_conversation_status_id, display_nam
     ('open', 'Open'),
     ('spam', 'Spam');
 
+-- Support the composite conversation foreign key that keeps an event scoped
+-- to its owning group.
+alter table event
+    add constraint event_event_id_group_id_key unique (event_id, group_id);
+
 -- Conversations between one user and one group.
 create table inbox_conversation (
     inbox_conversation_id uuid primary key default gen_random_uuid(),
@@ -77,7 +82,7 @@ create unique index inbox_message_inbox_conversation_id_initial_idx on inbox_mes
 -- Inbox permission and role grants.
 insert into group_permission (group_permission_id, display_name) values
     ('group.inbox.write', 'Inbox Write');
-insert into community_role_group_permission (community_role_id, group_permission_id) values
+insert into alliance_role_group_permission (alliance_role_id, group_permission_id) values
     ('admin', 'group.inbox.write'),
     ('groups-manager', 'group.inbox.write');
 insert into group_role_group_permission (group_role_id, group_permission_id) values

@@ -12,12 +12,12 @@ select plan(6);
 -- ============================================================================
 
 \set closedUserID '1b160000-0000-0000-0000-000000000001'
-\set communityID '1b160000-0000-0000-0000-000000000002'
+\set allianceID '1b160000-0000-0000-0000-000000000002'
 \set conversationClosedFirstID '1b160000-0000-0000-0000-000000000003'
 \set conversationClosedSecondID '1b160000-0000-0000-0000-000000000004'
 \set conversationClosedThirdID '1b160000-0000-0000-0000-000000000005'
 \set conversationOnceID '1b160000-0000-0000-0000-000000000006'
-\set conversationOtherCommunityID '1b160000-0000-0000-0000-000000000007'
+\set conversationOtherAllianceID '1b160000-0000-0000-0000-000000000007'
 \set conversationRepeatedFirstID '1b160000-0000-0000-0000-000000000008'
 \set conversationRepeatedSecondID '1b160000-0000-0000-0000-000000000009'
 \set conversationRepeatedThirdID '1b160000-0000-0000-0000-000000000010'
@@ -32,9 +32,9 @@ select plan(6);
 \set groupSecondID '1b160000-0000-0000-0000-000000000019'
 \set groupThirdID '1b160000-0000-0000-0000-000000000020'
 \set onceUserID '1b160000-0000-0000-0000-000000000021'
-\set otherCommunityGroupCategoryID '1b160000-0000-0000-0000-000000000022'
-\set otherCommunityGroupID '1b160000-0000-0000-0000-000000000023'
-\set otherCommunityID '1b160000-0000-0000-0000-000000000024'
+\set otherAllianceGroupCategoryID '1b160000-0000-0000-0000-000000000022'
+\set otherAllianceGroupID '1b160000-0000-0000-0000-000000000023'
+\set otherAllianceID '1b160000-0000-0000-0000-000000000024'
 \set repeatedUserID '1b160000-0000-0000-0000-000000000025'
 \set reportedUserID '1b160000-0000-0000-0000-000000000026'
 \set spreadUserID '1b160000-0000-0000-0000-000000000027'
@@ -43,11 +43,11 @@ select plan(6);
 -- SEED DATA
 -- ============================================================================
 
--- Community whose groups report spam
-select fx_community(:'communityID');
+-- Alliance whose groups report spam
+select fx_alliance(:'allianceID');
 
--- Another community
-select fx_community(:'otherCommunityID');
+-- Another alliance
+select fx_alliance(:'otherAllianceID');
 
 -- User whose conversations were closed but never reported
 select fx_user(:'closedUserID');
@@ -58,34 +58,34 @@ select fx_user(:'onceUserID');
 -- User reported repeatedly by the same groups
 select fx_user(:'repeatedUserID');
 
--- User reported by three groups of the community
+-- User reported by three groups of the alliance
 select fx_user(:'reportedUserID');
 
--- User reported by groups of two communities
+-- User reported by groups of two alliances
 select fx_user(:'spreadUserID');
 
--- Group category of the community
-select fx_group_category(:'groupCategoryID', :'communityID');
+-- Group category of the alliance
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
--- Group category of the other community
-select fx_group_category(:'otherCommunityGroupCategoryID', :'otherCommunityID');
+-- Group category of the other alliance
+select fx_group_category(:'otherAllianceGroupCategoryID', :'otherAllianceID');
 
--- First group of the community
-select fx_group(:'groupFirstID', :'communityID', :'groupCategoryID');
+-- First group of the alliance
+select fx_group(:'groupFirstID', :'allianceID', :'groupCategoryID');
 
--- Fourth group of the community, which never reported anyone
-select fx_group(:'groupFourthID', :'communityID', :'groupCategoryID');
+-- Fourth group of the alliance, which never reported anyone
+select fx_group(:'groupFourthID', :'allianceID', :'groupCategoryID');
 
--- Second group of the community
-select fx_group(:'groupSecondID', :'communityID', :'groupCategoryID');
+-- Second group of the alliance
+select fx_group(:'groupSecondID', :'allianceID', :'groupCategoryID');
 
--- Third group of the community
-select fx_group(:'groupThirdID', :'communityID', :'groupCategoryID');
+-- Third group of the alliance
+select fx_group(:'groupThirdID', :'allianceID', :'groupCategoryID');
 
--- Group of the other community
-select fx_group(:'otherCommunityGroupID', :'otherCommunityID', :'otherCommunityGroupCategoryID');
+-- Group of the other alliance
+select fx_group(:'otherAllianceGroupID', :'otherAllianceID', :'otherAllianceGroupCategoryID');
 
--- Closed conversations with three groups of the community
+-- Closed conversations with three groups of the alliance
 insert into inbox_conversation (inbox_conversation_id, group_id, inbox_conversation_status_id, user_id) values
     (:'conversationClosedFirstID', :'groupFirstID', 'closed', :'closedUserID'),
     (:'conversationClosedSecondID', :'groupSecondID', 'closed', :'closedUserID'),
@@ -95,21 +95,21 @@ insert into inbox_conversation (inbox_conversation_id, group_id, inbox_conversat
 insert into inbox_conversation (inbox_conversation_id, group_id, inbox_conversation_status_id, user_id)
 values (:'conversationOnceID', :'groupFirstID', 'spam', :'onceUserID');
 
--- Three conversations marked as spam by two groups of the community
+-- Three conversations marked as spam by two groups of the alliance
 insert into inbox_conversation (inbox_conversation_id, group_id, inbox_conversation_status_id, user_id) values
     (:'conversationRepeatedFirstID', :'groupFirstID', 'spam', :'repeatedUserID'),
     (:'conversationRepeatedSecondID', :'groupFirstID', 'spam', :'repeatedUserID'),
     (:'conversationRepeatedThirdID', :'groupSecondID', 'spam', :'repeatedUserID');
 
--- Conversations marked as spam by three groups of the community
+-- Conversations marked as spam by three groups of the alliance
 insert into inbox_conversation (inbox_conversation_id, group_id, inbox_conversation_status_id, user_id) values
     (:'conversationReportedFirstID', :'groupFirstID', 'spam', :'reportedUserID'),
     (:'conversationReportedSecondID', :'groupSecondID', 'spam', :'reportedUserID'),
     (:'conversationReportedThirdID', :'groupThirdID', 'spam', :'reportedUserID');
 
--- Conversations marked as spam by two groups of the community and one of another community
+-- Conversations marked as spam by two groups of the alliance and one of another alliance
 insert into inbox_conversation (inbox_conversation_id, group_id, inbox_conversation_status_id, user_id) values
-    (:'conversationOtherCommunityID', :'otherCommunityGroupID', 'spam', :'spreadUserID'),
+    (:'conversationOtherAllianceID', :'otherAllianceGroupID', 'spam', :'spreadUserID'),
     (:'conversationSpreadFirstID', :'groupFirstID', 'spam', :'spreadUserID'),
     (:'conversationSpreadSecondID', :'groupSecondID', 'spam', :'spreadUserID');
 
@@ -117,11 +117,11 @@ insert into inbox_conversation (inbox_conversation_id, group_id, inbox_conversat
 -- TESTS
 -- ============================================================================
 
--- Should block users from every group of a community after reports from three of its groups
+-- Should block users from every group of an alliance after reports from three of its groups
 select is(
     is_inbox_user_blocked(:'groupFourthID'::uuid, :'reportedUserID'::uuid),
     true,
-    'Should block users from every group of a community after reports from three of its groups'
+    'Should block users from every group of an alliance after reports from three of its groups'
 );
 
 -- Should block users from the group that marked their conversation as spam
@@ -145,11 +145,11 @@ select is(
     'Should ignore conversations that are not marked as spam'
 );
 
--- Should ignore reports from groups of other communities
+-- Should ignore reports from groups of other alliances
 select is(
     is_inbox_user_blocked(:'groupFourthID'::uuid, :'spreadUserID'::uuid),
     false,
-    'Should ignore reports from groups of other communities'
+    'Should ignore reports from groups of other alliances'
 );
 
 -- Should not block users from other groups after a single report

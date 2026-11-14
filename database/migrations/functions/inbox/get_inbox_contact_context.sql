@@ -2,13 +2,13 @@
 -- event does not accept inbox contact. The viewer section is included for
 -- signed-in users only.
 create or replace function get_inbox_contact_context(
-    p_community_id uuid,
+    p_alliance_id uuid,
     p_event_id uuid,
     p_user_id uuid
 )
 returns json as $$
     select json_strip_nulls(json_build_object(
-        'community_name', c.name,
+        'alliance_name', c.name,
         'event_id', e.event_id,
         'event_name', e.name,
         'event_slug', e.slug,
@@ -20,7 +20,7 @@ returns json as $$
             when p_user_id is null then null
             else json_build_object(
                 'can_manage_inbox', user_has_group_permission(
-                    c.community_id,
+                    c.alliance_id,
                     g.group_id,
                     p_user_id,
                     'group.inbox.write'
@@ -45,8 +45,8 @@ returns json as $$
             )
         end
     ))
-    from resolve_inbox_contact_event(p_community_id, p_event_id) r
+    from resolve_inbox_contact_event(p_alliance_id, p_event_id) r
     join event e on e.event_id = r.event_id
     join "group" g on g.group_id = r.group_id
-    join community c on c.community_id = g.community_id;
+    join alliance c on c.alliance_id = g.alliance_id;
 $$ language sql stable;

@@ -17,7 +17,11 @@ use crate::{
         inbox::{InboxError, MockInboxManager},
         notifications::MockNotificationsManager,
     },
-    types::{dashboard::DASHBOARD_PAGINATION_LIMIT, inbox::InboxConversationsOutput},
+    templates::dashboard::DASHBOARD_PAGINATION_LIMIT,
+    types::{
+        inbox::InboxConversationsOutput,
+        tests::{sample_inbox_conversation, sample_inbox_conversation_summary},
+    },
 };
 
 #[tokio::test]

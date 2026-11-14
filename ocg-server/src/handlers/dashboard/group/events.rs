@@ -87,6 +87,7 @@ pub(crate) async fn add_page(
         payment_recipient,
         session_kinds,
         sponsors,
+        team_members,
         timezones,
     ) = tokio::try_join!(
         db.user_has_group_permission(
@@ -102,6 +103,7 @@ pub(crate) async fn add_page(
         db.get_group_payment_recipient(alliance_id, group_id),
         db.list_session_kinds(),
         db.list_group_sponsors(group_id, &sponsor_filters, true),
+        db.list_group_organizers(group_id),
         db.list_timezones()
     )?;
 
@@ -119,6 +121,7 @@ pub(crate) async fn add_page(
         meetings_max_participants,
         session_kinds,
         sponsors: sponsors.sponsors,
+        team_members,
         timezones,
     };
 
@@ -195,6 +198,7 @@ pub(crate) async fn update_page(
         payment_recipient,
         session_kinds,
         sponsors,
+        team_members,
         timezones,
     ) = tokio::try_join!(
         db.user_has_group_permission(
@@ -217,6 +221,7 @@ pub(crate) async fn update_page(
         db.get_group_payment_recipient(alliance_id, group_id),
         db.list_session_kinds(),
         db.list_group_sponsors(group_id, &sponsor_filters, true),
+        db.list_group_organizers(group_id),
         db.list_timezones(),
     )?;
     let template = events::UpdatePage {
@@ -236,6 +241,7 @@ pub(crate) async fn update_page(
         meetings_max_participants,
         session_kinds,
         sponsors: sponsors.sponsors,
+        team_members,
         timezones,
     };
 

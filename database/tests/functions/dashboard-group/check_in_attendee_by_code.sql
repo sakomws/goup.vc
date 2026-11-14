@@ -31,8 +31,8 @@ select plan(8);
 -- SEED DATA
 -- ============================================================================
 
--- Baseline community, categories, users and groups
-select fx_community(:'communityID');
+-- Baseline alliance, categories, users and groups
+select fx_alliance(:'communityID');
 select fx_group_category(:'groupCategoryID', :'communityID');
 select fx_event_category(:'eventCategoryID', :'communityID');
 select fx_user(:'canceledAttendeeUserID');
@@ -62,38 +62,6 @@ select fx_event(:'endedEventID', :'groupID', :'eventCategoryID', jsonb_build_obj
             date_trunc('day', current_timestamp at time zone 'UTC') - interval '1 hour'
         ) at time zone 'UTC'
 ));
-
--- Ticket type used by the completed organizer offer fallback
-select fx_event_ticket_type(:'ticketTypeID', :'eventID', jsonb_build_object('seats_total', 10));
-
--- Completed organizer offer providing the attendee ticket snapshot
-insert into admission_offer (
-    admission_offer_id,
-    event_id,
-    event_ticket_type_id,
-    expires_at,
-    organizer_user_id,
-    source,
-    status,
-    user_id,
-
-    amount_minor,
-    discount_amount_minor,
-    ticket_title
-) values (
-    :'admissionOfferID',
-    :'eventID',
-    :'ticketTypeID',
-    current_timestamp + interval '1 day',
-    :'actorUserID',
-    'organizer_invitation',
-    'completed',
-    :'attendeeUserID',
-
-    0,
-    0,
-    'Organizer admission'
-);
 
 -- Attendees carrying credentials for confirmed, canceled, and ended-event scenarios
 insert into event_attendee (
@@ -137,8 +105,7 @@ select is(
             'name', 'Attendee User',
             'photo_url', 'https://example.com/attendee.png'
         ),
-        'outcome', 'checked-in',
-        'ticket_title', 'Organizer admission'
+        'outcome', 'checked-in'
     ),
     'Should return attendee details for the first scan'
 );

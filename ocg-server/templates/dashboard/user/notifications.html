@@ -28,16 +28,8 @@
 {# End preference toggle -#}
 
 {# Dashboard User Notifications -#}
-{% let notifications_description -%}
-Choose which optional emails you receive. Emails about your account, your registrations, and
-<button type="button"
-        class="cursor-pointer font-medium text-primary-500 underline underline-offset-2 hover:text-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 rounded-sm"
-        aria-haspopup="dialog"
-        aria-controls="always-sent-modal"
-        data-always-sent-modal-open>things that need your attention are always sent</button>.
-{%- endlet %}
-{{ dashboard::page_title(title = "Notifications", docs_href = "/docs#/guides/user-dashboard?id=notifications-email-preferences",
-  description_html = notifications_description) -}}
+{{ dashboard::page_title(title = "Notifications",
+  description = "Choose which optional emails you receive. Account, registration, and action-required emails are always sent.") -}}
 
 {# Preferences form -#}
 <form id="notification-preferences-form"

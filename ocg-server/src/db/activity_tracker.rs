@@ -13,6 +13,9 @@ use crate::db::PgExecutor;
 /// Type aliases.
 type Day = String;
 type Total = u32;
+type UtmCampaign = String;
+type UtmMedium = String;
+type UtmSource = String;
 
 /// Database interface required by the activity tracker.
 #[async_trait]
@@ -22,6 +25,12 @@ pub(crate) trait DBActivityTracker {
 
     /// Updates event page views counters.
     async fn update_event_views(&self, data: Vec<(Uuid, Day, Total)>) -> Result<()>;
+
+    /// Updates event page view counters attributed to UTM parameters.
+    async fn update_event_views_utm(
+        &self,
+        data: Vec<(Uuid, Day, UtmCampaign, UtmMedium, UtmSource, Total)>,
+    ) -> Result<()>;
 
     /// Updates group page views counters.
     async fn update_group_views(&self, data: Vec<(Uuid, Day, Total)>) -> Result<()>;
@@ -44,6 +53,15 @@ where
     #[instrument(skip(self), err)]
     async fn update_event_views(&self, data: Vec<(Uuid, Day, Total)>) -> Result<()> {
         self.execute("select update_event_views($1::jsonb)", &[&Json(&data)])
+            .await
+    }
+
+    #[instrument(skip(self, data), fields(entries = data.len()), err)]
+    async fn update_event_views_utm(
+        &self,
+        data: Vec<(Uuid, Day, UtmCampaign, UtmMedium, UtmSource, Total)>,
+    ) -> Result<()> {
+        self.execute("select update_event_views_utm($1::jsonb)", &[&Json(&data)])
             .await
     }
 

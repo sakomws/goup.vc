@@ -19,8 +19,8 @@ const ROLES_ORDER: [&str; 4] = ["admin", "events-manager", "check-in-manager", "
 // Pages templates.
 
 /// Contact page template.
-#[derive(Debug, Clone, Template)]
-#[template(path = "dashboard/community/contact.html")]
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "dashboard/alliance/contact.html")]
 pub(crate) struct Page {
     /// Whether the current user can send emails to group teams.
     pub can_send: bool,
@@ -110,7 +110,7 @@ impl Page {
 
 /// Recipients summary partial template.
 #[derive(Debug, Clone, Template)]
-#[template(path = "dashboard/community/contact_recipients.html")]
+#[template(path = "dashboard/alliance/contact_recipients.html")]
 pub(crate) struct RecipientsSummary {
     /// Canonical query of the filters the summary was computed for.
     pub filters_key: String,

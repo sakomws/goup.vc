@@ -4,7 +4,7 @@
 -- Users blocked by spam reports are rejected.
 create or replace function start_inbox_conversation(
     p_actor_user_id uuid,
-    p_community_id uuid,
+    p_alliance_id uuid,
     p_event_id uuid,
     p_body text
 )
@@ -33,7 +33,7 @@ begin
     into
         v_event_id,
         v_group_id
-    from resolve_inbox_contact_event(p_community_id, p_event_id) r;
+    from resolve_inbox_contact_event(p_alliance_id, p_event_id) r;
 
     -- Reject events that do not accept contact
     if not found then
@@ -105,7 +105,7 @@ begin
         p_actor_user_id,
         'inbox_conversation',
         v_conversation.inbox_conversation_id,
-        p_community_id,
+        p_alliance_id,
         v_group_id,
         v_event_id,
         p_created_at => v_now

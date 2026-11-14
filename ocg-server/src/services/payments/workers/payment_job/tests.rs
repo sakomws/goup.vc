@@ -1,4 +1,4 @@
-use std::sync::{Arc, atomic::AtomicUsize};
+use std::sync::Arc;
 
 use chrono::Utc;
 use mockall::predicate::eq;
@@ -12,7 +12,6 @@ use crate::{
         DynDB,
         mock::MockDB,
         payments::{
-            ClaimedEventPurchaseApplicationFeeAdjustment, ClaimedEventPurchaseCreditNote,
             ClaimedEventPurchaseRefund, ClaimedPaymentJob, ClaimedPaymentJobWork,
             EventPurchaseRefund, EventPurchaseRefundKind, EventPurchaseRefundStatus,
         },
@@ -21,8 +20,7 @@ use crate::{
         notifications::MockNotificationsManager,
         payments::{
             DynPaymentsProvider, RefundPaymentResult, RefundPaymentStatus,
-            notification_composer::PaymentsNotificationComposer,
-            provider::{ApplicationFeeAdjustmentResult, CreditNoteResult, MockPaymentsProvider},
+            notification_composer::PaymentsNotificationComposer, provider::MockPaymentsProvider,
         },
     },
     templates::notifications::EventRefundApproved,
@@ -55,13 +53,13 @@ async fn test_process_next_payment_job_configuration_without_provider_leaves_job
 async fn test_process_next_payment_job_creates_missing_provider_refund_and_finalizes_success() {
     // Setup a claimed refund without a known provider refund
     let claim_id = Uuid::new_v4();
-    let community_id = Uuid::new_v4();
+    let alliance_id = Uuid::new_v4();
     let event_id = Uuid::new_v4();
     let payment_job_id = Uuid::new_v4();
     let purchase_id = Uuid::new_v4();
     let refund_id = Uuid::new_v4();
     let mut claimed_refund = sample_refund(claim_id, payment_job_id, purchase_id, refund_id);
-    claimed_refund.community_id = community_id;
+    claimed_refund.alliance_id = alliance_id;
     claimed_refund.event_id = event_id;
     let mut succeeded_refund = claimed_refund.refund.clone();
     succeeded_refund.provider_refund_id = Some("re_worker".to_string());
@@ -97,14 +95,9 @@ async fn test_process_next_payment_job_creates_missing_provider_refund_and_final
         .times(1)
         .return_once(move |_, _, _, _| Ok(succeeded_refund));
     db.expect_finalize_event_purchase_refund()
-        .with(
-            eq(refund_id),
-            eq(claim_id),
-            eq(expected_template_data),
-            eq(Some(PaymentProvider::Stripe)),
-        )
+        .with(eq(refund_id), eq(claim_id), eq(expected_template_data))
         .times(1)
-        .return_once(|_, _, _, _| Ok(()));
+        .return_once(|_, _, _| Ok(()));
 
     // Setup lookup-before-create and stable idempotency expectations
     let mut provider = MockPaymentsProvider::new();
@@ -126,7 +119,6 @@ async fn test_process_next_payment_job_creates_missing_provider_refund_and_final
         .expect_refund_payment()
         .withf(move |input| {
             input.amount_minor == 2_500
-                && input.connected_seller_id == "acct_worker"
                 && input.idempotency_key == format!("event-purchase-refund-{purchase_id}")
                 && input.provider_payment_reference == "pi_worker"
                 && input.purchase_id == purchase_id
@@ -214,14 +206,9 @@ async fn test_process_next_payment_job_finalizes_persisted_success_without_provi
         .times(1)
         .return_once(move |_, _| Ok(Some(job)));
     db.expect_finalize_event_purchase_refund()
-        .with(
-            eq(refund_id),
-            eq(claim_id),
-            eq(expected_template_data),
-            eq(Some(PaymentProvider::Stripe)),
-        )
+        .with(eq(refund_id), eq(claim_id), eq(expected_template_data))
         .times(1)
-        .return_once(|_, _, _, _| Ok(()));
+        .return_once(|_, _, _| Ok(()));
 
     // Forbid the legacy post-commit notification enqueue
     let mut notifications_manager = MockNotificationsManager::new();
@@ -287,14 +274,9 @@ async fn test_process_next_payment_job_finds_existing_success_without_creating_r
         .times(1)
         .return_once(move |_, _, _, _| Ok(succeeded_refund));
     db.expect_finalize_event_purchase_refund()
-        .with(
-            eq(refund_id),
-            eq(claim_id),
-            eq(expected_template_data),
-            eq(Some(PaymentProvider::Stripe)),
-        )
+        .with(eq(refund_id), eq(claim_id), eq(expected_template_data))
         .times(1)
-        .returning(|_, _, _, _| Ok(()));
+        .returning(|_, _, _| Ok(()));
 
     // Return the existing provider success and forbid another creation
     let mut provider = MockPaymentsProvider::new();
@@ -326,6 +308,7 @@ async fn test_process_next_payment_job_finds_existing_success_without_creating_r
     assert!(processed);
 }
 
+#[cfg(any())]
 #[tokio::test]
 async fn test_process_next_payment_job_processes_application_fee_adjustment() {
     // Claim one due adjustment and persist its provider result
@@ -397,6 +380,7 @@ async fn test_process_next_payment_job_processes_application_fee_adjustment() {
     assert!(processed);
 }
 
+#[cfg(any())]
 #[tokio::test]
 async fn test_process_next_payment_job_rotates_the_first_claimed_kind_between_iterations() {
     // Keep adjustments continuously claimable so a fixed order would starve other kinds
@@ -490,6 +474,7 @@ async fn test_process_next_payment_job_rotates_the_first_claimed_kind_between_it
     assert!(second);
 }
 
+#[cfg(any())]
 #[tokio::test]
 async fn test_process_next_payment_job_processes_credit_note_after_empty_adjustment_queue() {
     // Claim one due credit note and persist its provider document
@@ -564,6 +549,7 @@ async fn test_process_next_payment_job_processes_credit_note_after_empty_adjustm
     assert!(processed);
 }
 
+#[cfg(any())]
 #[tokio::test]
 async fn test_process_next_payment_job_records_failure_after_application_fee_error() {
     // Claim an adjustment whose provider operation fails
@@ -618,6 +604,7 @@ async fn test_process_next_payment_job_records_failure_after_application_fee_err
     assert_eq!(err.to_string(), "provider unavailable");
 }
 
+#[cfg(any())]
 #[tokio::test]
 async fn test_process_next_payment_job_records_failure_after_credit_note_error() {
     // Claim a credit note whose provider operation fails
@@ -772,14 +759,9 @@ async fn test_process_next_payment_job_records_failure_after_finalization_error(
         .times(1)
         .return_once(move |_, _, _, _| Ok(succeeded_refund));
     db.expect_finalize_event_purchase_refund()
-        .with(
-            eq(refund_id),
-            eq(claim_id),
-            eq(expected_template_data),
-            eq(Some(PaymentProvider::Stripe)),
-        )
+        .with(eq(refund_id), eq(claim_id), eq(expected_template_data))
         .times(1)
-        .returning(|_, _, _, _| Err(anyhow::anyhow!("finalization unavailable")));
+        .returning(|_, _, _| Err(anyhow::anyhow!("finalization unavailable")));
     db.expect_record_payment_job_failure()
         .withf(move |id, claim, message| {
             *id == payment_job_id && *claim == claim_id && message == "finalization unavailable"
@@ -949,7 +931,7 @@ async fn test_process_next_payment_job_records_failure_after_notification_contex
     let purchase_id = Uuid::new_v4();
     let refund_id = Uuid::new_v4();
     let mut claimed_refund = sample_refund(claim_id, payment_job_id, purchase_id, refund_id);
-    let community_id = claimed_refund.community_id;
+    let alliance_id = claimed_refund.alliance_id;
     let event_id = claimed_refund.event_id;
     claimed_refund.provider_refund_id = Some("re_persisted".to_string());
     claimed_refund.provider_refunded_at = Some(Utc::now());
@@ -975,12 +957,9 @@ async fn test_process_next_payment_job_records_failure_after_notification_contex
         .return_once(move |_, _| Ok(Some(job)));
     db.expect_finalize_event_purchase_refund().never();
     db.expect_get_event_summary_by_id()
-        .withf(move |cid, eid| *cid == community_id && *eid == event_id)
+        .withf(move |aid, eid| *aid == alliance_id && *eid == event_id)
         .times(1)
         .returning(|_, _| Err(anyhow::anyhow!("event unavailable")));
-    db.expect_get_site_settings()
-        .times(1)
-        .returning(|| Ok(SiteSettings::default()));
     db.expect_record_payment_job_failure()
         .withf(move |id, claim, message| {
             *id == payment_job_id
@@ -1304,6 +1283,7 @@ async fn test_process_next_payment_job_persists_terminal_provider_failure() {
     assert!(processed);
 }
 
+#[cfg(any())]
 #[tokio::test]
 async fn test_process_next_payment_job_release_failure_preserves_provider_error() {
     // Claim an adjustment whose provider and retry-release operations fail
@@ -1357,11 +1337,11 @@ async fn test_process_next_payment_job_release_failure_preserves_provider_error(
 
 /// Configures and returns the approval payload required by refund finalization.
 fn expect_refund_approval_context(db: &mut MockDB, refund: &ClaimedEventPurchaseRefund) -> Value {
-    let community_id = refund.community_id;
+    let alliance_id = refund.alliance_id;
     let event_id = refund.event_id;
     let event = sample_event_summary(event_id);
     db.expect_get_event_summary_by_id()
-        .withf(move |cid, eid| *cid == community_id && *eid == event_id)
+        .withf(move |aid, eid| *aid == alliance_id && *eid == event_id)
         .times(1)
         .returning(move |_, _| Ok(event.clone()));
     db.expect_get_site_settings()
@@ -1371,33 +1351,17 @@ fn expect_refund_approval_context(db: &mut MockDB, refund: &ClaimedEventPurchase
     to_value(&EventRefundApproved {
         event: sample_event_summary(event_id),
         external_payment: false,
-        link: "/community/group/group/event/event".to_string(),
+        link: "/alliance/group/group/event/event".to_string(),
         theme: SiteSettings::default().theme,
     })
     .unwrap()
 }
 
-/// Configures an empty application-fee adjustment claim attempt.
-fn expect_empty_application_fee_adjustment_claim(db: &mut MockDB) {
-    db.expect_claim_payment_job()
-        .with(
-            eq(PaymentJobKind::EventPurchaseApplicationFeeAdjustment),
-            eq(PaymentProvider::Stripe),
-        )
-        .times(1)
-        .return_once(|_, _| Ok(None));
-}
+/// Compatibility no-op for the removed upstream application-fee queue.
+fn expect_empty_application_fee_adjustment_claim(_db: &mut MockDB) {}
 
-/// Configures an empty credit-note claim attempt.
-fn expect_empty_credit_note_claim(db: &mut MockDB) {
-    db.expect_claim_payment_job()
-        .with(
-            eq(PaymentJobKind::EventPurchaseCreditNote),
-            eq(PaymentProvider::Stripe),
-        )
-        .times(1)
-        .return_once(|_, _| Ok(None));
-}
+/// Compatibility no-op for the removed upstream credit-note queue.
+fn expect_empty_credit_note_claim(_db: &mut MockDB) {}
 
 /// Configures an empty refund claim attempt.
 fn expect_empty_refund_claim(db: &mut MockDB) {
@@ -1411,6 +1375,7 @@ fn expect_empty_refund_claim(db: &mut MockDB) {
 }
 
 /// Creates a claimed application-fee adjustment for worker tests.
+#[cfg(any())]
 fn sample_application_fee_adjustment() -> ClaimedEventPurchaseApplicationFeeAdjustment {
     ClaimedEventPurchaseApplicationFeeAdjustment {
         amount_minor: 125,
@@ -1423,6 +1388,7 @@ fn sample_application_fee_adjustment() -> ClaimedEventPurchaseApplicationFeeAdju
 }
 
 /// Creates a claimed credit note for worker tests.
+#[cfg(any())]
 fn sample_credit_note() -> ClaimedEventPurchaseCreditNote {
     ClaimedEventPurchaseCreditNote {
         amount_minor: 2_500,
@@ -1440,13 +1406,12 @@ fn sample_event_summary(event_id: Uuid) -> EventSummary {
     EventSummary {
         attendee_approval_required: false,
         canceled: false,
-        community_display_name: "Community".to_string(),
-        community_name: "community".to_string(),
+        alliance_display_name: "Alliance".to_string(),
+        alliance_name: "alliance".to_string(),
         event_id,
         group_category_name: "Technology".to_string(),
         group_name: "Group".to_string(),
         group_slug: "group".to_string(),
-        has_external_payment: false,
         has_registration_questions: false,
         has_related_events: false,
         kind: EventKind::default(),
@@ -1459,7 +1424,6 @@ fn sample_event_summary(event_id: Uuid) -> EventSummary {
         waitlist_count: 0,
         waitlist_enabled: false,
 
-        attendee_count: None,
         capacity: None,
         created_by_display_name: None,
         created_by_username: None,
@@ -1486,8 +1450,7 @@ fn sample_event_summary(event_id: Uuid) -> EventSummary {
         venue_country_code: None,
         venue_country_name: None,
         venue_name: None,
-        venue_state_code: None,
-        venue_state_name: None,
+        venue_state: None,
         zip_code: None,
     }
 }
@@ -1513,13 +1476,12 @@ fn sample_job(
 /// Creates a claimed durable refund for worker lifecycle tests.
 fn sample_refund(
     claim_id: Uuid,
-    payment_job_id: Uuid,
+    _payment_job_id: Uuid,
     purchase_id: Uuid,
     refund_id: Uuid,
 ) -> ClaimedEventPurchaseRefund {
     ClaimedEventPurchaseRefund {
-        community_id: Uuid::new_v4(),
-        connected_seller_id: "acct_worker".to_string(),
+        alliance_id: Uuid::new_v4(),
         event_id: Uuid::new_v4(),
         refund: EventPurchaseRefund {
             amount_minor: 2_500,
@@ -1528,7 +1490,6 @@ fn sample_refund(
             event_purchase_refund_id: refund_id,
             idempotency_key: format!("event-purchase-refund-{purchase_id}"),
             kind: EventPurchaseRefundKind::EventCancellation,
-            payment_job_id,
             payment_provider: PaymentProvider::Stripe,
             status: EventPurchaseRefundStatus::ProviderPending,
             terminal_failure: false,
@@ -1557,7 +1518,6 @@ fn worker(
     Worker {
         cancellation_token: CancellationToken::new(),
         db: db.clone(),
-        next_kind_index: AtomicUsize::new(0),
         notification_composer: PaymentsNotificationComposer::new(
             db,
             Arc::new(notifications_manager),

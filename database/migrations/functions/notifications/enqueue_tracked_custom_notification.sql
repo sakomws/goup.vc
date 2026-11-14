@@ -1,13 +1,13 @@
 -- Enqueues and tracks a custom notification atomically. Event and group
 -- notifications are scoped to p_group_id, so recipients who muted that group
--- are skipped; community notifications have no group scope.
+-- are skipped; alliance notifications have no group scope.
 create or replace function enqueue_tracked_custom_notification(
     p_kind text,
     p_template_data jsonb,
     p_attachments jsonb,
     p_recipients uuid[],
     p_created_by uuid,
-    p_community_id uuid,
+    p_alliance_id uuid,
     p_event_id uuid,
     p_group_id uuid,
     p_recipient_count int,
@@ -29,7 +29,7 @@ begin
     -- Track the custom notification after enqueue succeeds
     perform track_custom_notification(
         p_created_by,
-        p_community_id,
+        p_alliance_id,
         p_event_id,
         p_group_id,
         p_recipient_count,

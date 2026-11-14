@@ -1,6 +1,7 @@
 //! Templates for the user dashboard notifications tab.
 
 use askama::Template;
+use serde::{Deserialize, Serialize};
 
 use crate::types::dashboard::user::notifications::{
     MutedGroup, NotificationCategory, NotificationPreferences,
@@ -9,7 +10,7 @@ use crate::types::dashboard::user::notifications::{
 // Pages templates.
 
 /// Notification preferences and muted groups pane.
-#[derive(Debug, Clone, Template)]
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "dashboard/user/notifications.html")]
 pub(crate) struct Page {
     /// Current notification preferences of the user.

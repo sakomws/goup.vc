@@ -5,7 +5,7 @@
 -- ============================================================================
 
 begin;
-select plan(7);
+select plan(13);
 
 -- ============================================================================
 -- VARIABLES
@@ -16,71 +16,55 @@ select plan(7);
 \set eventID '0c0c0000-0000-0000-0000-000000000003'
 \set groupCategoryID '0c0c0000-0000-0000-0000-000000000004'
 \set groupID '0c0c0000-0000-0000-0000-000000000005'
+\set otherAllianceID '0c0c0000-0000-0000-0000-000000000007'
 \set userID '0c0c0000-0000-0000-0000-000000000006'
 
 -- ============================================================================
 -- SEED DATA
 -- ============================================================================
 
--- Alliance
-insert into alliance (
-    alliance_id,
-    name,
-    display_name,
-    description,
-    banner_mobile_url,
-    banner_url,
-    logo_url
-) values (
-    :'allianceID',
-    'test-alliance',
-    'Test Alliance',
-    'A test alliance',
-    'https://example.com/banner_mobile.png',
-    'https://example.com/banner.png',
-    'https://example.com/logo.png'
-);
+-- Alliance owning the group and event
+select fx_alliance(:'allianceID');
 
--- Group category
-insert into group_category (group_category_id, alliance_id, name)
-values (:'groupCategoryID', :'allianceID', 'Technology');
+-- Alliance passed explicitly for a group of another alliance
+select fx_alliance(:'otherAllianceID');
 
--- Event category
-insert into event_category (event_category_id, alliance_id, name)
-values (:'eventCategoryID', :'allianceID', 'General');
+-- Actor whose username is snapshotted
+select fx_user(:'userID', jsonb_build_object('username', 'user'));
 
--- Group
-insert into "group" (group_id, alliance_id, group_category_id, name, slug)
-values (:'groupID', :'allianceID', :'groupCategoryID', 'Active Group', 'active-group');
+-- Event category of the event
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
--- User
-insert into "user" (user_id, auth_hash, email, email_verified, username)
-values (:'userID', 'test_hash', 'user@example.com', true, 'user');
+-- Group category of the group
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
--- Event
-insert into event (
-    event_id,
-    group_id,
-    name,
-    slug,
-    description,
-    timezone,
-    event_category_id,
-    event_kind_id
-) values (
-    :'eventID',
-    :'groupID',
-    'Test Event',
-    'test-event',
-    'A test event',
-    'UTC',
-    :'eventCategoryID',
-    'virtual'
-);
+-- Group whose alliance is derived when omitted
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
+
+-- Event scoped by the full audit row
+select fx_event(:'eventID', :'groupID', :'eventCategoryID', jsonb_build_object('event_kind_id', 'virtual'));
 
 -- ============================================================================
 -- TESTS
 -- ============================================================================
+
+-- Should derive the alliance from the group when omitted
+select lives_ok(
+    format($$select insert_audit_log(
+        'group_team_member_added',
+        %L::uuid,
+        'user',
+        %L::uuid,
+        p_group_id => %L::uuid
+    )$$, :'userID', :'userID', :'groupID'),
+    'Should insert a group-scoped audit row without a alliance'
+);
+
+select is(
+    (select alliance_id from audit_log where action = 'group_team_member_added'),
+    :'allianceID'::uuid,
+    'Should derive the alliance from the group when omitted'
+);
 
 -- Should insert an audit row with actor snapshot and default details
 select lives_ok(
@@ -98,7 +82,9 @@ select is(
     (
         select row_to_json(t.*)::jsonb - 'audit_log_id' - 'created_at'
         from (
-            select * from audit_log
+            select *
+            from audit_log
+            where action = 'alliance_updated'
         ) t
     ),
     format('{
@@ -116,9 +102,45 @@ select is(
 );
 
 select is(
-    (select created_at from audit_log where action = 'community_updated'),
+    (select created_at from audit_log where action = 'alliance_updated'),
     now(),
     'Should default the creation time to the transaction time'
+);
+
+-- Should keep an explicit alliance when given
+select lives_ok(
+    format($$select insert_audit_log(
+        'group_team_member_removed',
+        %L::uuid,
+        'user',
+        %L::uuid,
+        %L::uuid,
+        %L::uuid
+    )$$, :'userID', :'userID', :'otherAllianceID', :'groupID'),
+    'Should insert a group-scoped audit row with an explicit alliance'
+);
+
+select is(
+    (select alliance_id from audit_log where action = 'group_team_member_removed'),
+    :'otherAllianceID'::uuid,
+    'Should keep an explicit alliance when given'
+);
+
+-- Should leave alliance null without a group
+select lives_ok(
+    format($$select insert_audit_log(
+        'user_details_updated',
+        %L::uuid,
+        'user',
+        %L::uuid
+    )$$, :'userID', :'userID'),
+    'Should insert an audit row without scope ids'
+);
+
+select is(
+    (select alliance_id from audit_log where action = 'user_details_updated'),
+    null::uuid,
+    'Should leave alliance null without a group'
 );
 
 -- Should store an explicit creation time
@@ -131,7 +153,7 @@ select lives_ok(
         %L::uuid,
         %L::uuid,
         p_created_at => '2030-01-02 03:04:05+00'::timestamptz
-    )$$, :'userID', :'groupID', :'communityID', :'groupID'),
+    )$$, :'userID', :'groupID', :'allianceID', :'groupID'),
     'Should insert an audit row with an explicit creation time'
 );
 

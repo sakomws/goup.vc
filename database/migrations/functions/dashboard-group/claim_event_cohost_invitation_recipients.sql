@@ -34,7 +34,6 @@ returns uuid[] as $$
         join "user" u on u.user_id = c.user_id
         where u.registration_status = 'registered'
           and u.email_verified = true
-          and coalesce(u.optional_notifications_enabled, true) = true
           and user_has_group_permission(
               i.alliance_id,
               i.cohost_group_id,

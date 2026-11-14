@@ -39,7 +39,7 @@ async fn finalize_refund(
 ) -> Result<()> {
     // Build the durable notification payload before finalizing local state
     let notification_template_data = notification_composer
-        .build_refund_approval_template_data(refund.community_id, refund.event_id, false)
+        .build_refund_approval_template_data(refund.alliance_id, refund.event_id)
         .await
         .context("failed to build refund approval notification")?;
 
@@ -48,7 +48,6 @@ async fn finalize_refund(
         refund.event_purchase_refund_id,
         job.claim_id,
         notification_template_data,
-        Some(refund.payment_provider),
     )
     .await
 }
@@ -71,7 +70,6 @@ async fn reconcile_provider_refund(
     let provider_refund = payments_provider
         .find_refund(&FindRefundInput {
             amount_minor: refund.amount_minor,
-            connected_seller_id: refund.connected_seller_id.clone(),
             provider_payment_reference: provider_payment_reference.clone(),
             purchase_id: refund.event_purchase_id,
 
@@ -89,7 +87,6 @@ async fn reconcile_provider_refund(
             payments_provider
                 .refund_payment(&RefundPaymentInput {
                     amount_minor: refund.amount_minor,
-                    connected_seller_id: refund.connected_seller_id.clone(),
                     idempotency_key: job.idempotency_key.clone(),
                     provider_payment_reference,
                     purchase_id: refund.event_purchase_id,

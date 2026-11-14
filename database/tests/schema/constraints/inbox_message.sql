@@ -11,7 +11,7 @@ select plan(6);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID 'c0040000-0000-0000-0000-000000000001'
+\set allianceID 'c0040000-0000-0000-0000-000000000001'
 \set conversationID 'c0040000-0000-0000-0000-000000000002'
 \set groupCategoryID 'c0040000-0000-0000-0000-000000000003'
 \set groupID 'c0040000-0000-0000-0000-000000000004'
@@ -23,17 +23,17 @@ select plan(6);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- User deleted by the user deletion scenario
 select fx_user(:'userID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group owning the conversation
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Conversation started by the deleted user
 insert into inbox_conversation (inbox_conversation_id, group_id, user_id)

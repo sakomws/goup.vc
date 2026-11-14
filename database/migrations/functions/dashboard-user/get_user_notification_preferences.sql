@@ -11,7 +11,7 @@ returns json as $$
                             and g.active = true
                             and g.deleted = false
                         ),
-                        'community_display_name', c.display_name,
+                        'alliance_display_name', c.display_name,
                         'group_id', g.group_id,
                         'muted_at', epoch_seconds(ugm.created_at),
                         'name', g.name,
@@ -24,7 +24,7 @@ returns json as $$
             )
             from user_group_notification_mute ugm
             join "group" g using (group_id)
-            join community c on c.community_id = g.community_id
+            join alliance c on c.alliance_id = g.alliance_id
             where ugm.user_id = p_user_id
         ),
         'opted_out_categories', (

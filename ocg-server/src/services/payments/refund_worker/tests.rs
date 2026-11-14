@@ -37,12 +37,12 @@ use super::{RefundRecoveryWorker, RefundWorker, run_until_cancelled};
 async fn process_next_refund_creates_missing_provider_refund_and_finalizes_success() {
     // Setup a claimed refund without a known provider refund
     let claim_id = Uuid::new_v4();
-    let community_id = Uuid::new_v4();
+    let alliance_id = Uuid::new_v4();
     let event_id = Uuid::new_v4();
     let purchase_id = Uuid::new_v4();
     let refund_id = Uuid::new_v4();
     let mut claimed_refund = sample_refund(claim_id, purchase_id, refund_id);
-    claimed_refund.community_id = community_id;
+    claimed_refund.alliance_id = alliance_id;
     claimed_refund.event_id = event_id;
     let mut succeeded_refund = claimed_refund.refund.clone();
     succeeded_refund.provider_refund_id = Some("re_worker".to_string());
@@ -122,12 +122,12 @@ async fn process_next_refund_creates_missing_provider_refund_and_finalizes_succe
 async fn process_next_refund_finalizes_persisted_success_without_provider_call_and_notifies() {
     // Setup a claim whose provider success was already persisted
     let claim_id = Uuid::new_v4();
-    let community_id = Uuid::new_v4();
+    let alliance_id = Uuid::new_v4();
     let event_id = Uuid::new_v4();
     let purchase_id = Uuid::new_v4();
     let refund_id = Uuid::new_v4();
     let mut claimed_refund = sample_refund(claim_id, purchase_id, refund_id);
-    claimed_refund.community_id = community_id;
+    claimed_refund.alliance_id = alliance_id;
     claimed_refund.event_id = event_id;
     claimed_refund.provider_refund_id = Some("re_persisted".to_string());
     claimed_refund.provider_refunded_at = Some(Utc::now());
@@ -616,7 +616,7 @@ async fn process_next_refund_records_retryable_failure_after_notification_contex
     let purchase_id = Uuid::new_v4();
     let refund_id = Uuid::new_v4();
     let mut claimed_refund = sample_refund(claim_id, purchase_id, refund_id);
-    let community_id = claimed_refund.community_id;
+    let alliance_id = claimed_refund.alliance_id;
     let event_id = claimed_refund.event_id;
     claimed_refund.provider_refund_id = Some("re_persisted".to_string());
     claimed_refund.provider_refunded_at = Some(Utc::now());
@@ -628,7 +628,7 @@ async fn process_next_refund_records_retryable_failure_after_notification_contex
         .return_once(move |_| Ok(Some(claimed_refund)));
     db.expect_finalize_event_purchase_refund().never();
     db.expect_get_event_summary_by_id()
-        .withf(move |cid, eid| *cid == community_id && *eid == event_id)
+        .withf(move |cid, eid| *cid == alliance_id && *eid == event_id)
         .times(1)
         .returning(|_, _| Err(anyhow::anyhow!("event unavailable")));
     db.expect_get_site_settings()
@@ -928,11 +928,11 @@ async fn refund_worker_run_stops_during_provider_request_after_cancellation() {
 
 /// Configures and returns the approval payload required by refund finalization.
 fn expect_refund_approval_context(db: &mut MockDB, refund: &ClaimedEventPurchaseRefund) -> Value {
-    let community_id = refund.community_id;
+    let alliance_id = refund.alliance_id;
     let event_id = refund.event_id;
     let event = sample_event_summary(event_id);
     db.expect_get_event_summary_by_id()
-        .withf(move |cid, eid| *cid == community_id && *eid == event_id)
+        .withf(move |cid, eid| *cid == alliance_id && *eid == event_id)
         .times(1)
         .returning(move |_, _| Ok(event.clone()));
     db.expect_get_site_settings()
@@ -942,7 +942,7 @@ fn expect_refund_approval_context(db: &mut MockDB, refund: &ClaimedEventPurchase
     to_value(&EventRefundApproved {
         event: sample_event_summary(event_id),
         external_payment: false,
-        link: "/community/group/group/event/event".to_string(),
+        link: "/alliance/group/group/event/event".to_string(),
         theme: SiteSettings::default().theme,
     })
     .unwrap()
@@ -975,13 +975,12 @@ fn sample_event_summary(event_id: Uuid) -> EventSummary {
     EventSummary {
         attendee_approval_required: false,
         canceled: false,
-        community_display_name: "Community".to_string(),
-        community_name: "community".to_string(),
+        alliance_display_name: "Alliance".to_string(),
+        alliance_name: "alliance".to_string(),
         event_id,
         group_category_name: "Technology".to_string(),
         group_name: "Group".to_string(),
         group_slug: "group".to_string(),
-        has_external_payment: false,
         has_registration_questions: false,
         has_related_events: false,
         kind: EventKind::default(),
@@ -1028,7 +1027,7 @@ fn sample_event_summary(event_id: Uuid) -> EventSummary {
 /// Creates a claimed durable refund for worker lifecycle tests.
 fn sample_refund(claim_id: Uuid, purchase_id: Uuid, refund_id: Uuid) -> ClaimedEventPurchaseRefund {
     ClaimedEventPurchaseRefund {
-        community_id: Uuid::new_v4(),
+        alliance_id: Uuid::new_v4(),
         event_id: Uuid::new_v4(),
         refund: EventPurchaseRefund {
             amount_minor: 2_500,

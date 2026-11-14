@@ -6,6 +6,11 @@ use sha2::{Digest, Sha256};
 
 use crate::{services::notifications::Attachment, types::event::EventSummary};
 
+/// Returns a base URL suitable for appending absolute paths.
+pub(crate) fn base_url_without_trailing_slash(base_url: &str) -> &str {
+    base_url.trim_end_matches('/')
+}
+
 /// Build an iCalendar (ICS) attachment for the specified event.
 pub(crate) fn build_event_calendar_attachment(base_url: &str, event: &EventSummary) -> Attachment {
     // Prepare some event data
@@ -314,7 +319,6 @@ mod tests {
             group_category_name: "Alliance".to_string(),
             group_name: "Test Group".to_string(),
             group_slug: "test-group".to_string(),
-            has_external_payment: false,
             has_registration_questions: false,
             has_related_events: false,
             kind: EventKind::InPerson,

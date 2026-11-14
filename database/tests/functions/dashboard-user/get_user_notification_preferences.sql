@@ -12,13 +12,13 @@ select plan(3);
 -- ============================================================================
 
 \set activeGroupID '9e050000-0000-0000-0000-000000000001'
-\set communityID '9e050000-0000-0000-0000-000000000002'
+\set allianceID '9e050000-0000-0000-0000-000000000002'
 \set deletedGroupID '9e050000-0000-0000-0000-000000000003'
 \set emptyUserID '9e050000-0000-0000-0000-000000000004'
 \set groupCategoryID '9e050000-0000-0000-0000-000000000005'
-\set inactiveCommunityGroupCategoryID '9e050000-0000-0000-0000-000000000006'
-\set inactiveCommunityGroupID '9e050000-0000-0000-0000-000000000007'
-\set inactiveCommunityID '9e050000-0000-0000-0000-000000000008'
+\set inactiveAllianceGroupCategoryID '9e050000-0000-0000-0000-000000000006'
+\set inactiveAllianceGroupID '9e050000-0000-0000-0000-000000000007'
+\set inactiveAllianceID '9e050000-0000-0000-0000-000000000008'
 \set inactiveGroupID '9e050000-0000-0000-0000-000000000009'
 \set userID '9e050000-0000-0000-0000-000000000010'
 
@@ -26,20 +26,20 @@ select plan(3);
 -- SEED DATA
 -- ============================================================================
 
--- Active community containing most muted groups
-select fx_community(:'communityID', jsonb_build_object('display_name', 'Active Community'));
+-- Active alliance containing most muted groups
+select fx_alliance(:'allianceID', jsonb_build_object('display_name', 'Active Alliance'));
 
--- Inactive community containing an unavailable muted group
-select fx_community(:'inactiveCommunityID', jsonb_build_object(
+-- Inactive alliance containing an unavailable muted group
+select fx_alliance(:'inactiveAllianceID', jsonb_build_object(
     'active', false,
-    'display_name', 'Inactive Community'
+    'display_name', 'Inactive Alliance'
 ));
 
--- Group category for active-community groups
-select fx_group_category(:'groupCategoryID', :'communityID');
+-- Group category for active-alliance groups
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
--- Group category for inactive-community groups
-select fx_group_category(:'inactiveCommunityGroupCategoryID', :'inactiveCommunityID');
+-- Group category for inactive-alliance groups
+select fx_group_category(:'inactiveAllianceGroupCategoryID', :'inactiveAllianceID');
 
 -- User with no preferences
 select fx_user(:'emptyUserID');
@@ -48,26 +48,26 @@ select fx_user(:'emptyUserID');
 select fx_user(:'userID');
 
 -- Available muted group
-select fx_group(:'activeGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'activeGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'logo_url', 'https://fixture.test/active.png',
     'name', 'Active Muted Group'
 ));
 
 -- Deleted muted group listed as unavailable
-select fx_group(:'deletedGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'deletedGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'active', false,
     'deleted', true,
     'deleted_at', '2024-01-01 00:00:00+00',
     'name', 'Deleted Muted Group'
 ));
 
--- Muted group in an inactive community listed as unavailable
-select fx_group(:'inactiveCommunityGroupID', :'inactiveCommunityID', :'inactiveCommunityGroupCategoryID', jsonb_build_object(
-    'name', 'Inactive Community Muted Group'
+-- Muted group in an inactive alliance listed as unavailable
+select fx_group(:'inactiveAllianceGroupID', :'inactiveAllianceID', :'inactiveAllianceGroupCategoryID', jsonb_build_object(
+    'name', 'Inactive Alliance Muted Group'
 ));
 
 -- Inactive muted group listed as unavailable
-select fx_group(:'inactiveGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'inactiveGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'active', false,
     'name', 'Inactive Muted Group'
 ));
@@ -83,7 +83,7 @@ insert into user_group_notification_mute (group_id, user_id)
 values
     (:'activeGroupID', :'userID'),
     (:'deletedGroupID', :'userID'),
-    (:'inactiveCommunityGroupID', :'userID'),
+    (:'inactiveAllianceGroupID', :'userID'),
     (:'inactiveGroupID', :'userID');
 
 -- ============================================================================
@@ -116,26 +116,26 @@ select is(
     jsonb_build_array(
         jsonb_build_object(
             'available', true,
-            'community_display_name', 'Active Community',
+            'alliance_display_name', 'Active Alliance',
             'group_id', :'activeGroupID'::uuid,
             'logo_url', 'https://fixture.test/active.png',
             'name', 'Active Muted Group'
         ),
         jsonb_build_object(
             'available', false,
-            'community_display_name', 'Active Community',
+            'alliance_display_name', 'Active Alliance',
             'group_id', :'deletedGroupID'::uuid,
             'name', 'Deleted Muted Group'
         ),
         jsonb_build_object(
             'available', false,
-            'community_display_name', 'Inactive Community',
-            'group_id', :'inactiveCommunityGroupID'::uuid,
-            'name', 'Inactive Community Muted Group'
+            'alliance_display_name', 'Inactive Alliance',
+            'group_id', :'inactiveAllianceGroupID'::uuid,
+            'name', 'Inactive Alliance Muted Group'
         ),
         jsonb_build_object(
             'available', false,
-            'community_display_name', 'Active Community',
+            'alliance_display_name', 'Active Alliance',
             'group_id', :'inactiveGroupID'::uuid,
             'name', 'Inactive Muted Group'
         )

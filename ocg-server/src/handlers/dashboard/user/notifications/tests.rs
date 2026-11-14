@@ -471,7 +471,7 @@ fn expect_authenticated_session_with_teams(
     let session_record = sample_session_record(session_id, user_id, &auth_hash, None, None);
     let user = crate::auth::User {
         belongs_to_any_group_team: Some(belongs_to_any_group_team),
-        belongs_to_community_team: Some(belongs_to_community_team),
+        belongs_to_alliance_team: Some(belongs_to_community_team),
         ..sample_auth_user(user_id, &auth_hash)
     };
 

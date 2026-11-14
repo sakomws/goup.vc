@@ -576,6 +576,13 @@ async fn test_page_settings_tab_success() {
         .times(1)
         .withf(move |cid| *cid == alliance_id)
         .returning(move |_| Ok(vec![region.clone()]));
+    db.expect_get_group_utm_settings()
+        .times(1)
+        .withf(move |cid, gid| *cid == alliance_id && *gid == group_id)
+        .returning(|_, _| Ok(Default::default()));
+    db.expect_list_utm_mediums()
+        .times(1)
+        .returning(|| Ok(vec!["email".to_string(), "social".to_string()]));
     db.expect_get_site_settings()
         .times(1)
         .returning(|| Ok(sample_site_settings()));
@@ -792,7 +799,7 @@ async fn test_page_refunds_tab_success() {
         Some(community_id),
         Some(group_id),
     );
-    let groups = sample_user_groups_by_community(community_id, group_id);
+    let groups = sample_user_groups_by_alliance(community_id, group_id);
     let output = crate::templates::dashboard::group::refunds::RefundsOutput {
         events: vec![],
         refunds: vec![],

@@ -90,7 +90,6 @@ async fn test_page_rejects_invalid_query() {
         .times(1)
         .returning(|_, _, _, _| Ok(true));
     db.expect_get_group_stats().never();
-    db.expect_group_has_active_subgroups().never();
 
     // Setup router and send request with an invalid flag
     let router = TestRouterBuilder::new(db, MockNotificationsManager::new())

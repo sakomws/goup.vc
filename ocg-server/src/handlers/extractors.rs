@@ -4,7 +4,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use axum::{
     Form, Json,
-    extract::{FromRequest, FromRequestParts, Path, Request},
+    extract::{FromRequest, FromRequestParts, Path, Query, Request},
     http::{StatusCode, request::Parts},
 };
 use garde::Validate;
@@ -181,6 +181,43 @@ impl FromRequestParts<router::State> for SelectedGroupId {
 /// Use this for simple, flat form structures. For complex nested structures
 /// (arrays, maps), use `ValidatedFormQs` instead.
 pub(crate) struct ValidatedForm<T>(pub T);
+
+/// Extractor that deserializes and validates query-string parameters.
+pub(crate) struct ValidatedQuery<T>(pub T);
+
+impl<T> ValidatedQuery<T>
+where
+    T: DeserializeOwned + Validate,
+    T::Context: Default,
+{
+    /// Parses and validates a raw query string outside extractor dispatch.
+    pub(crate) fn parse(raw_query: &str) -> Result<T, crate::handlers::error::HandlerError> {
+        let value: T = serde_qs::from_str(raw_query)?;
+        value.validate()?;
+        Ok(value)
+    }
+}
+
+impl<T> FromRequestParts<router::State> for ValidatedQuery<T>
+where
+    T: DeserializeOwned + Validate,
+    T::Context: Default,
+{
+    type Rejection = (StatusCode, String);
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &router::State,
+    ) -> Result<Self, Self::Rejection> {
+        let Query(value) = Query::<T>::from_request_parts(parts, state)
+            .await
+            .map_err(|error| (StatusCode::UNPROCESSABLE_ENTITY, error.to_string()))?;
+        value
+            .validate()
+            .map_err(|error| (StatusCode::UNPROCESSABLE_ENTITY, error.to_string()))?;
+        Ok(Self(value))
+    }
+}
 
 impl<T> FromRequest<router::State> for ValidatedForm<T>
 where

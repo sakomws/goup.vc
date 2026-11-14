@@ -1,4 +1,5 @@
--- Inserts an audit log entry for a successful mutation.
+-- Inserts an audit log entry for a successful mutation at the given or transaction time.
+-- Group-scoped entries inherit the group alliance when no alliance is given.
 create or replace function insert_audit_log(
     p_action text,
     p_actor_user_id uuid,
@@ -7,11 +8,13 @@ create or replace function insert_audit_log(
     p_alliance_id uuid default null,
     p_group_id uuid default null,
     p_event_id uuid default null,
-    p_details jsonb default null
+    p_details jsonb default null,
+    p_created_at timestamptz default null
 )
 returns void as $$
 declare
     v_actor_username text;
+    v_alliance_id uuid := p_alliance_id;
 begin
     -- Snapshot the actor username so audit rows remain readable if user records change
     if p_actor_user_id is not null then
@@ -21,12 +24,21 @@ begin
         where user_id = p_actor_user_id;
     end if;
 
+    -- Derive the alliance of group-scoped rows when the caller omits it
+    if v_alliance_id is null and p_group_id is not null then
+        select g.alliance_id
+        into v_alliance_id
+        from "group" g
+        where g.group_id = p_group_id;
+    end if;
+
     -- Store the audit row
     insert into audit_log (
         action,
         actor_user_id,
         actor_username,
         alliance_id,
+        created_at,
         details,
         event_id,
         group_id,
@@ -36,7 +48,8 @@ begin
         p_action,
         p_actor_user_id,
         v_actor_username,
-        p_alliance_id,
+        v_alliance_id,
+        coalesce(p_created_at, current_timestamp),
         coalesce(p_details, '{}'::jsonb),
         p_event_id,
         p_group_id,

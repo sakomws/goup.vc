@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(74);
+select plan(82);
 
 -- ============================================================================
 -- TESTS
@@ -115,7 +115,7 @@ select indexes_are('alliance_views', array[
 
 -- Test: custom_notification indexes should match expected
 select indexes_are('custom_notification', array[
-    'custom_notification_community_id_idx',
+    'custom_notification_alliance_id_idx',
     'custom_notification_created_by_idx',
     'custom_notification_event_id_idx',
     'custom_notification_group_id_idx',
@@ -140,6 +140,7 @@ select indexes_are('email_verification_code', array[
 -- Test: event indexes should match expected
 select indexes_are('event', array[
     'event_pkey',
+    'event_event_id_group_id_key',
     'event_slug_group_id_key',
     'event_event_category_id_idx',
     'event_event_kind_id_idx',
@@ -373,6 +374,30 @@ select indexes_are('images', array[
     'images_pkey'
 ]);
 
+-- Test: inbox indexes should match expected
+select indexes_are('inbox_conversation', array[
+    'inbox_conversation_pkey',
+    'inbox_conversation_event_id_idx',
+    'inbox_conversation_group_id_last_message_at_idx',
+    'inbox_conversation_group_id_open_idx',
+    'inbox_conversation_user_id_created_at_idx',
+    'inbox_conversation_user_id_last_message_at_idx'
+]);
+
+select indexes_are('inbox_conversation_status', array[
+    'inbox_conversation_status_pkey',
+    'inbox_conversation_status_display_name_key'
+]);
+select index_is_unique('inbox_conversation_status', 'inbox_conversation_status_display_name_key');
+
+select indexes_are('inbox_message', array[
+    'inbox_message_pkey',
+    'inbox_message_author_user_id_kind_created_at_idx',
+    'inbox_message_inbox_conversation_id_created_at_idx',
+    'inbox_message_inbox_conversation_id_initial_idx'
+]);
+select index_is_unique('inbox_message', 'inbox_message_inbox_conversation_id_initial_idx');
+
 -- Test: legacy_event_host indexes should match expected
 select indexes_are('legacy_event_host', array[
     'legacy_event_host_pkey',
@@ -427,6 +452,11 @@ select indexes_are('notification_attachment', array[
 ]);
 
 -- Test: notification_kind indexes should match expected
+select indexes_are('notification_category', array[
+    'notification_category_pkey',
+    'notification_category_display_name_key'
+]);
+
 select indexes_are('notification_kind', array[
     'notification_kind_name_key',
     'notification_kind_pkey'
@@ -532,6 +562,16 @@ select indexes_are('user', array[
     'user_name_lower_idx',
     'user_tsdoc_idx',
     'user_username_lower_idx'
+]);
+
+-- Test: notification preference indexes should match expected
+select indexes_are('user_group_notification_mute', array[
+    'user_group_notification_mute_pkey',
+    'user_group_notification_mute_group_id_idx'
+]);
+
+select indexes_are('user_notification_opt_out', array[
+    'user_notification_opt_out_pkey'
 ]);
 select index_is_unique('user', 'user_email_lower_idx');
 select index_is_unique('user', 'user_username_lower_idx');

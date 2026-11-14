@@ -14,7 +14,10 @@ use crate::{
     db::mock::MockDB,
     handlers::tests::*,
     services::notifications::MockNotificationsManager,
-    types::{dashboard::group::event_analytics::EventAnalytics, permissions::GroupPermission},
+    types::{
+        dashboard::group::event_analytics::EventAnalytics, permissions::GroupPermission,
+        tests::sample_event_analytics,
+    },
 };
 
 #[tokio::test]

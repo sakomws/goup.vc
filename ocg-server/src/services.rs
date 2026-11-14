@@ -27,3 +27,6 @@ pub(crate) mod payments;
 pub(crate) mod realtime;
 /// Recording publishing service module.
 pub(crate) mod recording_publishing;
+
+/// Shared background worker helpers.
+pub(crate) mod workers;

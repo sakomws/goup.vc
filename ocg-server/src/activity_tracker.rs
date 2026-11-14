@@ -21,7 +21,7 @@ use tokio_util::{sync::CancellationToken, task::TaskTracker};
 use tracing::error;
 use uuid::Uuid;
 
-use crate::db::activity_tracker::DynDBActivityTracker;
+use crate::{db::activity_tracker::DynDBActivityTracker, types::utm::UtmParams};
 
 /// Format used to represent the date in the tracker.
 static DATE_FORMAT: LazyLock<Vec<FormatItem<'static>>> = LazyLock::new(|| {
@@ -44,13 +44,15 @@ type Day = String;
 type Total = u32;
 
 /// Trackable activities currently supported by the tracker.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(clippy::enum_variant_names)]
 pub(crate) enum Activity {
     /// A single alliance view.
     AllianceView { alliance_id: Uuid },
     /// A single event view.
     EventView { event_id: Uuid },
+    /// A single event view with accepted UTM attribution.
+    EventViewUtm { event_id: Uuid, utm: UtmParams },
     /// A single group view.
     GroupView { group_id: Uuid },
 }
@@ -181,6 +183,14 @@ impl Flusher {
                 }
             }
 
+            // Process event views attributed to UTM parameters
+            if !batches.event_views_utm.is_empty() {
+                let data = prepare_utm_batch_data(&batches.event_views_utm);
+                if let Err(err) = self.db.update_event_views_utm(data).await {
+                    error!(?err, "error writing event UTM views to database");
+                }
+            }
+
             // Process group views
             if !batches.group_views.is_empty() {
                 let data = prepare_batch_data(&batches.group_views);
@@ -202,11 +212,33 @@ fn prepare_batch_data(data: &HashMap<(EntityId, Day), Total>) -> Vec<(EntityId, 
     db_ready_data
 }
 
+/// Converts UTM counters into sorted database-ready rows.
+fn prepare_utm_batch_data(
+    data: &HashMap<(EntityId, Day, UtmParams), Total>,
+) -> Vec<(EntityId, Day, String, String, String, Total)> {
+    let mut rows: Vec<_> = data
+        .iter()
+        .map(|((event_id, day, utm), total)| {
+            (
+                *event_id,
+                day.clone(),
+                utm.campaign().unwrap_or_default().to_string(),
+                utm.medium().unwrap_or_default().to_string(),
+                utm.source().unwrap_or_default().to_string(),
+                *total,
+            )
+        })
+        .collect();
+    rows.sort();
+    rows
+}
+
 /// Aggregated in-memory batches.
 #[derive(Debug, Clone, Default)]
 struct Batches {
     alliance_views: HashMap<(EntityId, Day), Total>,
     event_views: HashMap<(EntityId, Day), Total>,
+    event_views_utm: HashMap<(EntityId, Day, UtmParams), Total>,
     group_views: HashMap<(EntityId, Day), Total>,
 }
 
@@ -229,6 +261,10 @@ impl Batches {
             Activity::EventView { event_id } => {
                 *self.event_views.entry((event_id, day)).or_default() += 1;
             }
+            Activity::EventViewUtm { event_id, utm } => {
+                *self.event_views.entry((event_id, day.clone())).or_default() += 1;
+                *self.event_views_utm.entry((event_id, day, utm)).or_default() += 1;
+            }
             Activity::GroupView { group_id } => {
                 *self.group_views.entry((group_id, day)).or_default() += 1;
             }
@@ -239,6 +275,7 @@ impl Batches {
     fn clear(&mut self) {
         self.alliance_views.clear();
         self.event_views.clear();
+        self.event_views_utm.clear();
         self.group_views.clear();
     }
 
@@ -251,7 +288,10 @@ impl Batches {
 
     /// Returns whether there is no pending data.
     fn is_empty(&self) -> bool {
-        self.alliance_views.is_empty() && self.event_views.is_empty() && self.group_views.is_empty()
+        self.alliance_views.is_empty()
+            && self.event_views.is_empty()
+            && self.event_views_utm.is_empty()
+            && self.group_views.is_empty()
     }
 }
 

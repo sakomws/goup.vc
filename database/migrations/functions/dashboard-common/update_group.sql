@@ -10,6 +10,10 @@ declare
     v_payment_recipient_changed boolean := false;
     v_new_payment_recipient jsonb;
     v_previous_payment_recipient jsonb;
+    v_new_utm_campaigns text[];
+    v_new_utm_mediums text[];
+    v_new_utm_sources text[];
+    v_utm_present boolean := false;
 begin
     -- Retrieve the existing payment recipient to compare against the update payload
     select payment_recipient
@@ -36,6 +40,22 @@ begin
     -- Determine if the payment recipient is changing with the update
     v_payment_recipient_changed := p_group ? 'payment_recipient'
         and v_previous_payment_recipient is distinct from v_new_payment_recipient;
+
+    -- Resolve UTM lists only when this payload addresses the settings.
+    v_utm_present := coalesce((p_group->>'utm_present')::boolean, false);
+    if v_utm_present then
+        v_new_utm_campaigns := coalesce(jsonb_text_array(p_group->'utm_campaigns'), '{}');
+        v_new_utm_mediums := coalesce(jsonb_text_array(p_group->'utm_mediums'), '{}');
+        v_new_utm_sources := coalesce(jsonb_text_array(p_group->'utm_sources'), '{}');
+
+        if exists (
+            select 1
+            from utm_medium um
+            where um.utm_medium_id = any(v_new_utm_mediums)
+        ) then
+            raise exception 'utm mediums cannot include default mediums' using errcode = 'OCG01';
+        end if;
+    end if;
 
     -- Prevent clearing the recipient from breaking checkout for active ticketed events
     if v_payment_recipient_changed
@@ -108,6 +128,9 @@ begin
         substack_url = nullif(p_group->>'substack_url', ''),
         tags = jsonb_text_array(p_group->'tags'),
         twitter_url = nullif(p_group->>'twitter_url', ''),
+        utm_campaigns = case when v_utm_present then v_new_utm_campaigns else utm_campaigns end,
+        utm_mediums = case when v_utm_present then v_new_utm_mediums else utm_mediums end,
+        utm_sources = case when v_utm_present then v_new_utm_sources else utm_sources end,
         website_url = nullif(p_group->>'website_url', ''),
         whatsapp_url = nullif(p_group->>'whatsapp_url', ''),
         wechat_url = nullif(p_group->>'wechat_url', ''),

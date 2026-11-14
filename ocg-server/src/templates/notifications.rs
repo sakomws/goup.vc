@@ -144,6 +144,17 @@ pub(crate) struct EventCustom {
     pub theme: Theme,
 }
 
+/// Template for an alliance Contact notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/community_custom.html")]
+pub(crate) struct AllianceCustom {
+    pub alliance_display_name: String,
+    pub body: String,
+    pub link: String,
+    pub subject: String,
+    pub theme: Theme,
+}
+
 /// Template for event invitation notification.
 #[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "notifications/event_invitation.html")]
@@ -203,6 +214,9 @@ pub(crate) struct EventSeriesNotificationItem {
 pub(crate) struct EventRefundApproved {
     /// Event summary data.
     pub event: EventSummary,
+    /// Whether the refund was completed outside the configured provider.
+    #[serde(default)]
+    pub external_payment: bool,
     /// Link to the event page.
     pub link: String,
     /// Theme configuration for the alliance.
@@ -514,21 +528,6 @@ pub(crate) struct InboxMessageReceived {
     pub event_name: Option<String>,
 }
 
-impl NotificationTemplate for InboxMessageReceived {
-    /// [`NotificationTemplate::complete_urls`].
-    fn complete_urls(&mut self, base_url: &str) {
-        complete_local_url(&mut self.link, base_url);
-    }
-
-    /// [`NotificationTemplate::subject`].
-    fn subject(&self) -> String {
-        scoped_subject(
-            &self.group_name,
-            &format!("New message from {}", self.sender_name),
-        )
-    }
-}
-
 /// Template telling a user that the group replied to their message.
 #[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "notifications/inbox_reply_received.html")]
@@ -547,18 +546,6 @@ pub(crate) struct InboxReplyReceived {
     /// Name of the event the conversation started from.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub event_name: Option<String>,
-}
-
-impl NotificationTemplate for InboxReplyReceived {
-    /// [`NotificationTemplate::complete_urls`].
-    fn complete_urls(&mut self, base_url: &str) {
-        complete_local_url(&mut self.link, base_url);
-    }
-
-    /// [`NotificationTemplate::subject`].
-    fn subject(&self) -> String {
-        scoped_subject(&self.group_name, "New reply to your message")
-    }
 }
 
 /// Template for session proposal co-speaker invitation notification.

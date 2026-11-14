@@ -11,7 +11,7 @@ select plan(2);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '1b040000-0000-0000-0000-000000000001'
+\set allianceID '1b040000-0000-0000-0000-000000000001'
 \set conversationBoundaryID '1b040000-0000-0000-0000-000000000002'
 \set conversationLimitedFirstID '1b040000-0000-0000-0000-000000000003'
 \set conversationLimitedSecondID '1b040000-0000-0000-0000-000000000004'
@@ -28,8 +28,8 @@ select plan(2);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- User one step below both limits
 select fx_user(:'userID');
@@ -38,10 +38,10 @@ select fx_user(:'userID');
 select fx_user(:'limitedUserID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group contacted by the users
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Conversations started inside the window by the user below the limits
 insert into inbox_conversation (inbox_conversation_id, created_at, group_id, user_id) values

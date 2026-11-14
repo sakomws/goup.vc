@@ -9,7 +9,7 @@ declare
 begin
     -- Load the group-scoped refund and notification context
     select jsonb_build_object(
-        'community_id', g.community_id,
+        'alliance_id', g.alliance_id,
         'event_id', e.event_id,
         'event_purchase_refund_id', epr.event_purchase_refund_id,
 
@@ -26,7 +26,7 @@ begin
 
     -- Reject missing and cross-group purchases consistently
     if not found then
-        raise exception 'event purchase refund not found' using errcode = 'OCG01';
+        raise exception 'event purchase refund not found';
     end if;
 
     -- Return the stable app-facing contract

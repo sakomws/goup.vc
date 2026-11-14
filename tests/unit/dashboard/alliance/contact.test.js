@@ -1,6 +1,6 @@
 import { expect } from "@open-wc/testing";
 
-import { buildFiltersKey, initializeCommunityContactForm } from "/static/js/dashboard/community/contact.js";
+import { buildFiltersKey, initializeCommunityContactForm } from "/static/js/dashboard/alliance/contact.js";
 import { waitForMicrotask } from "/tests/unit/test-utils/async.js";
 import { useDashboardTestEnv } from "/tests/unit/test-utils/env.js";
 import { dispatchHtmxAfterRequest } from "/tests/unit/test-utils/htmx.js";

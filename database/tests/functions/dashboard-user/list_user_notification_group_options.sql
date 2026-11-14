@@ -12,7 +12,7 @@ select plan(1);
 -- ============================================================================
 
 \set availableGroupID '9e060000-0000-0000-0000-000000000001'
-\set communityID '9e060000-0000-0000-0000-000000000002'
+\set allianceID '9e060000-0000-0000-0000-000000000002'
 \set groupCategoryID '9e060000-0000-0000-0000-000000000003'
 \set mutedGroupID '9e060000-0000-0000-0000-000000000004'
 \set userID '9e060000-0000-0000-0000-000000000005'
@@ -21,23 +21,23 @@ select plan(1);
 -- SEED DATA
 -- ============================================================================
 
--- Community containing connected groups
-select fx_community(:'communityID', jsonb_build_object('display_name', 'Notification Options Community'));
+-- Alliance containing connected groups
+select fx_alliance(:'allianceID', jsonb_build_object('display_name', 'Notification Options Alliance'));
 
 -- Group category containing connected groups
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- User connected to both groups
 select fx_user(:'userID');
 
 -- Connected group returned by the options list
-select fx_group(:'availableGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'availableGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'logo_url', 'https://fixture.test/available.png',
     'name', 'Available Group'
 ));
 
 -- Connected group excluded because it is already muted
-select fx_group(:'mutedGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'mutedGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'name', 'Muted Group'
 ));
 
@@ -61,7 +61,7 @@ values (:'mutedGroupID', :'userID');
 select is(
     list_user_notification_group_options(:'userID')::jsonb,
     jsonb_build_array(jsonb_build_object(
-        'community_display_name', 'Notification Options Community',
+        'alliance_display_name', 'Notification Options Alliance',
         'group_id', :'availableGroupID'::uuid,
         'logo_url', 'https://fixture.test/available.png',
         'name', 'Available Group'

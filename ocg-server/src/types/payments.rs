@@ -35,6 +35,7 @@ pub enum EventPurchaseStatus {
     #[default]
     Pending,
     RefundPending,
+    RefundRecoveryPending,
     RefundRequested,
     Refunded,
 }
@@ -43,17 +44,11 @@ pub enum EventPurchaseStatus {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum EventRefundProgress {
-    /// Checkout has not completed, so no provider refund can start yet.
     AwaitingCheckout,
-    /// A worker or the payments provider is processing the refund.
     Processing,
-    /// Durable refund work is waiting for a worker or retry delay.
     Queued,
-    /// The provider failure requires external operator recovery.
     RecoveryRequired,
-    /// Provider and local refund work completed.
     Refunded,
-    /// Automatic attempts were exhausted and an administrator can retry.
     RetryableFailure,
 }
 
@@ -78,29 +73,6 @@ pub enum EventRefundRequestStatus {
     #[default]
     Pending,
     Rejected,
-}
-
-/// Durable provider-mediated payment job kind.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, strum::Display)]
-#[serde(rename_all = "kebab-case")]
-#[strum(serialize_all = "kebab-case")]
-#[allow(clippy::enum_variant_names)]
-pub enum PaymentJobKind {
-    /// Application-fee refund or tax correction.
-    EventPurchaseApplicationFeeAdjustment,
-    /// Customer credit-note creation.
-    EventPurchaseCreditNote,
-    /// Customer refund processing and finalization.
-    EventPurchaseRefund,
-}
-
-impl PaymentJobKind {
-    /// Lists every provider-mediated payment job kind workers should claim.
-    pub const ALL: [Self; 3] = [
-        Self::EventPurchaseApplicationFeeAdjustment,
-        Self::EventPurchaseCreditNote,
-        Self::EventPurchaseRefund,
-    ];
 }
 
 /// Mode used by a payments provider.
@@ -129,6 +101,15 @@ pub enum PaymentMode {
 pub enum PaymentProvider {
     #[default]
     Stripe,
+}
+
+/// Durable provider-mediated payment job kind.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, strum::Display)]
+#[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
+pub enum PaymentJobKind {
+    /// Customer refund processing and local finalization.
+    EventPurchaseRefund,
 }
 
 /// Discount code configuration for a ticketed event.

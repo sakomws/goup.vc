@@ -12,7 +12,7 @@ select plan(8);
 -- ============================================================================
 
 \set actorID '1b170000-0000-0000-0000-000000000001'
-\set communityID '1b170000-0000-0000-0000-000000000002'
+\set allianceID '1b170000-0000-0000-0000-000000000002'
 \set conversationClosedID '1b170000-0000-0000-0000-000000000003'
 \set conversationOpenID '1b170000-0000-0000-0000-000000000004'
 \set conversationOtherGroupID '1b170000-0000-0000-0000-000000000005'
@@ -28,8 +28,8 @@ select plan(8);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- Actor marking conversations on behalf of the group
 select fx_user(:'actorID');
@@ -38,16 +38,16 @@ select fx_user(:'actorID');
 select fx_user(:'userID');
 
 -- Event category
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group owning the conversations
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Another group
-select fx_group(:'otherGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'otherGroupID', :'allianceID', :'groupCategoryID');
 
 -- Event the open conversation started from
 select fx_event(:'eventID', :'groupID', :'eventCategoryID', jsonb_build_object('published', true));
@@ -110,7 +110,7 @@ select results_eq(
 -- Check the audit row uses the post-lock write time instead of the transaction start
 select results_eq(
     format(
-        $$select action, actor_user_id, community_id, details, event_id, group_id, resource_type,
+        $$select action, actor_user_id, alliance_id, details, event_id, group_id, resource_type,
             created_at > now()
         from audit_log
         where resource_id = %L::uuid$$,
@@ -119,7 +119,7 @@ select results_eq(
     format(
         $$values ('inbox_conversation_marked_as_spam', %L::uuid, %L::uuid, '{}'::jsonb, %L::uuid, %L::uuid, 'inbox_conversation', true)$$,
         :'actorID',
-        :'communityID',
+        :'allianceID',
         :'eventID',
         :'groupID'
     ),

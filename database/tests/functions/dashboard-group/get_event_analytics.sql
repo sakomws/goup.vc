@@ -32,8 +32,8 @@ select plan(19);
 -- SEED DATA
 -- ============================================================================
 
--- Baseline community, categories, groups and users
-select fx_community(:'communityID');
+-- Baseline alliance, categories, groups and users
+select fx_alliance(:'communityID');
 select fx_group_category(:'groupCategoryID', :'communityID');
 select fx_event_category(:'eventCategoryID', :'communityID');
 select fx_group(:'groupID', :'communityID', :'groupCategoryID');

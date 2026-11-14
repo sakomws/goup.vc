@@ -7,8 +7,8 @@ use serde_with::skip_serializing_none;
 use uuid::Uuid;
 
 use crate::{
+    templates::dashboard,
     types::{
-        dashboard,
         pagination::{Pagination, ToRawQuery},
         user::User,
     },
@@ -19,7 +19,7 @@ use crate::{
 mod tests;
 
 /// Inbox conversation thread between a user and a group.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct InboxConversation {
     /// Display name of the group's community.
     pub community_display_name: String,
@@ -156,7 +156,7 @@ impl InboxConversationStatus {
 }
 
 /// Inbox conversation projection used by conversation lists.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct InboxConversationSummary {
     /// Display name of the group's community.
     pub community_display_name: String,
@@ -210,7 +210,7 @@ pub(crate) struct InboxConversationsOutput {
 }
 
 /// Event an inbox conversation started from.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct InboxEvent {
     /// Whether the event page is publicly available.
     pub is_public: bool,
@@ -222,7 +222,7 @@ pub(crate) struct InboxEvent {
 }
 
 /// Plain-text message in an inbox conversation.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct InboxMessage {
     /// Message text.
     pub body: String,

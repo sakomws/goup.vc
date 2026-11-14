@@ -41,6 +41,11 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
     // Read-only alliance dashboard endpoints
     let dashboard_read = Router::new()
         .route("/analytics", get(dashboard::alliance::analytics::page))
+        .route("/contact", get(dashboard::alliance::contact::page))
+        .route(
+            "/contact/recipients",
+            get(dashboard::alliance::contact::recipients),
+        )
         .route("/create", get(dashboard::alliance::create::page))
         .route(
             "/email-templates",
@@ -105,6 +110,10 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
             get(dashboard::alliance::members::download_csv),
         )
         .route("/groups/add", post(dashboard::alliance::groups::add))
+        .route(
+            "/notifications",
+            post(dashboard::alliance::contact::send_alliance_custom_notification),
+        )
         .route(
             "/groups/{group_id}/activate",
             put(dashboard::alliance::groups::activate),
@@ -423,6 +432,10 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             get(dashboard::group::submissions::list_page),
         )
         .route(
+            "/events/{event_id}/submissions.csv",
+            get(dashboard::group::submissions::download_csv),
+        )
+        .route(
             "/events/{event_id}/update",
             get(dashboard::group::events::update_page),
         )
@@ -432,6 +445,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         )
         .route("/logs", get(dashboard::group::logs::list_page))
         .route("/members", get(dashboard::group::members::list_page))
+        .route("/refunds", get(dashboard::group::refunds::list_page))
         .route(
             "/book-exchange",
             get(dashboard::group::book_exchange::list_page),
@@ -571,6 +585,22 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             put(dashboard::group::attendees::reject_refund_request),
         )
         .route(
+            "/refunds/{event_purchase_id}/approve",
+            put(dashboard::group::attendees::approve_refund_by_purchase),
+        )
+        .route(
+            "/refunds/{event_purchase_id}/reject",
+            put(dashboard::group::attendees::reject_refund_by_purchase),
+        )
+        .route(
+            "/refunds/{event_purchase_id}/retry",
+            put(dashboard::group::attendees::retry_refund),
+        )
+        .route(
+            "/refunds/recovery",
+            put(dashboard::group::refunds::complete_refund_recovery),
+        )
+        .route(
             "/events/{event_id}/cancel",
             put(dashboard::group::events::cancel),
         )
@@ -660,6 +690,31 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .route_layer(check_selected_alliance_permission(
             AlliancePermission::GroupsWrite,
         ));
+
+    // Group inbox endpoints
+    let inbox_management = Router::new()
+        .route("/inbox", get(dashboard::group::inbox::list_page))
+        .route(
+            "/inbox/{inbox_conversation_id}",
+            get(dashboard::group::inbox::conversation_page),
+        )
+        .route(
+            "/inbox/{inbox_conversation_id}/close",
+            put(dashboard::group::inbox::close),
+        )
+        .route(
+            "/inbox/{inbox_conversation_id}/mark-spam",
+            put(dashboard::group::inbox::mark_spam),
+        )
+        .route(
+            "/inbox/{inbox_conversation_id}/replies",
+            post(dashboard::group::inbox::reply),
+        )
+        .route(
+            "/inbox/{inbox_conversation_id}/unmark-spam",
+            put(dashboard::group::inbox::unmark_spam),
+        )
+        .route_layer(check_selected_group_permission(GroupPermission::InboxWrite));
 
     // Group member management endpoints
     let members_management = Router::new()
@@ -872,6 +927,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .merge(dashboard_read)
         .merge(events_management)
         .merge(event_move_management)
+        .merge(inbox_management)
         .merge(members_management)
         .merge(projects_management)
         .merge(gtm_management)
@@ -917,6 +973,33 @@ pub(super) fn setup_user_dashboard_router() -> Router<State> {
         .route(
             "/events/{alliance_name}/{event_id}/registration-answers",
             put(dashboard::user::events::submit_registration_answers),
+        )
+        .route("/inbox", get(dashboard::user::inbox::list_page))
+        .route(
+            "/inbox/{inbox_conversation_id}",
+            get(dashboard::user::inbox::conversation_page),
+        )
+        .route(
+            "/inbox/{inbox_conversation_id}/messages",
+            post(dashboard::user::inbox::send_message),
+        )
+        .route("/notifications", get(dashboard::user::notifications::page))
+        .route(
+            "/notifications/group-options",
+            get(dashboard::user::notifications::group_options),
+        )
+        .route(
+            "/notifications/muted-groups",
+            get(dashboard::user::notifications::muted_groups),
+        )
+        .route(
+            "/notifications/muted-groups/{group_id}",
+            put(dashboard::user::notifications::mute_group)
+                .delete(dashboard::user::notifications::unmute_group),
+        )
+        .route(
+            "/notifications/preferences",
+            put(dashboard::user::notifications::update_preferences),
         )
         .route("/invitations", get(dashboard::user::invitations::list_page))
         .route("/mentorship", get(dashboard::user::mentorship::list_page))

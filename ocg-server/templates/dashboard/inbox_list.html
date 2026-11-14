@@ -1,4 +1,3 @@
-{% import "macros/badges.html" as badges -%}
 {% import "macros/dashboard.html" as dashboard -%}
 {% import "macros/pagination.html" as pagination -%}
 
@@ -23,10 +22,10 @@
 
   {# Inbox header -#}
   {% if scope.is_group() -%}
-    {{ dashboard::page_title(title = "Inbox", docs_href = "/docs#/guides/group-dashboard?id=inbox-questions-from-users",
+    {{ dashboard::page_title(title = "Inbox",
       description = "Questions users sent to this group from its event pages.") -}}
   {% else -%}
-    {{ dashboard::page_title(title = "Inbox", docs_href = "/docs#/guides/user-dashboard?id=inbox-conversations-with-organizers",
+    {{ dashboard::page_title(title = "Inbox",
       description = "Your conversations with group organizers.") -}}
   {% endif -%}
   {# End inbox header -#}
@@ -40,7 +39,7 @@
             hx-target="#dashboard-content"
             hx-swap="innerHTML"
             hx-indicator="#dashboard-spinner">
-        {% call dashboard::active_table_filter_badge("Status", status.label()) -%}
+        {% call dashboard::active_table_filter_badge(status.label()) -%}
         {{ dashboard::active_table_filter_remove_button(label = "Reset status filter") -}}
         {% endcall -%}
       </form>
@@ -186,7 +185,7 @@
               {# End last message -#}
               {# Status -#}
               <td class="px-3 xl:px-5 py-4 whitespace-nowrap">
-                {{ badges::inbox_status_badge(status = conversation.status) -}}
+                <span class="custom-badge bg-stone-100 text-stone-700">{{ conversation.status.label() }}</span>
               </td>
               {# End status -#}
               {# Last activity -#}

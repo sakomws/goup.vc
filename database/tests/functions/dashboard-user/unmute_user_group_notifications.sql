@@ -11,7 +11,7 @@ select plan(3);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '9e090000-0000-0000-0000-000000000001'
+\set allianceID '9e090000-0000-0000-0000-000000000001'
 \set disconnectedGroupID '9e090000-0000-0000-0000-000000000002'
 \set groupCategoryID '9e090000-0000-0000-0000-000000000003'
 \set unavailableGroupID '9e090000-0000-0000-0000-000000000004'
@@ -21,22 +21,22 @@ select plan(3);
 -- SEED DATA
 -- ============================================================================
 
--- Community containing muted groups
-select fx_community(:'communityID');
+-- Alliance containing muted groups
+select fx_alliance(:'allianceID');
 
 -- Group category containing muted groups
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- User unmuting groups
 select fx_user(:'userID');
 
 -- Disconnected muted group
-select fx_group(:'disconnectedGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'disconnectedGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'name', 'Disconnected Muted Group'
 ));
 
 -- Unavailable muted group
-select fx_group(:'unavailableGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'unavailableGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'active', false,
     'name', 'Unavailable Muted Group'
 ));

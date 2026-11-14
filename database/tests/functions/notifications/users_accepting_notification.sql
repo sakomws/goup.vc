@@ -13,7 +13,7 @@ select plan(14);
 
 \set activeGroupID '9e010000-0000-0000-0000-000000000001'
 \set categoryOptOutUserID '9e010000-0000-0000-0000-000000000002'
-\set communityID '9e010000-0000-0000-0000-000000000003'
+\set allianceID '9e010000-0000-0000-0000-000000000003'
 \set deletedGroupID '9e010000-0000-0000-0000-000000000004'
 \set enabledUserID '9e010000-0000-0000-0000-000000000005'
 \set groupCategoryID '9e010000-0000-0000-0000-000000000006'
@@ -28,11 +28,11 @@ select plan(14);
 -- SEED DATA
 -- ============================================================================
 
--- Community containing groups used by mute scenarios
-select fx_community(:'communityID');
+-- Alliance containing groups used by mute scenarios
+select fx_alliance(:'allianceID');
 
 -- Group category containing groups used by mute scenarios
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- User with no preference rows
 select fx_user(:'enabledUserID');
@@ -53,12 +53,12 @@ select fx_user(:'teamMuteUserID');
 select fx_user(:'removedMuteOptOutUserID');
 
 -- Active group used by mutes and notification scope
-select fx_group(:'activeGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'activeGroupID', :'allianceID', :'groupCategoryID');
 
 -- Deleted group whose mute should still apply
 select fx_group(
     :'deletedGroupID',
-    :'communityID',
+    :'allianceID',
     :'groupCategoryID',
     jsonb_build_object(
         'active', false,
@@ -70,13 +70,13 @@ select fx_group(
 -- Inactive group whose mute should still apply
 select fx_group(
     :'inactiveGroupID',
-    :'communityID',
+    :'allianceID',
     :'groupCategoryID',
     jsonb_build_object('active', false)
 );
 
 -- Unmuted group used by unrelated group-scope checks
-select fx_group(:'otherGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'otherGroupID', :'allianceID', :'groupCategoryID');
 
 -- Category opt-out for mutable event publication notifications
 insert into user_notification_opt_out (notification_category_id, user_id)

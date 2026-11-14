@@ -46,7 +46,7 @@ begin
     -- Resolve the job kind and audit scope within the group before taking locks
     select
         pj,
-        g.community_id,
+        g.alliance_id,
         e.event_id
     into v_locked
     from payment_job pj
@@ -162,7 +162,7 @@ begin
         p_actor_user_id,
         'event',
         v_locked.event_id,
-        v_locked.community_id,
+        v_locked.alliance_id,
         p_group_id,
         v_locked.event_id,
         v_audit_details || jsonb_build_object(

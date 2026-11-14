@@ -5,7 +5,7 @@ create or replace function get_event_purchase_notification_context(
 )
 returns jsonb as $$
     select jsonb_build_object(
-        'community_id', g.community_id,
+        'alliance_id', g.alliance_id,
         'event_id', e.event_id
     )
     from event_purchase ep

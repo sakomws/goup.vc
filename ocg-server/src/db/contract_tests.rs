@@ -90,34 +90,31 @@ async fn db_contracts_activate_pre_registered_user_external_provider_deserialize
 
 #[tokio::test]
 #[ignore = "requires the contract test database"]
-async fn db_contracts_approve_event_refund_request_deserializes() -> Result<()> {
+async fn db_contracts_queue_event_refund_request_approval_deserializes() -> Result<()> {
     let db = contract_tests_db()?;
-    let purchase = db
-        .approve_event_refund_request(
-            organizer_id(),
+    let event_purchase_id = db
+        .get_event_purchase_id_for_refund(
             group_id(),
             ticketed_event_id(),
             refund_approve_buyer_id(),
-            "re_contract_refund_approve".to_string(),
-            Some("Approved by contract test".to_string()),
         )
         .await?;
-
-    assert_eq!(purchase.alliance_id, alliance_id());
-    assert_eq!(purchase.event_id, ticketed_event_id());
-    assert!(purchase.finalized_now);
-    assert_eq!(purchase.user_id, refund_approve_buyer_id());
+    db.queue_event_refund_request_approval(
+        organizer_id(),
+        group_id(),
+        event_purchase_id,
+        Some("Approved by contract test".to_string()),
+    )
+    .await?;
 
     Ok(())
 }
 
 #[tokio::test]
 #[ignore = "requires the contract test database"]
-async fn db_contracts_begin_event_refund_approval_deserializes() -> Result<()> {
+async fn db_contracts_get_refund_purchase_summary_deserializes() -> Result<()> {
     let db = contract_tests_db()?;
-    let summary = db
-        .begin_event_refund_approval(group_id(), ticketed_event_id(), refund_begin_buyer_id())
-        .await?;
+    let summary = db.get_event_purchase_summary(refund_begin_purchase_id()).await?;
 
     assert_eq!(summary.amount_minor, 2500);
     assert_eq!(summary.currency_code, "USD");
@@ -207,13 +204,7 @@ async fn db_contracts_complete_free_event_purchase_deserializes() -> Result<()> 
 async fn db_contracts_event_purchase_refund_lifecycle_deserializes() -> Result<()> {
     // Start a durable manual refund from deterministic contract data
     let db = contract_tests_db()?;
-    let refund = db
-        .ensure_event_purchase_refund_started(
-            refund_lifecycle_purchase_id(),
-            PaymentProvider::Stripe,
-            EventPurchaseRefundKind::RefundRequestApproval,
-        )
-        .await?;
+    let refund = db.get_event_purchase_refund(refund_lifecycle_purchase_id()).await?;
 
     // Check required fields and initial workflow metadata
     assert_eq!(refund.amount_minor, 2500);
@@ -226,7 +217,6 @@ async fn db_contracts_event_purchase_refund_lifecycle_deserializes() -> Result<(
     );
     assert_eq!(refund.kind, EventPurchaseRefundKind::RefundRequestApproval);
     assert_eq!(refund.payment_provider, PaymentProvider::Stripe);
-    assert!(refund.started_now);
     assert_eq!(refund.status, EventPurchaseRefundStatus::ProviderPending);
 
     // Check optional provider outcome fields are absent initially
@@ -241,6 +231,7 @@ async fn db_contracts_event_purchase_refund_lifecycle_deserializes() -> Result<(
             refund.event_purchase_refund_id,
             refund.idempotency_key.clone(),
             "re_contract_refund_lifecycle".to_string(),
+            None,
         )
         .await?;
 
@@ -260,7 +251,9 @@ async fn db_contracts_event_purchase_refund_lifecycle_deserializes() -> Result<(
     let refund = db
         .record_event_purchase_refund_succeeded(
             refund.event_purchase_refund_id,
+            refund.idempotency_key.clone(),
             "re_contract_refund_lifecycle".to_string(),
+            None,
         )
         .await?;
 
@@ -1426,12 +1419,14 @@ async fn db_contracts_reconcile_event_purchase_for_checkout_session_deserializes
 #[ignore = "requires the contract test database"]
 async fn db_contracts_reject_event_refund_request_deserializes() -> Result<()> {
     let db = contract_tests_db()?;
+    let event_purchase_id = db
+        .get_event_purchase_id_for_refund(group_id(), ticketed_event_id(), refund_reject_buyer_id())
+        .await?;
     let purchase = db
         .reject_event_refund_request(
             organizer_id(),
             group_id(),
-            ticketed_event_id(),
-            refund_reject_buyer_id(),
+            event_purchase_id,
             Some("Rejected by contract test".to_string()),
         )
         .await?;

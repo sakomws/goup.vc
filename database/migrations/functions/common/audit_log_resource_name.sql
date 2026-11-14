@@ -8,10 +8,10 @@ returns text as $$
             join session_proposal sp using (session_proposal_id)
             where cs.cfs_submission_id = p_resource_id
         )
-        when 'community' then (
+        when 'alliance' then (
             select c.display_name
-            from community c
-            where c.community_id = p_resource_id
+            from alliance c
+            where c.alliance_id = p_resource_id
         )
         when 'event' then (
             select e.name

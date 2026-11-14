@@ -130,7 +130,7 @@ pub(crate) async fn prepare_page(db: &DynDB, user: &auth::User) -> Result<Page, 
 
     Ok(Page {
         preferences,
-        show_community_team_section: user.belongs_to_community_team.unwrap_or(false),
+        show_community_team_section: user.belongs_to_alliance_team.unwrap_or(false),
         show_group_team_section: user.belongs_to_any_group_team.unwrap_or(false),
     })
 }

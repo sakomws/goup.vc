@@ -11,7 +11,7 @@ select plan(3);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '1b0e0000-0000-0000-0000-000000000001'
+\set allianceID '1b0e0000-0000-0000-0000-000000000001'
 \set conversationDeletedGroupID '1b0e0000-0000-0000-0000-000000000002'
 \set conversationID '1b0e0000-0000-0000-0000-000000000003'
 \set deletedGroupID '1b0e0000-0000-0000-0000-000000000004'
@@ -24,8 +24,8 @@ select plan(3);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- Another user
 select fx_user(:'otherUserID');
@@ -34,13 +34,13 @@ select fx_user(:'otherUserID');
 select fx_user(:'userID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group contacted by the user
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Deleted group contacted by the user
-select fx_group(:'deletedGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'deletedGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'active', false,
     'deleted', true
 ));

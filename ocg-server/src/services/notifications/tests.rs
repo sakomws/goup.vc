@@ -18,6 +18,8 @@ use super::{
     Notification, NotificationKind, NotificationsManager, PgNotificationsManager,
 };
 
+const TEST_BASE_URL: &str = "https://example.test";
+
 #[tokio::test]
 async fn test_notifications_manager_enqueue() {
     // Setup identifiers and data structures
@@ -25,7 +27,6 @@ async fn test_notifications_manager_enqueue() {
     let expected_recipients = vec![recipient];
     let notification = NewNotification {
         attachments: vec![],
-        group_ids: vec![],
         kind: NotificationKind::EmailVerification,
         recipients: expected_recipients.clone(),
         template_data: Some(sample_email_verification_template_data()),
@@ -1004,7 +1005,6 @@ fn test_delivery_worker_prepare_content_footer_points_to_notification_preference
     // Setup notification
     let notification = Notification {
         attachments: vec![],
-        delivery_claimed_at: sample_delivery_claimed_at(),
         email: "user@example.test".to_string(),
         kind: NotificationKind::EventPublished,
         notification_id: Uuid::new_v4(),
@@ -1012,7 +1012,7 @@ fn test_delivery_worker_prepare_content_footer_points_to_notification_preference
     };
 
     // Prepare content
-    let (_, body) = DeliveryWorker::prepare_content(&notification, TEST_BASE_URL).unwrap();
+    let (_, body) = DeliveryWorker::prepare_content(&notification).unwrap();
 
     // Check the footer explains where preferences are managed
     let body = body.split_whitespace().collect::<Vec<_>>().join(" ");

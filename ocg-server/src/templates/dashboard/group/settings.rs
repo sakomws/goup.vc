@@ -5,7 +5,10 @@ use serde::{Deserialize, Serialize};
 
 use uuid::Uuid;
 
-use crate::types::group::{GroupCategory, GroupFull, GroupParentOption, GroupRegion};
+use crate::types::{
+    group::{GroupCategory, GroupFull, GroupParentOption, GroupRegion},
+    utm::GroupUtmSettings,
+};
 
 // Pages templates.
 
@@ -17,6 +20,8 @@ pub(crate) struct UpdatePage {
     pub can_manage_settings: bool,
     /// List of available group categories.
     pub categories: Vec<GroupCategory>,
+    /// UTM mediums accepted by every group.
+    pub default_utm_mediums: Vec<String>,
     /// Group information.
     pub group: GroupFull,
     /// Groups that can be selected as a parent chapter.
@@ -25,6 +30,8 @@ pub(crate) struct UpdatePage {
     pub payments_enabled: bool,
     /// List of available regions.
     pub regions: Vec<GroupRegion>,
+    /// Group-specific UTM allowlists.
+    pub utm: GroupUtmSettings,
 }
 
 impl UpdatePage {

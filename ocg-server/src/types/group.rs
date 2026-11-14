@@ -167,9 +167,6 @@ pub struct GroupFull {
     /// When the group was created.
     #[serde(with = "chrono::serde::ts_seconds")]
     pub created_at: DateTime<Utc>,
-    /// Whether the group collects paid tickets outside the platform.
-    #[serde(default)]
-    pub external_payments_enabled: bool,
     /// Unique identifier for the group.
     pub group_id: Uuid,
     /// URL to the group logo.
@@ -391,6 +388,7 @@ pub struct GroupRegion {
 #[strum(serialize_all = "kebab-case")]
 pub enum GroupRole {
     Admin,
+    CheckInManager,
     EventsManager,
     #[default]
     Viewer,

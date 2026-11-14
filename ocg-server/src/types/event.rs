@@ -605,6 +605,25 @@ impl EventFull {
         ids
     }
 
+    /// Groups submitted talks and their speakers by call-for-speakers track.
+    pub fn talks_by_track(&self) -> BTreeMap<String, Vec<Session>> {
+        let mut talks = BTreeMap::new();
+        for session in self.sessions.values().flatten() {
+            if session.cfs_submission_id.is_none() || session.speakers.is_empty() {
+                continue;
+            }
+            let tracks = if session.tracks.is_empty() {
+                vec!["General".to_string()]
+            } else {
+                session.tracks.clone()
+            };
+            for track in tracks {
+                talks.entry(track).or_insert_with(Vec::new).push(session.clone());
+            }
+        }
+        talks
+    }
+
     /// Returns active ticket types shown in the tickets modal, sorted by price.
     pub fn visible_ticket_types(&self) -> Vec<&EventTicketType> {
         let mut ticket_types: Vec<_> = self
@@ -986,6 +1005,19 @@ pub enum EventKind {
     Virtual,
 }
 
+/// Origin of an event admission offer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, strum::Display)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum EventAdmissionOfferSource {
+    /// Offer created after an organizer approved an attendance request.
+    Approval,
+    /// Offer created directly by an organizer.
+    OrganizerInvitation,
+    /// Offer created after promotion from a ticket waiting list.
+    Waitlist,
+}
+
 /// Registration ownership for an event.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, strum::Display)]
 #[serde(rename_all = "snake_case")]
@@ -1063,6 +1095,9 @@ pub struct Session {
     pub session_id: Uuid,
     /// Session speakers.
     pub speakers: Vec<Speaker>,
+    /// Submission tracks assigned to this talk.
+    #[serde(default)]
+    pub tracks: Vec<String>,
     /// Session start time in UTC.
     #[serde(with = "chrono::serde::ts_seconds")]
     pub starts_at: DateTime<Utc>,

@@ -16,7 +16,7 @@ use crate::{
     db::DynDB,
     handlers::{
         error::HandlerError,
-        extractors::{CurrentUser, SelectedCommunityId, SelectedGroupId, ValidatedForm},
+        extractors::{CurrentUser, SelectedAllianceId, SelectedGroupId, ValidatedForm},
     },
     router::serde_qs_config,
     services::payments::{CompleteRefundRecoveryInput, DynPaymentsManager},
@@ -41,7 +41,7 @@ const PARTIAL_URL: &str = "/dashboard/group/refunds";
 #[instrument(skip_all, err)]
 pub(crate) async fn list_page(
     CurrentUser(user): CurrentUser,
-    SelectedCommunityId(community_id): SelectedCommunityId,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
     SelectedGroupId(group_id): SelectedGroupId,
     State(db): State<DynDB>,
     RawQuery(raw_query): RawQuery,
@@ -49,7 +49,7 @@ pub(crate) async fn list_page(
     // Prepare list page content
     let (filters, template) = prepare_list_page(
         &db,
-        community_id,
+        alliance_id,
         group_id,
         user.user_id,
         raw_query.as_deref().unwrap_or_default(),
@@ -99,7 +99,7 @@ pub(crate) async fn complete_refund_recovery(
 /// Prepares the refunds list page and filters for the group dashboard.
 pub(crate) async fn prepare_list_page(
     db: &DynDB,
-    community_id: Uuid,
+    alliance_id: Uuid,
     group_id: Uuid,
     user_id: Uuid,
     raw_query: &str,
@@ -111,7 +111,7 @@ pub(crate) async fn prepare_list_page(
     // Load refund data and action permissions
     let (can_manage_events, results) = tokio::try_join!(
         db.user_has_group_permission(
-            &community_id,
+            &alliance_id,
             &group_id,
             &user_id,
             GroupPermission::EventsWrite

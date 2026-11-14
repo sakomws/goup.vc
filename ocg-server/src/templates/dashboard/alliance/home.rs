@@ -11,7 +11,7 @@ use crate::{
         auth::User,
         dashboard::{
             alliance::{
-                analytics, book_exchange, create, email_templates, event_categories,
+                analytics, book_exchange, contact, create, email_templates, event_categories,
                 group_categories, groups, intentional_dating, landscape, members,
                 partner_integrations, regions, settings, team,
             },
@@ -51,6 +51,8 @@ pub(crate) struct Page {
 pub(crate) enum Content {
     /// Analytics page.
     Analytics(Box<analytics::Page>),
+    /// Alliance contact page.
+    Contact(contact::Page),
     /// Alliance create page.
     CreateAlliance(create::Page),
     /// Email templates page.
@@ -87,6 +89,11 @@ impl Content {
     /// Check if the content is the analytics page.
     fn is_analytics(&self) -> bool {
         matches!(self, Content::Analytics(_))
+    }
+
+    /// Check if the content is the contact page.
+    fn is_contact(&self) -> bool {
+        matches!(self, Content::Contact(_))
     }
 
     /// Check if the content is the alliance create page.
@@ -169,6 +176,7 @@ impl std::fmt::Display for Content {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Content::Analytics(template) => write!(f, "{}", template.render()?),
+            Content::Contact(template) => write!(f, "{}", template.render()?),
             Content::CreateAlliance(template) => write!(f, "{}", template.render()?),
             Content::EmailTemplates(template) => write!(f, "{}", template.render()?),
             Content::EventCategories(template) => write!(f, "{}", template.render()?),
@@ -198,6 +206,8 @@ pub(crate) enum Tab {
     /// Analytics tab (default).
     #[default]
     Analytics,
+    /// Alliance contact tab.
+    Contact,
     /// Alliance create tab.
     CreateAlliance,
     /// Email templates tab.

@@ -12,7 +12,7 @@ select plan(7);
 -- ============================================================================
 
 \set actorID '1b0b0000-0000-0000-0000-000000000009'
-\set communityID '1b0b0000-0000-0000-0000-000000000001'
+\set allianceID '1b0b0000-0000-0000-0000-000000000001'
 \set conversationClosedID '1b0b0000-0000-0000-0000-000000000002'
 \set conversationDeletedUserID '1b0b0000-0000-0000-0000-000000000003'
 \set conversationOtherGroupID '1b0b0000-0000-0000-0000-000000000004'
@@ -28,8 +28,8 @@ select plan(7);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- Actor replying on behalf of the group
 select fx_user(:'actorID');
@@ -38,16 +38,16 @@ select fx_user(:'actorID');
 select fx_user(:'userID');
 
 -- Event category
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group owning the conversations
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Another group
-select fx_group(:'otherGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'otherGroupID', :'allianceID', :'groupCategoryID');
 
 -- Event the conversation started from
 select fx_event(:'eventID', :'groupID', :'eventCategoryID', jsonb_build_object('published', true));
@@ -143,7 +143,7 @@ select results_eq(
 -- Should record the reply in the audit log at the message time
 select results_eq(
     format(
-        $$select action, actor_user_id, community_id, details, event_id, group_id, resource_type,
+        $$select action, actor_user_id, alliance_id, details, event_id, group_id, resource_type,
             created_at = (select max(m.created_at) from inbox_message m where m.inbox_conversation_id = resource_id)
         from audit_log
         where resource_id = %L::uuid$$,
@@ -152,7 +152,7 @@ select results_eq(
     format(
         $$values ('inbox_reply_sent', %L::uuid, %L::uuid, '{}'::jsonb, %L::uuid, %L::uuid, 'inbox_conversation', true)$$,
         :'actorID',
-        :'communityID',
+        :'allianceID',
         :'eventID',
         :'groupID'
     ),

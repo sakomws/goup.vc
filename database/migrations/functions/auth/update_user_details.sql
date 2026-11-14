@@ -27,10 +27,6 @@ begin
         mentorship_individuals = coalesce((p_user->>'mentorship_individuals')::boolean, false),
         mentorship_note = nullif(p_user->>'mentorship_note', ''),
         mentorship_price = nullif(p_user->>'mentorship_price', ''),
-        optional_notifications_enabled = coalesce(
-            (p_user->>'optional_notifications_enabled')::boolean,
-            optional_notifications_enabled
-        ),
         photo_url = nullif(p_user->>'photo_url', ''),
         phone_country_code = nullif(p_user->>'phone_country_code', ''),
         phone_number = nullif(p_user->>'phone_number', ''),

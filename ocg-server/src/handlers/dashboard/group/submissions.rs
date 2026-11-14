@@ -3,7 +3,10 @@
 use askama::Template;
 use axum::{
     extract::{Path, RawQuery, State},
-    http::StatusCode,
+    http::{
+        HeaderMap, StatusCode,
+        header::{CONTENT_DISPOSITION, CONTENT_TYPE},
+    },
     response::{Html, IntoResponse},
 };
 use tracing::{instrument, warn};
@@ -20,7 +23,7 @@ use crate::{
     services::notifications::{DynNotificationsManager, NewNotification, NotificationKind},
     templates::{
         dashboard::group::submissions::{
-            self, CfsLabelFilterOption, CfsSubmissionUpdate, CfsSubmissionsFilters,
+            self, CfsLabelFilterOption, CfsSubmission, CfsSubmissionUpdate, CfsSubmissionsFilters,
         },
         notifications::CfsSubmissionUpdated,
     },
@@ -28,6 +31,7 @@ use crate::{
         pagination::{self, NavigationLinks},
         permissions::GroupPermission,
     },
+    validation::MAX_PAGINATION_LIMIT,
 };
 
 #[cfg(test)]
@@ -104,6 +108,50 @@ pub(crate) async fn list_page(
     Ok(Html(template.render()?))
 }
 
+/// Downloads all event submissions with speaker and proposal details.
+#[instrument(skip_all, err)]
+pub(crate) async fn download_csv(
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(event_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let event = db.get_event_summary(alliance_id, group_id, event_id).await?;
+    let mut submissions = Vec::new();
+    let mut offset = 0;
+
+    loop {
+        let filters = CfsSubmissionsFilters {
+            label_ids: None,
+            limit: Some(MAX_PAGINATION_LIMIT),
+            offset: Some(offset),
+            sort: Some("created-asc".to_string()),
+        };
+        let output = db.list_event_cfs_submissions(event_id, &filters).await?;
+        let page_len = output.submissions.len();
+        submissions.extend(output.submissions);
+        offset += page_len;
+        if page_len == 0 || offset >= output.total {
+            break;
+        }
+    }
+
+    let csv = build_submissions_csv(&submissions)?;
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, "text/csv; charset=utf-8".parse().unwrap());
+    headers.insert(
+        CONTENT_DISPOSITION,
+        format!(
+            "attachment; filename=\"event-{}-submissions.csv\"",
+            event.slug
+        )
+        .parse()
+        .unwrap(),
+    );
+
+    Ok((headers, csv))
+}
+
 // Action handlers.
 
 /// Updates a CFS submission for an event.
@@ -167,4 +215,89 @@ pub(crate) async fn update(
         StatusCode::NO_CONTENT,
         [("HX-Trigger", "refresh-event-submissions")],
     ))
+}
+
+fn csv_safe(value: &str) -> String {
+    let trimmed = value.trim_start();
+    if trimmed.starts_with(['=', '+', '-', '@', '\t', '\r']) {
+        format!("'{value}")
+    } else {
+        value.to_string()
+    }
+}
+
+fn build_submissions_csv(submissions: &[CfsSubmission]) -> anyhow::Result<Vec<u8>> {
+    let mut writer = csv::WriterBuilder::new()
+        .terminator(csv::Terminator::Any(b'\n'))
+        .from_writer(Vec::new());
+    writer.write_record([
+        "submission_id",
+        "status",
+        "track",
+        "talk_title",
+        "talk_description",
+        "duration_minutes",
+        "level",
+        "speaker_name",
+        "speaker_username",
+        "speaker_title",
+        "speaker_company",
+        "co_speaker_name",
+        "co_speaker_username",
+        "average_rating",
+        "ratings_count",
+        "submitted_at",
+    ])?;
+
+    for submission in submissions {
+        let speaker = &submission.speaker;
+        let co_speaker = submission.session_proposal.co_speaker.as_ref();
+        let tracks = submission
+            .labels
+            .iter()
+            .map(|label| label.name.as_str())
+            .collect::<Vec<_>>()
+            .join("; ");
+        writer.write_record([
+            submission.cfs_submission_id.to_string(),
+            csv_safe(&submission.status_name),
+            csv_safe(&tracks),
+            csv_safe(&submission.session_proposal.title),
+            csv_safe(submission.session_proposal.description.as_deref().unwrap_or_default()),
+            submission
+                .session_proposal
+                .duration_minutes
+                .map(|value| value.to_string())
+                .unwrap_or_default(),
+            csv_safe(
+                submission
+                    .session_proposal
+                    .session_proposal_level_name
+                    .as_deref()
+                    .unwrap_or_default(),
+            ),
+            csv_safe(speaker.name.as_deref().unwrap_or(&speaker.username)),
+            csv_safe(&speaker.username),
+            csv_safe(speaker.title.as_deref().unwrap_or_default()),
+            csv_safe(speaker.company.as_deref().unwrap_or_default()),
+            csv_safe(
+                co_speaker
+                    .and_then(|speaker| speaker.name.as_deref())
+                    .unwrap_or_default(),
+            ),
+            csv_safe(
+                co_speaker
+                    .map(|speaker| speaker.username.as_str())
+                    .unwrap_or_default(),
+            ),
+            submission
+                .average_rating
+                .map(|value| format!("{value:.2}"))
+                .unwrap_or_default(),
+            submission.ratings_count.to_string(),
+            submission.created_at.to_rfc3339(),
+        ])?;
+    }
+
+    Ok(writer.into_inner().map_err(csv::IntoInnerError::into_error)?)
 }

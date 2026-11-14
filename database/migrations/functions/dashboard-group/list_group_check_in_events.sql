@@ -10,19 +10,19 @@ returns json as $$
             epoch_seconds(e.starts_at) as starts_at,
             e.timezone,
 
-            coalesce(e.logo_url, g.logo_url, c.logo_url) as logo_url,
+            coalesce(e.logo_url, g.logo_url, a.logo_url) as logo_url,
             nullif(concat_ws(
                 ', ',
                 e.venue_name,
                 e.venue_city,
-                e.venue_state_name,
+                e.venue_state,
                 e.venue_country_name
             ), '') as location,
 
             e.starts_at <= current_timestamp as in_progress
         from event e
         join "group" g using (group_id)
-        join community c using (community_id)
+        join alliance a using (alliance_id)
         where e.group_id = p_group_id
         and e.canceled = false
         and e.deleted = false

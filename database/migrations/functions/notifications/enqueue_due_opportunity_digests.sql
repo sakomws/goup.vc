@@ -17,7 +17,7 @@ begin
     end if;
 
     for v_due in
-        select s.*, u.email_verified, u.optional_notifications_enabled,
+        select s.*, u.email_verified,
             (select site.theme from site order by site.created_at desc limit 1) as theme
         from opportunity_saved_search s
         join "user" u using (user_id)
@@ -72,7 +72,7 @@ begin
         get diagnostics v_inserted = row_count;
 
         if v_inserted = 1 and v_match_count > 0
-           and v_due.email_verified and v_due.optional_notifications_enabled then
+           and v_due.email_verified then
             perform enqueue_notification(
                 'opportunity-digest',
                 jsonb_build_object(

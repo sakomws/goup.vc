@@ -5,7 +5,7 @@ create or replace function claim_event_purchase_refund(
 returns jsonb as $$
 declare
     v_claim_id uuid := gen_random_uuid();
-    v_community_id uuid;
+    v_alliance_id uuid;
     v_event_id uuid;
     v_provider_payment_reference text;
     v_refund event_purchase_refund;
@@ -56,11 +56,11 @@ begin
 
     -- Resolve the purchase and notification context required by the worker
     select
-        g.community_id,
+        g.alliance_id,
         ep.event_id,
         ep.provider_payment_reference
     into
-        v_community_id,
+        v_alliance_id,
         v_event_id,
         v_provider_payment_reference
     from event_purchase ep
@@ -76,7 +76,7 @@ begin
     return jsonb_strip_nulls(
         jsonb_build_object(
             'amount_minor', v_refund.amount_minor,
-            'community_id', v_community_id,
+            'alliance_id', v_alliance_id,
             'currency_code', v_refund.currency_code,
             'event_id', v_event_id,
             'event_purchase_id', v_refund.event_purchase_id,

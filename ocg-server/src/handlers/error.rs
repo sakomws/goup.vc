@@ -7,7 +7,7 @@ use axum::{
 };
 use tokio_postgres::error::SqlState;
 
-use crate::types::search::FilterError;
+use crate::{services::inbox::InboxError, types::search::FilterError};
 
 #[cfg(test)]
 mod tests;
@@ -96,6 +96,15 @@ impl From<FilterError> for HandlerError {
         match err {
             FilterError::Parse(e) => HandlerError::Other(anyhow::anyhow!(e)),
             FilterError::Validation(report) => HandlerError::Validation(report),
+        }
+    }
+}
+
+impl From<InboxError> for HandlerError {
+    fn from(err: InboxError) -> Self {
+        match err {
+            InboxError::Other(err) => Self::from(err),
+            InboxError::Rejected(message) => Self::Database(message),
         }
     }
 }

@@ -11,7 +11,7 @@ select plan(5);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID 'c0030000-0000-0000-0000-000000000001'
+\set allianceID 'c0030000-0000-0000-0000-000000000001'
 \set conversationEventID 'c0030000-0000-0000-0000-000000000002'
 \set conversationUserID 'c0030000-0000-0000-0000-000000000003'
 \set crossGroupEventID 'c0030000-0000-0000-0000-000000000004'
@@ -26,23 +26,23 @@ select plan(5);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- User deleted by the user deletion scenario
 select fx_user(:'userID');
 
 -- Event category
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group owning the conversations
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Group used by the cross-group event scenario
-select fx_group(:'otherGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'otherGroupID', :'allianceID', :'groupCategoryID');
 
 -- Event referenced by the cross-group event scenario
 select fx_event(:'crossGroupEventID', :'groupID', :'eventCategoryID');

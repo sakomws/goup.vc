@@ -6,6 +6,11 @@
 {# Header -#}
 {{ dashboard::page_title(title = "Submissions",
 description = "Review and manage call for speakers submissions.") -}}
+<div class="mt-4 flex justify-end">
+  <a href="/dashboard/group/events/{{ event_id }}/submissions.csv"
+     class="btn-primary-outline btn-mini"
+     download>Export CSV</a>
+</div>
 {# End header -#}
 
 {# Refresh trigger -#}

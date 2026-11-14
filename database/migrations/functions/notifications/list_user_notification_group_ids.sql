@@ -51,18 +51,18 @@ returns uuid[] as $$
 
             union
 
-            select ec.group_id
+            select ec.cohost_group_id
             from user_events ue
             join event e using (event_id)
             join event_cohost ec on ec.event_id = e.event_id
             where e.deleted = false
-            and ec.event_cohost_status_id = 'approved'
+            and ec.status = 'approved'
         )
-    -- Keep groups that are available in an active community
+    -- Keep groups that are available in an active alliance
     select coalesce(array_agg(g.group_id order by g.group_id), '{}'::uuid[])
     from connected_groups cg
     join "group" g using (group_id)
-    join community c using (community_id)
+    join alliance c using (alliance_id)
     where c.active = true
     and g.active = true
     and g.deleted = false;

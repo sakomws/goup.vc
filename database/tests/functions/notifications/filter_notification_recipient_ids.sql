@@ -13,7 +13,7 @@ select plan(3);
 
 \set acceptedUserID1 '9e030000-0000-0000-0000-000000000001'
 \set acceptedUserID2 '9e030000-0000-0000-0000-000000000002'
-\set communityID '9e030000-0000-0000-0000-000000000003'
+\set allianceID '9e030000-0000-0000-0000-000000000003'
 \set groupCategoryID '9e030000-0000-0000-0000-000000000004'
 \set groupID '9e030000-0000-0000-0000-000000000005'
 \set mutedUserID '9e030000-0000-0000-0000-000000000006'
@@ -24,14 +24,14 @@ select plan(3);
 -- SEED DATA
 -- ============================================================================
 
--- Community containing the muted group
-select fx_community(:'communityID');
+-- Alliance containing the muted group
+select fx_alliance(:'allianceID');
 
 -- Group category containing the muted group
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group named by group-mutable notification filters
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- First accepted user used to prove order is preserved
 select fx_user(:'acceptedUserID1');

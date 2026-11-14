@@ -1,6 +1,7 @@
 //! Shared templates for the group and user dashboard inboxes.
 
 use askama::Template;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
@@ -22,7 +23,7 @@ const DELETED_USER_LABEL: &str = "Deleted user";
 
 /// Notice rendered when an inbox action succeeded but the thread could not be
 /// loaded again.
-#[derive(Debug, Clone, Template)]
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "dashboard/inbox_action_done.html")]
 pub(crate) struct ActionDoneNotice {
     /// Message describing the completed action.
@@ -32,7 +33,7 @@ pub(crate) struct ActionDoneNotice {
 }
 
 /// Inbox conversation thread page.
-#[derive(Debug, Clone, Template)]
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "dashboard/inbox_conversation.html")]
 pub(crate) struct ConversationPage {
     /// Conversation thread to render.
@@ -84,7 +85,7 @@ impl ConversationPage {
 }
 
 /// Inbox conversations list page.
-#[derive(Debug, Clone, Template)]
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "dashboard/inbox_list.html")]
 pub(crate) struct ListPage {
     /// Conversations in the current page.
@@ -127,7 +128,7 @@ impl ListPage {
 // Types.
 
 /// Dashboard rendering an inbox.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum InboxScope {
     /// Group dashboard inbox answered by the group team.
     Group,

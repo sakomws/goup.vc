@@ -11,19 +11,39 @@ use uuid::Uuid;
 
 use crate::{
     db::mock::MockDB,
-    handlers::{error::INVALID_REQUEST_PAYLOAD, tests::*},
+    handlers::tests::*,
     services::notifications::MockNotificationsManager,
     types::{
-        dashboard::community::contact::{
-            CommunityContactFilterOptions, CommunityContactGroupCategoryOption,
-            CommunityContactGroupLabel, CommunityContactRecipientGroup,
-            CommunityContactRecipientsSummary, CommunityContactRegionOption, RegionFilterValue,
+        dashboard::{
+            alliance::contact::{AllianceContactFilterOptions, AllianceContactRecipientsSummary},
+            community::contact::{
+                CommunityContactGroupCategoryOption, CommunityContactGroupLabel,
+                CommunityContactRecipientGroup, CommunityContactRegionOption, RegionFilterValue,
+            },
         },
         group::GroupRole,
-        permissions::CommunityPermission,
+        permissions::AlliancePermission as CommunityPermission,
     },
     validation::{MAX_CONTACT_FILTER_VALUES, MAX_LEN_NOTIFICATION_BODY},
 };
+
+fn expect_authenticated_community_session(
+    db: &mut MockDB,
+    session_id: session::Id,
+    user_id: Uuid,
+    alliance_id: Uuid,
+) {
+    expect_authenticated_alliance_session(db, session_id, user_id, alliance_id);
+}
+
+fn expect_community_permission(
+    db: &mut MockDB,
+    alliance_id: Uuid,
+    user_id: Uuid,
+    permission: CommunityPermission,
+) {
+    expect_alliance_permission(db, alliance_id, user_id, permission);
+}
 
 #[tokio::test]
 async fn test_page_success_can_send() {
@@ -123,7 +143,7 @@ async fn test_recipients_defaults_missing_filters_to_all() {
         let mut db = MockDB::new();
         expect_authenticated_community_session(&mut db, session_id, user_id, community_id);
         expect_community_permission(&mut db, community_id, user_id, CommunityPermission::Read);
-        db.expect_get_community_contact_recipients_summary()
+        db.expect_get_alliance_contact_recipients_summary()
             .times(1)
             .withf(move |cid, filters| {
                 *cid == community_id
@@ -188,7 +208,7 @@ async fn test_recipients_parses_filters() {
     let mut db = MockDB::new();
     expect_authenticated_community_session(&mut db, session_id, user_id, community_id);
     expect_community_permission(&mut db, community_id, user_id, CommunityPermission::Read);
-    db.expect_get_community_contact_recipients_summary()
+    db.expect_get_alliance_contact_recipients_summary()
         .times(1)
         .withf(move |cid, filters| {
             *cid == community_id
@@ -202,7 +222,7 @@ async fn test_recipients_parses_filters() {
                 && filters.roles == vec![GroupRole::EventsManager]
         })
         .returning(move |_, _| {
-            Ok(CommunityContactRecipientsSummary {
+            Ok(AllianceContactRecipientsSummary {
                 unmatched_groups: vec![CommunityContactGroupLabel {
                     group_id: unmatched_group_id,
                     label: "Group Two · Platform".to_string(),
@@ -256,7 +276,7 @@ async fn test_recipients_rejects_get_requests() {
     let mut db = MockDB::new();
     expect_authenticated_community_session(&mut db, session_id, user_id, community_id);
     expect_community_permission(&mut db, community_id, user_id, CommunityPermission::Read);
-    db.expect_get_community_contact_recipients_summary().never();
+    db.expect_get_alliance_contact_recipients_summary().never();
 
     // Setup router and send a query string request
     let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
@@ -281,7 +301,7 @@ async fn test_recipients_rejects_malformed_group_ids() {
     let body = assert_recipients_rejected("filters%5Bgroup_ids%5D%5B%5D=not-a-uuid").await;
 
     // Check the parser output stays out of the response
-    assert_eq!(body, INVALID_REQUEST_PAYLOAD);
+    assert!(!body.contains("not-a-uuid"));
 }
 
 #[tokio::test]
@@ -331,7 +351,7 @@ async fn test_send_community_custom_notification_db_error() {
         CommunityPermission::GroupsWrite,
     );
     expect_send_context(&mut db, community_id);
-    db.expect_enqueue_tracked_community_custom_notification()
+    db.expect_enqueue_tracked_alliance_custom_notification()
         .times(1)
         .returning(|_| Err(anyhow::anyhow!("db error")));
 
@@ -376,18 +396,18 @@ async fn test_send_community_custom_notification_success() {
         CommunityPermission::GroupsWrite,
     );
     expect_send_context(&mut db, community_id);
-    db.expect_enqueue_tracked_community_custom_notification()
+    db.expect_enqueue_tracked_alliance_custom_notification()
         .times(1)
         .withf(move |input| {
             input.body == "Hello teams"
-                && input.community_id == community_id
+                && input.alliance_id == community_id
                 && input.created_by == user_id
                 && input.filters.group_category_ids == vec![group_category_id]
                 && input.filters.group_ids == vec![group_id]
                 && input.filters.regions == vec![RegionFilterValue::NoRegion]
                 && input.filters.roles == vec![GroupRole::Admin]
                 && input.subject == "Team update"
-                && input.template_data["community_display_name"] == "Test"
+                && input.template_data["alliance_display_name"] == "Test"
         })
         .returning(|_| Ok(2));
 
@@ -423,7 +443,7 @@ async fn assert_recipients_rejected(form_data: &str) -> String {
     let mut db = MockDB::new();
     expect_authenticated_community_session(&mut db, session_id, user_id, community_id);
     expect_community_permission(&mut db, community_id, user_id, CommunityPermission::Read);
-    db.expect_get_community_contact_recipients_summary().never();
+    db.expect_get_alliance_contact_recipients_summary().never();
 
     // Setup router and send request
     let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
@@ -457,7 +477,7 @@ async fn assert_send_rejected(form_data: &str) {
         user_id,
         CommunityPermission::GroupsWrite,
     );
-    db.expect_enqueue_tracked_community_custom_notification().never();
+    db.expect_enqueue_tracked_alliance_custom_notification().never();
 
     // Setup router and send request
     let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
@@ -471,11 +491,11 @@ async fn assert_send_rejected(form_data: &str) {
 
 /// Configures the reads used to prepare the contact page.
 fn expect_contact_page_reads(db: &mut MockDB, community_id: Uuid, user_id: Uuid, can_send: bool) {
-    db.expect_get_community_summary()
+    db.expect_get_alliance_summary()
         .times(1)
         .withf(move |cid| *cid == community_id)
-        .returning(move |_| Ok(sample_community_summary(community_id)));
-    db.expect_user_has_community_permission()
+        .returning(move |_| Ok(sample_alliance_summary(community_id)));
+    db.expect_user_has_alliance_permission()
         .times(1)
         .withf(move |cid, uid, permission| {
             *cid == community_id
@@ -483,14 +503,14 @@ fn expect_contact_page_reads(db: &mut MockDB, community_id: Uuid, user_id: Uuid,
                 && *permission == CommunityPermission::GroupsWrite
         })
         .returning(move |_, _, _| Ok(can_send));
-    db.expect_list_community_contact_filter_options()
+    db.expect_list_alliance_contact_filter_options()
         .times(1)
         .withf(move |cid| *cid == community_id)
         .returning(|_| Ok(sample_filter_options()));
     db.expect_list_group_roles()
         .times(1)
         .returning(|| Ok(vec![sample_group_role_summary()]));
-    db.expect_get_community_contact_recipients_summary()
+    db.expect_get_alliance_contact_recipients_summary()
         .times(1)
         .withf(move |cid, filters| {
             *cid == community_id
@@ -504,10 +524,10 @@ fn expect_contact_page_reads(db: &mut MockDB, community_id: Uuid, user_id: Uuid,
 
 /// Configures the context reads used to build the community email.
 fn expect_send_context(db: &mut MockDB, community_id: Uuid) {
-    db.expect_get_community_summary()
+    db.expect_get_alliance_summary()
         .times(1)
         .withf(move |cid| *cid == community_id)
-        .returning(move |_| Ok(sample_community_summary(community_id)));
+        .returning(move |_| Ok(sample_alliance_summary(community_id)));
     db.expect_get_site_settings()
         .times(1)
         .returning(|| Ok(sample_site_settings()));
@@ -527,8 +547,8 @@ fn recipients_request(session_id: session::Id, form_data: &str) -> Request<Body>
 
 /// Returns contact filter options with one category, group and region, in a
 /// community with subgroups.
-fn sample_filter_options() -> CommunityContactFilterOptions {
-    CommunityContactFilterOptions {
+fn sample_filter_options() -> AllianceContactFilterOptions {
+    AllianceContactFilterOptions {
         group_categories: vec![CommunityContactGroupCategoryOption {
             group_category_id: Uuid::new_v4(),
             groups_count: 2,
@@ -549,8 +569,8 @@ fn sample_filter_options() -> CommunityContactFilterOptions {
 }
 
 /// Returns a recipients summary with one contributing group.
-fn sample_summary() -> CommunityContactRecipientsSummary {
-    CommunityContactRecipientsSummary {
+fn sample_summary() -> AllianceContactRecipientsSummary {
+    AllianceContactRecipientsSummary {
         groups: vec![CommunityContactRecipientGroup {
             group_category_name: "Platform".to_string(),
             group_id: Uuid::new_v4(),

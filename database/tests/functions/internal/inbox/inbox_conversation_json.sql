@@ -11,7 +11,7 @@ select plan(7);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '1b060000-0000-0000-0000-000000000001'
+\set allianceID '1b060000-0000-0000-0000-000000000001'
 \set conversationDeletedEventID '1b060000-0000-0000-0000-000000000002'
 \set conversationDeletedUserID '1b060000-0000-0000-0000-000000000003'
 \set conversationID '1b060000-0000-0000-0000-000000000004'
@@ -34,10 +34,10 @@ select plan(7);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID', jsonb_build_object(
-    'display_name', 'Inbox Json Community',
-    'name', 'inbox-json-community'
+-- Alliance
+select fx_alliance(:'allianceID', jsonb_build_object(
+    'display_name', 'Inbox Json Alliance',
+    'name', 'inbox-json-alliance'
 ));
 
 -- Group team member replying to the user
@@ -53,13 +53,13 @@ select fx_user(:'userID', jsonb_build_object(
 ));
 
 -- Event category
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Active group with a pretty slug
-select fx_group(:'groupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'name', 'Inbox Json Group',
     'slug', 'inbox-json-group',
     'slug_pretty', 'inbox-json'
@@ -170,8 +170,8 @@ select is(
 select is(
     inbox_conversation_json(:'conversationID'::uuid)::jsonb,
     format('{
-        "community_display_name": "Inbox Json Community",
-        "community_name": "inbox-json-community",
+        "alliance_display_name": "Inbox Json Alliance",
+        "alliance_name": "inbox-json-alliance",
         "created_at": 1894269600,
         "group_id": "%s",
         "group_name": "Inbox Json Group",

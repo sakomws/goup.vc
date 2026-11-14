@@ -4,7 +4,7 @@ returns json as $$
     select coalesce(
         json_agg(
             json_strip_nulls(json_build_object(
-                'community_display_name', c.display_name,
+                'alliance_display_name', c.display_name,
                 'group_id', g.group_id,
                 'name', g.name,
 
@@ -15,7 +15,7 @@ returns json as $$
         '[]'::json
     )
     from "group" g
-    join community c on c.community_id = g.community_id
+    join alliance c on c.alliance_id = g.alliance_id
     where g.group_id = any(list_user_notification_group_ids(p_user_id))
     and not exists (
         select 1

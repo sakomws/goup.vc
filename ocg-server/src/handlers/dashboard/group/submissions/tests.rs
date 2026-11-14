@@ -123,6 +123,14 @@ async fn test_list_page_success() {
     assert!(!bytes.is_empty());
 }
 
+#[test]
+fn csv_safe_prevents_spreadsheet_formula_execution() {
+    for value in ["=HYPERLINK(\"https://evil.test\")", "+1", "-1", "@cmd"] {
+        assert!(super::csv_safe(value).starts_with('\''));
+    }
+    assert_eq!(super::csv_safe("Safe title"), "Safe title");
+}
+
 #[tokio::test]
 async fn test_list_page_with_pagination_params() {
     // Setup identifiers and data structures

@@ -3,7 +3,7 @@
 use askama::Template;
 use axum::{
     Json,
-    extract::{Form, Path, State},
+    extract::{Form, Path, RawQuery, State},
     http::{HeaderMap, HeaderValue, StatusCode, Uri, header::CACHE_CONTROL},
     response::{Html, IntoResponse, Redirect},
 };
@@ -26,6 +26,7 @@ use crate::{
     },
     router::{CACHE_CONTROL_NO_STORE, PUBLIC_SHARED_CACHE_HEADERS},
     services::{
+        inbox::{DynInboxManager, StartConversationInput},
         notifications::{
             DynNotificationsManager,
             enqueue::enqueue_event_attendance_cancellation_notifications,
@@ -39,14 +40,16 @@ use crate::{
     templates::{
         PageId,
         auth::User,
-        event::{CfsModal, CheckInPage, Page, SponsorReportPage, SurveyPage},
+        event::{CfsModal, CheckInPage, ContactModal, Page, SponsorReportPage, SurveyPage},
     },
     types::{
         event::{EventAttendanceStatus, EventFull, EventRegistrationAttribution, EventSummary},
+        inbox::InboxMessageInput,
         payments::{EventPurchaseStatus, EventTicketType, PreparedEventCheckout},
         questionnaire::{
             OptionalQuestionnaireAnswersForm, QuestionnaireAnswers, QuestionnaireQuestion,
         },
+        utm::UtmParams,
     },
     validation::{
         MAX_LEN_DESCRIPTION_SHORT, MAX_LEN_EVENT_LABELS_PER_SUBMISSION, MAX_LEN_S,
@@ -210,6 +213,31 @@ pub(crate) async fn cfs_modal(
     };
 
     Ok(Html(template.render()?))
+}
+
+/// Renders the public event contact-organizers modal.
+#[instrument(skip_all, err)]
+pub(crate) async fn contact_modal(
+    auth_session: AuthSession,
+    State(db): State<DynDB>,
+    AllianceId(alliance_id): AllianceId,
+    Path((_, event_id)): Path<(String, Uuid)>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let user_id = auth_session.user.as_ref().map(|user| user.user_id);
+    let user = User::from_session(auth_session).await?;
+
+    let Some(context) = db.get_inbox_contact_context(alliance_id, event_id, user_id).await? else {
+        return Err(HandlerError::NotFound);
+    };
+
+    Ok(Html(
+        ContactModal {
+            user,
+            context: Some(context),
+            sent_inbox_conversation_id: None,
+        }
+        .render()?,
+    ))
 }
 
 /// Renders an authenticated post-event survey for an eligible audience member.
@@ -653,6 +681,35 @@ pub(crate) async fn request_refund(
     ))
 }
 
+/// Starts a conversation with the organizers of an event.
+#[instrument(skip_all, err)]
+pub(crate) async fn send_contact_message(
+    CurrentUser(user): CurrentUser,
+    auth_session: AuthSession,
+    State(inbox_manager): State<DynInboxManager>,
+    AllianceId(alliance_id): AllianceId,
+    Path((_, event_id)): Path<(String, Uuid)>,
+    ValidatedForm(input): ValidatedForm<InboxMessageInput>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let inbox_conversation_id = inbox_manager
+        .start_conversation(&StartConversationInput {
+            body: input.body,
+            community_id: alliance_id,
+            event_id,
+            user_id: user.user_id,
+        })
+        .await?;
+
+    Ok(Html(
+        ContactModal {
+            user: User::from_session(auth_session).await?,
+            context: None,
+            sent_inbox_conversation_id: Some(inbox_conversation_id),
+        }
+        .render()?,
+    ))
+}
+
 /// Handler for starting or resuming a checkout for a ticketed event.
 #[instrument(skip_all)]
 #[allow(clippy::too_many_arguments)]
@@ -791,17 +848,50 @@ pub(crate) async fn submit_cfs_submission(
 pub(crate) async fn track_view(
     headers: HeaderMap,
     State(activity_tracker): State<DynActivityTracker>,
+    State(db): State<DynDB>,
     State(server_cfg): State<HttpServerConfig>,
     Path(event_id): Path<Uuid>,
+    RawQuery(raw_query): RawQuery,
 ) -> Result<impl IntoResponse, HandlerError> {
     if request_matches_site(&server_cfg, &headers)? {
-        activity_tracker.track(Activity::EventView { event_id }).await?;
+        let utm = raw_query
+            .as_deref()
+            .and_then(|query| serde_qs::from_str::<EventViewQuery>(query).ok())
+            .and_then(|query| query.utm())
+            .and_then(|utm| {
+                // The allowlist lookup is performed below because this closure is synchronous.
+                Some(utm)
+            });
+        let activity = if let Some(utm) = accepted_utm_params(&db, event_id, utm).await {
+            Activity::EventViewUtm { event_id, utm }
+        } else {
+            Activity::EventView { event_id }
+        };
+        activity_tracker.track(activity).await?;
     }
 
     Ok(StatusCode::NO_CONTENT)
 }
 
 // Types.
+
+/// Raw UTM query parameters supplied by an event page.
+#[derive(Debug, Deserialize)]
+struct EventViewQuery {
+    utm_campaign: Option<String>,
+    utm_medium: Option<String>,
+    utm_source: Option<String>,
+}
+
+impl EventViewQuery {
+    fn utm(&self) -> Option<UtmParams> {
+        UtmParams::new(
+            self.utm_campaign.as_deref(),
+            self.utm_medium.as_deref(),
+            self.utm_source.as_deref(),
+        )
+    }
+}
 
 /// Free RSVP payload with optional first-touch attribution.
 #[derive(Debug, Deserialize, Validate)]
@@ -978,6 +1068,23 @@ pub(crate) struct RefundRequestInput {
 }
 
 // Helpers.
+
+/// Keeps attribution only when the published event's group accepts every value.
+async fn accepted_utm_params(
+    db: &DynDB,
+    event_id: Uuid,
+    utm: Option<UtmParams>,
+) -> Option<UtmParams> {
+    let utm = utm?;
+    match db.get_event_utm_allowlist(event_id).await {
+        Ok(Some(allowlist)) if allowlist.permits(&utm) => Some(utm),
+        Ok(_) => None,
+        Err(err) => {
+            warn!(error = %format_args!("{err:#}"), %event_id, "dropping event view UTM attribution");
+            None
+        }
+    }
+}
 
 /// Creates or reuses a pending checkout hold for the attendee.
 async fn create_checkout_hold(

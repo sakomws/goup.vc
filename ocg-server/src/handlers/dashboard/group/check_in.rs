@@ -17,7 +17,7 @@ use crate::{
     db::DynDB,
     handlers::{
         error::HandlerError,
-        extractors::{CurrentUser, SelectedCommunityId, SelectedGroupId},
+        extractors::{CurrentUser, SelectedAllianceId, SelectedGroupId},
     },
     templates::dashboard::group::check_in::ListPage,
 };
@@ -48,7 +48,7 @@ pub(crate) async fn list_page(
 #[instrument(skip_all, err)]
 pub(crate) async fn scan(
     CurrentUser(user): CurrentUser,
-    SelectedCommunityId(community_id): SelectedCommunityId,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
     SelectedGroupId(group_id): SelectedGroupId,
     State(db): State<DynDB>,
     Path(event_id): Path<Uuid>,
@@ -79,13 +79,7 @@ pub(crate) async fn scan(
 
     // Resolve and apply the atomic check-in transition
     let result = match db
-        .check_in_attendee_by_code(
-            user.user_id,
-            check_in_code,
-            community_id,
-            event_id,
-            group_id,
-        )
+        .check_in_attendee_by_code(user.user_id, check_in_code, alliance_id, event_id, group_id)
         .await
     {
         Ok(result) => result,

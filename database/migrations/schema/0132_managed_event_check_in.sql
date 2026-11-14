@@ -35,8 +35,8 @@ values ('check-in-manager', 'Check-In Manager');
 insert into group_permission (group_permission_id, display_name)
 values ('group.check-ins.write', 'Check-Ins Write');
 
--- Grant check-in management to community roles that manage groups.
-insert into community_role_group_permission (community_role_id, group_permission_id)
+-- Grant check-in management to alliance roles that manage groups.
+insert into alliance_role_group_permission (alliance_role_id, group_permission_id)
 values
     ('admin', 'group.check-ins.write'),
     ('groups-manager', 'group.check-ins.write');
@@ -49,7 +49,5 @@ values
     ('check-in-manager', 'group.read'),
     ('events-manager', 'group.check-ins.write');
 
--- Remove check-in function signatures superseded by the credential flow.
-drop function if exists check_in_event(uuid, uuid, uuid, boolean);
-drop function if exists is_event_check_in_window_open(uuid, uuid);
-drop function if exists manual_check_in_event(uuid, uuid, uuid, uuid);
+-- The public self-check-in and existing manual check-in functions remain
+-- available; managed credential scanning is additive in GOUP.

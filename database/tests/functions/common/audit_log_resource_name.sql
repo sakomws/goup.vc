@@ -12,7 +12,7 @@ select plan(14);
 -- ============================================================================
 
 \set cfsSubmissionID '1b010000-0000-0000-0000-000000000001'
-\set communityID '1b010000-0000-0000-0000-000000000002'
+\set allianceID '1b010000-0000-0000-0000-000000000002'
 \set eventCategoryID '1b010000-0000-0000-0000-000000000003'
 \set eventID '1b010000-0000-0000-0000-000000000004'
 \set groupCategoryID '1b010000-0000-0000-0000-000000000005'
@@ -29,8 +29,8 @@ select plan(14);
 -- SEED DATA
 -- ============================================================================
 
--- Community whose display name is resolved
-select fx_community(:'communityID', jsonb_build_object('display_name', 'Resource Name Community'));
+-- Alliance whose display name is resolved
+select fx_alliance(:'allianceID', jsonb_build_object('display_name', 'Resource Name Alliance'));
 
 -- User with a display name
 select fx_user(:'namedUserID', jsonb_build_object('name', 'Resource Name User', 'username', 'resource-name-named'));
@@ -39,14 +39,14 @@ select fx_user(:'namedUserID', jsonb_build_object('name', 'Resource Name User', 
 select fx_user(:'unnamedUserID', jsonb_build_object('username', 'resource-name-unnamed'));
 
 -- Event category whose name is resolved
-select fx_event_category(:'eventCategoryID', :'communityID', jsonb_build_object('name', 'Resource Name Event Category'));
+select fx_event_category(:'eventCategoryID', :'allianceID', jsonb_build_object('name', 'Resource Name Event Category'));
 
 -- Group category whose name is resolved
-select fx_group_category(:'groupCategoryID', :'communityID', jsonb_build_object('name', 'Resource Name Group Category'));
+select fx_group_category(:'groupCategoryID', :'allianceID', jsonb_build_object('name', 'Resource Name Group Category'));
 
 -- Region whose name is resolved
-insert into region (region_id, community_id, name)
-values (:'regionID', :'communityID', 'Resource Name Region');
+insert into region (region_id, alliance_id, name)
+values (:'regionID', :'allianceID', 'Resource Name Region');
 
 -- Session proposal whose title is resolved
 insert into session_proposal (
@@ -66,7 +66,7 @@ insert into session_proposal (
 );
 
 -- Group whose name is resolved
-select fx_group(:'groupID', :'communityID', :'groupCategoryID', jsonb_build_object('name', 'Resource Name Group'));
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID', jsonb_build_object('name', 'Resource Name Group'));
 
 -- Event whose name is resolved
 select fx_event(:'eventID', :'groupID', :'eventCategoryID', jsonb_build_object('name', 'Resource Name Event'));
@@ -94,11 +94,11 @@ select is(
     'Should resolve a CFS submission to its session proposal title'
 );
 
--- Should resolve a community to its display name
+-- Should resolve an alliance to its display name
 select is(
-    audit_log_resource_name('community', :'communityID'::uuid),
-    'Resource Name Community',
-    'Should resolve a community to its display name'
+    audit_log_resource_name('alliance', :'allianceID'::uuid),
+    'Resource Name Alliance',
+    'Should resolve an alliance to its display name'
 );
 
 -- Should resolve a group to its name

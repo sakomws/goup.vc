@@ -2,7 +2,7 @@
 {% import "macros/ui.html" as ui -%}
 
 {# Contact header -#}
-{{ dashboard::page_title(title = "Contact", docs_href = "/docs#/guides/community-dashboard?id=groups-contact-group-teams", description = "Send an email to the teams of the groups in this community.") -}}
+{{ dashboard::page_title(title = "Contact", description = "Send an email to the teams of the groups in this alliance.") -}}
 {# End contact header -#}
 
 {% if !can_send -%}
@@ -14,7 +14,7 @@
 <form id="community-contact-form"
       class="mt-8"
       hx-history="false"
-      hx-post="/dashboard/community/notifications"
+      hx-post="/dashboard/alliance/notifications"
       hx-trigger="confirmed"
       hx-sync="this:drop"
       hx-swap="none"
@@ -61,7 +61,7 @@
         {% if self.has_groups() -%}
           <multi-select id="community-contact-groups" labelledby="community-contact-groups-label" name="filters[group_ids]" keep-order close-on-select wrap-names max-selected="{{ crate::validation::MAX_CONTACT_FILTER_VALUES }}" placeholder="All groups" legend="Select up to {{ crate::validation::MAX_CONTACT_FILTER_VALUES }} groups.{% if filter_options.has_subgroups %} Selecting a group doesn't include its subgroups; select them too.{% endif %}" options="{{ self.group_options()|json }}"></multi-select>
         {% else -%}
-          <multi-select id="community-contact-groups" labelledby="community-contact-groups-label" name="filters[group_ids]" disabled placeholder="All groups" legend="This community has no active groups."></multi-select>
+          <multi-select id="community-contact-groups" labelledby="community-contact-groups-label" name="filters[group_ids]" disabled placeholder="All groups" legend="This alliance has no active groups."></multi-select>
         {% endif -%}
       </div>
     </div>
@@ -74,14 +74,14 @@
        class="mt-4 transition-opacity aria-busy:opacity-50"
        aria-live="polite"
        data-skip-validation="true"
-       hx-post="/dashboard/community/contact/recipients"
+       hx-post="/dashboard/alliance/contact/recipients"
        hx-params="filters[group_category_ids][],filters[group_ids][],filters[regions][],filters[roles][]"
        hx-include="#community-contact-filters"
        hx-indicator="this"
        hx-trigger="contact-filters-changed delay:300ms"
        hx-sync="this:replace"
        hx-target="this"
-       hx-swap="innerHTML">{% include "dashboard/community/contact_recipients.html" -%}</div>
+       hx-swap="innerHTML">{% include "dashboard/alliance/contact_recipients.html" -%}</div>
   {# End recipients summary -#}
 
   {# Message -#}

@@ -11,7 +11,7 @@ select plan(9);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '1b070000-0000-0000-0000-000000000001'
+\set allianceID '1b070000-0000-0000-0000-000000000001'
 \set conversationAnsweredID '1b070000-0000-0000-0000-000000000002'
 \set conversationClosedID '1b070000-0000-0000-0000-000000000003'
 \set conversationDeletedGroupID '1b070000-0000-0000-0000-000000000004'
@@ -31,10 +31,10 @@ select plan(9);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID', jsonb_build_object(
-    'display_name', 'Inbox Search Community',
-    'name', 'inbox-search-community'
+-- Alliance
+select fx_alliance(:'allianceID', jsonb_build_object(
+    'display_name', 'Inbox Search Alliance',
+    'name', 'inbox-search-alliance'
 ));
 
 -- User writing to several groups
@@ -47,19 +47,19 @@ select fx_user(:'userID', jsonb_build_object(
 select fx_user(:'otherUserID');
 
 -- Event category
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group whose inbox is listed
-select fx_group(:'groupID', :'communityID', :'groupCategoryID', jsonb_build_object('name', 'Inbox Search Group'));
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID', jsonb_build_object('name', 'Inbox Search Group'));
 
 -- Another group contacted by the user
-select fx_group(:'otherGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'otherGroupID', :'allianceID', :'groupCategoryID');
 
 -- Deleted group contacted by the user
-select fx_group(:'deletedGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'deletedGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'active', false,
     'deleted', true
 ));
@@ -223,8 +223,8 @@ select is(
 select is(
     search_inbox_conversations(:'groupID'::uuid, null, '{}'::jsonb)::jsonb->'conversations'->0,
     format('{
-        "community_display_name": "Inbox Search Community",
-        "community_name": "inbox-search-community",
+        "alliance_display_name": "Inbox Search Alliance",
+        "alliance_name": "inbox-search-alliance",
         "created_at": 1894269600,
         "group_id": "%s",
         "group_name": "Inbox Search Group",

@@ -11,7 +11,7 @@ select plan(12);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '1b0a0000-0000-0000-0000-000000000001'
+\set allianceID '1b0a0000-0000-0000-0000-000000000001'
 \set conversationAnsweredID '1b0a0000-0000-0000-0000-000000000002'
 \set conversationClosedID '1b0a0000-0000-0000-0000-000000000003'
 \set conversationDeletedGroupID '1b0a0000-0000-0000-0000-000000000004'
@@ -33,8 +33,8 @@ select plan(12);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- User who reached the daily message limit
 select fx_user(:'limitedUserID');
@@ -49,16 +49,16 @@ select fx_user(:'otherUserID');
 select fx_user(:'userID');
 
 -- Event category
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group owning the conversations
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Deleted group
-select fx_group(:'deletedGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'deletedGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'active', false,
     'deleted', true
 ));
@@ -196,7 +196,7 @@ select results_eq(
 -- Should record only the message audit row at the message time for a conversation that was not closed
 select results_eq(
     format(
-        $$select action, actor_user_id, community_id, details, event_id, group_id, resource_type,
+        $$select action, actor_user_id, alliance_id, details, event_id, group_id, resource_type,
             created_at = (select max(m.created_at) from inbox_message m where m.inbox_conversation_id = resource_id)
         from audit_log
         where resource_id = %L::uuid$$,
@@ -205,7 +205,7 @@ select results_eq(
     format(
         $$values ('inbox_message_sent', %L::uuid, %L::uuid, '{}'::jsonb, %L::uuid, %L::uuid, 'inbox_conversation', true)$$,
         :'userID',
-        :'communityID',
+        :'allianceID',
         :'eventID',
         :'groupID'
     ),
@@ -228,7 +228,7 @@ select is(
 -- Should record the message and the reopening in the audit log at the message time
 select results_eq(
     format(
-        $$select action, actor_user_id, community_id, details, event_id, group_id, resource_type,
+        $$select action, actor_user_id, alliance_id, details, event_id, group_id, resource_type,
             created_at = (select max(m.created_at) from inbox_message m where m.inbox_conversation_id = resource_id)
         from audit_log
         where resource_id = %L::uuid
@@ -240,7 +240,7 @@ select results_eq(
             ('inbox_conversation_reopened', %1$L::uuid, %2$L::uuid, '{}'::jsonb, %3$L::uuid, %4$L::uuid, 'inbox_conversation', true),
             ('inbox_message_sent', %1$L::uuid, %2$L::uuid, '{}'::jsonb, %3$L::uuid, %4$L::uuid, 'inbox_conversation', true)$$,
         :'userID',
-        :'communityID',
+        :'allianceID',
         :'eventID',
         :'groupID'
     ),

@@ -7,7 +7,7 @@ create or replace function add_inbox_group_reply(
 )
 returns json as $$
 declare
-    v_community_id uuid;
+    v_alliance_id uuid;
     v_conversation inbox_conversation;
     v_inbox_message_id uuid;
     v_now timestamptz;
@@ -47,9 +47,9 @@ begin
         v_now
     );
 
-    -- Resolve the community used by the audit row
-    select g.community_id
-    into v_community_id
+    -- Resolve the alliance used by the audit row
+    select g.alliance_id
+    into v_alliance_id
     from "group" g
     where g.group_id = p_group_id;
 
@@ -59,7 +59,7 @@ begin
         p_actor_user_id,
         'inbox_conversation',
         v_conversation.inbox_conversation_id,
-        v_community_id,
+        v_alliance_id,
         p_group_id,
         v_conversation.event_id,
         p_created_at => v_now

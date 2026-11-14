@@ -1,13 +1,15 @@
 //! Real-database contracts for the inbox manager: transactional compositions
 //! that mocks cannot prove, run by `just db-contract-tests`.
 
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
+use deadpool_postgres::{Config as DbConfig, Pool, Runtime};
+use tokio_postgres::NoTls;
 use uuid::Uuid;
 
 use crate::{
-    db::contract_tests::helpers::{contract_tests_db, contract_tests_pool},
+    db::PgDB,
     services::inbox::{InboxManager, PgInboxManager, StartConversationInput},
 };
 
@@ -67,4 +69,28 @@ async fn db_contracts_inbox_manager_commits_message_with_notification() -> Resul
     assert_eq!(recipients, vec![INBOX_ADMIN_ID, INBOX_EVENTS_MANAGER_ID]);
 
     Ok(())
+}
+
+fn contract_tests_pool() -> Result<Pool> {
+    let port = env::var("OCG_DB_PORT")
+        .unwrap_or_else(|_| "5432".to_string())
+        .parse()
+        .context("OCG_DB_PORT must be a valid port number")?;
+    let mut cfg = DbConfig::new();
+    cfg.dbname = Some(
+        env::var("OCG_DB_NAME_TESTS_CONTRACT").unwrap_or_else(|_| "ocg_tests_contract".to_string()),
+    );
+    cfg.host = Some(env::var("OCG_DB_HOST").unwrap_or_else(|_| "localhost".to_string()));
+    cfg.port = Some(port);
+    cfg.user = Some(env::var("OCG_DB_USER").unwrap_or_else(|_| "postgres".to_string()));
+    if let Ok(password) = env::var("OCG_DB_PASSWORD")
+        && !password.is_empty()
+    {
+        cfg.password = Some(password);
+    }
+    Ok(cfg.create_pool(Some(Runtime::Tokio1), NoTls)?)
+}
+
+fn contract_tests_db() -> Result<PgDB> {
+    Ok(PgDB::new(contract_tests_pool()?))
 }

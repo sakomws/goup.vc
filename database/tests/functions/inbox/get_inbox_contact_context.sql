@@ -11,8 +11,8 @@ select plan(8);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '1b080000-0000-0000-0000-000000000001'
-\set communityManagerID '1b080000-0000-0000-0000-000000000019'
+\set allianceID '1b080000-0000-0000-0000-000000000001'
+\set allianceManagerID '1b080000-0000-0000-0000-000000000019'
 \set conversationAnsweredID '1b080000-0000-0000-0000-000000000002'
 \set conversationLimitedFirstID '1b080000-0000-0000-0000-000000000003'
 \set conversationLimitedSecondID '1b080000-0000-0000-0000-000000000004'
@@ -38,11 +38,11 @@ select plan(8);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID', jsonb_build_object('name', 'inbox-contact-community'));
+-- Alliance
+select fx_alliance(:'allianceID', jsonb_build_object('name', 'inbox-contact-alliance'));
 
--- Community team member managing the groups of the community
-select fx_user(:'communityManagerID');
+-- Alliance team member managing the groups of the alliance
+select fx_user(:'allianceManagerID');
 
 -- User who reached the daily limit of new conversations
 select fx_user(:'limitedUserID');
@@ -60,20 +60,20 @@ select fx_user(:'teamViewerID');
 select fx_user(:'userID');
 
 -- Event category
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group owning the event
-select fx_group(:'groupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'name', 'Inbox Contact Group',
     'slug', 'inbox-contact-group',
     'slug_pretty', 'inbox-contact'
 ));
 
 -- Group contacted by the limited user
-select fx_group(:'otherGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'otherGroupID', :'allianceID', :'groupCategoryID');
 
 -- Published event
 select fx_event(:'eventID', :'groupID', :'eventCategoryID', jsonb_build_object(
@@ -88,9 +88,9 @@ select fx_event(:'otherEventID', :'groupID', :'eventCategoryID', jsonb_build_obj
 -- Unpublished event
 select fx_event(:'unpublishedEventID', :'groupID', :'eventCategoryID');
 
--- Accepted groups manager membership of the community manager
-insert into community_team (accepted, community_id, role, user_id)
-values (true, :'communityID', 'groups-manager', :'communityManagerID');
+-- Accepted groups manager membership of the alliance manager
+insert into alliance_team (accepted, alliance_id, role, user_id)
+values (true, :'allianceID', 'groups-manager', :'allianceManagerID');
 
 -- Accepted admin membership of the team member
 insert into group_team (accepted, group_id, role, user_id)
@@ -132,9 +132,9 @@ values (:'conversationSpamID', '2020-01-01 10:00:00+00', :'groupID', 'spam', :'s
 
 -- Should describe the event for anonymous visitors
 select is(
-    get_inbox_contact_context(:'communityID'::uuid, :'eventID'::uuid, null)::jsonb,
+    get_inbox_contact_context(:'allianceID'::uuid, :'eventID'::uuid, null)::jsonb,
     format('{
-        "community_name": "inbox-contact-community",
+        "alliance_name": "inbox-contact-alliance",
         "event_id": "%s",
         "event_name": "Inbox Contact Event",
         "event_slug": "inbox-contact-event",
@@ -146,37 +146,37 @@ select is(
     'Should describe the event for anonymous visitors'
 );
 
--- Should flag community team members with Inbox access
+-- Should flag alliance team members with Inbox access
 select is(
-    get_inbox_contact_context(:'communityID'::uuid, :'eventID'::uuid, :'communityManagerID'::uuid)::jsonb->'viewer',
+    get_inbox_contact_context(:'allianceID'::uuid, :'eventID'::uuid, :'allianceManagerID'::uuid)::jsonb->'viewer',
     '{"can_manage_inbox": true, "can_start_conversation": true, "is_blocked": false, "is_group_team_member": false}'::jsonb,
-    'Should flag community team members with Inbox access'
+    'Should flag alliance team members with Inbox access'
 );
 
 -- Should flag group team members with Inbox access
 select is(
-    get_inbox_contact_context(:'communityID'::uuid, :'eventID'::uuid, :'teamMemberID'::uuid)::jsonb->'viewer',
+    get_inbox_contact_context(:'allianceID'::uuid, :'eventID'::uuid, :'teamMemberID'::uuid)::jsonb->'viewer',
     '{"can_manage_inbox": true, "can_start_conversation": true, "is_blocked": false, "is_group_team_member": true}'::jsonb,
     'Should flag group team members with Inbox access'
 );
 
 -- Should flag group team viewers without Inbox access
 select is(
-    get_inbox_contact_context(:'communityID'::uuid, :'eventID'::uuid, :'teamViewerID'::uuid)::jsonb->'viewer',
+    get_inbox_contact_context(:'allianceID'::uuid, :'eventID'::uuid, :'teamViewerID'::uuid)::jsonb->'viewer',
     '{"can_manage_inbox": false, "can_start_conversation": true, "is_blocked": false, "is_group_team_member": true}'::jsonb,
     'Should flag group team viewers without Inbox access'
 );
 
 -- Should flag users blocked by spam reports
 select is(
-    get_inbox_contact_context(:'communityID'::uuid, :'eventID'::uuid, :'spamUserID'::uuid)::jsonb->'viewer',
+    get_inbox_contact_context(:'allianceID'::uuid, :'eventID'::uuid, :'spamUserID'::uuid)::jsonb->'viewer',
     '{"can_manage_inbox": false, "can_start_conversation": true, "is_blocked": true, "is_group_team_member": false}'::jsonb,
     'Should flag users blocked by spam reports'
 );
 
 -- Should point to the most recently active open conversation about the event
 select is(
-    get_inbox_contact_context(:'communityID'::uuid, :'eventID'::uuid, :'userID'::uuid)::jsonb->'viewer',
+    get_inbox_contact_context(:'allianceID'::uuid, :'eventID'::uuid, :'userID'::uuid)::jsonb->'viewer',
     format(
         '{"can_manage_inbox": false, "can_start_conversation": true, "is_blocked": false, "is_group_team_member": false, "open_inbox_conversation_id": "%s"}',
         :'conversationReopenedID'
@@ -186,14 +186,14 @@ select is(
 
 -- Should report users who reached the daily limit of new conversations
 select is(
-    get_inbox_contact_context(:'communityID'::uuid, :'eventID'::uuid, :'limitedUserID'::uuid)::jsonb->'viewer',
+    get_inbox_contact_context(:'allianceID'::uuid, :'eventID'::uuid, :'limitedUserID'::uuid)::jsonb->'viewer',
     '{"can_manage_inbox": false, "can_start_conversation": false, "is_blocked": false, "is_group_team_member": false}'::jsonb,
     'Should report users who reached the daily limit of new conversations'
 );
 
 -- Should return null for events that do not accept contact
 select is(
-    get_inbox_contact_context(:'communityID'::uuid, :'unpublishedEventID'::uuid, :'userID'::uuid)::jsonb,
+    get_inbox_contact_context(:'allianceID'::uuid, :'unpublishedEventID'::uuid, :'userID'::uuid)::jsonb,
     null,
     'Should return null for events that do not accept contact'
 );

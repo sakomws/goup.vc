@@ -270,6 +270,7 @@ mock! {
         )
             -> Result<crate::types::event::EventSummary>;
         async fn list_event_cfs_labels(&self, event_id: Uuid) -> Result<Vec<crate::types::event::EventCfsLabel>>;
+        async fn list_group_organizers(&self, group_id: Uuid) -> Result<Vec<crate::types::user::User>>;
         async fn get_group_full(
             &self,
             alliance_id: Uuid,
@@ -283,6 +284,7 @@ mock! {
         )
             -> Result<crate::types::group::GroupSummary>;
         async fn list_timezones(&self) -> Result<Vec<String>>;
+        async fn list_utm_mediums(&self) -> Result<Vec<String>>;
         async fn search_events(
             &self,
             filters: &crate::types::search::SearchEventsFilters,
@@ -557,6 +559,17 @@ mock! {
             region_id: Uuid,
             region: &crate::templates::dashboard::alliance::regions::RegionInput,
         ) -> Result<()>;
+        async fn get_alliance_contact_recipients_summary(
+            &self,
+            alliance_id: Uuid,
+            filters: &crate::types::dashboard::alliance::contact::AllianceContactFilters,
+        ) -> Result<
+            crate::types::dashboard::alliance::contact::AllianceContactRecipientsSummary,
+        >;
+        async fn list_alliance_contact_filter_options(
+            &self,
+            alliance_id: Uuid,
+        ) -> Result<crate::types::dashboard::alliance::contact::AllianceContactFilterOptions>;
     }
 
     #[async_trait]
@@ -681,6 +694,14 @@ mock! {
             group_id: Uuid,
             event_ids: &[Uuid],
         ) -> Result<()>;
+        async fn check_in_attendee_by_code(
+            &self,
+            actor_user_id: Uuid,
+            check_in_code: Uuid,
+            alliance_id: Uuid,
+            event_id: Uuid,
+            group_id: Uuid,
+        ) -> Result<crate::templates::dashboard::group::check_in::CheckInScanResult>;
         async fn block_group_member_linkedin(
             &self,
             actor_user_id: Uuid,
@@ -735,6 +756,11 @@ mock! {
             event_id: Uuid,
             cfs_submission_id: Uuid,
         ) -> Result<crate::templates::dashboard::group::submissions::CfsSubmissionNotificationData>;
+        async fn get_event_analytics(
+            &self,
+            group_id: Uuid,
+            event_id: Uuid,
+        ) -> Result<Option<crate::types::dashboard::group::event_analytics::EventAnalytics>>;
         async fn get_group_payment_recipient(
             &self,
             alliance_id: Uuid,
@@ -815,6 +841,12 @@ mock! {
             alliance_id: Uuid,
             group_id: Uuid,
         ) -> Result<crate::templates::dashboard::group::analytics::GroupDashboardStats>;
+        async fn get_group_utm_settings(
+            &self,
+            alliance_id: Uuid,
+            group_id: Uuid,
+        ) -> Result<crate::types::utm::GroupUtmSettings>;
+        async fn group_has_event(&self, group_id: Uuid, event_id: Uuid) -> Result<bool>;
         async fn update_group_report_public_enabled(
             &self,
             actor_user_id: Uuid,
@@ -918,6 +950,10 @@ mock! {
             group_id: Uuid,
             filters: &crate::templates::dashboard::group::events::EventsListFilters,
         ) -> Result<crate::templates::dashboard::group::events::GroupEvents>;
+        async fn list_group_check_in_events(
+            &self,
+            group_id: Uuid,
+        ) -> Result<Vec<crate::templates::dashboard::group::check_in::GroupCheckInEvent>>;
         async fn list_group_event_cohost_inbox(
             &self,
             actor_user_id: Uuid,
@@ -1124,6 +1160,11 @@ mock! {
             user_id: Uuid,
             role: &crate::types::group::GroupRole,
         ) -> Result<()>;
+        async fn list_group_refunds(
+            &self,
+            group_id: Uuid,
+            filters: &crate::templates::dashboard::group::refunds::RefundsFilters,
+        ) -> Result<crate::templates::dashboard::group::refunds::RefundsOutput>;
     }
 
     #[async_trait]
@@ -1206,6 +1247,11 @@ mock! {
             user_id: Uuid,
             session_proposal_id: Uuid,
         ) -> Result<Option<crate::db::dashboard::user::SessionProposalCoSpeakerUser>>;
+        async fn get_user_check_in_code(
+            &self,
+            event_id: Uuid,
+            user_id: Uuid,
+        ) -> Result<Option<Uuid>>;
         async fn list_session_proposal_levels(
             &self,
         ) -> Result<Vec<crate::templates::dashboard::user::session_proposals::SessionProposalLevel>>;
@@ -1219,6 +1265,10 @@ mock! {
             user_id: Uuid,
             filters: &crate::templates::dashboard::user::submissions::CfsSubmissionsFilters,
         ) -> Result<crate::templates::dashboard::user::submissions::CfsSubmissionsOutput>;
+        async fn list_user_check_in_events(
+            &self,
+            user_id: Uuid,
+        ) -> Result<Vec<crate::templates::dashboard::user::check_in::UserCheckInEvent>>;
         async fn list_user_alliance_team_invitations(
             &self,
             user_id: Uuid,
@@ -1271,6 +1321,21 @@ mock! {
             actor_user_id: Uuid,
             cfs_submission_id: Uuid,
         ) -> Result<()>;
+        async fn get_user_notification_preferences(
+            &self,
+            user_id: Uuid,
+        ) -> Result<crate::types::dashboard::user::notifications::NotificationPreferences>;
+        async fn list_user_notification_group_options(
+            &self,
+            user_id: Uuid,
+        ) -> Result<
+            Vec<crate::types::dashboard::user::notifications::NotificationGroupOption>,
+        >;
+        async fn mute_user_group_notifications(
+            &self,
+            user_id: Uuid,
+            group_id: Uuid,
+        ) -> Result<()>;
         async fn submit_event_registration_answers(
             &self,
             actor_user_id: Uuid,
@@ -1288,11 +1353,21 @@ mock! {
             actor_user_id: Uuid,
             group_id: Uuid,
         ) -> Result<()>;
+        async fn unmute_user_group_notifications(
+            &self,
+            user_id: Uuid,
+            group_id: Uuid,
+        ) -> Result<()>;
         async fn update_session_proposal(
             &self,
             actor_user_id: Uuid,
             session_proposal_id: Uuid,
             session_proposal: &crate::templates::dashboard::user::session_proposals::SessionProposalInput,
+        ) -> Result<()>;
+        async fn update_user_notification_preferences(
+            &self,
+            user_id: Uuid,
+            input: &crate::types::dashboard::user::notifications::NotificationPreferencesInput,
         ) -> Result<()>;
         async fn withdraw_cfs_submission(
             &self,
@@ -1359,6 +1434,10 @@ mock! {
             alliance_id: Uuid,
             event_id: Uuid,
         ) -> Result<crate::types::event::EventSummary>;
+        async fn get_event_utm_allowlist(
+            &self,
+            event_id: Uuid,
+        ) -> Result<Option<crate::types::utm::EventUtmAllowlist>>;
         async fn get_event_attendance(
             &self,
             alliance_id: Uuid,
@@ -1388,6 +1467,10 @@ mock! {
     impl crate::db::activity_tracker::DBActivityTracker for DB {
         async fn update_alliance_views(&self, data: Vec<(Uuid, String, u32)>) -> Result<()>;
         async fn update_event_views(&self, data: Vec<(Uuid, String, u32)>) -> Result<()>;
+        async fn update_event_views_utm(
+            &self,
+            data: Vec<(Uuid, String, String, String, String, u32)>,
+        ) -> Result<()>;
         async fn update_group_views(&self, data: Vec<(Uuid, String, u32)>) -> Result<()>;
     }
 
@@ -1917,6 +2000,10 @@ mock! {
             &self,
             notification: &crate::services::notifications::NewNotification,
         ) -> Result<()>;
+        async fn enqueue_tracked_alliance_custom_notification(
+            &self,
+            input: &crate::db::notifications::AllianceCustomNotificationEnqueue,
+        ) -> Result<usize>;
         async fn enqueue_tracked_custom_notification(
             &self,
             notification: &crate::services::notifications::NewNotification,
@@ -1963,33 +2050,102 @@ mock! {
     }
 
     #[async_trait]
-    impl crate::db::payments::DBPayments for DB {
-        async fn approve_event_refund_request(
+    impl crate::db::inbox::DBInbox for DB {
+        async fn add_inbox_group_reply(
             &self,
             actor_user_id: Uuid,
             group_id: Uuid,
+            inbox_conversation_id: Uuid,
+            body: &str,
+        ) -> Result<crate::db::inbox::PostedInboxMessage>;
+        async fn add_inbox_user_message(
+            &self,
+            actor_user_id: Uuid,
+            inbox_conversation_id: Uuid,
+            body: &str,
+        ) -> Result<crate::db::inbox::PostedInboxMessage>;
+        async fn close_inbox_conversation(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            inbox_conversation_id: Uuid,
+        ) -> Result<()>;
+        async fn count_group_open_inbox_conversations(&self, group_id: Uuid) -> Result<usize>;
+        async fn get_group_inbox_conversation(
+            &self,
+            group_id: Uuid,
+            inbox_conversation_id: Uuid,
+        ) -> Result<Option<crate::types::inbox::InboxConversation>>;
+        async fn get_inbox_contact_context(
+            &self,
+            community_id: Uuid,
             event_id: Uuid,
+            user_id: Option<Uuid>,
+        ) -> Result<Option<crate::types::inbox::InboxContactContext>>;
+        async fn get_user_inbox_conversation(
+            &self,
             user_id: Uuid,
-            provider_refund_id: String,
-            review_note: Option<String>,
-        ) -> Result<crate::db::payments::CompletedEventRefund>;
+            inbox_conversation_id: Uuid,
+        ) -> Result<Option<crate::types::inbox::InboxConversation>>;
+        async fn list_group_inbox_conversations(
+            &self,
+            group_id: Uuid,
+            filters: &crate::types::inbox::InboxConversationsFilters,
+        ) -> Result<crate::types::inbox::InboxConversationsOutput>;
+        async fn list_inbox_recipient_ids(&self, group_id: Uuid) -> Result<Vec<Uuid>>;
+        async fn list_user_inbox_conversations(
+            &self,
+            user_id: Uuid,
+            filters: &crate::types::inbox::InboxConversationsFilters,
+        ) -> Result<crate::types::inbox::InboxConversationsOutput>;
+        async fn mark_inbox_conversation_as_spam(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            inbox_conversation_id: Uuid,
+        ) -> Result<()>;
+        async fn start_inbox_conversation(
+            &self,
+            actor_user_id: Uuid,
+            community_id: Uuid,
+            event_id: Uuid,
+            body: &str,
+        ) -> Result<crate::db::inbox::StartInboxConversationResult>;
+        async fn unmark_inbox_conversation_as_spam(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            inbox_conversation_id: Uuid,
+        ) -> Result<()>;
+    }
+
+    #[async_trait]
+    impl crate::db::payments::DBPayments for DB {
         async fn attach_checkout_session_to_event_purchase(
             &self,
             event_purchase_id: Uuid,
             provider: crate::types::payments::PaymentProvider,
             checkout_session: &crate::services::payments::CheckoutSession,
         ) -> Result<()>;
-        async fn begin_event_refund_approval(
-            &self,
-            group_id: Uuid,
-            event_id: Uuid,
-            user_id: Uuid,
-        ) -> Result<crate::types::payments::EventPurchaseSummary>;
         async fn cancel_event_checkout(
             &self,
             alliance_id: Uuid,
             event_id: Uuid,
             user_id: Uuid,
+        ) -> Result<()>;
+        async fn claim_payment_job(
+            &self,
+            kind: crate::types::payments::PaymentJobKind,
+            provider: crate::types::payments::PaymentProvider,
+        ) -> Result<Option<crate::db::payments::ClaimedPaymentJob>>;
+        async fn complete_event_purchase_refund_recovery(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_purchase_refund_id: Uuid,
+            recovery_reference: String,
+            recovery_note: String,
+            notification_template_data: Option<serde_json::Value>,
         ) -> Result<()>;
         async fn complete_free_event_purchase(
             &self,
@@ -2008,12 +2164,27 @@ mock! {
             provider: crate::types::payments::PaymentProvider,
             provider_session_id: &str,
         ) -> Result<()>;
-        async fn ensure_event_purchase_refund_started(
+        async fn finalize_event_purchase_refund(
+            &self,
+            event_purchase_refund_id: Uuid,
+            claim_id: Uuid,
+            notification_template_data: serde_json::Value,
+        ) -> Result<()>;
+        async fn get_event_purchase_refund(
             &self,
             event_purchase_id: Uuid,
-            provider: crate::types::payments::PaymentProvider,
-            kind: crate::db::payments::EventPurchaseRefundKind,
         ) -> Result<crate::db::payments::EventPurchaseRefund>;
+        async fn get_event_purchase_refund_recovery_context(
+            &self,
+            group_id: Uuid,
+            event_purchase_id: Uuid,
+        ) -> Result<crate::db::payments::EventPurchaseRefundRecoveryContext>;
+        async fn get_event_purchase_id_for_refund(
+            &self,
+            group_id: Uuid,
+            event_id: Uuid,
+            user_id: Uuid,
+        ) -> Result<Uuid>;
         async fn get_event_purchase_summary(
             &self,
             event_purchase_id: Uuid,
@@ -2023,32 +2194,38 @@ mock! {
             alliance_id: Uuid,
             input: &crate::db::payments::PrepareEventCheckoutPurchaseInput,
         ) -> Result<crate::types::payments::PreparedEventCheckout>;
+        async fn queue_event_refund_request_approval(
+            &self,
+            actor_user_id: Uuid,
+            group_id: Uuid,
+            event_purchase_id: Uuid,
+            review_note: Option<String>,
+        ) -> Result<()>;
         async fn reconcile_event_purchase_for_checkout_session(
             &self,
             provider: crate::types::payments::PaymentProvider,
             provider_session_id: &str,
             provider_payment_reference: Option<String>,
         ) -> Result<crate::db::payments::ReconcileEventPurchaseResult>;
-        async fn record_automatic_refund_for_event_purchase(
-            &self,
-            event_purchase_id: Uuid,
-            provider_refund_id: String,
-        ) -> Result<()>;
-        async fn record_event_purchase_refund_failed(
-            &self,
-            event_purchase_refund_id: Uuid,
-            failure_message: String,
-        ) -> Result<()>;
         async fn record_event_purchase_refund_pending(
             &self,
             event_purchase_refund_id: Uuid,
             expected_idempotency_key: String,
             provider_refund_id: String,
+            expected_claim_id: Option<Uuid>,
         ) -> Result<crate::db::payments::EventPurchaseRefund>;
+        async fn record_payment_job_failure(
+            &self,
+            payment_job_id: Uuid,
+            claim_id: Uuid,
+            failure_message: String,
+        ) -> Result<()>;
         async fn record_event_purchase_refund_succeeded(
             &self,
             event_purchase_refund_id: Uuid,
+            expected_idempotency_key: String,
             provider_refund_id: String,
+            expected_claim_id: Option<Uuid>,
         ) -> Result<crate::db::payments::EventPurchaseRefund>;
         async fn record_event_purchase_refund_terminal_failed(
             &self,
@@ -2056,13 +2233,13 @@ mock! {
             expected_idempotency_key: String,
             provider_refund_id: String,
             failure_message: String,
+            expected_claim_id: Option<Uuid>,
         ) -> Result<()>;
         async fn reject_event_refund_request(
             &self,
             actor_user_id: Uuid,
             group_id: Uuid,
-            event_id: Uuid,
-            user_id: Uuid,
+            event_purchase_id: Uuid,
             review_note: Option<String>,
         ) -> Result<crate::db::payments::CompletedEventPurchase>;
         async fn request_event_refund(
@@ -2073,12 +2250,12 @@ mock! {
             requested_reason: Option<String>,
             notification_template_data: serde_json::Value,
         ) -> Result<()>;
-        async fn revert_event_refund_approval(
+        async fn requeue_event_purchase_refund(
             &self,
             group_id: Uuid,
-            event_id: Uuid,
-            user_id: Uuid,
+            event_purchase_id: Uuid,
         ) -> Result<()>;
+        async fn requeue_stale_payment_job_claims(&self) -> Result<i32>;
     }
 
     #[async_trait]

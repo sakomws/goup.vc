@@ -11,9 +11,9 @@ select plan(8);
 -- VARIABLES
 -- ============================================================================
 
-\set cascadeCommunityID '8a110000-0000-0000-0000-000000000001'
+\set cascadeAllianceID '8a110000-0000-0000-0000-000000000001'
 \set cascadeNotificationID '8a110000-0000-0000-0000-000000000002'
-\set communityID '8a110000-0000-0000-0000-000000000003'
+\set allianceID '8a110000-0000-0000-0000-000000000003'
 \set eventCategoryID '8a110000-0000-0000-0000-000000000004'
 \set eventID '8a110000-0000-0000-0000-000000000005'
 \set groupCategoryID '8a110000-0000-0000-0000-000000000006'
@@ -23,24 +23,24 @@ select plan(8);
 -- SEED DATA
 -- ============================================================================
 
--- Community deleted by the cascade scenario
-select fx_community(:'cascadeCommunityID');
+-- Alliance deleted by the cascade scenario
+select fx_alliance(:'cascadeAllianceID');
 
--- Community scoping the constraint scenarios
-select fx_community(:'communityID');
+-- Alliance scoping the constraint scenarios
+select fx_alliance(:'allianceID');
 
--- Community notification deleted through community cascade
-insert into custom_notification (custom_notification_id, body, community_id, subject)
-values (:'cascadeNotificationID', 'Cascade body', :'cascadeCommunityID', 'Cascade subject');
+-- Alliance notification deleted through alliance cascade
+insert into custom_notification (custom_notification_id, body, alliance_id, subject)
+values (:'cascadeNotificationID', 'Cascade body', :'cascadeAllianceID', 'Cascade subject');
 
 -- Event category of the scoped event
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
 -- Group category of the scoped group
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group scoping the constraint scenarios
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Event scoping the constraint scenarios
 select fx_event(:'eventID', :'groupID', :'eventCategoryID');
@@ -49,16 +49,16 @@ select fx_event(:'eventID', :'groupID', :'eventCategoryID');
 -- TESTS
 -- ============================================================================
 
--- Should accept community-scoped notifications
+-- Should accept alliance-scoped notifications
 select lives_ok(
     format(
         $$
-            insert into custom_notification (body, community_id, subject)
-            values ('Body', %L::uuid, 'Community scope')
+            insert into custom_notification (body, alliance_id, subject)
+            values ('Body', %L::uuid, 'Alliance scope')
         $$,
-        :'communityID'
+        :'allianceID'
     ),
-    'Should accept community-scoped notifications'
+    'Should accept alliance-scoped notifications'
 );
 
 -- Should accept event-scoped notifications
@@ -85,10 +85,10 @@ select lives_ok(
     'Should accept group-scoped notifications'
 );
 
--- Should delete community notifications when communities are deleted
+-- Should delete alliance notifications when alliances are deleted
 select lives_ok(
-    format($$delete from community where community_id = %L::uuid$$, :'cascadeCommunityID'),
-    'Should delete communities with custom notifications'
+    format($$delete from alliance where alliance_id = %L::uuid$$, :'cascadeAllianceID'),
+    'Should delete alliances with custom notifications'
 );
 select is(
     (
@@ -97,17 +97,17 @@ select is(
         where custom_notification_id = :'cascadeNotificationID'
     ),
     0,
-    'Should delete community notifications when communities are deleted'
+    'Should delete alliance notifications when alliances are deleted'
 );
 
 -- Should reject notifications with every scope
 select throws_ok(
     format(
         $$
-            insert into custom_notification (body, community_id, event_id, group_id, subject)
+            insert into custom_notification (body, alliance_id, event_id, group_id, subject)
             values ('Body', %L::uuid, %L::uuid, %L::uuid, 'Every scope')
         $$,
-        :'communityID',
+        :'allianceID',
         :'eventID',
         :'groupID'
     ),
@@ -120,10 +120,10 @@ select throws_ok(
 select throws_ok(
     format(
         $$
-            insert into custom_notification (body, community_id, group_id, subject)
+            insert into custom_notification (body, alliance_id, group_id, subject)
             values ('Body', %L::uuid, %L::uuid, 'Two scopes')
         $$,
-        :'communityID',
+        :'allianceID',
         :'groupID'
     ),
     '23514',

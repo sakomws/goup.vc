@@ -1,6 +1,6 @@
 //! UTM attribution types shared by event page view tracking and group settings.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::validation::is_valid_utm_value;
 
@@ -98,7 +98,7 @@ impl EventUtmAllowlist {
 }
 
 /// UTM values a group defines for the page views of its events.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct GroupUtmSettings {
     /// Accepted `utm_campaign` values.
     pub campaigns: Vec<String>,

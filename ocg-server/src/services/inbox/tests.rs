@@ -10,10 +10,10 @@ use crate::{
         inbox::{PostedInboxMessage, StartInboxConversationConflict, StartInboxConversationResult},
         mock::MockDB,
     },
+    services::notifications::NotificationKind,
     templates::notifications::{InboxMessageReceived, InboxReplyReceived},
     types::{
         inbox::{InboxConversation, InboxMessage, InboxMessageKind},
-        notifications::NotificationKind,
         tests::{sample_inbox_conversation, sample_site_settings, sample_template_user},
     },
 };

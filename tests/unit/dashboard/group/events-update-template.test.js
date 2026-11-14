@@ -111,19 +111,19 @@ describe("dashboard group event update template", () => {
 
     // Assert the analytics tab is the last option and button, without HTMX attributes.
     expect(template).to.include(
-      '{% if show_waitlist_tab -%} {{ event_form::tab_option(section = "waitlist", label = "Waitlist") -}} {% endif -%} {{ event_form::tab_option(section = "analytics", label = "Analytics") -}} </select>',
+      '{{ event_form::tab_option(section = "analytics", label = "Analytics") -}}',
     );
     expect(template).to.include(
-      '{% endif -%} {{ event_form::tab_button(section = "analytics", icon = "charts", label = "Analytics") -}} </ul>',
+      '{{ event_form::tab_button(section = "analytics", icon = "charts", label = "Analytics") -}}',
     );
 
     // Assert the loader lives after the waitlist tab, outside the inert form wrapper.
     const inertFormIndex = template.indexOf('<div class="inert-form"');
-    const formEndIndex = template.indexOf("{# End Hosts & Speakers Tab -#} </div> </div>");
+    const formEndIndex = template.indexOf("{# End Hosts & Speakers Tab -#}");
     const analyticsIndex = template.indexOf('<div data-content="analytics"');
     expect(inertFormIndex).to.be.greaterThan(-1);
     expect(formEndIndex).to.be.greaterThan(inertFormIndex);
-    expect(analyticsIndex).to.be.greaterThan(template.indexOf("{# End Waitlist Tab -#}"));
+    expect(analyticsIndex).to.be.greaterThan(template.indexOf("{# End Growth & Finances Tab -#}"));
     expect(analyticsIndex).to.be.greaterThan(formEndIndex);
     expect(template).to.include(
       '<p id="analytics-status" class="sr-only" role="status"></p> <div id="analytics-content" data-analytics-url="/dashboard/group/events/{{ event.event_id }}/analytics" data-analytics-state="idle">',
@@ -163,5 +163,17 @@ describe("dashboard group event update template", () => {
     expect(template).to.include('<div class="inert-form"');
     expect(template).to.include('<div data-content="details">');
     expect(template).to.not.include("lg:border-b-0");
+  });
+
+  it("submits organizer selection explicitly without affecting cohosts", async () => {
+    const template = normalizeWhitespace(await loadTemplate());
+
+    expect(template).to.include('id="event-organizers-selector"');
+    expect(template).to.include('selected-users="{{ event.organizers|json }}"');
+    expect(template).to.include('available-users="{{ team_members|json }}"');
+    expect(template).to.include(
+      '<input type="hidden" name="organizers_present" value="true">',
+    );
+    expect(template).to.include('data-content="cohosts"');
   });
 });

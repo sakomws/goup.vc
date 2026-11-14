@@ -17,10 +17,11 @@ use crate::{
         inbox::{InboxError, MockInboxManager},
         notifications::MockNotificationsManager,
     },
+    templates::dashboard::DASHBOARD_PAGINATION_LIMIT,
     types::{
-        dashboard::DASHBOARD_PAGINATION_LIMIT,
         inbox::{InboxConversationStatus, InboxConversationsOutput},
         permissions::GroupPermission,
+        tests::{sample_inbox_conversation, sample_inbox_conversation_summary},
     },
 };
 

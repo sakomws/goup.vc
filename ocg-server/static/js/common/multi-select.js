@@ -1,5 +1,4 @@
-import { html, nothing } from "lit";
-import { repeat } from "lit/directives/repeat.js";
+import { html, nothing, repeat } from "/static/vendor/js/lit-all.v3.3.1.min.js";
 import { ComboboxController } from "/static/js/common/combobox.js";
 import { DropdownPlacementController } from "/static/js/common/dropdown-placement.js";
 import { LitWrapper } from "/static/js/common/lit-wrapper.js";

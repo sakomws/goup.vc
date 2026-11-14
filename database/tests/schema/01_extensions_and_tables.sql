@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(82);
+select plan(89);
 
 -- ============================================================================
 -- TESTS
@@ -75,6 +75,9 @@ select has_table('gtm_agent_draft');
 select has_table('gtm_lead');
 select has_table('gtm_lead_activity');
 select has_table('images');
+select has_table('inbox_conversation');
+select has_table('inbox_conversation_status');
+select has_table('inbox_message');
 select has_table('legacy_event_host');
 select has_table('legacy_event_speaker');
 select has_table('meeting');
@@ -82,6 +85,7 @@ select has_table('meeting_auto_end_check_outcome');
 select has_table('meeting_provider');
 select has_table('notification');
 select has_table('notification_attachment');
+select has_table('notification_category');
 select has_table('notification_kind');
 select has_table('notification_template_data');
 select has_table('payment_job');
@@ -95,6 +99,8 @@ select has_table('session_proposal_status');
 select has_table('session_speaker');
 select has_table('site');
 select has_table('user');
+select has_table('user_group_notification_mute');
+select has_table('user_notification_opt_out');
 
 -- ============================================================================
 -- CLEANUP

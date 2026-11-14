@@ -9,12 +9,14 @@ use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use cached::cached;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use tokio_postgres::types::Json;
 use tracing::instrument;
 use uuid::Uuid;
 
 use crate::{
     db::{PgClient, PgExecutor},
     services::notifications::{Attachment, NewNotification, Notification},
+    types::dashboard::alliance::contact::AllianceContactFilters,
 };
 
 /// Trait that defines database operations used to manage notifications.
@@ -51,6 +53,12 @@ pub(crate) trait DBNotifications {
 
     /// Enqueues a notification to be delivered.
     async fn enqueue_notification(&self, notification: &NewNotification) -> Result<()>;
+
+    /// Enqueues and tracks an alliance Contact notification atomically.
+    async fn enqueue_tracked_alliance_custom_notification(
+        &self,
+        input: &AllianceCustomNotificationEnqueue,
+    ) -> Result<usize>;
 
     /// Enqueues and tracks a custom notification atomically.
     async fn enqueue_tracked_custom_notification(
@@ -291,6 +299,27 @@ where
         Ok(())
     }
 
+    #[instrument(skip(self, input), err)]
+    async fn enqueue_tracked_alliance_custom_notification(
+        &self,
+        input: &AllianceCustomNotificationEnqueue,
+    ) -> Result<usize> {
+        let count: i32 = self
+            .fetch_scalar_one(
+                "select enqueue_tracked_alliance_custom_notification($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, $5::text, $6::text)",
+                &[
+                    &input.alliance_id,
+                    &input.created_by,
+                    &Json(&input.filters),
+                    &Json(&input.template_data),
+                    &input.subject,
+                    &input.body,
+                ],
+            )
+            .await?;
+        Ok(usize::try_from(count)?)
+    }
+
     #[instrument(skip(self, notification, tracking), err)]
     async fn enqueue_tracked_custom_notification(
         &self,
@@ -525,6 +554,16 @@ where
 
         Ok(())
     }
+}
+
+/// Data passed to the atomic alliance Contact enqueue function.
+pub(crate) struct AllianceCustomNotificationEnqueue {
+    pub(crate) alliance_id: Uuid,
+    pub(crate) body: String,
+    pub(crate) created_by: Uuid,
+    pub(crate) filters: AllianceContactFilters,
+    pub(crate) subject: String,
+    pub(crate) template_data: serde_json::Value,
 }
 
 /// Metadata used to track a custom notification audit entry.

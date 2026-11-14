@@ -11,7 +11,7 @@ select plan(2);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '1b0d0000-0000-0000-0000-000000000001'
+\set allianceID '1b0d0000-0000-0000-0000-000000000001'
 \set conversationID '1b0d0000-0000-0000-0000-000000000002'
 \set groupCategoryID '1b0d0000-0000-0000-0000-000000000003'
 \set groupID '1b0d0000-0000-0000-0000-000000000004'
@@ -22,20 +22,20 @@ select plan(2);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- User who wrote to the group
 select fx_user(:'userID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group owning the conversation
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Another group
-select fx_group(:'otherGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'otherGroupID', :'allianceID', :'groupCategoryID');
 
 -- Conversation of the group
 insert into inbox_conversation (inbox_conversation_id, group_id, user_id)

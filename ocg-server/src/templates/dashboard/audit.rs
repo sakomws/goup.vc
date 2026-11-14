@@ -299,7 +299,7 @@ const AUDIT_ACTION_DEFINITIONS: &[AuditActionDefinition] = &[
     },
     AuditActionDefinition {
         label: "Group external payments updated",
-        scopes: COMMUNITY_GROUP_SCOPES,
+        scopes: ALLIANCE_GROUP_SCOPES,
         value: "group_external_payments_updated",
     },
     AuditActionDefinition {

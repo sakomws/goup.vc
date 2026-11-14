@@ -28,14 +28,15 @@ use crate::{
     config::EmailConfig,
     db::DynDB,
     templates::notifications::{
-        AllianceTeamInvitation, CfsSubmissionUpdated, CoffeeMeetSuggestion, DistributionContentDue,
-        EmailVerification, EventAttendanceCanceled, EventCanceled, EventCohostInvitation,
-        EventCustom, EventInvitation, EventPublished, EventRefundApproved, EventRefundRejected,
-        EventRefundRequested, EventReminder, EventRescheduled, EventSeriesCanceled,
-        EventSeriesPublished, EventSurveyNotification, EventWaitlistJoined, EventWaitlistLeft,
-        EventWaitlistPromoted, EventWelcome, GroupCustom, GroupTeamInvitation, GroupWelcome,
-        IntentionalDatingIntroduction, MockInterviewMatched, OpportunityDigest,
-        SessionProposalCoSpeakerInvitation, SiteOnboarding, SpeakerSeriesWelcome, SpeakerWelcome,
+        AllianceCustom, AllianceTeamInvitation, CfsSubmissionUpdated, CoffeeMeetSuggestion,
+        DistributionContentDue, EmailVerification, EventAttendanceCanceled, EventCanceled,
+        EventCohostInvitation, EventCustom, EventInvitation, EventPublished, EventRefundApproved,
+        EventRefundRejected, EventRefundRequested, EventReminder, EventRescheduled,
+        EventSeriesCanceled, EventSeriesPublished, EventSurveyNotification, EventWaitlistJoined,
+        EventWaitlistLeft, EventWaitlistPromoted, EventWelcome, GroupCustom, GroupTeamInvitation,
+        GroupWelcome, InboxMessageReceived, InboxReplyReceived, IntentionalDatingIntroduction,
+        MockInterviewMatched, OpportunityDigest, SessionProposalCoSpeakerInvitation,
+        SiteOnboarding, SpeakerSeriesWelcome, SpeakerWelcome,
     },
 };
 
@@ -374,6 +375,12 @@ impl DeliveryWorker {
             .ok_or_else(|| anyhow!("missing template data"))?;
 
         let (subject, body) = match notification.kind {
+            NotificationKind::AllianceCustom => {
+                let template: AllianceCustom = serde_json::from_value(template_data)?;
+                let subject = template.subject.clone();
+                let body = template.render()?;
+                (subject, body)
+            }
             NotificationKind::AllianceTeamInvitation => {
                 let subject = "You have been invited to join a alliance team".to_string();
                 let template: AllianceTeamInvitation = serde_json::from_value(template_data)?;
@@ -540,6 +547,18 @@ impl DeliveryWorker {
             NotificationKind::GroupWelcome => {
                 let subject = "Welcome to the group".to_string();
                 let template: GroupWelcome = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::InboxMessageReceived => {
+                let template: InboxMessageReceived = serde_json::from_value(template_data)?;
+                let subject = format!("New inbox message for {}", template.group_name);
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::InboxReplyReceived => {
+                let template: InboxReplyReceived = serde_json::from_value(template_data)?;
+                let subject = format!("{} replied to your message", template.group_name);
                 let body = template.render()?;
                 (subject, body)
             }
@@ -807,6 +826,8 @@ pub(crate) struct Notification {
 #[serde(rename_all = "kebab-case")]
 #[strum(serialize_all = "kebab-case")]
 pub(crate) enum NotificationKind {
+    /// Notification authored from the alliance Contact tab.
+    AllianceCustom,
     /// Notification for a CFS submission update.
     CfsSubmissionUpdated,
     /// Notification for a `CoffeeMeet` member suggestion.
@@ -864,6 +885,10 @@ pub(crate) enum NotificationKind {
     GroupTeamInvitation,
     /// Notification welcoming a new group member.
     GroupWelcome,
+    /// Notification for a user message sent to a group inbox.
+    InboxMessageReceived,
+    /// Notification for a group reply sent to a user.
+    InboxReplyReceived,
     /// Notification for an admin-curated intentional dating introduction.
     IntentionalDatingIntroduction,
     /// Notification for a mock interview match.

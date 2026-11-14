@@ -58,7 +58,7 @@ use crate::{
         notifications::{DynEmailSender, LettreEmailSender, PgNotificationsManager},
         payments::{
             DynPaymentsManager, DynPaymentsProvider, PgPaymentsManager, build_payments_provider,
-            start_refund_workers,
+            start_payment_workers,
         },
         realtime::{DiscoveryRealtime, configure as configure_discovery_realtime},
         recording_publishing::RecordingPublishingManager,
@@ -155,9 +155,9 @@ async fn main() -> Result<()> {
     let activity_tracker = setup_activity_tracker(db.clone(), &background_tasks);
     let notifications_manager = setup_notifications_manager(&cfg, db.clone(), &background_tasks)?;
     let payments_provider = build_payments_provider(cfg.payments.as_ref());
-    let refund_workers_db = db.clone() as DynDB;
-    start_refund_workers(
-        &refund_workers_db,
+    let payment_workers_db = db.clone() as DynDB;
+    start_payment_workers(
+        &payment_workers_db,
         notifications_manager.clone(),
         payments_provider.as_ref(),
         cfg.server.clone(),
@@ -415,6 +415,7 @@ async fn run_server(
         payments_cfg,
         payments_manager,
         notifications_manager,
+        None,
         server_cfg,
     )
     .await?;

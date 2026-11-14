@@ -72,8 +72,8 @@ begin
                 json_agg(
                     (
                         jsonb_strip_nulls(jsonb_build_object(
-                            'community_display_name', c.display_name,
-                            'community_name', c.name,
+                            'alliance_display_name', c.display_name,
+                            'alliance_name', c.name,
                             'created_at', epoch_seconds(p.created_at),
                             'group_id', g.group_id,
                             'group_name', g.name,
@@ -105,7 +105,7 @@ begin
             ) as conversations
             from paged p
             join "group" g on g.group_id = p.group_id
-            join community c on c.community_id = g.community_id
+            join alliance c on c.alliance_id = g.alliance_id
             left join event e on e.event_id = p.event_id
             left join "user" u on u.user_id = p.user_id
             cross join lateral (

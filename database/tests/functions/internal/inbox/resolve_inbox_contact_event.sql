@@ -13,7 +13,7 @@ select plan(9);
 
 \set canceledEventID '1b020000-0000-0000-0000-000000000001'
 \set cohostGroupID '1b020000-0000-0000-0000-000000000002'
-\set communityID '1b020000-0000-0000-0000-000000000003'
+\set allianceID '1b020000-0000-0000-0000-000000000003'
 \set deletedEventID '1b020000-0000-0000-0000-000000000004'
 \set deletedGroupEventID '1b020000-0000-0000-0000-000000000005'
 \set deletedGroupID '1b020000-0000-0000-0000-000000000006'
@@ -23,40 +23,44 @@ select plan(9);
 \set groupID '1b020000-0000-0000-0000-000000000010'
 \set inactiveGroupEventID '1b020000-0000-0000-0000-000000000011'
 \set inactiveGroupID '1b020000-0000-0000-0000-000000000012'
-\set otherCommunityID '1b020000-0000-0000-0000-000000000013'
+\set otherAllianceID '1b020000-0000-0000-0000-000000000013'
 \set pastEventID '1b020000-0000-0000-0000-000000000014'
 \set unpublishedEventID '1b020000-0000-0000-0000-000000000015'
+\set cohostActorID '1b020000-0000-0000-0000-000000000016'
 
 -- ============================================================================
 -- SEED DATA
 -- ============================================================================
 
--- Community owning the events
-select fx_community(:'communityID');
+-- Alliance owning the events
+select fx_alliance(:'allianceID');
 
--- Community used by the cross-community scenario
-select fx_community(:'otherCommunityID');
+-- Alliance used by the cross-alliance scenario
+select fx_alliance(:'otherAllianceID');
 
 -- Event category
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Active group owning the events
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Active group co-hosting the published event
-select fx_group(:'cohostGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'cohostGroupID', :'allianceID', :'groupCategoryID');
+
+-- User who approved the co-host
+select fx_user(:'cohostActorID');
 
 -- Deleted group
-select fx_group(:'deletedGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'deletedGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'active', false,
     'deleted', true
 ));
 
 -- Inactive group
-select fx_group(:'inactiveGroupID', :'communityID', :'groupCategoryID', jsonb_build_object('active', false));
+select fx_group(:'inactiveGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object('active', false));
 
 -- Published event co-hosted by another group
 select fx_event(:'eventID', :'groupID', :'eventCategoryID', jsonb_build_object('published', true));
@@ -87,8 +91,22 @@ select fx_event(:'pastEventID', :'groupID', :'eventCategoryID', jsonb_build_obje
 select fx_event(:'unpublishedEventID', :'groupID', :'eventCategoryID');
 
 -- Approved co-host of the published event
-insert into event_cohost (event_id, group_id, event_cohost_status_id, approved_at)
-values (:'eventID', :'cohostGroupID', 'approved', current_timestamp);
+insert into event_cohost (
+    cohost_group_id,
+    decided_at,
+    decided_by_user_id,
+    event_id,
+    requested_by_user_id,
+    status
+)
+values (
+    :'cohostGroupID',
+    current_timestamp,
+    :'cohostActorID',
+    :'eventID',
+    :'cohostActorID',
+    'approved'
+);
 
 -- ============================================================================
 -- TESTS
@@ -96,58 +114,58 @@ values (:'eventID', :'cohostGroupID', 'approved', current_timestamp);
 
 -- Should resolve a canceled event
 select results_eq(
-    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'communityID', :'canceledEventID'),
+    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'allianceID', :'canceledEventID'),
     format($$values (%L::uuid, %L::uuid)$$, :'canceledEventID', :'groupID'),
     'Should resolve a canceled event'
 );
 
 -- Should resolve a co-hosted event to its owning group
 select results_eq(
-    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'communityID', :'eventID'),
+    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'allianceID', :'eventID'),
     format($$values (%L::uuid, %L::uuid)$$, :'eventID', :'groupID'),
     'Should resolve a co-hosted event to its owning group'
 );
 
 -- Should resolve a past event
 select results_eq(
-    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'communityID', :'pastEventID'),
+    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'allianceID', :'pastEventID'),
     format($$values (%L::uuid, %L::uuid)$$, :'pastEventID', :'groupID'),
     'Should resolve a past event'
 );
 
 -- Should skip a deleted event
 select is_empty(
-    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'communityID', :'deletedEventID'),
+    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'allianceID', :'deletedEventID'),
     'Should skip a deleted event'
 );
 
 -- Should skip an event of a deleted group
 select is_empty(
-    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'communityID', :'deletedGroupEventID'),
+    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'allianceID', :'deletedGroupEventID'),
     'Should skip an event of a deleted group'
 );
 
 -- Should skip an event of an inactive group
 select is_empty(
-    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'communityID', :'inactiveGroupEventID'),
+    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'allianceID', :'inactiveGroupEventID'),
     'Should skip an event of an inactive group'
 );
 
--- Should skip an event of another community
+-- Should skip an event of another alliance
 select is_empty(
-    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'otherCommunityID', :'eventID'),
-    'Should skip an event of another community'
+    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'otherAllianceID', :'eventID'),
+    'Should skip an event of another alliance'
 );
 
 -- Should skip an unknown event
 select is_empty(
-    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'communityID', :'groupID'),
+    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'allianceID', :'groupID'),
     'Should skip an unknown event'
 );
 
 -- Should skip an unpublished event
 select is_empty(
-    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'communityID', :'unpublishedEventID'),
+    format($$select * from resolve_inbox_contact_event(%L::uuid, %L::uuid)$$, :'allianceID', :'unpublishedEventID'),
     'Should skip an unpublished event'
 );
 

@@ -12,7 +12,7 @@ select plan(14);
 -- ============================================================================
 
 \set cohostGroupID '1b090000-0000-0000-0000-000000000001'
-\set communityID '1b090000-0000-0000-0000-000000000002'
+\set allianceID '1b090000-0000-0000-0000-000000000002'
 \set conflictConversationID '1b090000-0000-0000-0000-000000000003'
 \set conflictUserID '1b090000-0000-0000-0000-000000000004'
 \set eventCategoryID '1b090000-0000-0000-0000-000000000005'
@@ -33,8 +33,8 @@ select plan(14);
 -- SEED DATA
 -- ============================================================================
 
--- Community
-select fx_community(:'communityID');
+-- Alliance
+select fx_alliance(:'allianceID');
 
 -- User with an open conversation about the event
 select fx_user(:'conflictUserID');
@@ -55,19 +55,19 @@ select fx_user(:'teamMemberID');
 select fx_user(:'userID', jsonb_build_object('username', 'inbox-start-user'));
 
 -- Event category
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Group owning the event
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Group co-hosting the event
-select fx_group(:'cohostGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'cohostGroupID', :'allianceID', :'groupCategoryID');
 
 -- Group contacted earlier by the limited users
-select fx_group(:'otherGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'otherGroupID', :'allianceID', :'groupCategoryID');
 
 -- Published event co-hosted by another group
 select fx_event(:'eventID', :'groupID', :'eventCategoryID', jsonb_build_object('published', true));
@@ -79,8 +79,22 @@ select fx_event(:'otherEventID', :'groupID', :'eventCategoryID', jsonb_build_obj
 select fx_event(:'unpublishedEventID', :'groupID', :'eventCategoryID');
 
 -- Approved co-host of the event
-insert into event_cohost (event_id, group_id, event_cohost_status_id, approved_at)
-values (:'eventID', :'cohostGroupID', 'approved', current_timestamp);
+insert into event_cohost (
+    cohost_group_id,
+    decided_at,
+    decided_by_user_id,
+    event_id,
+    requested_by_user_id,
+    status
+)
+values (
+    :'cohostGroupID',
+    current_timestamp,
+    :'teamMemberID',
+    :'eventID',
+    :'teamMemberID',
+    'approved'
+);
 
 -- Accepted events-manager membership of the team member
 insert into group_team (accepted, group_id, role, user_id)
@@ -111,7 +125,7 @@ values (:'spamConversationID', current_timestamp - interval '2 days', :'groupID'
 
 -- Should point users with an open conversation about the event to it without writing rows
 select is(
-    start_inbox_conversation(:'conflictUserID'::uuid, :'communityID'::uuid, :'eventID'::uuid, 'Hello again')::jsonb,
+    start_inbox_conversation(:'conflictUserID'::uuid, :'allianceID'::uuid, :'eventID'::uuid, 'Hello again')::jsonb,
     '{"conflict": "open-conversation"}'::jsonb,
     'Should point users with an open conversation about the event to it'
 );
@@ -128,7 +142,7 @@ select is(
 
 -- Should reject events that do not accept contact
 select throws_ok(
-    format($$select start_inbox_conversation(%L::uuid, %L::uuid, %L::uuid, 'Hello')$$, :'userID', :'communityID', :'unpublishedEventID'),
+    format($$select start_inbox_conversation(%L::uuid, %L::uuid, %L::uuid, 'Hello')$$, :'userID', :'allianceID', :'unpublishedEventID'),
     'OCG01',
     'event not found',
     'Should reject events that do not accept contact'
@@ -136,7 +150,7 @@ select throws_ok(
 
 -- Should reject group team members contacting their own group
 select throws_ok(
-    format($$select start_inbox_conversation(%L::uuid, %L::uuid, %L::uuid, 'Hello')$$, :'teamMemberID', :'communityID', :'eventID'),
+    format($$select start_inbox_conversation(%L::uuid, %L::uuid, %L::uuid, 'Hello')$$, :'teamMemberID', :'allianceID', :'eventID'),
     'OCG01',
     'group team members cannot contact their own group',
     'Should reject group team members contacting their own group'
@@ -144,7 +158,7 @@ select throws_ok(
 
 -- Should reject users blocked by spam reports without writing rows
 select throws_ok(
-    format($$select start_inbox_conversation(%L::uuid, %L::uuid, %L::uuid, 'Hello')$$, :'spamUserID', :'communityID', :'eventID'),
+    format($$select start_inbox_conversation(%L::uuid, %L::uuid, %L::uuid, 'Hello')$$, :'spamUserID', :'allianceID', :'eventID'),
     'OCG01',
     'you can no longer contact this group',
     'Should reject users blocked by spam reports'
@@ -157,7 +171,7 @@ select is(
 
 -- Should reject users who reached the daily limit of new conversations
 select throws_ok(
-    format($$select start_inbox_conversation(%L::uuid, %L::uuid, %L::uuid, 'Hello')$$, :'limitedUserID', :'communityID', :'eventID'),
+    format($$select start_inbox_conversation(%L::uuid, %L::uuid, %L::uuid, 'Hello')$$, :'limitedUserID', :'allianceID', :'eventID'),
     'OCG01',
     'daily limit of new conversations reached',
     'Should reject users who reached the daily limit of new conversations'
@@ -165,7 +179,7 @@ select throws_ok(
 
 -- Should start a conversation about another event of a group with an open conversation
 select ok(
-    start_inbox_conversation(:'conflictUserID'::uuid, :'communityID'::uuid, :'otherEventID'::uuid, 'Hello')::jsonb ? 'inbox_conversation_id',
+    start_inbox_conversation(:'conflictUserID'::uuid, :'allianceID'::uuid, :'otherEventID'::uuid, 'Hello')::jsonb ? 'inbox_conversation_id',
     'Should start a conversation about another event of a group with an open conversation'
 );
 select results_eq(
@@ -182,14 +196,14 @@ select results_eq(
 
 -- Should start the last conversation allowed by the daily limit
 select ok(
-    start_inbox_conversation(:'nearLimitUserID'::uuid, :'communityID'::uuid, :'eventID'::uuid, 'Hello')::jsonb ? 'inbox_conversation_id',
+    start_inbox_conversation(:'nearLimitUserID'::uuid, :'allianceID'::uuid, :'eventID'::uuid, 'Hello')::jsonb ? 'inbox_conversation_id',
     'Should start the last conversation allowed by the daily limit'
 );
 
 -- Start a conversation about the co-hosted event
 select start_inbox_conversation(
     :'userID'::uuid,
-    :'communityID'::uuid,
+    :'allianceID'::uuid,
     :'eventID'::uuid,
     E'  Is there parking nearby?\n'
 )::jsonb as "started" \gset
@@ -231,7 +245,7 @@ select results_eq(
 -- Should record the conversation start in the audit log at the message time
 select results_eq(
     format(
-        $$select action, actor_user_id, community_id, details, event_id, group_id, resource_id, resource_type,
+        $$select action, actor_user_id, alliance_id, details, event_id, group_id, resource_id, resource_type,
             created_at = (select max(m.created_at) from inbox_message m where m.inbox_conversation_id = resource_id)
         from audit_log
         where resource_id = %L::uuid$$,
@@ -240,7 +254,7 @@ select results_eq(
     format(
         $$values ('inbox_conversation_started', %L::uuid, %L::uuid, '{}'::jsonb, %L::uuid, %L::uuid, %L::uuid, 'inbox_conversation', true)$$,
         :'userID',
-        :'communityID',
+        :'allianceID',
         :'eventID',
         :'groupID',
         (:'started'::jsonb)->>'inbox_conversation_id'

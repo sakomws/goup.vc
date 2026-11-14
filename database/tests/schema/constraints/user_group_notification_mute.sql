@@ -11,7 +11,7 @@ select plan(7);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID 'c0060000-0000-0000-0000-000000000001'
+\set allianceID 'c0060000-0000-0000-0000-000000000001'
 \set duplicateGroupID 'c0060000-0000-0000-0000-000000000002'
 \set duplicateUserID 'c0060000-0000-0000-0000-000000000003'
 \set groupCascadeGroupID 'c0060000-0000-0000-0000-000000000004'
@@ -26,11 +26,11 @@ select plan(7);
 -- SEED DATA
 -- ============================================================================
 
--- Community containing groups muted by the constraint scenarios
-select fx_community(:'communityID');
+-- Alliance containing groups muted by the constraint scenarios
+select fx_alliance(:'allianceID');
 
 -- Group category containing groups muted by the constraint scenarios
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- User whose mute is duplicated
 select fx_user(:'duplicateUserID');
@@ -42,13 +42,13 @@ select fx_user(:'groupCascadeUserID');
 select fx_user(:'userCascadeUserID');
 
 -- Group whose mute is duplicated
-select fx_group(:'duplicateGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'duplicateGroupID', :'allianceID', :'groupCategoryID');
 
 -- Group whose mute is deleted through group cascade
-select fx_group(:'groupCascadeGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupCascadeGroupID', :'allianceID', :'groupCategoryID');
 
 -- Group whose mute is deleted through user cascade
-select fx_group(:'userCascadeGroupID', :'communityID', :'groupCategoryID');
+select fx_group(:'userCascadeGroupID', :'allianceID', :'groupCategoryID');
 
 -- Mute used by duplicate rejection
 insert into user_group_notification_mute (group_id, user_id)

@@ -11,7 +11,7 @@ select plan(5);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID '1b150000-0000-0000-0000-000000000001'
+\set allianceID '1b150000-0000-0000-0000-000000000001'
 \set deletedEventID '1b150000-0000-0000-0000-000000000002'
 \set deletedGroupEventID '1b150000-0000-0000-0000-000000000003'
 \set deletedGroupID '1b150000-0000-0000-0000-000000000004'
@@ -27,26 +27,26 @@ select plan(5);
 -- SEED DATA
 -- ============================================================================
 
--- Community owning the events
-select fx_community(:'communityID');
+-- Alliance owning the events
+select fx_alliance(:'allianceID');
 
 -- Event category
-select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'allianceID');
 
 -- Group category
-select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'allianceID');
 
 -- Active group owning the events
-select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+select fx_group(:'groupID', :'allianceID', :'groupCategoryID');
 
 -- Deleted group
-select fx_group(:'deletedGroupID', :'communityID', :'groupCategoryID', jsonb_build_object(
+select fx_group(:'deletedGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object(
     'active', false,
     'deleted', true
 ));
 
 -- Inactive group
-select fx_group(:'inactiveGroupID', :'communityID', :'groupCategoryID', jsonb_build_object('active', false));
+select fx_group(:'inactiveGroupID', :'allianceID', :'groupCategoryID', jsonb_build_object('active', false));
 
 -- Published event of an active group
 select fx_event(:'eventID', :'groupID', :'eventCategoryID', jsonb_build_object('published', true));
