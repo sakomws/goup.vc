@@ -2,8 +2,9 @@ use anyhow::anyhow;
 use axum::body::{Body, to_bytes};
 use axum::http::{
     HeaderValue, Request, StatusCode,
-    header::{CACHE_CONTROL, CONTENT_TYPE},
+    header::{CACHE_CONTROL, CONTENT_TYPE, COOKIE},
 };
+use axum_login::tower_sessions::session;
 use tower::ServiceExt;
 use uuid::Uuid;
 
@@ -112,7 +113,7 @@ async fn test_page_success() {
     assert!(body.contains(
         r#"<meta name="twitter:image" content="https://example.test/images/og/alliance-og.png">"#
     ));
-    assert!(body.contains(r#"href="/test-alliance/brand""#));
+    assert!(body.contains(r#"href="/goup/brand""#));
     assert!(body.contains(">Brand</a>"));
 }
 
@@ -120,6 +121,10 @@ async fn test_page_success() {
 async fn test_brand_page_success() {
     // Setup identifiers and data structures
     let alliance_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(session_id, user_id, &auth_hash, None, None);
     let mut alliance = sample_alliance_full(alliance_id);
     alliance.banner_mobile_url = "/images/alliance-banner-mobile.png".to_string();
     alliance.banner_url = "/images/alliance-banner.png".to_string();
@@ -130,6 +135,14 @@ async fn test_brand_page_success() {
 
     // Setup database mock
     let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_get_alliance_id_by_name()
         .times(1)
         .withf(|name| name == "test-alliance")
@@ -153,6 +166,7 @@ async fn test_brand_page_success() {
     let request = Request::builder()
         .method("GET")
         .uri("/test-alliance/brand")
+        .header(COOKIE, format!("id={session_id}"))
         .body(Body::empty())
         .unwrap();
     let response = router.oneshot(request).await.unwrap();
@@ -165,9 +179,9 @@ async fn test_brand_page_success() {
         parts.headers.get(CONTENT_TYPE).unwrap(),
         &HeaderValue::from_static("text/html; charset=utf-8")
     );
-    assert_eq!(
-        parts.headers.get(CACHE_CONTROL).unwrap(),
-        &HeaderValue::from_static(CACHE_CONTROL_PUBLIC_SHARED)
+    assert_ne!(
+        parts.headers.get(CACHE_CONTROL),
+        Some(&HeaderValue::from_static(CACHE_CONTROL_PUBLIC_SHARED))
     );
     let body = String::from_utf8(bytes.to_vec()).unwrap();
     assert!(body.contains("<title>Test Alliance brand</title>"));
@@ -179,6 +193,8 @@ async fn test_brand_page_success() {
     assert!(body.contains(r#"src="/images/alliance-banner.png""#));
     assert!(body.contains(r#"src="/images/alliance-banner-mobile.png""#));
     assert!(body.contains(r#"src="/images/alliance-og.png""#));
+    assert!(body.contains("Open dashboard"));
+    assert!(!body.contains(">Join GOUP</a>"));
 }
 
 #[tokio::test]

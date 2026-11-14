@@ -319,6 +319,9 @@ pub(crate) struct Event {
     /// User IDs of event hosts.
     #[garde(skip)]
     pub hosts: Option<Vec<Uuid>>,
+    /// User IDs shown as event organizers.
+    #[garde(skip)]
+    pub organizers: Option<Vec<Uuid>>,
     /// Latitude coordinate of the event location.
     #[garde(custom(valid_latitude))]
     pub latitude: Option<f64>,

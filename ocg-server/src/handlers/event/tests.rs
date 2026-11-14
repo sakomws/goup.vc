@@ -601,6 +601,9 @@ async fn test_cfs_modal_success_authenticated() {
         .times(1)
         .withf(move |uid, eid| *uid == user_id && *eid == event_id)
         .returning(move |_, _| Ok(proposals.clone()));
+    db.expect_list_session_proposal_levels()
+        .times(1)
+        .returning(|| Ok(sample_session_proposal_levels()));
 
     // Setup notifications manager mock
     let nm = MockNotificationsManager::new();
@@ -2375,6 +2378,9 @@ async fn test_submit_cfs_submission_success() {
         .times(1)
         .withf(move |uid, eid| *uid == user_id && *eid == event_id)
         .returning(move |_, _| Ok(proposals.clone()));
+    db.expect_list_session_proposal_levels()
+        .times(1)
+        .returning(|| Ok(sample_session_proposal_levels()));
 
     // Setup notifications manager mock
     let nm = MockNotificationsManager::new();

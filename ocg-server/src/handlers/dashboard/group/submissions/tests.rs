@@ -41,6 +41,7 @@ async fn test_list_page_success() {
     let event = sample_event_summary(event_id, group_id);
     let submissions_output =
         crate::templates::dashboard::group::submissions::CfsSubmissionsOutput {
+            label_counts: vec![],
             submissions: vec![sample_group_cfs_submission(
                 cfs_submission_id,
                 session_proposal_id,
@@ -141,6 +142,7 @@ async fn test_list_page_with_pagination_params() {
     let event = sample_event_summary(event_id, group_id);
     let submissions_output =
         crate::templates::dashboard::group::submissions::CfsSubmissionsOutput {
+            label_counts: vec![],
             submissions: vec![],
             total: 0,
         };

@@ -15,6 +15,7 @@ const DEFAULT_PLACEHOLDER = "Search labels";
  * @property {string} name Form field base name used for hidden inputs
  * @property {string} placeholder Search input placeholder
  * @property {Array<string>} selected Selected event_cfs_label_id values
+ * @property {boolean} showCounts Whether submission counts are shown beside labels
  */
 export class CfsLabelSelector extends LitWrapper {
   static properties = {
@@ -28,6 +29,7 @@ export class CfsLabelSelector extends LitWrapper {
     placeholder: { type: String, attribute: "placeholder" },
     selected: { type: Array, attribute: "selected" },
     selectedInInput: { type: Boolean, attribute: "selected-in-input", reflect: true },
+    showCounts: { type: Boolean, attribute: "show-counts", reflect: true },
   };
 
   constructor() {
@@ -42,6 +44,7 @@ export class CfsLabelSelector extends LitWrapper {
     this.placeholder = DEFAULT_PLACEHOLDER;
     this.selected = [];
     this.selectedInInput = false;
+    this.showCounts = false;
 
     this._combobox = new ComboboxController(this, {
       getItemCount: () => this._filteredLabels.length,
@@ -209,6 +212,9 @@ export class CfsLabelSelector extends LitWrapper {
         color,
         event_cfs_label_id: eventCfsLabelId,
         name,
+        ...(Number.isInteger(label?.submissions_count)
+          ? { submissions_count: Math.max(0, label.submissions_count) }
+          : {}),
       });
     }
 
@@ -256,7 +262,8 @@ export class CfsLabelSelector extends LitWrapper {
       return (
         String(leftLabel?.event_cfs_label_id || "") === String(rightLabel?.event_cfs_label_id || "") &&
         String(leftLabel?.name || "").trim() === String(rightLabel?.name || "").trim() &&
-        String(leftLabel?.color || "").trim() === String(rightLabel?.color || "").trim()
+        String(leftLabel?.color || "").trim() === String(rightLabel?.color || "").trim() &&
+        Number(leftLabel?.submissions_count || 0) === Number(rightLabel?.submissions_count || 0)
       );
     });
   }
@@ -507,13 +514,26 @@ export class CfsLabelSelector extends LitWrapper {
                                         ></span>
                                         <span class="truncate text-stone-800">${label.name}</span>
                                       </span>
-                                      ${
-                                        isSelected
-                                          ? html`<div
-                                              class="svg-icon size-3 icon-check bg-primary-500"
-                                            ></div>`
-                                          : ""
-                                      }
+                                      <span class="flex shrink-0 items-center gap-2">
+                                        ${
+                                          this.showCounts
+                                            ? html`<span
+                                                class="min-w-6 rounded-full bg-stone-100 px-2 py-0.5 text-center text-xs font-medium text-stone-600"
+                                                title="${label.submissions_count} ${
+                                                  label.submissions_count === 1 ? "submission" : "submissions"
+                                                }"
+                                                >${label.submissions_count}</span
+                                              >`
+                                            : ""
+                                        }
+                                        ${
+                                          isSelected
+                                            ? html`<div
+                                                class="svg-icon size-3 icon-check bg-primary-500"
+                                              ></div>`
+                                            : ""
+                                        }
+                                      </span>
                                     </button>
                                   </li>
                                 `;

@@ -13,6 +13,28 @@ use crate::{
 use super::*;
 
 #[tokio::test]
+async fn test_legacy_opportunities_brand_path_redirects_to_goup_brand() {
+    let router = TestRouterBuilder::new(MockDB::new(), MockNotificationsManager::new())
+        .build()
+        .await;
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/opportunities/brand")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::PERMANENT_REDIRECT);
+    assert_eq!(
+        response.headers().get(LOCATION).unwrap(),
+        &HeaderValue::from_static("/goup/brand")
+    );
+}
+
+#[tokio::test]
 async fn test_current_commit_htmx_request_runs_handler() {
     // Setup router with commit SHA middleware
     let router = Router::new()

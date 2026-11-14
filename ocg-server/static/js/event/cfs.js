@@ -1,10 +1,13 @@
 import { toggleModalVisibility } from "/static/js/common/common.js";
 import { closestElement, getElementById, isElementHidden, markDatasetReady } from "/static/js/common/dom.js";
+import "/static/js/common/markdown-editor.js";
+import "/static/js/dashboard/user/session-proposals/modal.js";
 
 const ROOT_ID = "cfs-modal-root";
 const MODAL_ID = "cfs-modal";
 const DATA_KEY = "cfsModalReady";
 const SELECT_DATA_KEY = "cfsSubmitReady";
+const PROPOSAL_MODAL_ID = "session-proposal-modal-component";
 
 const initializeSubmitControls = (modal) => {
   const select = getElementById(modal, "session_proposal_id");
@@ -44,6 +47,23 @@ const initializeCfsModal = () => {
     modal.addEventListener("click", (event) => {
       if (closestElement(event.target, "#cancel-cfs-modal")) {
         toggleModal();
+      }
+    });
+  }
+
+  const proposalModal = getElementById(modal, PROPOSAL_MODAL_ID);
+  const createProposalButton = getElementById(modal, "create-session-proposal");
+  if (proposalModal && markDatasetReady(createProposalButton, "createProposalReady")) {
+    createProposalButton.addEventListener("click", () => proposalModal.openCreate());
+  }
+  if (proposalModal && markDatasetReady(proposalModal, "cfsRefreshReady")) {
+    proposalModal.addEventListener("session-proposal-saved", () => {
+      const refreshUrl = proposalModal.dataset.cfsRefreshUrl;
+      if (refreshUrl && window.htmx?.ajax) {
+        window.htmx.ajax("GET", refreshUrl, {
+          target: `#${ROOT_ID}`,
+          swap: "innerHTML",
+        });
       }
     });
   }

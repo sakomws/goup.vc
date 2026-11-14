@@ -57,4 +57,26 @@ describe("cfs-label-selector", () => {
     expect(element.selected).to.deep.equal([]);
     expect(changeEvents).to.equal(2);
   });
+
+  it("shows submission counts when requested", async () => {
+    const element = await mountLitComponent("cfs-label-selector", {
+      labels: [
+        {
+          event_cfs_label_id: "1",
+          name: "track / Data and AI",
+          color: "pink",
+          submissions_count: 7,
+        },
+      ],
+      showCounts: true,
+    });
+
+    element._combobox.open();
+    await element.updateComplete;
+
+    expect(element.textContent).to.contain("track / Data and AI");
+    expect(
+      element.querySelector('[title="7 submissions"]')?.textContent.trim(),
+    ).to.equal("7");
+  });
 });

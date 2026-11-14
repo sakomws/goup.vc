@@ -16,6 +16,7 @@ use uuid::Uuid;
 
 use crate::{
     activity_tracker::{Activity, DynActivityTracker},
+    auth::AuthSession,
     config::HttpServerConfig,
     db::DynDB,
     handlers::{
@@ -92,6 +93,7 @@ pub(crate) async fn page(
 /// Handler that renders the alliance brand assets page.
 #[instrument(skip_all, err)]
 pub(crate) async fn brand_page(
+    auth_session: AuthSession,
     State(db): State<DynDB>,
     State(server_cfg): State<HttpServerConfig>,
     Path(alliance_name): Path<String>,
@@ -113,10 +115,10 @@ pub(crate) async fn brand_page(
         page_id: PageId::Alliance,
         path: uri.path().to_string(),
         site_settings,
-        user: User::default(),
+        user: User::from_session(auth_session).await?,
     };
 
-    Ok((PUBLIC_SHARED_CACHE_HEADERS, Html(template.render()?)).into_response())
+    Ok(Html(template.render()?).into_response())
 }
 
 /// Handler that renders the public alliance integrations page.

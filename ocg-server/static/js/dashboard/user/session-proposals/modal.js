@@ -348,6 +348,11 @@ export class SessionProposalModal extends LitWrapper {
         errorMessage: "Unable to save this proposal. Please try again later.",
       });
       if (ok) {
+        this.dispatchEvent(
+          new CustomEvent("session-proposal-saved", {
+            bubbles: true,
+          }),
+        );
         this.close();
       }
     };

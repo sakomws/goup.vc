@@ -35,7 +35,7 @@ description = "Review and manage call for speakers submissions.") -}}
                  disabled>
         {% else -%}
           <label for="submissions-label-filter" class="sr-only">Filter by labels</label>
-          <cfs-label-selector id="submissions-label-filter" name="label_ids" labels="{{ event_cfs_labels|json }}" selected="{{ selected_event_cfs_label_ids|json }}" placeholder="Search labels" compact selected-in-input></cfs-label-selector>
+          <cfs-label-selector id="submissions-label-filter" name="label_ids" labels="{{ event_cfs_labels|json }}" selected="{{ selected_event_cfs_label_ids|json }}" placeholder="Search labels" compact selected-in-input show-counts></cfs-label-selector>
         {% endif -%}
       </div>
       <div class="flex min-w-0 items-center gap-2 md:ms-auto md:justify-end">
