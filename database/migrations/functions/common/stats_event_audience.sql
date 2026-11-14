@@ -73,7 +73,8 @@ questions as (
 selections as (
     select
         case
-            when pg_input_is_valid(selected.value, 'uuid') then selected.value::uuid
+            when selected.value ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                then selected.value::uuid
         end as option_id,
         (answer.value->>'question_id')::uuid as question_id,
         a.user_id
