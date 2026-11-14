@@ -44,21 +44,25 @@
                   data-group-check-in-open
                   data-event-id="{{ event.event_id }}"
                   data-event-date="{{ event.starts_at.with_timezone(event.timezone).format("%b %-e, %Y · %-I:%M %p %Z") }}"
-                  data-event-location="{% if event.kind == EventKind::Virtual -%}Virtual{% else -%}{{ event.location.as_deref() |assigned_or("Venue details pending") }}{% endif -%}"
+                  data-event-location="{% if event.kind == EventKind::Virtual -%}
+                                         Virtual
+                                       {% else -%}
+                                         {{ event.location.as_deref() |assigned_or("Venue details pending") }}
+                                       {% endif -%}"
                   data-event-name="{{ event.name }}"
                   data-scan-url="/dashboard/group/events/{{ event.event_id }}/check-ins/scan">
             <span>Scan Attendee Codes</span>
             <span class="sr-only">for {{ event.name }}</span>
           </button>
-          {% endcall -%}
-        </article>
-      {% endfor -%}
-    </div>
-    {# End event cards -#}
-  {% endif -%}
-  {# End events available for check-in -#}
+        {% endcall -%}
+      </article>
+    {% endfor -%}
+  </div>
+  {# End event cards -#}
+{% endif -%}
+{# End events available for check-in -#}
 
-  {# QR scanner modal -#}
-  {% include "dashboard/group/check_in_scanner_modal.html" -%}
-  {# End QR scanner modal -#}
+{# QR scanner modal -#}
+{% include "dashboard/group/check_in_scanner_modal.html" -%}
+{# End QR scanner modal -#}
 </section>

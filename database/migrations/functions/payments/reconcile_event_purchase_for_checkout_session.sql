@@ -175,7 +175,8 @@ begin
         kind,
         payment_provider_id,
         status
-    ) values (
+    )
+    select
         v_amount_minor,
         v_currency_code,
         v_purchase_id,
@@ -183,6 +184,10 @@ begin
         'automatic-unfulfillable-checkout',
         p_provider,
         'provider-pending'
+    where not exists (
+        select 1
+        from event_purchase_refund epr
+        where epr.event_purchase_id = v_purchase_id
     )
     on conflict (event_purchase_id) do nothing;
 

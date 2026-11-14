@@ -137,10 +137,16 @@
           <tr class="odd:bg-white even:bg-stone-50/50 border-b border-stone-200 align-top">
             <td class="w-[40%] px-3 py-4 xl:w-auto xl:max-w-64 xl:px-5">
               <div class="flex items-center gap-3">
-                <logo-image {% if let Some(photo_url) = &refund.photo_url -%} image-url="{{ photo_url }}" {% endif -%} size="size-9" placeholder="{{ self::user_initials(refund.name.as_deref() , refund.username.as_str()) }}">
+                <logo-image
+                {% if let Some(photo_url) = &refund.photo_url -%}
+                  image-url="{{ photo_url }}"
+                {% endif -%}
+                size="size-9" placeholder="{{ self::user_initials(refund.name.as_deref() , refund.username.as_str()) }}">
                 </logo-image>
                 <div class="min-w-0">
-                  <div class="truncate font-medium text-stone-900">{{ refund.name.as_deref() |assigned_or(refund.username) }}</div>
+                  <div class="truncate font-medium text-stone-900">
+                    {{ refund.name.as_deref() |assigned_or(refund.username) }}
+                  </div>
                   <div class="truncate text-xs text-stone-600">{{ refund.email }}</div>
                 </div>
               </div>
@@ -160,7 +166,8 @@
                 {% if let Some(attempt_count) = refund.attempt_count -%}
                   {% if *attempt_count > 0 && refund.can_retry() -%}
                     <div class="mt-1 text-xs text-stone-600">
-                      {{ attempt_count }} attempt{% if *attempt_count != 1 %}s{% endif %}
+                      {{ attempt_count }} attempt
+                      {% if *attempt_count != 1 %}s{% endif %}
                     </div>
                   {% endif -%}
                 {% endif -%}
@@ -189,7 +196,8 @@
               {% if let Some(attempt_count) = refund.attempt_count -%}
                 {% if *attempt_count > 0 && refund.can_retry() -%}
                   <div class="mt-2 text-xs text-stone-600">
-                    {{ attempt_count }} attempt{% if *attempt_count != 1 %}s{% endif %}
+                    {{ attempt_count }} attempt
+                    {% if *attempt_count != 1 %}s{% endif %}
                   </div>
                 {% endif -%}
               {% endif -%}

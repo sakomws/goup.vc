@@ -69,8 +69,10 @@ export class SelectedUserPill extends LitWrapper {
 
     return html`
       <div
-        class=${"inline-flex max-w-full min-w-0 items-center gap-2 rounded-full bg-stone-100 ps-1 py-1 " +
-        containerEndPaddingClass}
+        class=${
+          "inline-flex max-w-full min-w-0 items-center gap-2 rounded-full bg-stone-100 ps-1 py-1 " +
+          containerEndPaddingClass
+        }
       >
         <logo-image
           image-url=${this.user.photo_url || ""}

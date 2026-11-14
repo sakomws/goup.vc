@@ -137,12 +137,12 @@ select is(
         from list_redirects() r
     ),
     '[
-        {"community_name": "active-community-list-redirects", "legacy_path": "/", "new_path": "/active-community-list-redirects/group/root-group"},
-        {"community_name": "active-community-list-redirects", "legacy_path": "/events/active", "new_path": "/active-community-list-redirects/group/active-group/event/active-event"},
-        {"community_name": "active-community-list-redirects", "legacy_path": "/events/active-slash", "new_path": "/active-community-list-redirects/group/active-group/event/active-event-slash"},
-        {"community_name": "active-community-list-redirects", "legacy_path": "/groups/active", "new_path": "/active-community-list-redirects/group/active-group"},
-        {"community_name": "active-community-list-redirects", "legacy_path": "/groups/active-slash", "new_path": "/active-community-list-redirects/group/active-group-slash"},
-        {"community_name": "duplicate-community", "legacy_path": "/groups/active", "new_path": "/duplicate-community/group/scoped-duplicate-group"}
+        {"alliance_name": "active-community-list-redirects", "legacy_path": "/", "new_path": "/active-community-list-redirects/group/root-group"},
+        {"alliance_name": "active-community-list-redirects", "legacy_path": "/events/active", "new_path": "/active-community-list-redirects/group/active-group/event/active-event"},
+        {"alliance_name": "active-community-list-redirects", "legacy_path": "/events/active-slash", "new_path": "/active-community-list-redirects/group/active-group/event/active-event-slash"},
+        {"alliance_name": "active-community-list-redirects", "legacy_path": "/groups/active", "new_path": "/active-community-list-redirects/group/active-group"},
+        {"alliance_name": "active-community-list-redirects", "legacy_path": "/groups/active-slash", "new_path": "/active-community-list-redirects/group/active-group-slash"},
+        {"alliance_name": "duplicate-community", "legacy_path": "/groups/active", "new_path": "/duplicate-community/group/scoped-duplicate-group"}
     ]'::jsonb,
     'Should return all unique normalized redirect mappings ordered by legacy path'
 );
@@ -152,7 +152,7 @@ select is(
     (
         select new_path
         from list_redirects()
-        where community_name = 'active-community-list-redirects'
+        where alliance_name = 'active-community-list-redirects'
           and legacy_path = '/groups/active'
     ),
     '/active-community-list-redirects/group/active-group',
@@ -167,8 +167,8 @@ select is(
         where legacy_path = '/groups/active'
     ),
     '[
-        {"community_name": "active-community-list-redirects", "legacy_path": "/groups/active", "new_path": "/active-community-list-redirects/group/active-group"},
-        {"community_name": "duplicate-community", "legacy_path": "/groups/active", "new_path": "/duplicate-community/group/scoped-duplicate-group"}
+        {"alliance_name": "active-community-list-redirects", "legacy_path": "/groups/active", "new_path": "/active-community-list-redirects/group/active-group"},
+        {"alliance_name": "duplicate-community", "legacy_path": "/groups/active", "new_path": "/duplicate-community/group/scoped-duplicate-group"}
     ]'::jsonb,
     'Should scope duplicate legacy paths by community'
 );

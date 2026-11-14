@@ -16,6 +16,6 @@ returns jsonb as $$
     from "group" g
     left join external_payments_config cfg on cfg.singleton
     where g.group_id = p_group_id
-    and g.community_id = p_community_id
+    and g.alliance_id = p_community_id
     and g.deleted = false;
 $$ language sql;

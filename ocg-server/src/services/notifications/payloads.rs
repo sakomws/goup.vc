@@ -223,6 +223,7 @@ pub(crate) fn build_event_refund_approved_template_data(
 }
 
 /// Builds an event refund approval notification.
+#[cfg(test)]
 pub(crate) fn build_event_refund_approved_notification(
     event: &EventSummary,
     recipient_user_id: Uuid,

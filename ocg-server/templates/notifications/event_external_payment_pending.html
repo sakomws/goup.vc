@@ -24,10 +24,18 @@
              line-height: 1.6;
              margin: 0 0 30px;
              padding-left: 22px">
-    <li><strong>Ticket:</strong> {{ ticket_title }}</li>
-    <li><strong>Event:</strong> {{ event_name }}</li>
-    <li><strong>Group:</strong> {{ group_name }}</li>
-    <li><strong>Amount:</strong> {{ self.price_label() }}</li>
+    <li>
+      <strong>Ticket:</strong> {{ ticket_title }}
+    </li>
+    <li>
+      <strong>Event:</strong> {{ event_name }}
+    </li>
+    <li>
+      <strong>Group:</strong> {{ group_name }}
+    </li>
+    <li>
+      <strong>Amount:</strong> {{ self.price_label() }}
+    </li>
     <li>
       <strong>Reference:</strong>
       <span style="overflow-wrap: anywhere; word-break: break-word">{{ event_purchase_id }}</span>

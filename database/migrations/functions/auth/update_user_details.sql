@@ -38,6 +38,31 @@ begin
         youtube_url = nullif(p_user->>'youtube_url', '')
     where user_id = p_actor_user_id;
 
+    -- Preserve the legacy profile toggle over the member notification categories.
+    if p_user ? 'optional_notifications_enabled' then
+        if (p_user->>'optional_notifications_enabled')::boolean then
+            delete from user_notification_opt_out
+            where user_id = p_actor_user_id
+            and notification_category_id in (
+                'event-reminders',
+                'group-announcements',
+                'new-events',
+                'organizer-messages'
+            );
+        else
+            insert into user_notification_opt_out (notification_category_id, user_id)
+            select notification_category_id, p_actor_user_id
+            from notification_category
+            where notification_category_id in (
+                'event-reminders',
+                'group-announcements',
+                'new-events',
+                'organizer-messages'
+            )
+            on conflict do nothing;
+        end if;
+    end if;
+
     -- Track the profile update
     perform insert_audit_log(
         'user_details_updated',

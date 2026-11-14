@@ -84,7 +84,6 @@ insert into "user" (
     email,
     email_verified,
     github_url,
-    optional_notifications_enabled,
     provider,
     username,
     website_url,
@@ -102,7 +101,6 @@ values (
     'alice@example.com',
     true,
     'https://github.com/alice',
-    true,
     '{"github": {"username": "alice-gh", "private": "secret"}, "linuxfoundation": {"username": "alice-lf", "subject": "secret"}}'::jsonb,
     'alice',
     'https://example.com/alice',
@@ -118,7 +116,6 @@ values (
     'bob@example.com',
     true,
     null,
-    false,
     null,
     'bob',
     null,
@@ -134,7 +131,6 @@ values (
     'pending@example.com',
     false,
     null,
-    true,
     null,
     'pending',
     null,
@@ -150,7 +146,6 @@ values (
     'rejected@example.com',
     true,
     null,
-    true,
     null,
     'rejected',
     null,
@@ -166,7 +161,6 @@ values (
     'canceled@example.com',
     true,
     null,
-    true,
     null,
     'canceled',
     null,
@@ -182,7 +176,6 @@ values (
     'questions-pending@example.com',
     true,
     null,
-    true,
     null,
     'questions-pending',
     null,
@@ -198,7 +191,6 @@ values (
     'pending-checkout@example.com',
     true,
     null,
-    true,
     null,
     'pending-checkout',
     null,
@@ -214,7 +206,6 @@ values (
     'rq-attendee@test.com',
     false,
     null,
-    true,
     null,
     'rq-attendee',
     null,
@@ -230,7 +221,6 @@ values (
     'may@example.com',
     true,
     null,
-    true,
     null,
     'may',
     null,
@@ -240,6 +230,9 @@ values (
     'registered',
     null
 );
+
+insert into user_notification_opt_out (notification_category_id, user_id)
+values ('organizer-messages', :'user2ID');
 
 -- Events
 insert into event (

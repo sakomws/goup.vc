@@ -115,7 +115,10 @@ select is(
             'linkedin_url', 'https://linkedin.com/in/first',
             'name', 'Zed First',
             'photo_url', 'https://example.com/first.png',
-            'provider', jsonb_build_object('github', jsonb_build_object('username', 'first-gh')),
+            'provider', jsonb_build_object(
+                'github',
+                jsonb_build_object('id', 'gh-first', 'username', 'first-gh')
+            ),
             'title', 'Lead',
             'twitter_url', 'https://twitter.com/first',
             'website_url', 'https://first.example.com'

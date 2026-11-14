@@ -92,7 +92,7 @@ select results_eq(
             action,
             actor_user_id,
             actor_username,
-            community_id,
+            alliance_id,
             event_id,
             group_id,
             resource_type,

@@ -52,6 +52,7 @@ export class MultiSelect extends LitWrapper {
     placeholder: { type: String },
     selected: { type: Array },
     selectedInInput: { type: Boolean, attribute: "selected-in-input", reflect: true },
+    wrapNames: { type: Boolean, attribute: "wrap-names", reflect: true },
   };
 
   constructor() {
@@ -70,6 +71,7 @@ export class MultiSelect extends LitWrapper {
     this.placeholder = DEFAULT_PLACEHOLDER;
     this.selected = [];
     this.selectedInInput = false;
+    this.wrapNames = false;
 
     // Texts subclasses may replace to match their domain.
     this._addMorePlaceholder = "Add more";
@@ -544,13 +546,29 @@ export class MultiSelect extends LitWrapper {
                 ></span>`
               : nothing
           }
-          <span class="truncate text-stone-800">${option.name}</span>
+          <span class="${this.wrapNames ? "wrap-break-word" : "truncate"} text-stone-800"
+            >${option.name}</span
+          >
         </span>
-        ${
-          isSelected
-            ? html`<div class="svg-icon size-3 shrink-0 icon-check bg-primary-500" aria-hidden="true"></div>`
-            : nothing
-        }
+        <span class="flex shrink-0 items-center gap-2">
+          ${
+            Number.isInteger(option.count)
+              ? html`<span
+                  class="min-w-6 rounded-full bg-stone-100 px-2 py-0.5 text-center text-xs font-medium text-stone-600"
+                  title="${option.count} ${option.count === 1 ? "submission" : "submissions"}"
+                  >${option.count}</span
+                >`
+              : nothing
+          }
+          ${
+            isSelected
+              ? html`<div
+                  class="svg-icon size-3 shrink-0 icon-check bg-primary-500"
+                  aria-hidden="true"
+                ></div>`
+              : nothing
+          }
+        </span>
       </li>
     `;
   }
@@ -692,7 +710,13 @@ const normalizeOptions = (options) => {
     }
 
     seen.add(value);
-    normalized.push(color ? { color, name, value } : { name, value });
+    const count = Number.isInteger(option?.count) ? Math.max(0, option.count) : undefined;
+    normalized.push({
+      ...(color ? { color } : {}),
+      ...(count !== undefined ? { count } : {}),
+      name,
+      value,
+    });
   }
   return normalized;
 };

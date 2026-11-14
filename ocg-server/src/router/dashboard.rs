@@ -467,6 +467,21 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .route("/team", get(dashboard::group::team::list_page))
         .route_layer(check_selected_group_permission(GroupPermission::Read));
 
+    // Group check-in management endpoints
+    let check_ins_management = Router::new()
+        .route("/check-in", get(dashboard::group::check_in::list_page))
+        .route(
+            "/events/{event_id}/attendees/{user_id}/check-in",
+            post(dashboard::group::attendees::manual_check_in),
+        )
+        .route(
+            "/events/{event_id}/check-ins/scan",
+            post(dashboard::group::check_in::scan),
+        )
+        .route_layer(check_selected_group_permission(
+            GroupPermission::CheckInsWrite,
+        ));
+
     // Group events management endpoints
     let events_management = Router::new()
         .route("/integrations", put(dashboard::group::integrations::update))
@@ -555,10 +570,6 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
         .route(
             "/events/{event_id}/attendees/{user_id}/attendance",
             delete(dashboard::group::attendees::cancel_event_attendee_attendance),
-        )
-        .route(
-            "/events/{event_id}/attendees/{user_id}/check-in",
-            post(dashboard::group::attendees::manual_check_in),
         )
         .route(
             "/events/{event_id}/attendees/{user_id}/external-payment/confirm",
@@ -925,6 +936,7 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
     // Setup router
     Router::new()
         .merge(dashboard_read)
+        .merge(check_ins_management)
         .merge(events_management)
         .merge(event_move_management)
         .merge(inbox_management)
@@ -964,6 +976,11 @@ pub(super) fn setup_user_dashboard_router() -> Router<State> {
             get(dashboard::user::coffee_meet::list_page)
                 .put(dashboard::user::coffee_meet::subscribe)
                 .delete(dashboard::user::coffee_meet::unsubscribe),
+        )
+        .route("/check-in", get(dashboard::user::check_in::list_page))
+        .route(
+            "/check-in/{event_id}/qr-code",
+            get(dashboard::user::check_in::qr_code),
         )
         .route("/events", get(dashboard::user::events::list_page))
         .route(

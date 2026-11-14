@@ -38,28 +38,32 @@
     <div>
       <label id="community-contact-categories-label" class="form-label">Group categories</label>
       <div class="mt-2">
-        <multi-select id="community-contact-categories" labelledby="community-contact-categories-label" name="filters[group_category_ids]" keep-order close-on-select placeholder="All categories" options="{{ self.category_options()|json }}"></multi-select>
+        <multi-select id="community-contact-categories" labelledby="community-contact-categories-label" name="filters[group_category_ids]" keep-order close-on-select placeholder="All categories" options="{{ self.category_options() |json }}"></multi-select>
       </div>
     </div>
     {% if self.has_regions() -%}
       <div>
         <label id="community-contact-regions-label" class="form-label">Regions</label>
         <div class="mt-2">
-          <multi-select id="community-contact-regions" labelledby="community-contact-regions-label" name="filters[regions]" keep-order close-on-select placeholder="All regions" options="{{ self.region_options()|json }}"></multi-select>
+          <multi-select id="community-contact-regions" labelledby="community-contact-regions-label" name="filters[regions]" keep-order close-on-select placeholder="All regions" options="{{ self.region_options() |json }}"></multi-select>
         </div>
       </div>
     {% endif -%}
     <div>
       <label id="community-contact-roles-label" class="form-label">Team roles</label>
       <div class="mt-2">
-        <multi-select id="community-contact-roles" labelledby="community-contact-roles-label" name="filters[roles]" keep-order close-on-select placeholder="All roles" options="{{ self.role_options()|json }}"></multi-select>
+        <multi-select id="community-contact-roles" labelledby="community-contact-roles-label" name="filters[roles]" keep-order close-on-select placeholder="All roles" options="{{ self.role_options() |json }}"></multi-select>
       </div>
     </div>
     <div class="lg:col-span-3">
       <label id="community-contact-groups-label" class="form-label">Groups</label>
       <div class="mt-2">
         {% if self.has_groups() -%}
-          <multi-select id="community-contact-groups" labelledby="community-contact-groups-label" name="filters[group_ids]" keep-order close-on-select wrap-names max-selected="{{ crate::validation::MAX_CONTACT_FILTER_VALUES }}" placeholder="All groups" legend="Select up to {{ crate::validation::MAX_CONTACT_FILTER_VALUES }} groups.{% if filter_options.has_subgroups %} Selecting a group doesn't include its subgroups; select them too.{% endif %}" options="{{ self.group_options()|json }}"></multi-select>
+          <multi-select id="community-contact-groups" labelledby="community-contact-groups-label" name="filters[group_ids]" keep-order close-on-select wrap-names max-selected="{{ crate::validation::MAX_CONTACT_FILTER_VALUES }}" placeholder="All groups" legend="Select up to {{ crate::validation::MAX_CONTACT_FILTER_VALUES }} groups.
+          {% if filter_options.has_subgroups %}
+            Selecting a group doesn't include its subgroups; select them too.
+          {% endif %}
+          " options="{{ self.group_options() |json }}"></multi-select>
         {% else -%}
           <multi-select id="community-contact-groups" labelledby="community-contact-groups-label" name="filters[group_ids]" disabled placeholder="All groups" legend="This alliance has no active groups."></multi-select>
         {% endif -%}

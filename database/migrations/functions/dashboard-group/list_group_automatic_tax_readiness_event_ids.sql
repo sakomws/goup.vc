@@ -10,7 +10,7 @@ returns uuid[] as $$
     )
     from "group" g
     join event e using (group_id)
-    where g.community_id = p_community_id
+    where g.alliance_id = p_community_id
     and g.group_id = p_group_id
     and g.deleted = false
     and e.canceled = false

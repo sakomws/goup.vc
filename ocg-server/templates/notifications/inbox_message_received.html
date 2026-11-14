@@ -13,19 +13,20 @@
 {% block content -%}
   <p class="default mb-15" style="margin-bottom: 15px">
     <strong>{{ sender_name }}</strong> sent a message to <strong>{{ group_name }}</strong>
-    {%- if let Some(event_name) = event_name %} about <strong>{{ event_name }}</strong>{% endif -%}
-    :
-  </p>
-  <blockquote class="quote" style="margin: 0 0 15px">
-    {{- body -}}
-  </blockquote>
+    {%- if let Some(event_name) = event_name %} about <strong>{{ event_name }}</strong>
+  {% endif -%}
+  :
+</p>
+<blockquote class="quote" style="margin: 0 0 15px">
+  {{- body -}}
+</blockquote>
 
-  <p class="default text-muted mb-30" style="margin-bottom: 30px">
-    To answer, use the Inbox in the group dashboard (select {{ group_name }} first if you manage
-    several groups). Messages sent to this email address aren't delivered.
-  </p>
+<p class="default text-muted mb-30" style="margin-bottom: 30px">
+  To answer, use the Inbox in the group dashboard (select {{ group_name }} first if you manage
+  several groups). Messages sent to this email address aren't delivered.
+</p>
 
-  {{ email::button(link = link, text = "View conversation", color = theme.primary_color) }}
+{{ email::button(link = link, text = "View conversation", color = theme.primary_color) }}
 {% endblock content -%}
 
 {% block footer -%}

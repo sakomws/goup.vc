@@ -34,7 +34,7 @@ const modalFocusOrigins = new WeakMap();
  * @returns {HTMLElement|null} Element that can receive focus.
  */
 const getModalFocusTarget = (modal) => {
-  const focusTarget = modal.querySelector(MODAL_FOCUS_SELECTOR);
+  const focusTarget = modal.querySelector("[autofocus]") || modal.querySelector(MODAL_FOCUS_SELECTOR);
   if (focusTarget instanceof HTMLElement) {
     return focusTarget;
   }

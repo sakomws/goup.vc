@@ -397,7 +397,7 @@ select results_eq(
         select
             ep.status,
             epr.finalized_at is not null,
-            pj.recovery_completed_at is not null,
+            epr.recovery_completed_at is not null,
             epr.status,
             err.status
         from event_purchase ep

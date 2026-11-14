@@ -4,7 +4,7 @@
 
 {# Page title -#}
 {{ dashboard::page_title(title = "Analytics", docs_href = "/docs#/guides/event-operations?id=analytics",
-  description = "Traffic, registrations and attendance for this event. Analytics are cached for up to an hour and may not display up to date information.") }}
+description = "Traffic, registrations and attendance for this event. Analytics are cached for up to an hour and may not display up to date information.") }}
 {# End page title -#}
 
 {# Summary stat cards -#}
@@ -13,10 +13,10 @@
               lg:grid-cols-3 2xl:grid-cols-5 {%- else -%} 2xl:grid-cols-4 {%- endif %}">
   {{ stats_macro::stat_card(title = "Page views", value = stats.traffic.views_total|num_fmt, description = "Page loads, not unique visitors") -}}
   {{ stats_macro::stat_card(title = "Registrations", value = stats.enrollment.registrations|num_fmt, description = "Confirmed attendees") -}}
-  {{ stats_macro::stat_card(title = "Fill rate", value = self.fill_rate_label(), description = "Registrations of the event capacity") -}}
-  {{ stats_macro::stat_card(title = "Conversion", value = self.conversion_rate_label(), description = "Approximate registrations per page view") -}}
+  {{ stats_macro::stat_card(title = "Fill rate", value = self.fill_rate_label() , description = "Registrations of the event capacity") -}}
+  {{ stats_macro::stat_card(title = "Conversion", value = self.conversion_rate_label() , description = "Approximate registrations per page view") -}}
   {% if has_ended -%}
-    {{ stats_macro::stat_card(title = "Check-in rate", value = self.check_in_rate_label(), description = "Registrations checked in") -}}
+    {{ stats_macro::stat_card(title = "Check-in rate", value = self.check_in_rate_label() , description = "Registrations checked in") -}}
   {% endif -%}
 </div>
 {# End summary stat cards -#}
@@ -27,8 +27,8 @@
     {{ dashboard::form_title(title = "Traffic", description = "Page views of the event page and the UTM links that brought visitors to it.") -}}
     <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {{ stats_macro::stat_card(title = "Total page views", value = stats.traffic.views_total|num_fmt, description = "Page loads across all days") -}}
-      {{ stats_macro::stat_card(title = "Attributed views", value = stats.utm.tagged_views|num_fmt, description = self.attributed_views_description()) -}}
-      {{ stats_macro::stat_card(title = "Unattributed views", value = self.unattributed_views_label(), description = self.unattributed_views_description()) -}}
+      {{ stats_macro::stat_card(title = "Attributed views", value = stats.utm.tagged_views|num_fmt, description = self.attributed_views_description() ) -}}
+      {{ stats_macro::stat_card(title = "Unattributed views", value = self.unattributed_views_label() , description = self.unattributed_views_description()) -}}
     </div>
 
     {# Page views per day -#}
@@ -41,7 +41,7 @@
         {% if !stats.traffic.attribution_consistent -%}
           {{ dashboard::permission_warning(message = "Traffic source attribution is unavailable: the recorded UTM views exceed the total page views. Daily views are shown as raw totals.", extra_classes = "mt-4") -}}
         {% endif -%}
-        {{ stats_macro::analytics_chart(chart_id = "event-views-daily-chart", data = stats.traffic.views_by_source_per_day, wrapper_class = "mt-3", has_data = stats.traffic.has_views_activity(), summary = self.views_summary()) -}}
+        {{ stats_macro::analytics_chart(chart_id = "event-views-daily-chart", data = stats.traffic.views_by_source_per_day, wrapper_class = "mt-3", has_data = stats.traffic.has_views_activity() , summary = self.views_summary()) -}}
         {% if stats.traffic.views_before_start > 0 || stats.traffic.views_after_end > 0 -%}
           <ul class="mt-4 space-y-1 text-sm text-stone-600">
             {% if stats.traffic.views_before_start > 0 -%}
@@ -50,7 +50,9 @@
               </li>
             {% endif -%}
             {% if stats.traffic.views_after_end > 0 -%}
-              <li>{{ stats.traffic.views_after_end|num_fmt }} views recorded after the event's last day (UTC) are not shown.</li>
+              <li>
+                {{ stats.traffic.views_after_end|num_fmt }} views recorded after the event's last day (UTC) are not shown.
+              </li>
             {% endif -%}
           </ul>
         {% endif -%}
@@ -90,7 +92,7 @@
           {% if stats.traffic.attribution_consistent -%}
             <div>
               <div class="hidden min-h-8 xl:block" aria-hidden="true"></div>
-              {{ stats_macro::analytics_chart(chart_id = "event-utm-share-chart", data = stats.utm.combinations, wrapper_class = "mt-3", summary = self.utm_summary()) -}}
+              {{ stats_macro::analytics_chart(chart_id = "event-utm-share-chart", data = stats.utm.combinations, wrapper_class = "mt-3", summary = self.utm_summary() ) -}}
             </div>
           {% else -%}
             {{ dashboard::permission_warning(message = "Shares of page views are unavailable: the recorded UTM views exceed the total page views. The counts below are raw totals.", extra_classes = "") -}}
@@ -115,7 +117,7 @@
                         data-utm-dimension="campaign">Campaign</button>
               </div>
             </div>
-            {{ stats_macro::analytics_chart(chart_id = "event-utm-values-chart", data = stats.utm.combinations, wrapper_class = "mt-3", summary = self.utm_summary()) -}}
+            {{ stats_macro::analytics_chart(chart_id = "event-utm-values-chart", data = stats.utm.combinations, wrapper_class = "mt-3", summary = self.utm_summary() ) -}}
           </div>
         </div>
 
@@ -201,7 +203,9 @@
                     data-views="{{ combination.views }}"
                     data-first-day="{{ combination.first_day }}"
                     data-last-day="{{ combination.last_day }}">
-                  <td class="px-3 py-3 text-stone-900 xl:px-5">{{ combination.utm_source.as_deref().unwrap_or("Not specified") }}</td>
+                  <td class="px-3 py-3 text-stone-900 xl:px-5">
+                    {{ combination.utm_source.as_deref().unwrap_or("Not specified") }}
+                  </td>
                   <td class="px-3 py-3 xl:px-5">{{ combination.utm_medium.as_deref().unwrap_or("Not specified") }}</td>
                   <td class="px-3 py-3 xl:px-5">{{ combination.utm_campaign.as_deref().unwrap_or("Not specified") }}</td>
                   <td class="px-3 py-3 text-right xl:px-5">{{ combination.views|num_fmt }}</td>
@@ -240,7 +244,7 @@
         <div>
           <div class="text-sm font-semibold uppercase text-stone-500">Registrations per day</div>
           <p class="form-legend">Registrations are dated by when they were created, which is approximate.</p>
-          {{ stats_macro::analytics_chart(chart_id = "event-registrations-daily-chart", data = stats.traffic.registrations_by_ticket_type_per_day, wrapper_class = "mt-3", has_data = stats.traffic.has_registrations_activity(), summary = self.registrations_summary()) -}}
+          {{ stats_macro::analytics_chart(chart_id = "event-registrations-daily-chart", data = stats.traffic.registrations_by_ticket_type_per_day, wrapper_class = "mt-3", has_data = stats.traffic.has_registrations_activity() , summary = self.registrations_summary()) -}}
         </div>
         <div>
           <div class="text-sm font-semibold uppercase text-stone-500">Fill curve</div>
@@ -249,7 +253,7 @@
               The curve starts at {{ stats.traffic.registrations_baseline|num_fmt }} registrations created before the publication day.
             </p>
           {% endif -%}
-          {{ stats_macro::analytics_chart(chart_id = "event-fill-curve-chart", data = stats.traffic.registrations_running_total, wrapper_class = "mt-3", has_data = stats.traffic.registrations_baseline > 0 || stats.traffic.has_registrations_activity(), summary = self.fill_curve_summary()) -}}
+          {{ stats_macro::analytics_chart(chart_id = "event-fill-curve-chart", data = stats.traffic.registrations_running_total, wrapper_class = "mt-3", has_data = stats.traffic.registrations_baseline > 0 || stats.traffic.has_registrations_activity() , summary = self.fill_curve_summary()) -}}
         </div>
       </div>
     {% else -%}
@@ -263,11 +267,11 @@
     <div class="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
       <div>
         <div class="text-sm font-semibold uppercase text-stone-500">Funnel</div>
-        {{ stats_macro::analytics_chart(chart_id = "event-funnel-chart", data = self.funnel_stages(), wrapper_class = "mt-3", has_data = stats.traffic.views_total > 0 || stats.enrollment.registrations > 0, summary = self.funnel_summary()) -}}
+        {{ stats_macro::analytics_chart(chart_id = "event-funnel-chart", data = self.funnel_stages() , wrapper_class = "mt-3", has_data = stats.traffic.views_total > 0 || stats.enrollment.registrations > 0, summary = self.funnel_summary()) -}}
       </div>
       <div>
         <div class="text-sm font-semibold uppercase text-stone-500">How attendees registered</div>
-        {{ stats_macro::analytics_chart(chart_id = "event-registration-paths-chart", data = registration_paths, wrapper_class = "mt-3", summary = self.registration_paths_summary()) -}}
+        {{ stats_macro::analytics_chart(chart_id = "event-registration-paths-chart", data = registration_paths, wrapper_class = "mt-3", summary = self.registration_paths_summary() ) -}}
       </div>
     </div>
     {# End funnel and registration paths -#}
@@ -279,7 +283,7 @@
       <div class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {{ stats_macro::stat_card(title = "Cancellations", value = stats.enrollment.cancellations|num_fmt, description = "Attendances canceled") -}}
         {{ stats_macro::stat_card(title = "Waiting list", value = stats.enrollment.waitlist|num_fmt, description = "People waiting for a seat") -}}
-        {{ stats_macro::stat_card(title = "Invitation requests", value = invitation_requests_total|num_fmt, description = self.invitation_requests_summary()) -}}
+        {{ stats_macro::stat_card(title = "Invitation requests", value = invitation_requests_total|num_fmt, description = self.invitation_requests_summary() ) -}}
       </div>
     </div>
     {# End enrollment state -#}
@@ -386,9 +390,9 @@
   <section>
     {{ dashboard::form_title(title = "Audience", description = "Who registered for this event, based on the current registrations.") -}}
     <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {{ stats_macro::stat_card(title = "New attendees", value = self.optional_count_label(stats.audience.new_attendees), description = "No earlier attendance at this group's events") -}}
-      {{ stats_macro::stat_card(title = "Returning attendees", value = self.optional_count_label(stats.audience.returning_attendees), description = "Attended an earlier event of this group") -}}
-      {{ stats_macro::stat_card(title = "Joined during registration", value = self.optional_count_label(stats.audience.members_joined_in_window), description = self.members_joined_description()) -}}
+      {{ stats_macro::stat_card(title = "New attendees", value = self.optional_count_label(stats.audience.new_attendees) , description = "No earlier attendance at this group's events") -}}
+      {{ stats_macro::stat_card(title = "Returning attendees", value = self.optional_count_label(stats.audience.returning_attendees) , description = "Attended an earlier event of this group") -}}
+      {{ stats_macro::stat_card(title = "Joined during registration", value = self.optional_count_label(stats.audience.members_joined_in_window) , description = self.members_joined_description()) -}}
     </div>
     <p class="mt-3 text-xs text-stone-500">
       {% if let Some(window_label) = self.membership_window_label() -%}
@@ -458,7 +462,7 @@
     {# Check-ins -#}
     <section data-event-analytics-check-ins>
       {{ dashboard::form_title(title = "Check-ins", description = "Attendee arrivals over time, shown in the event timezone.") -}}
-      {{ stats_macro::analytics_chart(chart_id = "event-check-ins-chart", data = stats.check_ins.bins, wrapper_class = "mt-6", has_data = stats.check_ins.has_activity(), summary = self.check_ins_summary()) -}}
+      {{ stats_macro::analytics_chart(chart_id = "event-check-ins-chart", data = stats.check_ins.bins, wrapper_class = "mt-6", has_data = stats.check_ins.has_activity() , summary = self.check_ins_summary()) -}}
       {% if stats.check_ins.outside_range > 0 -%}
         <p class="mt-4 text-sm text-stone-600">
           {{ stats.check_ins.outside_range|num_fmt }} check-ins recorded more than six hours before the start or after the end are not shown.

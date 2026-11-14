@@ -11,7 +11,7 @@ select plan(10);
 -- VARIABLES
 -- ============================================================================
 
-\set communityID 'd4100000-0000-0000-0000-000000000001'
+\set allianceID 'd4100000-0000-0000-0000-000000000001'
 \set eventCategoryID 'd4100000-0000-0000-0000-000000000002'
 \set eventID 'd4100000-0000-0000-0000-000000000003'
 \set event2ID 'd4100000-0000-0000-0000-000000000004'
@@ -39,36 +39,20 @@ select plan(10);
 -- SEED DATA
 -- ============================================================================
 
--- Community owning the refund list fixtures
-insert into community (
-    banner_mobile_url,
-    banner_url,
-    community_id,
-    description,
-    display_name,
-    logo_url,
-    name
-) values (
-    'https://example.test/mobile.png',
-    'https://example.test/banner.png',
-    :'communityID',
-    'Community',
-    'Community',
-    'https://example.test/logo.png',
-    'refund-list-community'
-);
+-- Alliance owning the refund list fixtures
+select fx_community(:'allianceID');
 
 -- Event category used by the refund list events
-insert into event_category (community_id, event_category_id, name)
-values (:'communityID', :'eventCategoryID', 'Events');
+insert into event_category (alliance_id, event_category_id, name)
+values (:'allianceID', :'eventCategoryID', 'Events');
 
 -- Group category used by the refund list group
-insert into group_category (community_id, group_category_id, name)
-values (:'communityID', :'groupCategoryID', 'Groups');
+insert into group_category (alliance_id, group_category_id, name)
+values (:'allianceID', :'groupCategoryID', 'Groups');
 
 -- Group owning the refund history
-insert into "group" (community_id, group_category_id, group_id, name, slug)
-values (:'communityID', :'groupCategoryID', :'groupID', 'Group', 'group');
+insert into "group" (alliance_id, group_category_id, group_id, name, slug)
+values (:'allianceID', :'groupCategoryID', :'groupID', 'Group', 'group');
 
 -- Users representing every operational view
 insert into "user" (auth_hash, email, name, photo_url, user_id, username) values

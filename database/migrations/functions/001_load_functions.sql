@@ -43,6 +43,7 @@
 {{ template "auth/get_user_by_id_verified.sql" }}
 {{ template "auth/get_user_by_username.sql" }}
 {{ template "auth/get_public_user_provider.sql" }}
+{{ template "auth/group_belongs_to_community.sql" }}
 {{ template "auth/is_linkedin_subject_blocked.sql" }}
 {{ template "auth/sign_up_user.sql" }}
 {{ template "auth/update_user_details.sql" }}
@@ -65,6 +66,10 @@
 {{ template "internal/ticketing/list_event_discount_codes.sql" }} -- Dependency for get_event_full and payments
 {{ template "internal/ticketing/list_event_ticket_types.sql" }} -- Dependency for get_event_full and payments
 {{ template "common/get_group_summary.sql" }} -- Do not sort alphabetically, has dependency
+{{ template "common/is_country_external_payments_allowlisted.sql" }}
+{{ template "common/is_group_external_payments_ready.sql" }}
+{{ template "common/is_event_external_payments_ready.sql" }}
+{{ template "common/get_group_external_payments_context.sql" }}
 {{ template "common/get_collaboration_outcome_summary.sql" }}
 {{ template "internal/enrollment/questionnaire_answers_exist_for_event.sql" }} -- Do not sort alphabetically, dependency for get_event_full and update_event
 {{ template "common/query_community_analytics.sql" }}
@@ -225,6 +230,7 @@
 {{ template "dashboard-group/event_sponsor_reporting.sql" }}
 {{ template "dashboard-group/event_growth.sql" }}
 {{ template "dashboard-group/get_group_sponsor.sql" }}
+{{ template "dashboard-group/get_group_external_payments_eligibility.sql" }}
 {{ template "dashboard-group/get_group_collaboration_dashboard.sql" }}
 {{ template "dashboard-group/get_group_stats.sql" }}
 {{ template "dashboard-group/get_group_utm_settings.sql" }}
@@ -240,6 +246,7 @@
 {{ template "dashboard-group/list_event_kinds.sql" }}
 {{ template "dashboard-group/list_event_series_event_ids.sql" }}
 {{ template "dashboard-group/list_group_refunds.sql" }}
+{{ template "dashboard-group/list_group_automatic_tax_readiness_event_ids.sql" }}
 {{ template "dashboard-group/list_event_series_publishable_event_ids.sql" }}
 {{ template "dashboard-group/list_event_waitlist_ids.sql" }}
 {{ template "dashboard-group/list_group_coffee_meet_subscribers.sql" }}
@@ -309,6 +316,7 @@
 {{ template "dashboard-user/delete_session_proposal.sql" }}
 {{ template "dashboard-user/delete_user_affiliation.sql" }}
 {{ template "dashboard-user/get_user_notification_preferences.sql" }}
+{{ template "dashboard-user/get_user_check_in_code.sql" }}
 {{ template "dashboard-user/list_landscape_entry_options.sql" }}
 {{ template "dashboard-user/list_session_proposal_levels.sql" }}
 {{ template "dashboard-user/list_user_coffee_meet_subscriptions.sql" }}
@@ -384,6 +392,7 @@
 
 {{ template "internal/meetings/get_event_meeting_sync_state_hash.sql" }} -- Dependency for meeting sync completion functions
 {{ template "internal/meetings/get_session_meeting_sync_state_hash.sql" }} -- Dependency for meeting sync completion functions
+{{ template "internal/meetings/release_meeting_sync.sql" }} -- Dependency for meeting worker completion functions
 {{ template "meetings/add_meeting.sql" }}
 {{ template "meetings/append_meeting_recording_url.sql" }}
 {{ template "meetings/assign_zoom_host_user.sql" }}
@@ -460,6 +469,7 @@
 {{ template "payments/request_event_refund.sql" }}
 {{ template "payments/requeue_event_purchase_refund.sql" }}
 {{ template "payments/requeue_stale_payment_job_claims.sql" }}
+{{ template "payments/sync_external_payments_config.sql" }}
 
 {{ template "site/get_filters_options.sql" }}
 {{ template "site/get_site_home_stats.sql" }}

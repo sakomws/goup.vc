@@ -209,6 +209,7 @@ select results_eq(
         where conname = 'event_attendee_status_chk'
     $$,
     $$ values
+        ('attendance-canceled'),
         ('confirmed'),
         ('invitation-canceled'),
         ('invitation-pending'),
@@ -346,6 +347,7 @@ select results_eq(
         ('group-announcements', 'Group announcements', true),
         ('group-inbox', 'Group inbox', false),
         ('new-events', 'New events', true),
+        ('opportunity-digests', 'Opportunity digests', false),
         ('organizer-messages', 'Messages from event organizers', true),
         ('paid-event-setups', 'Paid event setups', false)
     $$,
@@ -390,7 +392,7 @@ select results_eq(
         ('inbox-message-received', 'group-inbox'::text),
         ('inbox-reply-received', null::text),
         ('intentional-dating-introduction', null::text),
-        ('opportunity-digest', null::text),
+        ('opportunity-digest', 'opportunity-digests'::text),
         ('session-proposal-co-speaker-invitation', null::text),
         ('site-onboarding', null::text),
         ('speaker-series-welcome', null::text),
@@ -505,6 +507,7 @@ select results_eq(
 select results_eq(
     'select alliance_role_id, group_permission_id from alliance_role_group_permission order by alliance_role_id, group_permission_id',
     $$ values
+        ('admin', 'group.check-ins.write'),
         ('admin', 'group.distribution.write'),
         ('admin', 'group.events.write'),
         ('admin', 'group.gtm.write'),
@@ -515,6 +518,7 @@ select results_eq(
         ('admin', 'group.settings.write'),
         ('admin', 'group.sponsors.write'),
         ('admin', 'group.team.write'),
+        ('groups-manager', 'group.check-ins.write'),
         ('groups-manager', 'group.distribution.write'),
         ('groups-manager', 'group.events.write'),
         ('groups-manager', 'group.gtm.write'),
@@ -534,6 +538,7 @@ select results_eq(
 select results_eq(
     'select group_permission_id, display_name from group_permission order by group_permission_id',
     $$ values
+        ('group.check-ins.write', 'Check-Ins Write'),
         ('group.distribution.write', 'Distribution Write'),
         ('group.events.write', 'Events Write'),
         ('group.gtm.write', 'GTM Write'),
@@ -553,6 +558,7 @@ select results_eq(
     'select * from group_role order by group_role_id',
     $$ values
         ('admin', 'Admin'),
+        ('check-in-manager', 'Check-In Manager'),
         ('events-manager', 'Events Manager'),
         ('viewer', 'Viewer')
     $$,
@@ -563,6 +569,9 @@ select results_eq(
 select results_eq(
     'select group_permission_id, group_role_id from group_role_group_permission order by group_permission_id, group_role_id',
     $$ values
+        ('group.check-ins.write', 'admin'),
+        ('group.check-ins.write', 'check-in-manager'),
+        ('group.check-ins.write', 'events-manager'),
         ('group.distribution.write', 'admin'),
         ('group.events.write', 'admin'),
         ('group.events.write', 'events-manager'),
@@ -572,6 +581,7 @@ select results_eq(
         ('group.members.write', 'admin'),
         ('group.projects.write', 'admin'),
         ('group.read', 'admin'),
+        ('group.read', 'check-in-manager'),
         ('group.read', 'events-manager'),
         ('group.read', 'viewer'),
         ('group.settings.write', 'admin'),

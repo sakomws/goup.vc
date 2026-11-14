@@ -64,7 +64,7 @@ describe("dashboard base template", () => {
       '<div id="dashboard-layout" class="flex max-md:grow max-md:px-4 max-md:pb-4">',
     );
     expect(template).to.include(
-      "{% block dashboard_main_classes -%}hidden md:block{% endblock dashboard_main_classes -%}",
+      "{% block dashboard_main_classes -%} hidden md:block {% endblock dashboard_main_classes -%}",
     );
   });
 });

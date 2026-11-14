@@ -162,12 +162,12 @@ insert into alliance_team (accepted, alliance_id, role, user_id) values
 insert into user_notification_opt_out (notification_category_id, user_id)
 select nc.notification_category_id, recipient.user_id
 from notification_category nc
-cross join (values (:'communityManagerID'::uuid), (:'teamUser1ID'::uuid)) as recipient(user_id);
+cross join (values (:'allianceManagerID'::uuid), (:'teamUser1ID'::uuid)) as recipient(user_id);
 
 -- Group mutes for organizer recipients prove refund requests ignore mutes
 insert into user_group_notification_mute (group_id, user_id)
 values
-    (:'groupID', :'communityManagerID'),
+    (:'groupID', :'allianceManagerID'),
     (:'groupID', :'teamUser1ID');
 
 -- Events

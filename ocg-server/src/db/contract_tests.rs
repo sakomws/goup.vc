@@ -2,7 +2,7 @@ use std::{collections::HashMap, env, time::Duration};
 
 use anyhow::{Context, Result};
 use chrono::NaiveDate;
-use deadpool_postgres::{Config as DbConfig, Runtime};
+use deadpool_postgres::{Config as DbConfig, Pool, Runtime};
 use tokio_postgres::NoTls;
 use uuid::Uuid;
 
@@ -203,6 +203,7 @@ async fn db_contracts_complete_free_event_purchase_deserializes() -> Result<()> 
 #[ignore = "requires the contract test database"]
 async fn db_contracts_event_purchase_refund_lifecycle_deserializes() -> Result<()> {
     // Start a durable manual refund from deterministic contract data
+    seed_refund_lifecycle().await?;
     let db = contract_tests_db()?;
     let refund = db.get_event_purchase_refund(refund_lifecycle_purchase_id()).await?;
 
@@ -1064,9 +1065,11 @@ async fn db_contracts_list_group_roles_deserializes() -> Result<()> {
     let db = contract_tests_db()?;
     let roles = db.list_group_roles().await?;
 
-    assert_eq!(roles.len(), 3);
+    assert_eq!(roles.len(), 4);
     assert_eq!(roles[0].group_role_id, "admin");
     assert_eq!(roles[0].display_name, "Admin");
+    assert_eq!(roles[1].group_role_id, "check-in-manager");
+    assert_eq!(roles[1].display_name, "Check-In Manager");
 
     Ok(())
 }
@@ -1680,7 +1683,6 @@ const PAST_EVENT_ID: &str = "00000000-0000-0000-0000-00000000c032";
 const PRE_REGISTERED_ID: &str = "00000000-0000-0000-0000-00000000c044";
 const RECONCILE_BUYER_ID: &str = "00000000-0000-0000-0000-00000000c0e3";
 const REFUND_APPROVE_BUYER_ID: &str = "00000000-0000-0000-0000-00000000c0e6";
-const REFUND_BEGIN_BUYER_ID: &str = "00000000-0000-0000-0000-00000000c0e5";
 const REFUND_BEGIN_PURCHASE_ID: &str = "00000000-0000-0000-0000-00000000c0f4";
 const REFUND_LIFECYCLE_PURCHASE_ID: &str = "00000000-0000-0000-0000-00000000c0fb";
 const REFUND_REJECT_BUYER_ID: &str = "00000000-0000-0000-0000-00000000c0e7";
@@ -1728,6 +1730,10 @@ fn alliance_id() -> Uuid {
 }
 
 fn contract_tests_db() -> Result<PgDB> {
+    Ok(PgDB::new(contract_tests_pool()?))
+}
+
+fn contract_tests_pool() -> Result<Pool> {
     let port = env_or_default("OCG_DB_PORT", "5432")
         .parse()
         .context("OCG_DB_PORT must be a valid port number")?;
@@ -1748,7 +1754,7 @@ fn contract_tests_db() -> Result<PgDB> {
     }
 
     let pool = cfg.create_pool(Some(Runtime::Tokio1), NoTls)?;
-    Ok(PgDB::new(pool))
+    Ok(pool)
 }
 
 fn env_or_default(name: &str, default: &str) -> String {
@@ -1811,16 +1817,49 @@ fn refund_approve_buyer_id() -> Uuid {
     parse_uuid(REFUND_APPROVE_BUYER_ID)
 }
 
-fn refund_begin_buyer_id() -> Uuid {
-    parse_uuid(REFUND_BEGIN_BUYER_ID)
-}
-
 fn refund_begin_purchase_id() -> Uuid {
     parse_uuid(REFUND_BEGIN_PURCHASE_ID)
 }
 
 fn refund_lifecycle_purchase_id() -> Uuid {
     parse_uuid(REFUND_LIFECYCLE_PURCHASE_ID)
+}
+
+async fn seed_refund_lifecycle() -> Result<()> {
+    let client = contract_tests_pool()?.get().await?;
+    client
+        .batch_execute(
+            "
+            insert into event_purchase_refund (
+                event_purchase_refund_id,
+                amount_minor,
+                currency_code,
+                event_purchase_id,
+                idempotency_key,
+                kind,
+                payment_provider_id,
+                status,
+                event_refund_request_id
+            )
+            select
+                '00000000-0000-0000-0000-00000000c0fd',
+                2500,
+                'USD',
+                '00000000-0000-0000-0000-00000000c0fb',
+                'event-purchase-refund-00000000-0000-0000-0000-00000000c0fb',
+                'refund-request-approval',
+                'stripe',
+                'provider-pending',
+                '00000000-0000-0000-0000-00000000c0fc'
+            where not exists (
+                select 1
+                from event_purchase_refund
+                where event_purchase_id = '00000000-0000-0000-0000-00000000c0fb'
+            );
+            ",
+        )
+        .await?;
+    Ok(())
 }
 
 fn refund_reject_buyer_id() -> Uuid {

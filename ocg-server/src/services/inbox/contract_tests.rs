@@ -28,6 +28,7 @@ const INBOX_WRITE_EVENT_ID: Uuid = Uuid::from_u128(0xe032);
 #[ignore = "requires the contract test database"]
 async fn db_contracts_inbox_manager_commits_message_with_notification() -> Result<()> {
     // Setup the manager over the contract database
+    seed_inbox_manager_fixture().await?;
     let manager = PgInboxManager::new(Arc::new(contract_tests_db()?));
 
     // Start a conversation through the manager
@@ -93,4 +94,138 @@ fn contract_tests_pool() -> Result<Pool> {
 
 fn contract_tests_db() -> Result<PgDB> {
     Ok(PgDB::new(contract_tests_pool()?))
+}
+
+async fn seed_inbox_manager_fixture() -> Result<()> {
+    let client = contract_tests_pool()?.get().await?;
+    client
+        .batch_execute(
+            "
+            insert into alliance (
+                active,
+                alliance_id,
+                banner_mobile_url,
+                banner_url,
+                description,
+                display_name,
+                logo_url,
+                name
+            ) values (
+                false,
+                '00000000-0000-0000-0000-00000000e001',
+                'https://example.com/inbox-alliance-banner-mobile.png',
+                'https://example.com/inbox-alliance-banner.png',
+                'An inbox alliance used by Rust database contract tests',
+                'Contract Inbox Alliance',
+                'https://example.com/inbox-alliance-logo.png',
+                'contract-inbox-alliance'
+            ) on conflict do nothing;
+
+            insert into group_category (alliance_id, group_category_id, name)
+            values (
+                '00000000-0000-0000-0000-00000000e001',
+                '00000000-0000-0000-0000-00000000e002',
+                'Inbox groups'
+            ) on conflict do nothing;
+
+            insert into event_category (alliance_id, event_category_id, name)
+            values (
+                '00000000-0000-0000-0000-00000000e001',
+                '00000000-0000-0000-0000-00000000e003',
+                'Inbox events'
+            ) on conflict do nothing;
+
+            insert into \"group\" (
+                alliance_id,
+                group_category_id,
+                group_id,
+                name,
+                slug
+            ) values (
+                '00000000-0000-0000-0000-00000000e001',
+                '00000000-0000-0000-0000-00000000e002',
+                '00000000-0000-0000-0000-00000000e012',
+                'Contract Inbox Write Group',
+                'contract-inbox-write-group'
+            ) on conflict do nothing;
+
+            insert into \"user\" (
+                auth_hash,
+                email,
+                email_verified,
+                name,
+                user_id,
+                username
+            ) values
+                (
+                    'contract_hash_inbox_admin',
+                    'inbox.admin.contract@example.com',
+                    true,
+                    'Inbox Admin',
+                    '00000000-0000-0000-0000-00000000e021',
+                    'contract-inbox-admin'
+                ),
+                (
+                    'contract_hash_inbox_events_manager',
+                    'inbox.events-manager.contract@example.com',
+                    true,
+                    'Inbox Events Manager',
+                    '00000000-0000-0000-0000-00000000e022',
+                    'contract-inbox-events-manager'
+                ),
+                (
+                    'contract_hash_inbox_manager',
+                    'inbox.manager.contract@example.com',
+                    true,
+                    'Inbox Manager',
+                    '00000000-0000-0000-0000-00000000e02a',
+                    'contract-inbox-manager'
+                )
+            on conflict do nothing;
+
+            insert into group_team (accepted, group_id, role, user_id)
+            values
+                (
+                    true,
+                    '00000000-0000-0000-0000-00000000e012',
+                    'admin',
+                    '00000000-0000-0000-0000-00000000e021'
+                ),
+                (
+                    true,
+                    '00000000-0000-0000-0000-00000000e012',
+                    'events-manager',
+                    '00000000-0000-0000-0000-00000000e022'
+                )
+            on conflict do nothing;
+
+            insert into event (
+                description,
+                event_category_id,
+                event_id,
+                event_kind_id,
+                group_id,
+                name,
+                published,
+                published_at,
+                slug,
+                starts_at,
+                timezone
+            ) values (
+                'Event contacted by the inbox manager contract',
+                '00000000-0000-0000-0000-00000000e003',
+                '00000000-0000-0000-0000-00000000e032',
+                'virtual',
+                '00000000-0000-0000-0000-00000000e012',
+                'Contract Inbox Write Event',
+                true,
+                '2024-01-01 00:00:00+00',
+                'contract-inbox-write-event',
+                '2099-01-10 10:00:00+00',
+                'UTC'
+            ) on conflict do nothing;
+            ",
+        )
+        .await?;
+    Ok(())
 }

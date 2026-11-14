@@ -4,7 +4,11 @@
 {# Used by the conversation header and messages for user photos or initials. -#}
 {% macro author_avatar(author, size, font_size = "text-sm", color_class = "bg-stone-200 text-stone-600", extra_styles = "") -%}
   {% if let Some(user) = author -%}
-    <logo-image class="shrink-0 {{ extra_styles }}" aria-hidden="true" {% if let Some(photo_url) = &user.photo_url -%} image-url="{{ photo_url }}" {% endif -%} size="{{ size }}" font-size="{{ font_size }}" color-class="{{ color_class }}" hide-border placeholder="{{ self::user_initials(user.name.as_deref() , user.username.as_str()) }}">
+    <logo-image class="shrink-0 {{ extra_styles }}" aria-hidden="true"
+    {% if let Some(photo_url) = &user.photo_url -%}
+      image-url="{{ photo_url }}"
+    {% endif -%}
+    size="{{ size }}" font-size="{{ font_size }}" color-class="{{ color_class }}" hide-border placeholder="{{ self::user_initials(user.name.as_deref() , user.username.as_str()) }}">
     </logo-image>
   {% else -%}
     {# Deleted user avatar -#}
@@ -81,7 +85,7 @@
         <span class="flex items-center gap-1.5">
           <span class="svg-icon size-3.5 shrink-0 icon-email bg-stone-500"
                 aria-hidden="true"></span>
-          <span>{{ conversation.messages.len() }} message{{ conversation.messages.len()|pluralize }}</span>
+          <span>{{ conversation.messages.len() }} message{{ conversation.messages.len() |pluralize }}</span>
         </span>
       </div>
       {# End conversation facts -#}
@@ -183,7 +187,7 @@
                     {% else -%}
                       ps-11
                     {% endif -%}">
-          <span class="break-words font-medium text-stone-700">{{ self::user_label(message.author.as_ref()) }}</span>
+          <span class="break-words font-medium text-stone-700">{{ self::user_label(message.author.as_ref() ) }}</span>
           {% if message.kind.is_from_group() -%}
             <span aria-hidden="true">·</span>
             <span class="text-nowrap text-[10px] font-medium uppercase text-stone-500">Organizer</span>
@@ -202,9 +206,9 @@
                       flex-row-reverse
                     {% endif -%}">
           {% if message.kind.is_from_group() -%}
-            {{ author_avatar(message.author.as_ref(), "size-8", "text-xs", "bg-primary-100 text-primary-700", "mt-2.25") -}}
+            {{ author_avatar(message.author.as_ref() , "size-8", "text-xs", "bg-primary-100 text-primary-700", "mt-2.25") -}}
           {% else -%}
-            {{ author_avatar(message.author.as_ref(), "size-8", "text-xs", "bg-stone-200 text-stone-600", "mt-2.25") -}}
+            {{ author_avatar(message.author.as_ref() , "size-8", "text-xs", "bg-stone-200 text-stone-600", "mt-2.25") -}}
           {% endif -%}
           <p class="min-w-0 whitespace-pre-line break-words rounded-lg border px-4 py-3 text-sm/6 text-stone-800
                     {% if message.kind.is_from_group() -%}
@@ -246,7 +250,11 @@
 
     {# Message form (no maxlength: browsers count UTF-16 units, the server counts characters) -#}
     <form id="inbox-message-form"
-          class="{% if is_closed() %}mt-4{% else %}mt-10{% endif %}"
+          class="{% if is_closed() %}
+                   mt-4
+                 {% else %}
+                   mt-10
+                 {% endif %}"
           hx-post="{{ scope.message_url(conversation.inbox_conversation_id) }}"
           hx-target="#inbox-conversation"
           hx-swap="outerHTML"
@@ -269,7 +277,9 @@
                   required
                   aria-describedby="inbox-message-help"
                   class="input-primary min-h-28"
-                  {% if focus_message -%}autofocus{%- endif %}></textarea>
+                  {% if focus_message -%}
+                  autofocus
+                  {%- endif %}></textarea>
       </div>
       <p id="inbox-message-help" class="form-legend">
         {% if scope.is_group() -%}
@@ -283,8 +293,7 @@
                 type="submit"
                 class="btn-primary inline-flex items-center">
           <span>Send</span>
-          <span id="inbox-message-spinner"
-                class="ms-2 hidden hx-spinner">{{ ui::spinner(size = "size-4") -}}</span>
+          <span id="inbox-message-spinner" class="ms-2 hidden hx-spinner">{{ ui::spinner(size = "size-4") -}}</span>
         </button>
       </div>
     </form>
@@ -295,8 +304,8 @@
          data-inbox-read-only-notice>
       The user deleted their account, so this conversation is read-only.
       {% if can_close() -%}You can still close it.{%- endif %}
-    </div>
-    {# End read-only notice -#}
-  {% endif -%}
-</section>
-{# End inbox conversation thread -#}
+      </div>
+      {# End read-only notice -#}
+    {% endif -%}
+  </section>
+  {# End inbox conversation thread -#}

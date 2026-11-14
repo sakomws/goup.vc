@@ -16,6 +16,7 @@ insert into notification_category (notification_category_id, display_name, group
     ('group-announcements', 'Group announcements', true),
     ('group-inbox', 'Group inbox', false),
     ('new-events', 'New events', true),
+    ('opportunity-digests', 'Opportunity digests', false),
     ('organizer-messages', 'Messages from event organizers', true),
     ('paid-event-setups', 'Paid event setups', false);
 
@@ -43,6 +44,9 @@ where name = 'inbox-message-received';
 
 update notification_kind set notification_category_id = 'new-events'
 where name in ('event-published', 'event-series-published');
+
+update notification_kind set notification_category_id = 'opportunity-digests'
+where name = 'opportunity-digest';
 
 update notification_kind set notification_category_id = 'organizer-messages'
 where name = 'event-custom';
@@ -90,3 +94,31 @@ alter table notification_kind drop column optional_notification;
 
 -- Replace the enqueue helper with one that accepts the groups a notification names.
 drop function if exists enqueue_notification(text, jsonb, jsonb, uuid[]);
+
+-- Replace the co-host recipient lookup after removing the legacy user-level
+-- optional-notification flag. Co-host preferences now use the category opt-out.
+create or replace function list_event_cohost_notification_recipients(p_event_id uuid)
+returns table (cohost_group_id uuid, user_id uuid) as $$
+    select distinct ec.cohost_group_id, member.user_id
+    from event_cohost ec
+    join "group" g on g.group_id = ec.cohost_group_id
+    join lateral (
+        select gm.user_id from group_member gm where gm.group_id = ec.cohost_group_id
+        union
+        select gt.user_id from group_team gt
+        where gt.group_id = ec.cohost_group_id and gt.accepted = true
+    ) member on true
+    left join group_cohost_notification_preference pref
+      on pref.group_id = ec.cohost_group_id and pref.user_id = member.user_id
+    where ec.event_id = p_event_id
+      and ec.status = 'approved'
+      and g.active = true
+      and g.deleted = false
+      and coalesce(pref.enabled, true) = true
+      and not exists (
+          select 1
+          from user_notification_opt_out uo
+          where uo.user_id = member.user_id
+            and uo.notification_category_id = 'cohosting-updates'
+      );
+$$ language sql stable;

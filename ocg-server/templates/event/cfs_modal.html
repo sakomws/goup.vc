@@ -117,13 +117,7 @@
   {% endif -%}
 
   {# Inline session proposal creation modal -#}
-  <session-proposal-modal id="session-proposal-modal-component"
-                          session-proposal-levels='{{ session_proposal_levels|json }}'
-                          current-user-id="{{ current_user_id }}"
-                          title-max-length="{{ crate::validation::MAX_LEN_ENTITY_NAME }}"
-                          description-max-length="{{ crate::validation::MAX_LEN_DESCRIPTION }}"
-                          duration-max="{{ crate::validation::MAX_SESSION_PROPOSAL_DURATION_MINUTES }}"
-                          data-cfs-refresh-url="/{{ event.alliance_name }}/event/{{ event.event_id }}/cfs-modal"></session-proposal-modal>
+  <session-proposal-modal id="session-proposal-modal-component" session-proposal-levels='{{ session_proposal_levels|json }}' current-user-id="{{ current_user_id }}" title-max-length="{{ crate::validation::MAX_LEN_ENTITY_NAME }}" description-max-length="{{ crate::validation::MAX_LEN_DESCRIPTION }}" duration-max="{{ crate::validation::MAX_SESSION_PROPOSAL_DURATION_MINUTES }}" data-cfs-refresh-url="/{{ event.alliance_name }}/event/{{ event.event_id }}/cfs-modal"></session-proposal-modal>
   {# End inline session proposal creation modal -#}
 {% endif -%}
 {# End event cfs modal -#}

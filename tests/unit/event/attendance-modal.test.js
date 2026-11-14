@@ -236,6 +236,10 @@ const renderPaidAttendanceDom = ({
     </div>
   `;
 
+  document.querySelectorAll("form").forEach((form) => {
+    form.addEventListener("submit", (event) => event.preventDefault());
+  });
+
   return {
     container: document.querySelector("[data-attendance-container]"),
     checker: document.querySelector(

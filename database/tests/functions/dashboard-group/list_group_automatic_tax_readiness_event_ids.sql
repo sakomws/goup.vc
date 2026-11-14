@@ -49,11 +49,13 @@ select fx_event(:'eligibleEventID', :'activeGroupID', :'eventCategoryID', jsonb_
     'ends_at', current_timestamp + interval '2 days',
     'payment_currency_code', 'USD',
     'published', true,
-    'starts_at', current_timestamp + interval '1 day'
+    'starts_at', current_timestamp + interval '1 day',
+    'tax_calculation_mode', 'automatic'
 ));
 select fx_event(:'undatedEventID', :'activeGroupID', :'eventCategoryID', jsonb_build_object(
     'payment_currency_code', 'USD',
-    'published', true
+    'published', true,
+    'tax_calculation_mode', 'automatic'
 ));
 select fx_event(:'canceledEventID', :'activeGroupID', :'eventCategoryID', jsonb_build_object(
     'canceled', true,

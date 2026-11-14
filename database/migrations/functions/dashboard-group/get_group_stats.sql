@@ -602,4 +602,4 @@ select json_strip_nulls(json_build_object(
         )
     )
 ));
-$$ language sql stable;
+$$ language sql stable set timezone = 'UTC';

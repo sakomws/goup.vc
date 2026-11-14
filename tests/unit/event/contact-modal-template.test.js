@@ -21,7 +21,7 @@ describe("event contact modal templates", () => {
     // Verify the opener loads the modal content into the root that opens the modal
     expect(template).to.include('<button id="open-contact-modal" type="button"');
     expect(template).to.include(
-      'hx-get="/{{ event.community.name }}/event/{{ event.event_id }}/contact-modal"',
+      'hx-get="/{{ event.alliance.name }}/event/{{ event.event_id }}/contact-modal"',
     );
     expect(template).to.include('hx-target="#contact-modal-root"');
     expect(template).to.include('<div id="contact-modal-root" data-modal-open-on-swap="contact-modal"');

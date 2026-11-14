@@ -373,6 +373,9 @@ select columns_are('event_attendee', array[
     'manually_invited',
     'status',
 
+    'attendance_canceled_at',
+    'attendance_canceled_by_user_id',
+    'check_in_code',
     'checked_in_at',
     'registration_answers'
 ]);
@@ -647,6 +650,9 @@ select columns_are('group', array[
     'substack_url',
     'tags',
     'twitter_url',
+    'utm_campaigns',
+    'utm_mediums',
+    'utm_sources',
     'website_url',
     'web_analytics_measurement_id',
     'whatsapp_url',

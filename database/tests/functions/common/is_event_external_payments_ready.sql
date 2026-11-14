@@ -35,69 +35,16 @@ insert into external_payments_config (
     336
 );
 
--- Community for readiness scenarios
-insert into community (
-    community_id,
-    name,
-    display_name,
-    description,
-    banner_mobile_url,
-    banner_url,
-    logo_url
-) values (
-    :'communityID',
-    'external-ready-community',
-    'External Ready Community',
-    'Community for external readiness tests',
-    'https://example.com/banner-mobile.png',
-    'https://example.com/banner.png',
-    'https://example.com/logo.png'
+select fx_community(:'communityID');
+select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_group(
+    :'groupID', :'communityID', :'groupCategoryID',
+    jsonb_build_object('country_code', 'KR', 'external_payments_enabled', true)
 );
-
--- Event category for readiness scenarios
-insert into event_category (event_category_id, community_id, name)
-values (:'eventCategoryID', :'communityID', 'Meetup');
-
--- Group category for readiness scenarios
-insert into group_category (group_category_id, community_id, name)
-values (:'groupCategoryID', :'communityID', 'Technology');
-
--- Allowlisted group with the external-payments toggle enabled
-insert into "group" (
-    country_code,
-    community_id,
-    external_payments_enabled,
-    group_category_id,
-    group_id,
-    name,
-    slug
-) values (
-    'KR',
-    :'communityID',
-    true,
-    :'groupCategoryID',
-    :'groupID',
-    'External Ready Group',
-    'external-ready-group'
-);
-
--- Group outside the allowlist
-insert into "group" (
-    country_code,
-    community_id,
-    external_payments_enabled,
-    group_category_id,
-    group_id,
-    name,
-    slug
-) values (
-    'US',
-    :'communityID',
-    true,
-    :'groupCategoryID',
-    :'groupUnreadyID',
-    'External Unready Group',
-    'external-unready-group'
+select fx_group(
+    :'groupUnreadyID', :'communityID', :'groupCategoryID',
+    jsonb_build_object('country_code', 'US', 'external_payments_enabled', true)
 );
 
 -- External-marked event on the allowlisted group

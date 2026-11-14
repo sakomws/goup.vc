@@ -14,7 +14,8 @@ const loadTemplate = async (path) => {
  * @param {string} value - Template source.
  * @returns {string} Source with single spaces between tokens.
  */
-const normalizeWhitespace = (value) => value.replace(/\s+/g, " ").trim();
+const normalizeWhitespace = (value) =>
+  value.replace(/\s+/g, " ").replace(/\s+([,)])/g, "$1").trim();
 
 describe("dashboard group event analytics template", () => {
   it("renders cards with the shared stat card macro and cache copy", async () => {

@@ -11,7 +11,9 @@
     <div class="svg-icon size-4 mt-0.5 bg-emerald-700 icon-check"
          aria-hidden="true"></div>
     <div class="text-sm">
-      <div>Your message was sent to the organizers. Their replies arrive by email and in your dashboard Inbox.</div>
+      <div>
+        Your message was sent to the organizers. Their replies arrive by email and in your dashboard Inbox.
+      </div>
       <a href="/dashboard/user?tab=inbox&conversation_id={{ inbox_conversation_id }}"
          class="mt-2 inline-block font-semibold text-emerald-950 underline underline-offset-2 hover:text-primary-700">View conversation</a>
     </div>
@@ -141,8 +143,7 @@
                     type="submit"
                     class="btn-primary inline-flex items-center">
               <span>Send</span>
-              <span id="contact-submit-spinner"
-                    class="ms-2 hidden hx-spinner">{{ ui::spinner(size = "size-4") -}}</span>
+              <span id="contact-submit-spinner" class="ms-2 hidden hx-spinner">{{ ui::spinner(size = "size-4") -}}</span>
             </button>
           </div>
           {# End form actions -#}

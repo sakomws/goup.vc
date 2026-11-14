@@ -28,8 +28,17 @@
 {# End preference toggle -#}
 
 {# Dashboard User Notifications -#}
-{{ dashboard::page_title(title = "Notifications",
-  description = "Choose which optional emails you receive. Account, registration, and action-required emails are always sent.") -}}
+{% let notifications_description -%}
+Choose which optional emails you receive. Emails about your account, your registrations, and
+<button type="button"
+        class="cursor-pointer font-medium text-primary-500 underline underline-offset-2 hover:text-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 rounded-sm"
+        aria-haspopup="dialog"
+        aria-controls="always-sent-modal"
+        data-always-sent-modal-open>things that need your attention are always sent</button>
+.
+{%- endlet %}
+{{ dashboard::page_title(title = "Notifications", docs_href = "/docs#/guides/user-dashboard?id=notifications-email-preferences",
+description_html = notifications_description) -}}
 
 {# Preferences form -#}
 <form id="notification-preferences-form"
@@ -135,9 +144,9 @@
     <div class="modal-card rounded-lg">
       {# Modal header -#}
       {{ dashboard::modal_header(title_id = "always-sent-modal-title",
-        title = "Always sent",
-        close_id = "close-always-sent-modal",
-        close_attrs = "data-always-sent-modal-close") -}}
+            title = "Always sent",
+            close_id = "close-always-sent-modal",
+            close_attrs = "data-always-sent-modal-close") -}}
       {# End modal header -#}
 
       {# Modal body -#}
@@ -146,13 +155,27 @@
           These emails can't be turned off because they're about your account or need your attention.
         </p>
         <ul class="mt-4 space-y-2 text-sm text-stone-700 list-disc ps-5">
-          <li><span class="font-medium text-stone-900">Account:</span> email verification and team invitations.</li>
-          <li><span class="font-medium text-stone-900">Registrations:</span> confirmations, group welcome emails, tickets, invitations, waitlist changes and offers.</li>
-          <li><span class="font-medium text-stone-900">Payments:</span> instructions, reminders, expirations and refund decisions.</li>
-          <li><span class="font-medium text-stone-900">Event changes:</span> cancellations and reschedules of events you attend or speak at.</li>
-          <li><span class="font-medium text-stone-900">Speaking:</span> speaker confirmations, CFS updates and co-speaker invitations.</li>
-          <li><span class="font-medium text-stone-900">Conversations:</span> replies from groups you wrote to.</li>
-          <li><span class="font-medium text-stone-900">Organizer actions:</span> refund requests and co-hosting invitations, since someone needs to act on them.</li>
+          <li>
+            <span class="font-medium text-stone-900">Account:</span> email verification and team invitations.
+          </li>
+          <li>
+            <span class="font-medium text-stone-900">Registrations:</span> confirmations, group welcome emails, tickets, invitations, waitlist changes and offers.
+          </li>
+          <li>
+            <span class="font-medium text-stone-900">Payments:</span> instructions, reminders, expirations and refund decisions.
+          </li>
+          <li>
+            <span class="font-medium text-stone-900">Event changes:</span> cancellations and reschedules of events you attend or speak at.
+          </li>
+          <li>
+            <span class="font-medium text-stone-900">Speaking:</span> speaker confirmations, CFS updates and co-speaker invitations.
+          </li>
+          <li>
+            <span class="font-medium text-stone-900">Conversations:</span> replies from groups you wrote to.
+          </li>
+          <li>
+            <span class="font-medium text-stone-900">Organizer actions:</span> refund requests and co-hosting invitations, since someone needs to act on them.
+          </li>
         </ul>
         <div class="flex justify-end pt-5 border-t border-stone-200 mt-6">
           <button type="button"

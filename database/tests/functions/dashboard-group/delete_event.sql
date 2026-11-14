@@ -84,6 +84,7 @@ insert into event (
     meeting_in_sync,
     meeting_provider_id,
     meeting_requested,
+    canceled,
     published
 ) values (
     :'eventID',
@@ -100,6 +101,7 @@ insert into event (
     100,
     true,
     'zoom',
+    true,
     true,
     true
 );
@@ -118,6 +120,7 @@ insert into event (
     ends_at,
     meeting_in_sync,
     meeting_requested,
+    canceled,
     published
 ) values (
     :'eventNoMeetingID',
@@ -132,6 +135,7 @@ insert into event (
     now() + interval '1 hour',
     null,
     false,
+    true,
     true
 );
 

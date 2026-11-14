@@ -1155,4 +1155,4 @@ select json_strip_nulls(json_build_object(
         )
     )
 ));
-$$ language sql;
+$$ language sql set timezone = 'UTC';

@@ -34,12 +34,12 @@ pub(crate) fn sample_event_analytics() -> EventAnalytics {
             "members_joined_in_window_registered": 2,
             "new_attendees": 3,
             "returning_attendees": 1,
-            "window_ends_at": 1710097200,
-            "window_starts_at": 1709892000
+            "window_ends_at": 1_710_097_200,
+            "window_starts_at": 1_709_892_000
         },
         "check_ins": {
             "bin_minutes": 15,
-            "bins": [[1710087300000_i64, 1], [1710088200000_i64, 2]],
+            "bins": [[1_710_087_300_000_i64, 1], [1_710_088_200_000_i64, 2]],
             "outside_range": 0
         },
         "enrollment": {
@@ -63,13 +63,13 @@ pub(crate) fn sample_event_analytics() -> EventAnalytics {
             "published": true,
             "timezone": "Europe/Madrid",
             "capacity": 10,
-            "ends_at": 1710097200,
-            "published_at": 1709892000,
+            "ends_at": 1_710_097_200,
+            "published_at": 1_709_892_000,
             "registration_ends_at": null,
             "registration_starts_at": null,
-            "starts_at": 1710090000
+            "starts_at": 1_710_090_000
         },
-        "markers": [{ "kind": "published", "ts": 1709892000 }],
+        "markers": [{ "kind": "published", "ts": 1_709_892_000 }],
         "markers_announcements_omitted": 0,
         "traffic": {
             "attribution_consistent": true,

@@ -1,5 +1,11 @@
 import { html, repeat } from "/static/vendor/js/lit-all.v3.3.1.min.js";
+import { confirmAction } from "/static/js/common/alerts.js";
 import { LitWrapper } from "/static/js/common/lit-wrapper.js";
+import {
+  contributorDisplayName,
+  renderContributorActions,
+  renderContributorIdentity,
+} from "/static/js/common/users/contributor-row.js";
 import "/static/js/common/users/selected-user-pill.js";
 import "/static/js/common/media/logo-image.js";
 import { focusUserSearchField } from "/static/js/common/users/user-search-field.js";
@@ -23,6 +29,8 @@ export class UserSearchSelector extends LitWrapper {
    * @property {boolean} _isModalOpen - Internal state for inline search visibility
    */
   static properties = {
+    awardButtonId: { type: String, attribute: "award-button-id" },
+    availableUsers: { type: Array, attribute: "available-users" },
     selectedUsers: { type: Array, attribute: "selected-users" },
     fieldName: { type: String, attribute: "field-name" },
     dashboardType: { type: String, attribute: "dashboard-type" },
@@ -33,11 +41,18 @@ export class UserSearchSelector extends LitWrapper {
     cardSelection: { type: Boolean, attribute: "card-selection" },
     searchDelay: { type: Number, attribute: "search-delay" },
     _isModalOpen: { type: Boolean },
+    awardsDisabled: { type: Boolean, attribute: "awards-disabled" },
+    canAwardBadges: { type: Boolean, attribute: "can-award-badges" },
     disabled: { type: Boolean },
+    displayMode: { type: String, attribute: "display-mode" },
+    eventId: { type: String, attribute: "event-id" },
+    showAwardAll: { type: Boolean, attribute: "show-award-all" },
   };
 
   constructor() {
     super();
+    this.awardButtonId = "";
+    this.availableUsers = null;
     this.selectedUsers = [];
     this.fieldName = "";
     this.dashboardType = "group";
@@ -48,7 +63,24 @@ export class UserSearchSelector extends LitWrapper {
     this.cardSelection = false;
     this.searchDelay = 300;
     this._isModalOpen = true; // always visible inline
+    this.awardsDisabled = false;
+    this.canAwardBadges = false;
     this.disabled = false;
+    this.displayMode = "chips";
+    this.eventId = "";
+    this.showAwardAll = false;
+  }
+
+  updated(changedProperties) {
+    if (
+      changedProperties.has("awardButtonId") ||
+      changedProperties.has("awardsDisabled") ||
+      changedProperties.has("canAwardBadges") ||
+      changedProperties.has("eventId") ||
+      changedProperties.has("selectedUsers")
+    ) {
+      this._syncExternalAwardButton();
+    }
   }
 
   /**
@@ -85,6 +117,7 @@ export class UserSearchSelector extends LitWrapper {
     }
 
     this.selectedUsers = [...this.selectedUsers, user];
+    this._emitUsersChanged();
   }
 
   /**
@@ -95,6 +128,37 @@ export class UserSearchSelector extends LitWrapper {
   _removeUser(username) {
     if (this.disabled) return;
     this.selectedUsers = this.selectedUsers.filter((user) => user.username !== username);
+    this._emitUsersChanged();
+  }
+
+  async _requestRemoveUser(user) {
+    if (this.disabled) return;
+    if (this._isUnavailable(user)) {
+      const confirmed = await confirmAction({
+        message: `${contributorDisplayName(user)} is no longer on the group team, so they can't be added back once removed. Remove them anyway?`,
+        confirmText: "Remove",
+        cancelText: "Cancel",
+      });
+      if (!confirmed) return;
+    }
+    this._removeUser(user.username);
+  }
+
+  _isUnavailable(user) {
+    return (
+      Array.isArray(this.availableUsers) &&
+      !this.availableUsers.some((availableUser) => availableUser?.username === user.username)
+    );
+  }
+
+  _emitUsersChanged() {
+    this.dispatchEvent(
+      new CustomEvent("users-changed", {
+        detail: { users: this.selectedUsers },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   /**
@@ -152,10 +216,79 @@ export class UserSearchSelector extends LitWrapper {
       <selected-user-pill
         .user=${user}
         remove-label="Remove user"
-        @remove=${() => this._removeUser(user.username)}
+        @remove=${() => this._requestRemoveUser(user)}
         ?disabled=${this.disabled}
       ></selected-user-pill>
     `;
+  }
+
+  _renderUserTable() {
+    const copy = buildTableCopy(this.label);
+    const hasActions = !this.disabled || Boolean(this.canAwardBadges && this.eventId);
+    return html`
+      <div class="mt-4 overflow-visible">
+        <table class="w-full text-left text-sm text-stone-600" aria-label=${copy.ariaLabel}>
+          <thead class="border-b border-stone-200 bg-stone-100 text-xs uppercase text-stone-700">
+            <tr>
+              <th scope="col" class="px-4 py-3">${copy.header}</th>
+              ${
+                hasActions
+                  ? html`<th scope="col" class="w-[72px] px-4 py-3">
+                      <span class="sr-only">Actions</span>
+                    </th>`
+                  : ""
+              }
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              this.selectedUsers.length === 0
+                ? html`<tr class="border-b border-stone-200 bg-white">
+                    <td class="px-8 py-12 text-center text-stone-500" colspan=${hasActions ? 2 : 1}>
+                      ${copy.emptyState}
+                    </td>
+                  </tr>`
+                : repeat(
+                    this.selectedUsers,
+                    (user) => user.user_id || user.username,
+                    (user) => html`
+                      <tr class="border-b border-stone-200 odd:bg-white even:bg-stone-50/50">
+                        <td class="px-4 py-3">${renderContributorIdentity(user)}</td>
+                        ${
+                          hasActions
+                            ? html`<td class="px-4 py-3 text-right">
+                                ${renderContributorActions({
+                                  actionLabel: copy.actionLabel,
+                                  awardsDisabled: this.awardsDisabled,
+                                  canAwardBadges: this.canAwardBadges,
+                                  contributor: user,
+                                  deleteDisabled: this.disabled,
+                                  eventId: this.eventId,
+                                  onDelete: () => this._requestRemoveUser(user),
+                                })}
+                              </td>`
+                            : ""
+                        }
+                      </tr>
+                    `,
+                  )
+            }
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  _syncExternalAwardButton() {
+    if (!this.awardButtonId) return;
+    const awardButton = this.ownerDocument?.getElementById(this.awardButtonId);
+    if (!awardButton) return;
+    const userIds = this.selectedUsers.map((user) => user.user_id).filter(Boolean);
+    const awardsUnavailable = !this.canAwardBadges || !this.eventId;
+    awardButton.dataset.eventId = this.eventId;
+    awardButton.dataset.userIds = userIds.join(",");
+    awardButton.disabled = awardsUnavailable || this.awardsDisabled || userIds.length === 0;
+    awardButton.title = this.awardsDisabled ? "Save contributor changes before awarding badges." : "";
   }
 
   _handleUserSelected(event) {
@@ -175,6 +308,7 @@ export class UserSearchSelector extends LitWrapper {
       <div class="mb-3">
         <user-search-field
           .excludeUsernames=${this.selectedUsers.map((u) => u.username)}
+          .localUsers=${this.availableUsers}
           dashboard-type=${this.dashboardType}
           label=${this.label || "user"}
           legend=${this.legend || ""}
@@ -192,24 +326,44 @@ export class UserSearchSelector extends LitWrapper {
    * @returns {TemplateResult} Complete component template
    */
   render() {
+    const userIds = this.selectedUsers.map((user) => user.user_id).filter(Boolean);
     return html`
       <div class="space-y-4">
+        ${
+          this.showAwardAll && this.canAwardBadges && this.eventId
+            ? html`<div class="flex justify-end">
+                <button
+                  type="button"
+                  class="btn-primary-outline"
+                  data-badge-award-open
+                  data-event-id=${this.eventId}
+                  data-user-ids=${userIds.join(",")}
+                  title=${this.awardsDisabled ? "Save contributor changes before awarding badges." : ""}
+                  ?disabled=${this.awardsDisabled || userIds.length === 0}
+                >
+                  Award badge
+                </button>
+              </div>`
+            : ""
+        }
         <!-- Inline Search Panel (always visible) -->
         ${this._renderModal()}
 
         <!-- Selected Users -->
         ${
-          this.selectedUsers.length > 0
-            ? html`
-                <div class="flex flex-wrap gap-2">
-                  ${repeat(
-                    this.selectedUsers,
-                    (user) => user.username,
-                    (user) => this._renderSelectedUser(user),
-                  )}
-                </div>
-              `
-            : ""
+          this.displayMode === "table"
+            ? this._renderUserTable()
+            : this.selectedUsers.length > 0
+              ? html`
+                  <div class="flex flex-wrap gap-2">
+                    ${repeat(
+                      this.selectedUsers,
+                      (user) => user.username,
+                      (user) => this._renderSelectedUser(user),
+                    )}
+                  </div>
+                `
+              : ""
         }
 
         <!-- Hidden inputs for form submission -->
@@ -230,5 +384,15 @@ export class UserSearchSelector extends LitWrapper {
     `;
   }
 }
+
+const buildTableCopy = (label) => {
+  const role = (typeof label === "string" ? label.trim() : "") || "host";
+  return {
+    actionLabel: role,
+    ariaLabel: `Event ${role}s`,
+    emptyState: `No ${role}s added yet.`,
+    header: `${role.charAt(0).toUpperCase()}${role.slice(1)}`,
+  };
+};
 
 customElements.define("user-search-selector", UserSearchSelector);

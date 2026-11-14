@@ -18,8 +18,6 @@ use super::{
     Notification, NotificationKind, NotificationsManager, PgNotificationsManager,
 };
 
-const TEST_BASE_URL: &str = "https://example.test";
-
 #[tokio::test]
 async fn test_notifications_manager_enqueue() {
     // Setup identifiers and data structures

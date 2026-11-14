@@ -24,14 +24,16 @@ select has_function('enqueue_due_opportunity_digests', array['text']::name[]);
 
 select lives_ok(
     $$insert into "user" (
-        user_id, auth_hash, email, email_verified, username,
-        optional_notifications_enabled
+        user_id, auth_hash, email, email_verified, username
     ) values (
         'b9230000-0000-0000-0000-000000000001', 'hash',
-        'opportunity-owner@example.com', true, 'opportunity-owner', false
+        'opportunity-owner@example.com', true, 'opportunity-owner'
     )$$,
     'owner can be created for opportunity function tests'
 );
+
+insert into user_notification_opt_out (notification_category_id, user_id)
+values ('opportunity-digests', 'b9230000-0000-0000-0000-000000000001');
 
 select lives_ok(
     $$insert into opportunity (
@@ -163,9 +165,9 @@ select is(
 );
 
 select lives_ok(
-    $$update "user"
-      set optional_notifications_enabled = true
-      where user_id = 'b9230000-0000-0000-0000-000000000001'$$,
+    $$delete from user_notification_opt_out
+      where user_id = 'b9230000-0000-0000-0000-000000000001'
+        and notification_category_id = 'opportunity-digests'$$,
     'the owner can opt in to optional notifications'
 );
 select lives_ok(

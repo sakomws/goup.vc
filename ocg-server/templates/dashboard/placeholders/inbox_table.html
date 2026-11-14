@@ -10,10 +10,10 @@
       Use Contact in the Organizers section of an event page to ask a question.
     {% endif -%}
   </p>
-  {% endcall -%}
+{% endcall -%}
 {% else -%}
-  {% call dashboard::empty_state("No conversations with this status", title_margin = "mb-4") -%}
-  <p class="text-sm lg:text-md text-stone-700">Choose another status to see more conversations.</p>
-  {% endcall -%}
+{% call dashboard::empty_state("No conversations with this status", title_margin = "mb-4") -%}
+<p class="text-sm lg:text-md text-stone-700">Choose another status to see more conversations.</p>
+{% endcall -%}
 {% endif -%}
 {# End inbox table placeholder -#}

@@ -87,6 +87,11 @@ insert into "group" (
     '3a390000-0000-0000-0000-000000000006'
 );
 
+insert into group_team (group_id, user_id, accepted, role)
+values
+    (:'group1ID', :'user2ID', true, 'events-manager'),
+    (:'group1ID', :'user3ID', true, 'events-manager');
+
 -- Group Sponsors
 insert into group_sponsor (group_sponsor_id, group_id, name, logo_url, website_url)
 values

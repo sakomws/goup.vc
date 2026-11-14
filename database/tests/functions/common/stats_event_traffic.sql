@@ -75,6 +75,7 @@ insert into event_attendee (event_id, user_id, created_at, status, attendance_ca
 insert into event_purchase (
     amount_minor,
     created_at,
+    currency_code,
     event_id,
     event_ticket_type_id,
     status,
@@ -83,10 +84,10 @@ insert into event_purchase (
 
     completed_at
 ) values
-    (0, '2030-01-01 00:20:00+00', :'eventID', :'ticketTypeGeneralID', 'completed', 'General', :'userLocalBoundaryID', '2030-01-01 20:00:00+00'),
-    (0, '2030-01-01 00:20:00+00', :'eventID', :'ticketTypeGeneralID', 'refund-pending', 'General', :'userMultiPurchaseID', '2030-01-01 01:00:00+00'),
-    (0, '2030-01-01 00:25:00+00', :'eventID', :'ticketTypeVipID', 'completed', 'VIP', :'userMultiPurchaseID', '2030-01-01 02:00:00+00'),
-    (0, '2030-01-01 00:30:00+00', :'eventID', :'ticketTypeVipID', 'expired', 'VIP', :'userUnknownID', null);
+    (0, '2030-01-01 00:20:00+00', 'USD', :'eventID', :'ticketTypeGeneralID', 'completed', 'General', :'userLocalBoundaryID', '2030-01-01 20:00:00+00'),
+    (0, '2030-01-01 00:20:00+00', 'USD', :'eventID', :'ticketTypeGeneralID', 'refund-pending', 'General', :'userMultiPurchaseID', '2030-01-01 01:00:00+00'),
+    (0, '2030-01-01 00:25:00+00', 'USD', :'eventID', :'ticketTypeVipID', 'completed', 'VIP', :'userMultiPurchaseID', '2030-01-01 02:00:00+00'),
+    (0, '2030-01-01 00:30:00+00', 'USD', :'eventID', :'ticketTypeVipID', 'expired', 'VIP', :'userUnknownID', null);
 
 -- Daily views before, inside and after the range
 insert into event_views (event_id, day, total) values

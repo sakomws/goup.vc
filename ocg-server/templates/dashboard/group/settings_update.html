@@ -554,9 +554,12 @@
       <div class="mt-2 space-y-3">
         <div>
           <p id="default-utm-mediums-label" class="text-sm/6 text-stone-700">Mediums accepted by default:</p>
-          <ul class="mt-2 flex flex-wrap gap-2" aria-labelledby="default-utm-mediums-label">
+          <ul class="mt-2 flex flex-wrap gap-2"
+              aria-labelledby="default-utm-mediums-label">
             {% for medium in default_utm_mediums -%}
-              <li class="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 font-mono text-xs text-stone-700">{{ medium }}</li>
+              <li class="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 font-mono text-xs text-stone-700">
+                {{ medium }}
+              </li>
             {% endfor -%}
           </ul>
         </div>

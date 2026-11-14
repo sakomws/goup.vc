@@ -4,11 +4,11 @@
 
 {# Dashboard User Purchase Documents List -#}
 {{ dashboard::page_title(title = "Purchases & documents", docs_href = "/docs#/guides/user-dashboard?id=purchases-and-financial-documents",
-  description = "Invoices and credit notes for your paid tickets, including past and canceled events.") -}}
+description = "Invoices and credit notes for your paid tickets, including past and canceled events.") -}}
 
 <div class="my-5 flex items-end justify-between">
   <div class="text-sm text-stone-600">
-    {{ pagination::range_display(offset = offset.unwrap_or(0), count = purchases.len(), total = total, label = "purchase") }}
+    {{ pagination::range_display(offset = offset.unwrap_or(0) , count = purchases.len(), total = total, label = "purchase") }}
   </div>
 </div>
 
@@ -60,12 +60,12 @@
                 {% endif -%}
               </div>
               <div class="mt-1 flex flex-wrap gap-1.5 lg:hidden">
-                {{ badges::payment_status_badge(label = purchase.status_label()) -}}
+                {{ badges::payment_status_badge(label = purchase.status_label() ) -}}
                 {% if purchase.externally_managed -%}
-                  {{ badges::common_badge(content = "Externally managed", extra_styles = Some("border-stone-200 bg-stone-50 px-2.5 py-0.5 text-stone-700")) -}}
+                  {{ badges::common_badge(content = "Externally managed", extra_styles = Some("border-stone-200 bg-stone-50 px-2.5 py-0.5 text-stone-700") ) -}}
                 {% endif -%}
                 {% if purchase.event_canceled -%}
-                  {{ badges::common_badge(content = "Event canceled", extra_styles = Some("border-red-200 bg-red-50 px-2.5 py-0.5 text-red-800")) -}}
+                  {{ badges::common_badge(content = "Event canceled", extra_styles = Some("border-red-200 bg-red-50 px-2.5 py-0.5 text-red-800") ) -}}
                 {% endif -%}
               </div>
             </th>
@@ -91,12 +91,12 @@
             </td>
             <td class="hidden px-3 py-4 lg:table-cell xl:px-5">
               <div class="flex flex-wrap gap-1.5">
-                {{ badges::payment_status_badge(label = purchase.status_label()) -}}
+                {{ badges::payment_status_badge(label = purchase.status_label() ) -}}
                 {% if purchase.externally_managed -%}
-                  {{ badges::common_badge(content = "Externally managed", extra_styles = Some("border-stone-200 bg-stone-50 px-2.5 py-0.5 text-stone-700")) -}}
+                  {{ badges::common_badge(content = "Externally managed", extra_styles = Some("border-stone-200 bg-stone-50 px-2.5 py-0.5 text-stone-700") ) -}}
                 {% endif -%}
                 {% if purchase.event_canceled -%}
-                  {{ badges::common_badge(content = "Event canceled", extra_styles = Some("border-red-200 bg-red-50 px-2.5 py-0.5 text-red-800")) -}}
+                  {{ badges::common_badge(content = "Event canceled", extra_styles = Some("border-red-200 bg-red-50 px-2.5 py-0.5 text-red-800") ) -}}
                 {% endif -%}
               </div>
             </td>

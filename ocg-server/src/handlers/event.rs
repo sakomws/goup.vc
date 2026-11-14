@@ -857,11 +857,7 @@ pub(crate) async fn track_view(
         let utm = raw_query
             .as_deref()
             .and_then(|query| serde_qs::from_str::<EventViewQuery>(query).ok())
-            .and_then(|query| query.utm())
-            .and_then(|utm| {
-                // The allowlist lookup is performed below because this closure is synchronous.
-                Some(utm)
-            });
+            .and_then(|query| query.utm());
         let activity = if let Some(utm) = accepted_utm_params(&db, event_id, utm).await {
             Activity::EventViewUtm { event_id, utm }
         } else {

@@ -739,7 +739,7 @@ values
 
 -- Should reactivate canceled attendance through a new RSVP
 select is(
-    attend_event(:'communityID'::uuid, :'eventReactivationID'::uuid, :'user10ID'::uuid),
+    attend_event(:'allianceID'::uuid, :'eventReactivationID'::uuid, :'user10ID'::uuid),
     'attendee',
     'Should reactivate canceled attendance through a new RSVP'
 );
@@ -868,7 +868,7 @@ select throws_ok(
 select throws_ok(
     format(
         'select attend_event(%L::uuid,%L::uuid,%L::uuid)',
-        :'communityID', :'eventFullNoWaitlistID', :'user7ID'
+        :'allianceID', :'eventFullNoWaitlistID', :'user7ID'
     ),
     'event has reached capacity',
     'Rejects a canceled attendee rejoin when the event is sold out'
@@ -1015,7 +1015,7 @@ select ok(
 
 -- Should move a canceled attendee to the waitlist when the event is full
 select is(
-    attend_event(:'communityID'::uuid, :'eventFullWaitlistID'::uuid, :'user4ID'::uuid),
+    attend_event(:'allianceID'::uuid, :'eventFullWaitlistID'::uuid, :'user4ID'::uuid),
     'waitlisted',
     'Returns waitlisted when a canceled attendee rejoins a full event'
 );

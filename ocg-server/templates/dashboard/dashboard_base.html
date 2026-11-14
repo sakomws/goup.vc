@@ -12,40 +12,56 @@
 {% block header -%}
   {# Header -#}
   <div id="dashboard-header"
-       class="fixed w-full z-20 top-0 start-0 border-b border-[#eadcc9]/70 bg-white/60 shadow-sm shadow-[#eadcc9]/40 backdrop-blur-xl min-h-[68px] flex items-center justify-between px-3 lg:px-5">
+       class="bg-white fixed w-full z-20 top-0 start-0 border-b border-stone-200 h-16 md:h-20 drop-shadow-sm flex items-center justify-between gap-3 px-3 lg:px-5">
+    {# Open menu button (mobile only) -#}
+    <button id="open-dashboard-menu"
+            type="button"
+            aria-controls="dashboard-menu-drawer"
+            aria-expanded="false"
+            class="group h-10 w-10 shrink-0 inline-flex justify-center items-center bg-stone-100 rounded-full p-2 hover:bg-stone-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 md:hidden">
+      <div class="svg-icon h-4 w-4 bg-stone-700 group-hover:bg-stone-900 transition-colors icon-lines"></div>
+      <span class="sr-only">Open dashboard menu</span>
+    </button>
+    {# End open menu button (mobile only) -#}
     {% include "common/header.html" -%}
   </div>
   {# End Header -#}
 {% endblock header -%}
 
 {% block main -%}
-  {# Main Content -#}
-  <div class="flex min-h-dvh flex-col pt-[68px] md:flex-row md:pt-0">
-    {# Dashboard menu -#}
-    <aside class="w-full shrink-0 border-b border-[#eadcc9]/70 bg-white/45 backdrop-blur-xl md:h-dvh md:sticky md:top-0 md:w-[225px] md:border-b-0 md:border-e lg:w-[300px]"
-           role="navigation"
-           aria-label="Dashboard navigation">
-      <input id="dashboard-mobile-menu-toggle"
-             type="checkbox"
-             class="peer sr-only"
-             aria-label="Toggle dashboard navigation" />
-      <div class="sticky top-[68px] z-10 border-b border-[#eadcc9]/70 bg-white/55 px-3 py-3 backdrop-blur-xl md:hidden">
-        <label for="dashboard-mobile-menu-toggle"
-               class="flex min-h-11 cursor-pointer items-center justify-between rounded-2xl border border-[#eadcc9] bg-white/75 px-4 text-sm font-bold text-[#1A1510] shadow-sm shadow-[#eadcc9]/30 backdrop-blur">
-          <span>Dashboard menu</span>
-          <span class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-            <span>Menu</span>
-            <span class="svg-icon size-3 icon-caret-down bg-[#6B6058]"></span>
-          </span>
-        </label>
+  {% block mobile_dashboard_view -%}
+    <div class="fixed inset-0 z-10 flex items-center justify-center bg-stone-100 px-6 pt-16 md:hidden">
+      <div class="max-w-md rounded-lg border-4 border-dashed border-primary-600 bg-stone-100 p-8 text-center text-stone-800">
+        <p class="text-xl font-medium">This dashboard is not optimized yet for mobile devices</p>
       </div>
-      <div class="hidden max-h-[calc(100dvh-8.5rem)] overflow-y-auto border-b border-[#eadcc9]/70 bg-white/45 peer-checked:block md:flex md:h-full md:max-h-none md:flex-col md:justify-between md:gap-0 md:overflow-visible md:border-b-0 md:bg-transparent md:py-5 md:pt-24">
-        <div class="flex min-h-0 grow flex-col py-4 md:w-full md:py-0">
+    </div>
+  {% endblock mobile_dashboard_view -%}
+
+  {# Main Content -#}
+  <div id="dashboard-layout"
+       class="flex max-md:grow max-md:px-4 max-md:pb-4">
+    {# Sticky menu -#}
+    <aside id="dashboard-menu-drawer"
+           class="fixed top-0 left-0 z-[1100] h-dvh w-80 shrink-0 -translate-x-full bg-stone-100 border-r border-stone-200 shadow-lg transition-transform md:sticky md:z-auto md:w-[225px] md:translate-x-0 md:bg-transparent md:border-r-0 md:shadow-none lg:w-[300px]"
+           role="navigation"
+           aria-label="Dashboard navigation"
+           tabindex="-1">
+      {# Close menu button (mobile only) -#}
+      <button id="close-dashboard-menu"
+              type="button"
+              class="group bg-transparent hover:bg-stone-200 transition-colors rounded-full text-sm w-8 h-8 absolute top-4 end-2.5 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 md:hidden">
+        <div class="svg-icon h-4 w-4 bg-stone-400 group-hover:bg-stone-900 transition-colors icon-close"></div>
+        <span class="sr-only">Close menu</span>
+      </button>
+      {# End close menu button (mobile only) -#}
+
+      <div class="flex flex-col justify-between py-5 pt-14 md:pt-24 h-full">
+        <div class="flex flex-col grow min-h-0 w-full">
           {% block menu -%}
           {% endblock menu -%}
         </div>
 
-        <div class="w-full shrink-0 px-3 pb-4 md:pb-0 lg:px-5">
+        <div class="w-full px-3 lg:px-5 shrink-0">
           {# Logout -#}
           <a href="/log-out"
              hx-boost="false"
@@ -58,10 +74,18 @@
         </div>
       </div>
     </aside>
-    {# End dashboard menu -#}
+    {# End sticky menu -#}
+
+    {# Menu drawer backdrop (mobile only) -#}
+    <div id="dashboard-menu-backdrop"
+         class="hidden bg-stone-950 opacity-[.35] fixed inset-0 z-[1050] md:hidden"></div>
+    {# End menu drawer backdrop (mobile only) -#}
 
     <main id="dashboard-main-content"
-          class="relative min-w-0 w-full border-y border-[#eadcc9]/70 bg-white/72 shadow-xl shadow-[#3a2f25]/5 backdrop-blur-sm md:m-5 md:ms-0 md:mt-[5.75rem] md:w-[calc(100%-225px)] md:rounded-[1.75rem] md:border lg:w-[calc(100%-300px)]"
+          class="relative mt-20 min-w-0 flex-1 rounded-lg border border-stone-200 bg-white md:m-5 md:ms-0 md:mt-[6.25rem]
+                 {% block dashboard_main_classes -%}
+                   hidden md:block
+                 {% endblock dashboard_main_classes -%}"
           role="main">
       {% block dashboard_main -%}
       {% endblock dashboard_main -%}

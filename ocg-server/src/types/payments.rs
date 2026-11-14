@@ -40,18 +40,6 @@ pub enum EventPurchaseStatus {
     Refunded,
 }
 
-/// Attendee-facing progress for a durable purchase refund.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum EventRefundProgress {
-    AwaitingCheckout,
-    Processing,
-    Queued,
-    RecoveryRequired,
-    Refunded,
-    RetryableFailure,
-}
-
 /// Status of an attendee refund request.
 #[derive(
     Clone,

@@ -5,8 +5,8 @@ create or replace function inbox_conversation_json(p_inbox_conversation_id uuid)
 returns json as $$
     select (
         jsonb_strip_nulls(jsonb_build_object(
-            'alliance_display_name', c.display_name,
-            'alliance_name', c.name,
+            'community_display_name', c.display_name,
+            'community_name', c.name,
             'created_at', epoch_seconds(ic.created_at),
             'group_id', g.group_id,
             'group_name', g.name,
