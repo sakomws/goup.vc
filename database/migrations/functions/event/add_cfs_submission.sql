@@ -27,17 +27,17 @@ begin
 
     -- Validate CFS is enabled
     if v_cfs_enabled is distinct from true then
-        raise exception 'cfs is not enabled for this event';
+        raise exception 'cfs is not enabled for this event' using errcode = 'OCG01';
     end if;
 
     -- Validate CFS window is configured
     if v_cfs_starts_at is null or v_cfs_ends_at is null then
-        raise exception 'cfs window not configured';
+        raise exception 'cfs window not configured' using errcode = 'OCG01';
     end if;
 
     -- Validate CFS is currently open
     if current_timestamp < v_cfs_starts_at or current_timestamp >= v_cfs_ends_at then
-        raise exception 'cfs is not open';
+        raise exception 'cfs is not open' using errcode = 'OCG01';
     end if;
 
     -- Validate proposal ownership
@@ -47,7 +47,7 @@ begin
     and sp.user_id = p_user_id;
 
     if not found then
-        raise exception 'session proposal not found';
+        raise exception 'session proposal not found' using errcode = 'OCG01';
     end if;
 
     -- Validate proposal can be submitted
@@ -57,7 +57,7 @@ begin
     and sp.session_proposal_status_id = 'ready-for-submission';
 
     if not found then
-        raise exception 'session proposal not ready for submission';
+        raise exception 'session proposal not ready for submission' using errcode = 'OCG01';
     end if;
 
     -- Validate labels payload

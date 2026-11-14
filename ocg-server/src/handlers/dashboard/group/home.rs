@@ -12,8 +12,8 @@ use axum_messages::Messages;
 use tracing::instrument;
 
 use super::{
-    accelerator, coffee_meet, cohosts, distribution, events, gtm, integrations, logs, members,
-    projects, sponsors, spotlights, store, team,
+    accelerator, coffee_meet, cohosts, distribution, events, gtm, inbox, integrations, logs,
+    members, projects, refunds, sponsors, spotlights, store, team,
 };
 
 use crate::{
@@ -21,6 +21,7 @@ use crate::{
     config::PaymentsConfig,
     db::DynDB,
     handlers::{
+        dashboard::inbox::requested_conversation_id,
         error::HandlerError,
         extractors::{SelectedAllianceId, SelectedGroupId},
     },
@@ -64,9 +65,22 @@ pub(crate) async fn page(
         .get("tab")
         .map_or(Tab::default(), |tab| tab.parse().unwrap_or_default());
 
-    // Get site settings and user groups information
-    let (groups_by_alliance, site_settings) =
-        tokio::try_join!(db.list_user_groups(&user.user_id), db.get_site_settings())?;
+    // Get site settings, user groups and inbox access information.
+    let (can_manage_inbox, groups_by_alliance, site_settings) = tokio::try_join!(
+        db.user_has_group_permission(
+            &alliance_id,
+            &group_id,
+            &user.user_id,
+            GroupPermission::InboxWrite,
+        ),
+        db.list_user_groups(&user.user_id),
+        db.get_site_settings()
+    )?;
+    let inbox_open_count = if can_manage_inbox {
+        db.count_group_open_inbox_conversations(group_id).await?
+    } else {
+        0
+    };
 
     // Prepare content for the selected tab
     let content = match tab {
@@ -153,6 +167,27 @@ pub(crate) async fn page(
         Tab::Integrations => Content::Integrations(
             integrations::prepare_page(&db, alliance_id, group_id, user.user_id).await?,
         ),
+        Tab::Inbox => {
+            if !can_manage_inbox {
+                return Err(HandlerError::Forbidden);
+            }
+            if let Some(conversation_id) = requested_conversation_id(&query) {
+                let Some(template) =
+                    inbox::prepare_conversation_page(&db, group_id, conversation_id, false).await?
+                else {
+                    return Err(HandlerError::NotFound);
+                };
+                Content::InboxConversation(Box::new(template))
+            } else {
+                let (_, template) = inbox::prepare_list_page(
+                    &db,
+                    group_id,
+                    raw_query.as_deref().unwrap_or_default(),
+                )
+                .await?;
+                Content::Inbox(template)
+            }
+        }
         Tab::Members => {
             let (_, template) = members::prepare_list_page(
                 &db,
@@ -167,6 +202,17 @@ pub(crate) async fn page(
         Tab::Projects => Content::Projects(
             projects::prepare_page(&db, alliance_id, group_id, user.user_id).await?,
         ),
+        Tab::Refunds => {
+            let (_, template) = refunds::prepare_list_page(
+                &db,
+                alliance_id,
+                group_id,
+                user.user_id,
+                raw_query.as_deref().unwrap_or_default(),
+            )
+            .await?;
+            Content::Refunds(template)
+        }
         Tab::Logs => {
             let (_, template) =
                 logs::prepare_list_page(&db, group_id, raw_query.as_deref().unwrap_or_default())
@@ -174,7 +220,15 @@ pub(crate) async fn page(
             Content::Logs(template)
         }
         Tab::Settings => {
-            let (can_manage_settings, group, categories, parent_group_options, regions) = tokio::try_join!(
+            let (
+                can_manage_settings,
+                group,
+                categories,
+                parent_group_options,
+                regions,
+                utm,
+                default_utm_mediums,
+            ) = tokio::try_join!(
                 db.user_has_group_permission(
                     &alliance_id,
                     &group_id,
@@ -184,15 +238,19 @@ pub(crate) async fn page(
                 db.get_group_full(alliance_id, group_id),
                 db.list_group_categories(alliance_id),
                 db.list_group_parent_options(alliance_id, group_id),
-                db.list_regions(alliance_id)
+                db.list_regions(alliance_id),
+                db.get_group_utm_settings(alliance_id, group_id),
+                db.list_utm_mediums()
             )?;
             Content::Settings(Box::new(settings::UpdatePage {
                 can_manage_settings,
                 categories,
+                default_utm_mediums,
                 group,
                 parent_group_options,
                 payments_enabled: payments_cfg.is_some(),
                 regions,
+                utm,
             }))
         }
         Tab::Sponsors => {
@@ -231,8 +289,10 @@ pub(crate) async fn page(
 
     // Render the page
     let page = Page {
+        can_manage_inbox,
         content,
         groups_by_alliance,
+        inbox_open_count,
         messages: messages.into_iter().collect(),
         page_id: PageId::GroupDashboard,
         path: "/dashboard/group".to_string(),

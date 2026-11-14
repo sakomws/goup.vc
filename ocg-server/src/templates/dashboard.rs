@@ -4,10 +4,14 @@
 pub(crate) mod alliance;
 /// Shared dashboard audit log templates.
 pub(crate) mod audit;
+/// Upstream community-scoped templates adapted by alliance handlers.
+pub(crate) mod community;
 /// Group dashboard templates.
 pub(crate) mod group;
 /// Shared GTM dashboard templates.
 pub(crate) mod gtm;
+/// Shared inbox templates.
+pub(crate) mod inbox;
 /// Jobs dashboard templates.
 pub(crate) mod jobs;
 /// Opportunity organizer dashboard templates.

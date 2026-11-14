@@ -11,6 +11,9 @@ pub(crate) mod images;
 /// Scheduled global jobs discovery.
 pub(crate) mod job_discovery;
 
+/// Group inbox service module.
+pub(crate) mod inbox;
+
 /// Meetings service module.
 pub(crate) mod meetings;
 
@@ -24,3 +27,6 @@ pub(crate) mod payments;
 pub(crate) mod realtime;
 /// Recording publishing service module.
 pub(crate) mod recording_publishing;
+
+/// Shared background worker helpers.
+pub(crate) mod workers;

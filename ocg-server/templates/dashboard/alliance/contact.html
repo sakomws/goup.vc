@@ -1,0 +1,116 @@
+{% import "macros/dashboard.html" as dashboard -%}
+{% import "macros/ui.html" as ui -%}
+
+{# Contact header -#}
+{{ dashboard::page_title(title = "Contact", description = "Send an email to the teams of the groups in this alliance.") -}}
+{# End contact header -#}
+
+{% if !can_send -%}
+  {{ dashboard::permission_warning(message = "Your role can review recipients but cannot send emails to group teams.", extra_classes = "mt-5") -}}
+{% endif -%}
+
+{# Contact form -#}
+{# History snapshots lose the selected filters, so going back reloads the page instead. -#}
+<form id="community-contact-form"
+      class="mt-8"
+      hx-history="false"
+      hx-post="/dashboard/alliance/notifications"
+      hx-trigger="confirmed"
+      hx-sync="this:drop"
+      hx-swap="none"
+      hx-indicator="#community-contact-spinner"
+      data-can-send="{{ can_send }}">
+  {# Recipients -#}
+  <div class="flex items-center justify-between gap-3">
+    {# Receives focus after a reset, as the reset button hides itself. -#}
+    <div id="community-contact-recipients-title"
+         class="text-lg font-medium text-stone-900 focus:outline-none"
+         tabindex="-1">Recipients</div>
+    <button id="community-contact-reset-filters"
+            type="button"
+            class="btn-primary-outline btn-mini h-7! hidden">Reset filters</button>
+  </div>
+  <p class="mt-1 text-sm text-stone-500">
+    Accepted team members with a verified email in active groups. Recipients must match every filter; leave a filter empty to include all.
+  </p>
+  <div id="community-contact-filters"
+       class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+    <div>
+      <label id="community-contact-categories-label" class="form-label">Group categories</label>
+      <div class="mt-2">
+        <multi-select id="community-contact-categories" labelledby="community-contact-categories-label" name="filters[group_category_ids]" keep-order close-on-select placeholder="All categories" options="{{ self.category_options()|json }}"></multi-select>
+      </div>
+    </div>
+    {% if self.has_regions() -%}
+      <div>
+        <label id="community-contact-regions-label" class="form-label">Regions</label>
+        <div class="mt-2">
+          <multi-select id="community-contact-regions" labelledby="community-contact-regions-label" name="filters[regions]" keep-order close-on-select placeholder="All regions" options="{{ self.region_options()|json }}"></multi-select>
+        </div>
+      </div>
+    {% endif -%}
+    <div>
+      <label id="community-contact-roles-label" class="form-label">Team roles</label>
+      <div class="mt-2">
+        <multi-select id="community-contact-roles" labelledby="community-contact-roles-label" name="filters[roles]" keep-order close-on-select placeholder="All roles" options="{{ self.role_options()|json }}"></multi-select>
+      </div>
+    </div>
+    <div class="lg:col-span-3">
+      <label id="community-contact-groups-label" class="form-label">Groups</label>
+      <div class="mt-2">
+        {% if self.has_groups() -%}
+          <multi-select id="community-contact-groups" labelledby="community-contact-groups-label" name="filters[group_ids]" keep-order close-on-select wrap-names max-selected="{{ crate::validation::MAX_CONTACT_FILTER_VALUES }}" placeholder="All groups" legend="Select up to {{ crate::validation::MAX_CONTACT_FILTER_VALUES }} groups.{% if filter_options.has_subgroups %} Selecting a group doesn't include its subgroups; select them too.{% endif %}" options="{{ self.group_options()|json }}"></multi-select>
+        {% else -%}
+          <multi-select id="community-contact-groups" labelledby="community-contact-groups-label" name="filters[group_ids]" disabled placeholder="All groups" legend="This alliance has no active groups."></multi-select>
+        {% endif -%}
+      </div>
+    </div>
+  </div>
+  {# End recipients -#}
+
+  {# Recipients summary -#}
+  {# Posting includes the enclosing form, so only the filter fields are sent. -#}
+  <div id="community-contact-recipients"
+       class="mt-4 transition-opacity aria-busy:opacity-50"
+       aria-live="polite"
+       data-skip-validation="true"
+       hx-post="/dashboard/alliance/contact/recipients"
+       hx-params="filters[group_category_ids][],filters[group_ids][],filters[regions][],filters[roles][]"
+       hx-include="#community-contact-filters"
+       hx-indicator="this"
+       hx-trigger="contact-filters-changed delay:300ms"
+       hx-sync="this:replace"
+       hx-target="this"
+       hx-swap="innerHTML">{% include "dashboard/alliance/contact_recipients.html" -%}</div>
+  {# End recipients summary -#}
+
+  {# Message -#}
+  <div class="mt-10 text-lg font-medium text-stone-900">Message</div>
+  <p class="mt-1 text-sm text-stone-500">
+    Each recipient gets a single email, even if they're on several teams. Replies aren't delivered.
+  </p>
+  <div class="mt-4">
+    {{ dashboard::custom_notification_fields(subject_id = "community-contact-subject", body_id = "community-contact-body", default_subject = default_notification_subject) -}}
+  </div>
+  {# End message -#}
+
+  {# Actions -#}
+  <div class="flex justify-end gap-3 pt-6">
+    <button id="community-contact-submit"
+            type="submit"
+            class="btn-primary relative
+                   {% if !can_send -%}
+                     opacity-50 cursor-not-allowed
+                   {% endif -%}"
+            {% if !can_send -%}
+              disabled title="Your role cannot send emails to group teams."
+            {% elif summary.people_count == 0 -%}
+              disabled
+            {% endif -%}>
+      {{ ui::btn_spinner(id = "community-contact-spinner", spinner_type = "2") -}}
+      Send email
+    </button>
+  </div>
+  {# End actions -#}
+</form>
+{# End contact form -#}

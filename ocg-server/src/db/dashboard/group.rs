@@ -17,6 +17,7 @@ use crate::{
         group::{
             analytics::GroupDashboardStats,
             attendees::{AttendeesOutput, SearchEventAttendeesFilters},
+            check_in::{CheckInScanResult, GroupCheckInEvent},
             coffee_meet::CoffeeMeetSubscriber,
             cohosts::{
                 EventCohostCandidate, EventCohostInvitation, EventCohostNotificationData,
@@ -29,6 +30,7 @@ use crate::{
             integrations::IntegrationPage,
             invitation_requests::{InvitationRequestsFilters, InvitationRequestsOutput},
             members::{GroupJoinRequest, GroupMembersFilters, GroupMembersOutput},
+            refunds::{RefundsFilters, RefundsOutput},
             rolling_cfs::{
                 AssignmentEvent as GroupCfsAssignmentEvent, Config as GroupCfsConfig,
                 Submission as GroupCfsSubmission, SubmissionUpdate as GroupCfsSubmissionUpdate,
@@ -45,12 +47,14 @@ use crate::{
         },
     },
     types::{
+        dashboard::group::event_analytics::EventAnalytics,
         event::{
             EventCategory, EventGrowth, EventKindSummary as EventKind, EventLeaveOutcome,
             EventSponsorReport, SessionKindSummary as SessionKind,
         },
         group::{GroupParentOption, GroupRole, GroupRoleSummary, GroupSponsor},
         payments::{GroupPaymentRecipient, PaymentProvider},
+        utm::GroupUtmSettings,
     },
 };
 
@@ -194,6 +198,16 @@ pub(crate) trait DBDashboardGroup {
         event_ids: &[Uuid],
     ) -> Result<()>;
 
+    /// Resolves and checks in an attendee by their event credential.
+    async fn check_in_attendee_by_code(
+        &self,
+        actor_user_id: Uuid,
+        check_in_code: Uuid,
+        alliance_id: Uuid,
+        event_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<CheckInScanResult>;
+
     /// Blocks a group member's `LinkedIn` account.
     async fn block_group_member_linkedin(
         &self,
@@ -268,6 +282,13 @@ pub(crate) trait DBDashboardGroup {
         event_id: Uuid,
         cfs_submission_id: Uuid,
     ) -> Result<CfsSubmissionNotificationData>;
+
+    /// Retrieves analytics for an event owned by the group.
+    async fn get_event_analytics(
+        &self,
+        group_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Option<EventAnalytics>>;
 
     /// Gets the configured payment recipient for a group.
     async fn get_group_payment_recipient(
@@ -361,6 +382,16 @@ pub(crate) trait DBDashboardGroup {
         alliance_id: Uuid,
         group_id: Uuid,
     ) -> Result<GroupDashboardStats>;
+
+    /// Retrieves the UTM values accepted for this group's event page views.
+    async fn get_group_utm_settings(
+        &self,
+        alliance_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<GroupUtmSettings>;
+
+    /// Reports whether an active event belongs to the group.
+    async fn group_has_event(&self, group_id: Uuid, event_id: Uuid) -> Result<bool>;
 
     /// Updates whether a group report is public.
     async fn update_group_report_public_enabled(
@@ -502,6 +533,9 @@ pub(crate) trait DBDashboardGroup {
     /// Lists all verified waitlisted user ids for an event.
     async fn list_event_waitlist_ids(&self, group_id: Uuid, event_id: Uuid) -> Result<Vec<Uuid>>;
 
+    /// Lists current and upcoming events available to the group's scanner.
+    async fn list_group_check_in_events(&self, group_id: Uuid) -> Result<Vec<GroupCheckInEvent>>;
+
     /// Lists all events for a group for management.
     async fn list_group_events(
         &self,
@@ -550,6 +584,13 @@ pub(crate) trait DBDashboardGroup {
 
     /// Lists all group member user ids.
     async fn list_group_members_ids(&self, group_id: Uuid) -> Result<Vec<Uuid>>;
+
+    /// Lists purchase refund workflows for a group.
+    async fn list_group_refunds(
+        &self,
+        group_id: Uuid,
+        filters: &RefundsFilters,
+    ) -> Result<RefundsOutput>;
 
     /// Lists all available group roles.
     async fn list_group_roles(&self) -> Result<Vec<GroupRoleSummary>>;
@@ -1171,6 +1212,29 @@ where
         .await
     }
 
+    /// [`DBDashboardGroup::check_in_attendee_by_code`].
+    #[instrument(skip(self, check_in_code), err)]
+    async fn check_in_attendee_by_code(
+        &self,
+        actor_user_id: Uuid,
+        check_in_code: Uuid,
+        alliance_id: Uuid,
+        event_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<CheckInScanResult> {
+        self.fetch_json_one(
+            "select check_in_attendee_by_code($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::uuid)",
+            &[
+                &actor_user_id,
+                &check_in_code,
+                &alliance_id,
+                &event_id,
+                &group_id,
+            ],
+        )
+        .await
+    }
+
     /// [`DBDashboardGroup::block_group_member_linkedin`]
     #[instrument(skip(self), err)]
     async fn block_group_member_linkedin(
@@ -1324,6 +1388,20 @@ where
         self.fetch_json_one(
             "select get_cfs_submission_notification_data($1::uuid, $2::uuid)",
             &[&event_id, &cfs_submission_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::get_event_analytics`].
+    #[instrument(skip(self), err)]
+    async fn get_event_analytics(
+        &self,
+        group_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Option<EventAnalytics>> {
+        self.fetch_json_opt(
+            "select get_event_analytics($1::uuid, $2::uuid)",
+            &[&group_id, &event_id],
         )
         .await
     }
@@ -1635,6 +1713,30 @@ where
         inner(db, alliance_id, group_id).await
     }
 
+    /// [`DBDashboardGroup::get_group_utm_settings`]
+    #[instrument(skip(self), err)]
+    async fn get_group_utm_settings(
+        &self,
+        alliance_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<GroupUtmSettings> {
+        self.fetch_json_one(
+            "select get_group_utm_settings($1::uuid, $2::uuid)",
+            &[&alliance_id, &group_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::group_has_event`].
+    #[instrument(skip(self), err)]
+    async fn group_has_event(&self, group_id: Uuid, event_id: Uuid) -> Result<bool> {
+        self.fetch_scalar_one(
+            "select group_has_event($1::uuid, $2::uuid)",
+            &[&group_id, &event_id],
+        )
+        .await
+    }
+
     /// [`DBDashboardGroup::invite_event_attendee`]
     #[instrument(skip(self, email), err)]
     async fn invite_event_attendee(
@@ -1930,6 +2032,13 @@ where
         .await
     }
 
+    /// [`DBDashboardGroup::list_group_check_in_events`].
+    #[instrument(skip(self), err)]
+    async fn list_group_check_in_events(&self, group_id: Uuid) -> Result<Vec<GroupCheckInEvent>> {
+        self.fetch_json_one("select list_group_check_in_events($1::uuid)", &[&group_id])
+            .await
+    }
+
     /// [`DBDashboardGroup::list_group_events`]
     #[instrument(skip(self), err)]
     async fn list_group_events(
@@ -2077,6 +2186,20 @@ where
     async fn list_group_members_ids(&self, group_id: Uuid) -> Result<Vec<Uuid>> {
         self.fetch_scalar_one("select list_group_members_ids($1::uuid)", &[&group_id])
             .await
+    }
+
+    /// [`DBDashboardGroup::list_group_refunds`].
+    #[instrument(skip(self, filters), err)]
+    async fn list_group_refunds(
+        &self,
+        group_id: Uuid,
+        filters: &RefundsFilters,
+    ) -> Result<RefundsOutput> {
+        self.fetch_json_one(
+            "select list_group_refunds($1::uuid, $2::jsonb)",
+            &[&group_id, &Json(filters)],
+        )
+        .await
     }
 
     /// [`DBDashboardGroup::list_group_roles`]

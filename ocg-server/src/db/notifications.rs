@@ -9,12 +9,14 @@ use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use cached::cached;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use tokio_postgres::types::Json;
 use tracing::instrument;
 use uuid::Uuid;
 
 use crate::{
     db::{PgClient, PgExecutor},
     services::notifications::{Attachment, NewNotification, Notification},
+    types::dashboard::alliance::contact::AllianceContactFilters,
 };
 
 /// Trait that defines database operations used to manage notifications.
@@ -51,6 +53,12 @@ pub(crate) trait DBNotifications {
 
     /// Enqueues a notification to be delivered.
     async fn enqueue_notification(&self, notification: &NewNotification) -> Result<()>;
+
+    /// Enqueues and tracks an alliance Contact notification atomically.
+    async fn enqueue_tracked_alliance_custom_notification(
+        &self,
+        input: &AllianceCustomNotificationEnqueue,
+    ) -> Result<usize>;
 
     /// Enqueues and tracks a custom notification atomically.
     async fn enqueue_tracked_custom_notification(
@@ -265,16 +273,7 @@ where
         }
 
         // Prepare attachments payload
-        let attachments = notification
-            .attachments
-            .iter()
-            .map(|attachment| EnqueueNotificationAttachment {
-                content_type: &attachment.content_type,
-                data_base64: BASE64.encode(&attachment.data),
-                file_name: &attachment.file_name,
-            })
-            .collect::<Vec<_>>();
-        let attachments = serde_json::to_value(attachments)?;
+        let attachments = serialize_notification_attachments(&notification.attachments)?;
 
         // Enqueue notification in database
         let kind = notification.kind.to_string();
@@ -300,6 +299,27 @@ where
         Ok(())
     }
 
+    #[instrument(skip(self, input), err)]
+    async fn enqueue_tracked_alliance_custom_notification(
+        &self,
+        input: &AllianceCustomNotificationEnqueue,
+    ) -> Result<usize> {
+        let count: i32 = self
+            .fetch_scalar_one(
+                "select enqueue_tracked_alliance_custom_notification($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, $5::text, $6::text)",
+                &[
+                    &input.alliance_id,
+                    &input.created_by,
+                    &Json(&input.filters),
+                    &Json(&input.template_data),
+                    &input.subject,
+                    &input.body,
+                ],
+            )
+            .await?;
+        Ok(usize::try_from(count)?)
+    }
+
     #[instrument(skip(self, notification, tracking), err)]
     async fn enqueue_tracked_custom_notification(
         &self,
@@ -316,16 +336,7 @@ where
             .map_err(|_| anyhow!("recipient count cannot exceed i32::MAX"))?;
 
         // Prepare attachments payload
-        let attachments = notification
-            .attachments
-            .iter()
-            .map(|attachment| EnqueueNotificationAttachment {
-                content_type: &attachment.content_type,
-                data_base64: BASE64.encode(&attachment.data),
-                file_name: &attachment.file_name,
-            })
-            .collect::<Vec<_>>();
-        let attachments = serde_json::to_value(attachments)?;
+        let attachments = serialize_notification_attachments(&notification.attachments)?;
 
         // Enqueue notification and store the custom-notification audit atomically
         let kind = notification.kind.to_string();
@@ -545,6 +556,16 @@ where
     }
 }
 
+/// Data passed to the atomic alliance Contact enqueue function.
+pub(crate) struct AllianceCustomNotificationEnqueue {
+    pub(crate) alliance_id: Uuid,
+    pub(crate) body: String,
+    pub(crate) created_by: Uuid,
+    pub(crate) filters: AllianceContactFilters,
+    pub(crate) subject: String,
+    pub(crate) template_data: serde_json::Value,
+}
+
 /// Metadata used to track a custom notification audit entry.
 pub(crate) struct CustomNotificationTracking {
     /// Body stored in the custom notification record.
@@ -613,6 +634,22 @@ struct EnqueueNotificationAttachment<'a> {
     content_type: &'a str,
     data_base64: String,
     file_name: &'a str,
+}
+
+/// Serializes notification attachments into the JSON shape stored by SQL enqueue.
+pub(crate) fn serialize_notification_attachments(
+    attachments: &[Attachment],
+) -> Result<serde_json::Value> {
+    let attachments = attachments
+        .iter()
+        .map(|attachment| EnqueueNotificationAttachment {
+            content_type: &attachment.content_type,
+            data_base64: BASE64.encode(&attachment.data),
+            file_name: &attachment.file_name,
+        })
+        .collect::<Vec<_>>();
+
+    serde_json::to_value(attachments).map_err(Into::into)
 }
 
 /// Convert a duration to the database integer type.

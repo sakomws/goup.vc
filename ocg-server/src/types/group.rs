@@ -388,6 +388,7 @@ pub struct GroupRegion {
 #[strum(serialize_all = "kebab-case")]
 pub enum GroupRole {
     Admin,
+    CheckInManager,
     EventsManager,
     #[default]
     Viewer,

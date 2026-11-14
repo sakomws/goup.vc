@@ -11,7 +11,6 @@ returns json as $$
         'auth_hash', auth_hash,
         'email', email,
         'email_verified', email_verified,
-        'optional_notifications_enabled', optional_notifications_enabled,
         'name', name,
         'platform_admin', platform_admin,
         'user_id', user_id,

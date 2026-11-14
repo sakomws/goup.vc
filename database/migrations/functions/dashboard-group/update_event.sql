@@ -349,18 +349,11 @@ begin
     -- Synchronize event CFS labels
     perform sync_event_cfs_labels(p_event_id, p_event->'cfs_labels');
 
-    -- Replace the organizers displayed on the public event page
-    delete from event_organizer
-    where event_id = p_event_id;
-
-    insert into event_organizer (event_id, user_id, "order")
-    select p_event_id, organizer.user_id, min(organizer.position)::int
-    from jsonb_array_elements_text(coalesce(p_event->'organizers', '[]'::jsonb))
-        with ordinality as organizer_input(user_id, position)
-    cross join lateral (
-        select organizer_input.user_id::uuid as user_id, organizer_input.position
-    ) organizer
-    group by organizer.user_id;
+    -- Replace organizers only when this form section was explicitly submitted.
+    -- Partial update flows must preserve the stored organizer attribution.
+    if p_event ? 'organizers' then
+        perform sync_event_organizers(p_event_id, p_event->'organizers');
+    end if;
 
     -- Synchronize event hosts, speakers, and sponsors
     perform sync_event_hosts_speakers_sponsors(p_event_id, p_event);

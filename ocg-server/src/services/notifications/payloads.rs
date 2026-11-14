@@ -1,6 +1,6 @@
 //! Notification payload builders.
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use uuid::Uuid;
 
 use crate::{
@@ -10,13 +10,79 @@ use crate::{
         EventAttendanceCanceled, EventCanceled, EventCohostInvitation, EventInvitation,
         EventPublished, EventRefundApproved, EventRefundRejected, EventRescheduled,
         EventWaitlistJoined, EventWaitlistLeft, EventWaitlistPromoted, EventWelcome,
-        SpeakerWelcome,
+        InboxMessageReceived, InboxReplyReceived, SpeakerWelcome,
     },
-    types::{event::EventSummary, site::SiteSettings},
+    types::{
+        event::EventSummary,
+        inbox::{InboxConversation, InboxMessage},
+        site::SiteSettings,
+    },
     util::{
         build_event_calendar_attachment, build_event_page_link, build_user_dashboard_events_link,
     },
 };
+
+/// Builds the notification telling group team members that a user wrote to the inbox.
+pub(crate) fn build_inbox_message_received_notification(
+    conversation: &InboxConversation,
+    message: &InboxMessage,
+    recipients: Vec<Uuid>,
+    site_settings: &SiteSettings,
+) -> Result<NewNotification> {
+    let author = message
+        .author
+        .as_ref()
+        .ok_or_else(|| anyhow!("inbox message author not found"))?;
+    let template_data = InboxMessageReceived {
+        body: message.body.clone(),
+        community_display_name: conversation.community_display_name.clone(),
+        group_name: conversation.group_name.clone(),
+        link: format!(
+            "/dashboard/group?tab=inbox&conversation_id={}",
+            conversation.inbox_conversation_id
+        ),
+        sender_name: author.name.clone().unwrap_or_else(|| author.username.clone()),
+        theme: site_settings.theme.clone(),
+        event_name: conversation.event.as_ref().map(|event| event.name.clone()),
+    };
+
+    Ok(NewNotification {
+        attachments: vec![],
+        kind: NotificationKind::InboxMessageReceived,
+        recipients,
+        template_data: Some(serde_json::to_value(&template_data)?),
+    })
+}
+
+/// Builds the notification telling a user that the group replied.
+pub(crate) fn build_inbox_reply_received_notification(
+    conversation: &InboxConversation,
+    message: &InboxMessage,
+    site_settings: &SiteSettings,
+) -> Result<NewNotification> {
+    let user = conversation
+        .user
+        .as_ref()
+        .ok_or_else(|| anyhow!("inbox conversation user not found"))?;
+    let template_data = InboxReplyReceived {
+        body: message.body.clone(),
+        community_display_name: conversation.community_display_name.clone(),
+        group_name: conversation.group_name.clone(),
+        link: format!(
+            "/dashboard/user?tab=inbox&conversation_id={}",
+            conversation.inbox_conversation_id
+        ),
+        theme: site_settings.theme.clone(),
+        event_name: conversation.event.as_ref().map(|event| event.name.clone()),
+    };
+
+    Ok(NewNotification {
+        attachments: vec![],
+        kind: NotificationKind::InboxReplyReceived,
+        recipients: vec![user.user_id],
+        template_data: Some(serde_json::to_value(&template_data)?),
+    })
+}
 
 use super::{NewNotification, NotificationKind};
 
@@ -141,24 +207,36 @@ pub(crate) fn build_event_published_notification(
 }
 
 /// Builds an event refund approval notification.
+pub(crate) fn build_event_refund_approved_template_data(
+    event: &EventSummary,
+    server_cfg: &HttpServerConfig,
+    site_settings: &SiteSettings,
+) -> Result<serde_json::Value> {
+    let base_url = notification_base_url(server_cfg);
+    serde_json::to_value(&EventRefundApproved {
+        event: event.clone(),
+        external_payment: false,
+        link: build_event_page_link(base_url, event),
+        theme: site_settings.theme.clone(),
+    })
+    .map_err(Into::into)
+}
+
+/// Builds an event refund approval notification.
 pub(crate) fn build_event_refund_approved_notification(
     event: &EventSummary,
     recipient_user_id: Uuid,
     server_cfg: &HttpServerConfig,
     site_settings: &SiteSettings,
 ) -> Result<NewNotification> {
-    let base_url = notification_base_url(server_cfg);
-    let template_data = EventRefundApproved {
-        event: event.clone(),
-        link: build_event_page_link(base_url, event),
-        theme: site_settings.theme.clone(),
-    };
+    let template_data =
+        build_event_refund_approved_template_data(event, server_cfg, site_settings)?;
 
     Ok(NewNotification {
         attachments: vec![],
         kind: NotificationKind::EventRefundApproved,
         recipients: vec![recipient_user_id],
-        template_data: Some(serde_json::to_value(&template_data)?),
+        template_data: Some(template_data),
     })
 }
 

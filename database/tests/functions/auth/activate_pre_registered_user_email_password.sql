@@ -19,44 +19,19 @@ select plan(9);
 -- SEED DATA
 -- ============================================================================
 
--- Users
-insert into "user" (
-    user_id,
-    name,
-    auth_hash,
-    email,
-    email_verified,
-    password,
-    registration_status,
-    username
-) values (
-    :'userID',
-    null,
-    'pre-registered-hash',
-    'invited@example.com',
-    false,
-    null,
-    'pre-registered',
-    'invited-user'
-), (
-    :'registeredUserID',
-    'Registered User',
-    'registered-hash',
-    'registered@example.com',
-    false,
-    'secret',
-    'registered',
-    'registered-user'
-), (
-    :'takenUsernameUserID',
-    'Taken User',
-    'taken-hash',
-    'taken@example.com',
-    true,
-    'secret',
-    'registered',
-    'alice'
-);
+-- Pre-registered user activated by email/password signup
+select fx_user(:'userID', jsonb_build_object(
+    'auth_hash', 'pre-registered-hash',
+    'email', 'invited@example.com',
+    'email_verified', false,
+    'registration_status', 'pre-registered'
+));
+
+-- Registered user that cannot be activated again
+select fx_user(:'registeredUserID', jsonb_build_object('email', 'registered@example.com'));
+
+-- Existing username collision for activation
+select fx_user(:'takenUsernameUserID', jsonb_build_object('username', 'alice'));
 
 -- Existing verification code to refresh on activation
 insert into email_verification_code (email_verification_code_id, user_id, created_at)
@@ -66,10 +41,11 @@ values (:'verificationCodeID', :'userID', '2024-01-01 00:00:00+00');
 -- TESTS
 -- ============================================================================
 
--- Should activate a pre-registered user and resolve username collisions.
-select is(
+-- Should activate a pre-registered user, resolve username collisions, and omit notification flag.
+select ok(
     (
-        select "user"::jsonb->>'username'
+        select "user"::jsonb->>'username' = 'alice2'
+        and not ("user"::jsonb ? 'optional_notifications_enabled')
         from activate_pre_registered_user_email_password(
             '{
                 "email": "INVITED@example.com",
@@ -84,8 +60,7 @@ select is(
             )
         )
     ),
-    'alice2',
-    'Should return the activated user with a unique username'
+    'Should return the activated user with a unique username and no notification flag'
 );
 
 -- Should promote the placeholder row into an unverified registered user with password.

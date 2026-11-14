@@ -15,7 +15,7 @@ begin
     for update;
 
     if not found then
-        raise exception 'event not found or inactive';
+        raise exception 'event not found or inactive' using errcode = 'OCG01';
     end if;
 
     -- Update event to mark as unpublished

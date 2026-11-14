@@ -2,6 +2,7 @@
 
 pub(crate) mod analytics;
 pub(crate) mod book_exchange;
+pub(crate) use super::community::contact;
 pub(crate) mod create;
 pub(crate) mod email_templates;
 pub(crate) mod event_categories;

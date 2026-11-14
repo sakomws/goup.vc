@@ -30,6 +30,7 @@ use crate::{
     router,
     services::{
         images::{DynImageStorage, MockImageStorage},
+        inbox::{DynInboxManager, MockInboxManager},
         notifications::{DynNotificationsManager, MockNotificationsManager},
         payments::{DynPaymentsManager, MockPaymentsManager},
     },
@@ -116,6 +117,25 @@ pub(crate) fn message_matches(record: &session::Record, expected_message: &str) 
 }
 
 // Expectations helpers.
+
+/// Expect an authenticated session without a selected dashboard scope.
+pub(crate) fn expect_authenticated_session(
+    db: &mut MockDB,
+    session_id: session::Id,
+    user_id: Uuid,
+) {
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(session_id, user_id, &auth_hash, None, None);
+
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+}
 
 /// Assert an empty HTMX location response with the expected status.
 pub(crate) fn assert_empty_hx_location_response(
@@ -335,7 +355,6 @@ pub(crate) fn sample_auth_user(user_id: Uuid, auth_hash: &str) -> AuthUser {
         email: "user@example.test".to_string(),
         email_verified: true,
         name: "Test User".to_string(),
-        optional_notifications_enabled: true,
         registration_status: "registered".to_string(),
         user_id,
         username: "test-user".to_string(),
@@ -755,6 +774,7 @@ pub(crate) fn sample_event_summary(event_id: Uuid, _group_id: Uuid) -> EventSumm
         capacity: None,
         created_by_display_name: None,
         created_by_username: None,
+        delete_eligibility: None,
         description_short: Some("A brief summary of the sample event".to_string()),
         ends_at: Some(starts_at + chrono::Duration::hours(2)),
         event_series_id: None,
@@ -1640,6 +1660,7 @@ pub(crate) fn test_state_with_server_cfg(
         activity_tracker: Arc::new(crate::activity_tracker::MockActivityTracker::new()),
         db,
         image_storage,
+        inbox_manager: Arc::new(MockInboxManager::new()),
         manual_event_discovery: None,
         manual_job_discovery: None,
         meetings_cfg: None,
@@ -1656,6 +1677,7 @@ pub(crate) struct TestRouterBuilder {
     activity_tracker: Option<crate::activity_tracker::MockActivityTracker>,
     db: MockDB,
     image_storage: Option<MockImageStorage>,
+    inbox_manager: Option<MockInboxManager>,
     meetings_cfg: Option<crate::config::MeetingsConfig>,
     nm: MockNotificationsManager,
     payments_cfg: Option<PaymentsConfig>,
@@ -1670,6 +1692,7 @@ impl TestRouterBuilder {
             activity_tracker: None,
             db,
             image_storage: None,
+            inbox_manager: None,
             meetings_cfg: None,
             nm,
             payments_cfg: None,
@@ -1685,6 +1708,7 @@ impl TestRouterBuilder {
             Arc::new(self.activity_tracker.unwrap_or_default());
         let is: DynImageStorage = Arc::new(self.image_storage.unwrap_or_default());
         let nm: DynNotificationsManager = Arc::new(self.nm);
+        let inbox_manager = Arc::new(self.inbox_manager.unwrap_or_default()) as DynInboxManager;
         let server_cfg = self.server_cfg.unwrap_or_default();
         let payments_manager = self.payments_manager.unwrap_or_default();
         let payments_manager = Arc::new(payments_manager) as DynPaymentsManager;
@@ -1699,6 +1723,7 @@ impl TestRouterBuilder {
             self.payments_cfg,
             payments_manager,
             nm,
+            Some(inbox_manager),
             &server_cfg,
         )
         .await
@@ -1717,6 +1742,12 @@ impl TestRouterBuilder {
     /// Sets a custom image storage.
     pub(crate) fn with_image_storage(mut self, is: MockImageStorage) -> Self {
         self.image_storage = Some(is);
+        self
+    }
+
+    /// Sets a custom inbox manager.
+    pub(crate) fn with_inbox_manager(mut self, inbox_manager: MockInboxManager) -> Self {
+        self.inbox_manager = Some(inbox_manager);
         self
     }
 

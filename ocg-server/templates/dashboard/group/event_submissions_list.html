@@ -6,6 +6,11 @@
 {# Header -#}
 {{ dashboard::page_title(title = "Submissions",
 description = "Review and manage call for speakers submissions.") -}}
+<div class="mt-4 flex justify-end">
+  <a href="/dashboard/group/events/{{ event_id }}/submissions.csv"
+     class="btn-primary-outline btn-mini"
+     download>Export CSV</a>
+</div>
 {# End header -#}
 
 {# Refresh trigger -#}
@@ -46,13 +51,16 @@ description = "Review and manage call for speakers submissions.") -}}
                 class="block min-w-0 w-full sm:w-56 px-3 text-sm h-[42px] text-stone-900 bg-white border border-stone-200 rounded-full focus:outline-none focus:ring-0 focus:border-stone-200 hover:border-primary-500 focus:hover:border-primary-500 transition-colors">
           <option value="created-desc"
                   {% if sort == "created-desc" %}selected{% endif %}>Submitted (newest)</option>
-          <option value="created-asc" {% if sort == "created-asc" %}selected{% endif %}>Submitted (oldest)</option>
+          <option value="created-asc"
+                  {% if sort == "created-asc" %}selected{% endif %}>Submitted (oldest)</option>
           <option value="ratings-count-desc"
                   {% if sort == "ratings-count-desc" %}selected{% endif %}>Ratings count (high to low)</option>
           <option value="ratings-count-asc"
                   {% if sort == "ratings-count-asc" %}selected{% endif %}>Ratings count (low to high)</option>
-          <option value="stars-desc" {% if sort == "stars-desc" %}selected{% endif %}>Stars (high to low)</option>
-          <option value="stars-asc" {% if sort == "stars-asc" %}selected{% endif %}>Stars (low to high)</option>
+          <option value="stars-desc"
+                  {% if sort == "stars-desc" %}selected{% endif %}>Stars (high to low)</option>
+          <option value="stars-asc"
+                  {% if sort == "stars-asc" %}selected{% endif %}>Stars (low to high)</option>
         </select>
       </div>
     </div>

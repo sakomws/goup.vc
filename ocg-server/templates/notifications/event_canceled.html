@@ -15,6 +15,14 @@
     We are sorry to inform you that the event
     <strong>{{ event.name }}</strong> from
     <strong>{{ event.group_name }}</strong> has been <strong>canceled</strong>.
+    {% if event.is_ticketed() -%}
+      <br />
+      <br />
+      If you paid through the platform, a refund has been started and we will
+      email you when it is confirmed.
+      If you paid outside the platform, the organizer will return the money
+      externally.
+    {% endif -%}
   </p>
 
   {{ email::button(link = link, text = "View event details", color = theme.primary_color) }}

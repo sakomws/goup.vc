@@ -1,0 +1,26 @@
+{% extends "notifications/base.html" -%}
+{% import "macros/email.html" as email -%}
+
+{# Alliance Custom Notification -#}
+{% block subject -%}
+  {{ subject }}
+{% endblock subject -%}
+
+{% block preheader -%}
+  Notification from {{ alliance_display_name }}.
+{% endblock preheader -%}
+
+{% block content -%}
+  <p class="default group mb-15">
+    <strong>{{ alliance_display_name }}</strong>
+  </p>
+  <p class="default big mb-15">{{ subject }}</p>
+  <p class="default mb-30 preline" style="margin-bottom: 30px">{{ body }}</p>
+  {{ email::button(link = link, text = "Visit alliance page", color = theme.primary_color) }}
+{% endblock content -%}
+
+{% block footer -%}
+  You received this email because you're on the team of one or more groups
+  in the {{ alliance_display_name }} alliance.
+{% endblock footer -%}
+{# End alliance custom notification -#}

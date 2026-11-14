@@ -144,6 +144,17 @@ pub(crate) struct EventCustom {
     pub theme: Theme,
 }
 
+/// Template for an alliance Contact notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/community_custom.html")]
+pub(crate) struct AllianceCustom {
+    pub alliance_display_name: String,
+    pub body: String,
+    pub link: String,
+    pub subject: String,
+    pub theme: Theme,
+}
+
 /// Template for event invitation notification.
 #[derive(Debug, Clone, Template, Serialize, Deserialize)]
 #[template(path = "notifications/event_invitation.html")]
@@ -203,6 +214,9 @@ pub(crate) struct EventSeriesNotificationItem {
 pub(crate) struct EventRefundApproved {
     /// Event summary data.
     pub event: EventSummary,
+    /// Whether the refund was completed outside the configured provider.
+    #[serde(default)]
+    pub external_payment: bool,
     /// Link to the event page.
     pub link: String,
     /// Theme configuration for the alliance.
@@ -490,6 +504,48 @@ pub(crate) fn default_site_onboarding_body() -> String {
 
 pub(crate) fn default_site_onboarding_cta_text() -> String {
     "Open your dashboard".to_string()
+}
+
+/// Template telling group team members that a user wrote to the group inbox.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/inbox_message_received.html")]
+pub(crate) struct InboxMessageReceived {
+    /// Plain-text message written by the user.
+    pub body: String,
+    /// Display name of the group's community.
+    pub community_display_name: String,
+    /// Name of the group the message was sent to.
+    pub group_name: String,
+    /// Link to the conversation in the group dashboard Inbox.
+    pub link: String,
+    /// Name shown for the user who wrote the message.
+    pub sender_name: String,
+    /// Theme configuration for the community.
+    pub theme: Theme,
+
+    /// Name of the event the conversation started from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub event_name: Option<String>,
+}
+
+/// Template telling a user that the group replied to their message.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/inbox_reply_received.html")]
+pub(crate) struct InboxReplyReceived {
+    /// Plain-text reply written on behalf of the group.
+    pub body: String,
+    /// Display name of the group's community.
+    pub community_display_name: String,
+    /// Name of the group that replied.
+    pub group_name: String,
+    /// Link to the conversation in the user dashboard.
+    pub link: String,
+    /// Theme configuration for the community.
+    pub theme: Theme,
+
+    /// Name of the event the conversation started from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub event_name: Option<String>,
 }
 
 /// Template for session proposal co-speaker invitation notification.

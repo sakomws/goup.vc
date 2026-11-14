@@ -35,8 +35,21 @@ pub enum EventPurchaseStatus {
     #[default]
     Pending,
     RefundPending,
+    RefundRecoveryPending,
     RefundRequested,
     Refunded,
+}
+
+/// Attendee-facing progress for a durable purchase refund.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum EventRefundProgress {
+    AwaitingCheckout,
+    Processing,
+    Queued,
+    RecoveryRequired,
+    Refunded,
+    RetryableFailure,
 }
 
 /// Status of an attendee refund request.
@@ -88,6 +101,15 @@ pub enum PaymentMode {
 pub enum PaymentProvider {
     #[default]
     Stripe,
+}
+
+/// Durable provider-mediated payment job kind.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, strum::Display)]
+#[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
+pub enum PaymentJobKind {
+    /// Customer refund processing and local finalization.
+    EventPurchaseRefund,
 }
 
 /// Discount code configuration for a ticketed event.

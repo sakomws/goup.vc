@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(82);
+select plan(88);
 
 -- ============================================================================
 -- TESTS
@@ -219,6 +219,7 @@ select columns_are('alliance_views', array[
 -- Test: custom_notification columns should match expected
 select columns_are('custom_notification', array[
     'custom_notification_id',
+    'alliance_id',
     'created_at',
     'created_by',
     'event_id',
@@ -847,6 +848,35 @@ select columns_are('images', array[
     'data'
 ]);
 
+-- Test: inbox conversation columns should match expected
+select columns_are('inbox_conversation', array[
+    'inbox_conversation_id',
+    'created_at',
+    'group_id',
+    'inbox_conversation_status_id',
+    'last_message_at',
+
+    'event_id',
+    'user_id'
+]);
+
+-- Test: inbox conversation status columns should match expected
+select columns_are('inbox_conversation_status', array[
+    'inbox_conversation_status_id',
+    'display_name'
+]);
+
+-- Test: inbox message columns should match expected
+select columns_are('inbox_message', array[
+    'inbox_message_id',
+    'body',
+    'created_at',
+    'inbox_conversation_id',
+    'kind',
+
+    'author_user_id'
+]);
+
 -- Test: session columns should match expected
 select columns_are('session', array[
     'session_id',
@@ -983,11 +1013,17 @@ select columns_are('notification_attachment', array[
 ]);
 
 -- Test: notification_kind columns should match expected
+select columns_are('notification_category', array[
+    'notification_category_id',
+    'display_name',
+    'group_mutable'
+]);
+
 select columns_are('notification_kind', array[
     'notification_kind_id',
 
     'name',
-    'optional_notification'
+    'notification_category_id'
 ]);
 
 -- Test: notification_template_data columns should match expected
@@ -1061,7 +1097,6 @@ select columns_are('user', array[
     'mentorship_note',
     'mentorship_price',
     'name',
-    'optional_notifications_enabled',
     'password',
     'platform_admin',
     'photo_url',
@@ -1075,6 +1110,19 @@ select columns_are('user', array[
     'twitter_url',
     'website_url',
     'youtube_url'
+]);
+
+-- Test: notification preference columns should match expected
+select columns_are('user_group_notification_mute', array[
+    'created_at',
+    'group_id',
+    'user_id'
+]);
+
+select columns_are('user_notification_opt_out', array[
+    'created_at',
+    'notification_category_id',
+    'user_id'
 ]);
 
 -- ============================================================================

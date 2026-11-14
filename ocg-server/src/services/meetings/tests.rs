@@ -2,6 +2,8 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::anyhow;
 use chrono::Utc;
+use mockall::Sequence;
+use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
@@ -318,6 +320,80 @@ async fn test_worker_auto_end_meeting_retryable_error_releases_claim() {
         result,
         Err(SyncError::Provider(MeetingProviderError::Network(_)))
     ));
+}
+
+#[tokio::test(start_paused = true)]
+async fn test_worker_auto_end_run_uses_rate_limit_retry_after() {
+    // Setup one rate-limited claim followed by cancellation on the next claim
+    let claimed_at = Utc::now();
+    let meeting_id = Uuid::from_u128(1);
+    let retry_after = Duration::from_secs(45);
+    let cancellation_token = CancellationToken::new();
+    let cancellation_token_for_claim = cancellation_token.clone();
+    let claim_released = Arc::new(Notify::new());
+    let claim_released_for_mock = claim_released.clone();
+    let mut sequence = Sequence::new();
+    let mut db = MockDB::new();
+    db.expect_claim_meeting_for_auto_end()
+        .times(1)
+        .in_sequence(&mut sequence)
+        .return_once(move || {
+            Ok(Some(crate::db::meetings::MeetingAutoEndCandidate {
+                auto_end_check_claimed_at: claimed_at,
+                meeting_id,
+                provider: MeetingProvider::Zoom,
+                provider_meeting_id: "rate-limited-auto-end".to_string(),
+            }))
+        });
+    db.expect_release_meeting_auto_end_check_claim()
+        .times(1)
+        .in_sequence(&mut sequence)
+        .return_once(move |_| {
+            claim_released_for_mock.notify_one();
+            Ok(())
+        });
+    db.expect_claim_meeting_for_auto_end()
+        .times(1)
+        .in_sequence(&mut sequence)
+        .return_once(move || {
+            cancellation_token_for_claim.cancel();
+            Ok(None)
+        });
+    db.expect_set_meeting_auto_end_check_outcome().never();
+
+    // Return the provider-directed cadence from the first claim
+    let mut provider = MockMeetingsProvider::new();
+    provider.expect_end_meeting().times(1).returning(move |_| {
+        Box::pin(async move { Err(MeetingProviderError::RateLimit { retry_after }) })
+    });
+    let mut providers = HashMap::new();
+    providers.insert(
+        MeetingProvider::Zoom,
+        Arc::new(provider) as DynMeetingsProvider,
+    );
+    let mut worker = MeetingsAutoEndWorker {
+        cancellation_token: cancellation_token.clone(),
+        db: Arc::new(db),
+        providers: Arc::new(providers),
+    };
+
+    // Keep the worker paused until the full provider delay elapses
+    let worker_task = tokio::spawn(async move { worker.run().await });
+    claim_released.notified().await;
+    tokio::task::yield_now().await;
+    tokio::time::advance(
+        retry_after
+            .checked_sub(Duration::from_secs(1))
+            .expect("rate-limit pause to exceed one second"),
+    )
+    .await;
+    tokio::task::yield_now().await;
+    assert!(!worker_task.is_finished());
+    tokio::time::advance(Duration::from_secs(1)).await;
+
+    // Check the next claim starts only after the rate-limit delay
+    worker_task.await.expect("auto-end worker to stop cleanly");
+    assert!(cancellation_token.is_cancelled());
 }
 
 #[tokio::test]

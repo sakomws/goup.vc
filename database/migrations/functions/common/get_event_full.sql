@@ -48,6 +48,9 @@ returns json as $$
             'ends_at', floor(extract(epoch from e.ends_at)),
             'event_reminder_enabled', e.event_reminder_enabled,
             'event_series_id', e.event_series_id,
+            'external_payment_instructions', e.external_payment_instructions,
+            'external_payment_url', e.external_payment_url,
+            'external_payment_window_hours', e.external_payment_window_hours,
             'has_related_events', exists (
                 select 1
                 from event related_event
@@ -212,6 +215,13 @@ returns json as $$
                             'starts_at', floor(extract(epoch from s.starts_at)),
 
                             'cfs_submission_id', s.cfs_submission_id,
+                            'tracks', (
+                                select coalesce(json_agg(ecl.name order by ecl.name), '[]')
+                                from cfs_submission_label csl
+                                join event_cfs_label ecl
+                                    on ecl.event_cfs_label_id = csl.event_cfs_label_id
+                                where csl.cfs_submission_id = s.cfs_submission_id
+                            ),
                             'description', coalesce(s.description, sp.description),
                             'ends_at', floor(extract(epoch from s.ends_at)),
                             'location', s.location,

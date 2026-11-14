@@ -36,6 +36,9 @@ pub const MAX_LEN_S: usize = 100;
 
 // Purpose-specific limits
 
+/// Maximum values accepted by each alliance contact filter.
+pub const MAX_CONTACT_FILTER_VALUES: usize = 500;
+
 /// Maximum number of elements in a collection (filters, tags, etc.).
 pub const MAX_ITEMS: usize = 25;
 
@@ -78,6 +81,9 @@ pub const MAX_LEN_EVENT_LABELS_PER_SUBMISSION: usize = 10;
 /// Maximum length for group pretty slugs.
 pub const MAX_LEN_GROUP_PRETTY_SLUG: usize = 50;
 
+/// Maximum length, in characters, for inbox message bodies.
+pub const MAX_LEN_INBOX_MESSAGE: usize = 5000;
+
 /// Maximum length for a DNS hostname.
 pub const MAX_LEN_CUSTOM_DOMAIN: usize = 253;
 
@@ -93,6 +99,12 @@ pub const MAX_LEN_SORT_KEY: usize = 32;
 /// Maximum length for tag or interest values.
 pub const MAX_LEN_TAG: usize = 50;
 
+/// Maximum length for UTM parameter values.
+pub const MAX_LEN_UTM_VALUE: usize = 50;
+
+/// Maximum number of values in each group UTM allowlist.
+pub const MAX_UTM_VALUES: usize = 20;
+
 /// Maximum length for timezone identifiers.
 pub const MAX_LEN_TIMEZONE: usize = 64;
 
@@ -101,6 +113,52 @@ pub const MAX_PAGINATION_LIMIT: usize = 100;
 
 /// Maximum number of additional occurrences created for a recurring event.
 pub const MAX_RECURRING_ADDITIONAL_OCCURRENCES: i32 = 12;
+
+/// Returns whether a normalized UTM value matches the database constraints.
+pub(crate) fn is_valid_utm_value(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= MAX_LEN_UTM_VALUE
+        && value.bytes().all(|byte| {
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'.' | b'-' | b'_')
+        })
+}
+
+/// Validates a group-defined UTM allowlist.
+pub fn utm_value_vec(value: &Option<Vec<String>>, _ctx: &()) -> garde::Result {
+    let Some(values) = value else {
+        return Ok(());
+    };
+
+    if values.len() > MAX_UTM_VALUES {
+        return Err(garde::Error::new(format!(
+            "value exceeds max items of {MAX_UTM_VALUES}"
+        )));
+    }
+
+    for (index, value) in values.iter().enumerate() {
+        if !is_valid_utm_value(value) {
+            return Err(garde::Error::new(format!(
+                "utm value '{value}' must have up to {MAX_LEN_UTM_VALUE} lowercase letters, numbers, dots, hyphens, or underscores"
+            )));
+        }
+        if values[..index].contains(value) {
+            return Err(garde::Error::new(format!(
+                "utm value '{value}' is duplicated"
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+/// Deserializes an optional string, treating blank values as absent.
+pub fn blank_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<String>::deserialize(deserializer)?;
+    Ok(value.filter(|value| !value.trim().is_empty()))
+}
 
 /// Maximum duration for session proposals (minutes).
 pub const MAX_SESSION_PROPOSAL_DURATION_MINUTES: i32 = 480;

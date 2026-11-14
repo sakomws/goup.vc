@@ -15,6 +15,7 @@ use crate::{
             EventRegistrationAttribution, EventSummary,
         },
         questionnaire::{QuestionnaireAnswers, QuestionnaireQuestion},
+        utm::EventUtmAllowlist,
     },
 };
 
@@ -101,6 +102,9 @@ pub(crate) trait DBEvent {
         alliance_id: Uuid,
         event_id: Uuid,
     ) -> Result<EventSummary>;
+
+    /// Retrieves the UTM values accepted for views of a published event.
+    async fn get_event_utm_allowlist(&self, event_id: Uuid) -> Result<Option<EventUtmAllowlist>>;
 
     /// Checks if the check-in window is open for an event.
     async fn is_event_check_in_window_open(
@@ -302,6 +306,13 @@ where
             &[&alliance_id, &event_id],
         )
         .await
+    }
+
+    /// [`DBEvent::get_event_utm_allowlist`].
+    #[instrument(skip(self), err)]
+    async fn get_event_utm_allowlist(&self, event_id: Uuid) -> Result<Option<EventUtmAllowlist>> {
+        self.fetch_json_opt("select get_event_utm_allowlist($1::uuid)", &[&event_id])
+            .await
     }
 
     /// [`DBEvent::is_event_check_in_window_open`]

@@ -8,6 +8,8 @@ pub(crate) mod common;
 pub(crate) mod group;
 /// Shared GTM dashboard handlers.
 pub(crate) mod gtm;
+/// Shared inbox handlers.
+pub(crate) mod inbox;
 /// Jobs dashboard handlers.
 pub(crate) mod jobs;
 /// Opportunity organizer dashboard handlers.

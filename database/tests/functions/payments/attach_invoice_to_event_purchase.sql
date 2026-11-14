@@ -1,0 +1,165 @@
+-- Tests attaching durable direct-charge invoice references.
+
+-- ============================================================================
+-- SETUP
+-- ============================================================================
+
+begin;
+select plan(6);
+
+-- ============================================================================
+-- VARIABLES
+-- ============================================================================
+
+\set communityID 'd7310000-0000-0000-0000-000000000001'
+\set eventCategoryID 'd7310000-0000-0000-0000-000000000002'
+\set eventID 'd7310000-0000-0000-0000-000000000003'
+\set groupCategoryID 'd7310000-0000-0000-0000-000000000004'
+\set groupID 'd7310000-0000-0000-0000-000000000005'
+\set purchaseID 'd7310000-0000-0000-0000-000000000006'
+\set refundID 'd7310000-0000-0000-0000-000000000007'
+\set refundJobID 'd7310000-0000-0000-0000-000000000010'
+\set ticketTypeID 'd7310000-0000-0000-0000-000000000008'
+\set userID 'd7310000-0000-0000-0000-000000000009'
+
+-- ============================================================================
+-- SEED DATA
+-- ============================================================================
+
+-- Baseline community, categories, users and group
+select fx_community(:'communityID');
+select fx_group_category(:'groupCategoryID', :'communityID');
+select fx_event_category(:'eventCategoryID', :'communityID');
+select fx_user(:'userID');
+select fx_group(:'groupID', :'communityID', :'groupCategoryID');
+
+-- Event associated with the direct-charge purchase
+select fx_event(:'eventID', :'groupID', :'eventCategoryID', jsonb_build_object('payment_currency_code', 'USD'));
+
+-- Ticket type snapshotted by the purchase
+select fx_event_ticket_type(:'ticketTypeID', :'eventID', jsonb_build_object(
+    'seats_total', 10,
+    'title', 'General admission'
+));
+
+-- Refunded direct-charge purchase awaiting its invoice event
+insert into event_purchase (
+    amount_minor, charge_model, completed_at, connected_seller_id, currency_code,
+    event_id, event_purchase_id, event_ticket_type_id,
+    final_platform_fee_amount_minor, payment_provider_id,
+    provider_application_fee_id, provider_charge_id,
+    provider_checkout_session_id, provider_object_account_id,
+    provider_payment_reference, provider_total_minor,
+    provisional_platform_fee_amount_minor, seller_snapshot, status,
+    subtotal_excluding_tax_minor, tax_amount_minor, tax_behavior,
+    tax_calculation_mode, tax_classification, ticket_title, user_id,
+    venue_snapshot
+) values (
+    2500, 'direct-charge', current_timestamp, 'acct_invoice', 'USD', :'eventID',
+    :'purchaseID', :'ticketTypeID', 100, 'stripe', 'fee_invoice', 'ch_invoice',
+    'cs_invoice', 'acct_invoice', 'pi_invoice', 2500, 100,
+    '{"display_name":"Fiscal Sponsor"}'::jsonb, 'refunded', 2300, 200,
+    'inclusive', 'manual', 'professional-event-admission', 'General admission',
+    :'userID', '{}'::jsonb
+);
+
+-- Payment job for the successful provider refund that predates the invoice
+insert into payment_job (
+    payment_job_id, event_purchase_id, idempotency_key, kind,
+    payment_provider_id
+) values (
+    :'refundJobID', :'purchaseID',
+    'refund-attach-invoice-refund-job',
+    'event-purchase-refund', 'stripe'
+);
+
+-- Successful provider refund that predates the invoice
+insert into event_purchase_refund (
+    amount_minor, currency_code, event_purchase_id, event_purchase_refund_id,
+    kind, payment_job_id, payment_provider_id, provider_refund_id,
+    provider_refunded_at, status
+) values (
+    2500, 'USD', :'purchaseID', :'refundID',
+    'automatic-unfulfillable-checkout', :'refundJobID', 'stripe',
+    're_invoice', current_timestamp,
+    'provider-succeeded'
+);
+
+-- ============================================================================
+-- TESTS
+-- ============================================================================
+
+-- Should reject an invoice from a different connected account
+select throws_ok(
+    format(
+        'select attach_invoice_to_event_purchase(%L, %L, %L, %L, null)',
+        :'purchaseID', 'acct_wrong', 'in_invoice', 'https://invoice.test/one'
+    ),
+    'invoice account does not match the purchase seller',
+    'Should reject an invoice from a different connected account'
+);
+
+-- Should attach a connected-account invoice after an earlier refund
+select lives_ok(
+    format(
+        'select attach_invoice_to_event_purchase(%L, %L, %L, %L, %L)',
+        :'purchaseID', 'acct_invoice', 'in_invoice',
+        'https://invoice.test/one', 'https://invoice.test/one.pdf'
+    ),
+    'Should attach a connected-account invoice after an earlier refund'
+);
+
+-- Should persist the durable invoice identifier and current URLs
+select results_eq(
+    format($$
+        select provider_invoice_id, provider_invoice_hosted_url,
+            provider_invoice_pdf_url
+        from event_purchase
+        where event_purchase_id = %L::uuid
+    $$, :'purchaseID'),
+    $$ values (
+        'in_invoice'::text,
+        'https://invoice.test/one'::text,
+        'https://invoice.test/one.pdf'::text
+    ) $$,
+    'Should persist the durable invoice identifier and current URLs'
+);
+
+-- Should queue a full credit note when the refund predates the invoice
+select results_eq(
+    format($$
+        select epcn.amount_minor, epcn.currency_code, pj.status, epcn.tax_amount_minor
+        from event_purchase_credit_note epcn
+        join payment_job pj using (payment_job_id)
+        where event_purchase_refund_id = %L::uuid
+    $$, :'refundID'),
+    $$ values (2500::bigint, 'USD'::text, 'pending'::text, 200::bigint) $$,
+    'Should queue a full credit note when the refund predates the invoice'
+);
+
+-- Should refresh URLs idempotently for the same durable invoice
+select lives_ok(
+    format(
+        'select attach_invoice_to_event_purchase(%L, %L, %L, %L, %L)',
+        :'purchaseID', 'acct_invoice', 'in_invoice',
+        'https://invoice.test/two', 'https://invoice.test/two.pdf'
+    ),
+    'Should refresh URLs idempotently for the same durable invoice'
+);
+
+-- Should reject replacement with a different invoice
+select throws_ok(
+    format(
+        'select attach_invoice_to_event_purchase(%L, %L, %L, %L, null)',
+        :'purchaseID', 'acct_invoice', 'in_other', 'https://invoice.test/other'
+    ),
+    'event purchase already has a different provider invoice',
+    'Should reject replacement with a different invoice'
+);
+
+-- ============================================================================
+-- CLEANUP
+-- ============================================================================
+
+select * from finish();
+rollback;

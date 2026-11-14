@@ -524,6 +524,49 @@
 </div>
 {# End social links section -#}
 
+{# UTM tracking section -#}
+{% let utm_value_pattern = "[a-z0-9._-]+" -%}
+{% let utm_value_message -%}Use only lowercase letters, numbers, dots, hyphens, and underscores.{%- endlet %}
+{% let utm_value_rules -%}Up to {{ crate::validation::MAX_UTM_VALUES }} values of up to {{ crate::validation::MAX_LEN_UTM_VALUE }} lowercase letters, numbers, dots, hyphens, or underscores.{%- endlet %}
+<div class="border-b border-stone-900/10 pb-12">
+  {{ dashboard::form_title(title = "UTM tracking", description = "Optional attribution of event page views to the UTM parameters of incoming links.") -}}
+  <div class="mt-6 max-w-5xl space-y-3 text-sm/6 text-stone-700">
+    <p>
+      Tracking is opt-in. Define at least one source or campaign. Every UTM parameter in a link must be accepted for that view to be attributed.
+    </p>
+  </div>
+  <input type="hidden" name="utm_present" value="true">
+  <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6 max-w-5xl">
+    <fieldset class="col-span-full lg:col-span-4">
+      <legend class="form-label">Sources</legend>
+      <div class="mt-2">
+        <multiple-inputs field-name="utm_sources" input-type="text" items="{{ utm.sources|json }}" label="Source" placeholder="newsletter" max-items="{{ crate::validation::MAX_UTM_VALUES }}" max-length="{{ crate::validation::MAX_LEN_UTM_VALUE }}" pattern="{{ utm_value_pattern }}" pattern-message="{{ utm_value_message }}" unique legend="Values accepted for utm_source. {{ utm_value_rules }}"></multiple-inputs>
+      </div>
+    </fieldset>
+    <fieldset class="col-span-full lg:col-span-4">
+      <legend class="form-label">Campaigns</legend>
+      <div class="mt-2">
+        <multiple-inputs field-name="utm_campaigns" input-type="text" items="{{ utm.campaigns|json }}" label="Campaign" placeholder="spring-launch" max-items="{{ crate::validation::MAX_UTM_VALUES }}" max-length="{{ crate::validation::MAX_LEN_UTM_VALUE }}" pattern="{{ utm_value_pattern }}" pattern-message="{{ utm_value_message }}" unique legend="Values accepted for utm_campaign. {{ utm_value_rules }}"></multiple-inputs>
+      </div>
+    </fieldset>
+    <fieldset class="col-span-full lg:col-span-4">
+      <legend class="form-label">Additional mediums</legend>
+      <div class="mt-2 space-y-3">
+        <div>
+          <p id="default-utm-mediums-label" class="text-sm/6 text-stone-700">Mediums accepted by default:</p>
+          <ul class="mt-2 flex flex-wrap gap-2" aria-labelledby="default-utm-mediums-label">
+            {% for medium in default_utm_mediums -%}
+              <li class="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 font-mono text-xs text-stone-700">{{ medium }}</li>
+            {% endfor -%}
+          </ul>
+        </div>
+        <multiple-inputs field-name="utm_mediums" input-type="text" items="{{ utm.mediums|json }}" label="Medium" placeholder="podcast" max-items="{{ crate::validation::MAX_UTM_VALUES }}" max-length="{{ crate::validation::MAX_LEN_UTM_VALUE }}" pattern="{{ utm_value_pattern }}" pattern-message="{{ utm_value_message }}" unique excluded-values="{{ default_utm_mediums|json }}" excluded-message="This medium is already accepted by default." legend="Additional values accepted for utm_medium. {{ utm_value_rules }}"></multiple-inputs>
+      </div>
+    </fieldset>
+  </div>
+</div>
+{# End UTM tracking section -#}
+
 {# Additional content section -#}
 {% let tags_items -%}items="{%- if let Some(tags) = &group.tags -%}{{ tags|json }}{%- endif -%}"{%- endlet %}
 {% let photos_urls -%}{%- if let Some(photos_urls) = &group.photos_urls -%}{{ photos_urls|json }}{%- else -%}[]{%- endif -%}{%- endlet %}
