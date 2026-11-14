@@ -191,6 +191,9 @@ pub(crate) struct UserDetails {
     /// User's `LinkedIn` URL.
     #[garde(url, length(max = MAX_LEN_L))]
     pub linkedin_url: Option<String>,
+    /// User's `Mastodon` profile URL.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub mastodon_url: Option<String>,
     /// Whether the user offers mentorship services for businesses.
     #[serde(default)]
     #[garde(skip)]
@@ -205,6 +208,9 @@ pub(crate) struct UserDetails {
     /// Optional price or pricing guidance for mentorship.
     #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
     pub mentorship_price: Option<String>,
+    /// User's `Omicron` profile URL.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub omicron_url: Option<String>,
     /// Whether the user authenticated with `LinkedIn`.
     #[serde(default)]
     #[garde(skip)]
@@ -267,10 +273,12 @@ impl From<crate::auth::User> for UserDetails {
                 .and_then(|provider| provider.linkedin.as_ref())
                 .is_some(),
             linkedin_url: user.linkedin_url,
+            mastodon_url: user.mastodon_url,
             mentorship_businesses: user.mentorship_businesses,
             mentorship_individuals: user.mentorship_individuals,
             mentorship_note: user.mentorship_note,
             mentorship_price: user.mentorship_price,
+            omicron_url: user.omicron_url,
             photo_url: user.photo_url,
             phone_country_code: user.phone_country_code,
             phone_number: user.phone_number,

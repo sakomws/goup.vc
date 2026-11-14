@@ -382,6 +382,8 @@
       {% let twitter_value -%}value="{%- if let Some(twitter_url) = &user.twitter_url -%}{{ twitter_url }}{%- endif -%}"{%- endlet %}
       {% let facebook_value -%}value="{%- if let Some(facebook_url) = &user.facebook_url -%}{{ facebook_url }}{%- endif -%}"{%- endlet %}
       {% let github_value -%}value="{%- if let Some(github_url) = &user.github_url -%}{{ github_url }}{%- endif -%}"{%- endlet %}
+      {% let mastodon_value -%}value="{%- if let Some(mastodon_url) = &user.mastodon_url -%}{{ mastodon_url }}{%- endif -%}"{%- endlet %}
+      {% let omicron_value -%}value="{%- if let Some(omicron_url) = &user.omicron_url -%}{{ omicron_url }}{%- endif -%}"{%- endlet %}
       {% let substack_value -%}value="{%- if let Some(substack_url) = &user.substack_url -%}{{ substack_url }}{%- endif -%}"{%- endlet %}
       {% let youtube_value -%}value="{%- if let Some(youtube_url) = &user.youtube_url -%}{{ youtube_url }}{%- endif -%}"{%- endlet %}
 
@@ -400,6 +402,14 @@
       {# Twitter URL -#}
       {{ form_fields::social_url_field(name = "twitter_url", label = "X (formerly Twitter)", icon = "icon-twitter", placeholder = "https://x.com/username", value_attr = twitter_value) -}}
       {# End Twitter URL -#}
+
+      {# Mastodon URL -#}
+      {{ form_fields::social_url_field(name = "mastodon_url", label = "Mastodon", icon = "icon-mastodon", placeholder = "https://mastodon.social/@username", value_attr = mastodon_value) -}}
+      {# End Mastodon URL -#}
+
+      {# Omicron URL -#}
+      {{ form_fields::social_url_field(name = "omicron_url", label = "Omicron", icon = "icon-omicron", placeholder = "https://omicron.blog/@username", value_attr = omicron_value) -}}
+      {# End Omicron URL -#}
 
       {# Facebook URL -#}
       {{ form_fields::social_url_field(name = "facebook_url", label = "Facebook", icon = "icon-facebook", placeholder = "https://facebook.com/username", value_attr = facebook_value) -}}

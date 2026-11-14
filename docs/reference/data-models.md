@@ -17,7 +17,7 @@ Defined in `ocg-server/src/types/user.rs`.
 | `company` | `Option<String>` | Employer |
 | `coffee_meet_enabled` | `bool` | Accepts direct CoffeeMeet requests |
 | `provider` | `Option<UserProvider>` | OAuth provider metadata |
-| social URLs | `Option<String>` | GitHub, LinkedIn, Twitter, Bluesky, Substack, YouTube, Facebook, website |
+| social URLs | `Option<String>` | GitHub, LinkedIn, Mastodon, Omicron, Twitter, Bluesky, Substack, YouTube, Facebook, website |
 
 `PublicUserProfile` is a subset safe for public profile cards.
 
