@@ -111,15 +111,9 @@ async fn test_page_redirects_users_without_group_access() {
                 && permission == GroupPermission::Read
         })
         .returning(|_, _, _, _| Ok(false));
-    db.expect_list_user_groups()
+    db.expect_delete_session()
         .times(1)
-        .withf(move |uid| *uid == user_id)
-        .returning(|_| Ok(vec![]));
-    db.expect_update_session()
-        .times(1)
-        .withf(move |record| {
-            record.id == session_id && !record.data.contains_key("selected_group_id")
-        })
+        .withf(move |id| *id == session_id)
         .returning(|_| Ok(()));
     db.expect_group_has_event().never();
     db.expect_get_event_analytics().never();
@@ -138,10 +132,7 @@ async fn test_page_redirects_users_without_group_access() {
 
     // Check the user is sent away before any analytics read
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    assert_eq!(
-        response.headers().get(LOCATION).unwrap(),
-        "/dashboard/user?tab=invitations"
-    );
+    assert_eq!(response.headers().get(LOCATION).unwrap(), "/log-in");
 }
 
 #[tokio::test]

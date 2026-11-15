@@ -59,11 +59,7 @@
       <label id="community-contact-groups-label" class="form-label">Groups</label>
       <div class="mt-2">
         {% if self.has_groups() -%}
-          <multi-select id="community-contact-groups" labelledby="community-contact-groups-label" name="filters[group_ids]" keep-order close-on-select wrap-names max-selected="{{ crate::validation::MAX_CONTACT_FILTER_VALUES }}" placeholder="All groups" legend="Select up to {{ crate::validation::MAX_CONTACT_FILTER_VALUES }} groups.
-          {% if filter_options.has_subgroups %}
-            Selecting a group doesn't include its subgroups; select them too.
-          {% endif %}
-          " options="{{ self.group_options() |json }}"></multi-select>
+          <multi-select id="community-contact-groups" labelledby="community-contact-groups-label" name="filters[group_ids]" keep-order close-on-select wrap-names max-selected="{{ crate::validation::MAX_CONTACT_FILTER_VALUES }}" placeholder="All groups" legend="{{ self.groups_legend() |safe }}" options="{{ self.group_options() |json }}"></multi-select>
         {% else -%}
           <multi-select id="community-contact-groups" labelledby="community-contact-groups-label" name="filters[group_ids]" disabled placeholder="All groups" legend="This alliance has no active groups."></multi-select>
         {% endif -%}

@@ -44,7 +44,7 @@ pub(super) fn setup_alliance_dashboard_router(state: &State) -> Router<State> {
         .route("/contact", get(dashboard::alliance::contact::page))
         .route(
             "/contact/recipients",
-            get(dashboard::alliance::contact::recipients),
+            post(dashboard::alliance::contact::recipients),
         )
         .route("/create", get(dashboard::alliance::create::page))
         .route(

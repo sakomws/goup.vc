@@ -129,7 +129,7 @@ fn test_page_groups_filter_is_disabled_without_groups() {
     assert!(tag.contains(r#"labelledby="community-contact-groups-label""#));
     assert!(tag.contains(r#"name="filters[group_ids]""#));
     assert!(tag.contains(" disabled "));
-    assert!(tag.contains(r#"legend="This community has no active groups.""#));
+    assert!(tag.contains(r#"legend="This alliance has no active groups.""#));
     assert!(!tag.contains("max-selected="));
     assert!(!tag.contains("options="));
 }
@@ -163,7 +163,7 @@ fn test_page_recipients_summary_posts_filters_only() {
     let tag = start_tag(&body, "community-contact-recipients");
 
     // Check previews post every filter field only, leaving the message out
-    assert!(tag.contains(r#"hx-post="/dashboard/community/contact/recipients""#));
+    assert!(tag.contains(r#"hx-post="/dashboard/alliance/contact/recipients""#));
     assert!(tag.contains(&format!(r#"hx-params="{}""#, filter_names.join(","))));
     assert!(tag.contains(
         r#"hx-params="filters[group_category_ids][],filters[group_ids][],filters[regions][],filters[roles][]""#

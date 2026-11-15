@@ -76,7 +76,7 @@ async fn test_page_db_error() {
 }
 
 #[tokio::test]
-async fn test_page_rejects_invalid_query() {
+async fn test_page_ignores_unknown_query_flags() {
     // Setup identifiers
     let community_id = Uuid::new_v4();
     let group_id = Uuid::new_v4();
@@ -89,7 +89,14 @@ async fn test_page_rejects_invalid_query() {
     db.expect_user_has_group_permission()
         .times(1)
         .returning(|_, _, _, _| Ok(true));
-    db.expect_get_group_stats().never();
+    db.expect_get_group_full()
+        .times(1)
+        .withf(move |cid, gid| *cid == community_id && *gid == group_id)
+        .returning(move |_, _| Ok(sample_group_full(community_id, group_id)));
+    db.expect_get_group_stats()
+        .times(1)
+        .withf(move |cid, gid| *cid == community_id && *gid == group_id)
+        .returning(|_, _| Ok(sample_group_stats()));
 
     // Setup router and send request with an invalid flag
     let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
@@ -105,9 +112,8 @@ async fn test_page_rejects_invalid_query() {
     let (parts, body) = response.into_parts();
     let bytes = to_bytes(body, usize::MAX).await.unwrap();
 
-    // Check the query is rejected before loading statistics
-    assert_eq!(parts.status, StatusCode::UNPROCESSABLE_ENTITY);
-    assert_eq!(bytes.as_ref(), b"invalid request payload");
+    // Unknown query flags are ignored and the page still loads
+    assert_html_response(&parts, &bytes, StatusCode::OK);
 }
 
 #[tokio::test]

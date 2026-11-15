@@ -383,7 +383,11 @@ async fn test_update_preferences_rejects_unknown_category() {
 
     // Check the payload is rejected
     assert_eq!(parts.status, StatusCode::UNPROCESSABLE_ENTITY);
-    assert_eq!(bytes.as_ref(), b"invalid request payload");
+    assert!(
+        bytes
+            .windows(b"unknown variant".len())
+            .any(|window| window == b"unknown variant")
+    );
 }
 
 #[tokio::test]

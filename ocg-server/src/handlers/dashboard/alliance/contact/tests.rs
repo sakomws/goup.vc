@@ -64,7 +64,7 @@ async fn test_page_success_can_send() {
         .await;
     let request = Request::builder()
         .method("GET")
-        .uri("/dashboard/community/contact")
+        .uri("/dashboard/alliance/contact")
         .header(HOST, "example.test")
         .header(COOKIE, format!("id={session_id}"))
         .body(Body::empty())
@@ -88,7 +88,7 @@ async fn test_page_success_can_send() {
     assert!(html.contains("No region (1)"));
     assert!(html.contains("Group One · Platform · Europe"));
     assert!(html.contains("Selecting a group doesn't include its subgroups; select them too."));
-    assert!(html.contains(r#"hx-post="/dashboard/community/contact/recipients""#));
+    assert!(html.contains(r#"hx-post="/dashboard/alliance/contact/recipients""#));
     assert!(html.contains(r#"data-people-count="3""#));
     assert!(html.contains(r#"data-can-send="true""#));
     assert!(html.contains(r#"data-skip-validation="true""#));
@@ -114,7 +114,7 @@ async fn test_page_success_cannot_send() {
         .await;
     let request = Request::builder()
         .method("GET")
-        .uri("/dashboard/community/contact")
+        .uri("/dashboard/alliance/contact")
         .header(HOST, "example.test")
         .header(COOKIE, format!("id={session_id}"))
         .body(Body::empty())
@@ -284,7 +284,7 @@ async fn test_recipients_rejects_get_requests() {
         .await;
     let request = Request::builder()
         .method("GET")
-        .uri("/dashboard/community/contact/recipients?filters%5Broles%5D%5B%5D=admin")
+        .uri("/dashboard/alliance/contact/recipients?filters%5Broles%5D%5B%5D=admin")
         .header(HOST, "example.test")
         .header(COOKIE, format!("id={session_id}"))
         .body(Body::empty())
@@ -537,7 +537,7 @@ fn expect_send_context(db: &mut MockDB, community_id: Uuid) {
 fn recipients_request(session_id: session::Id, form_data: &str) -> Request<Body> {
     Request::builder()
         .method("POST")
-        .uri("/dashboard/community/contact/recipients")
+        .uri("/dashboard/alliance/contact/recipients")
         .header(HOST, "example.test")
         .header(COOKIE, format!("id={session_id}"))
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
@@ -589,7 +589,7 @@ fn sample_summary() -> AllianceContactRecipientsSummary {
 fn send_request(session_id: session::Id, form_data: &str) -> Request<Body> {
     Request::builder()
         .method("POST")
-        .uri("/dashboard/community/notifications")
+        .uri("/dashboard/alliance/notifications")
         .header(HOST, "example.test")
         .header(COOKIE, format!("id={session_id}"))
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")

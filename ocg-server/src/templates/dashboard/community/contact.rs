@@ -3,11 +3,14 @@
 use askama::Template;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{
-    dashboard::community::contact::{
-        CommunityContactFilterOptions, CommunityContactRecipientsSummary,
+use crate::{
+    types::{
+        dashboard::community::contact::{
+            CommunityContactFilterOptions, CommunityContactRecipientsSummary,
+        },
+        group::GroupRoleSummary,
     },
-    group::GroupRoleSummary,
+    validation::MAX_CONTACT_FILTER_VALUES,
 };
 
 #[cfg(test)]
@@ -65,6 +68,15 @@ impl Page {
     /// Returns whether the community has active groups to filter by.
     pub(crate) fn has_groups(&self) -> bool {
         !self.filter_options.groups.is_empty()
+    }
+
+    /// Returns the groups filter legend, including the subgroup hint when needed.
+    pub(crate) fn groups_legend(&self) -> String {
+        let mut legend = format!("Select up to {MAX_CONTACT_FILTER_VALUES} groups.");
+        if self.filter_options.has_subgroups {
+            legend.push_str(" Selecting a group doesn't include its subgroups; select them too.");
+        }
+        legend
     }
 
     /// Returns whether the community has regions to filter by.
