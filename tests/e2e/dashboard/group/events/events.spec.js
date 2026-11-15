@@ -66,12 +66,15 @@ const openEventUpdateFormByName = async (page, eventName, eventId) => {
 
   await Promise.all([
     page.waitForResponse(
-      (response) =>
-        response.request().method() === "GET" &&
-        response.url().includes("/dashboard/group/events/") &&
-        response.url().includes("/update") &&
-        (eventId ? response.url().includes(eventId) : true) &&
-        response.ok(),
+      (response) => {
+        const { pathname } = new URL(response.url());
+        return (
+          response.request().method() === "GET" &&
+          /^\/dashboard\/group\/events\/[^/]+$/.test(pathname) &&
+          (eventId ? pathname.endsWith(`/${eventId}`) : true) &&
+          response.ok()
+        );
+      },
     ),
     editButton.click(),
   ]);
@@ -1433,8 +1436,9 @@ test.describe("group dashboard events view", () => {
       organizerGroupWithoutPaymentsPage.waitForResponse(
         (response) =>
           response.request().method() === "GET" &&
-          response.url().includes("/dashboard/group/events/") &&
-          response.url().includes("/update") &&
+          /^\/dashboard\/group\/events\/[^/]+$/.test(
+            new URL(response.url()).pathname,
+          ) &&
           response.ok(),
       ),
       eventRow.locator('td button[aria-label^="Edit event:"]').click(),
@@ -2111,8 +2115,9 @@ test.describe("group dashboard events view", () => {
         organizerGroupPage.waitForResponse(
           (response) =>
             response.request().method() === "GET" &&
-            response.url().includes("/dashboard/group/events/") &&
-            response.url().includes("/update") &&
+            /^\/dashboard\/group\/events\/[^/]+$/.test(
+              new URL(response.url()).pathname,
+            ) &&
             response.ok(),
         ),
         eventRow.locator('td button[aria-label^="Edit event:"]').click(),
@@ -2463,16 +2468,13 @@ test.describe("group dashboard events view", () => {
         organizerGroupPage.waitForResponse(
           (response) =>
             response.request().method() === "GET" &&
-            response
-              .url()
-              .includes(
-                `/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}/update`,
-              ) &&
+            new URL(response.url()).pathname ===
+              `/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}` &&
             response.ok(),
         ),
         eventRow
           .locator(
-            `td button[hx-get="/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}/update"]`,
+            `td button[hx-get="/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}"]`,
           )
           .click(),
       ]);
@@ -2610,16 +2612,13 @@ test.describe("group dashboard events view", () => {
       organizerGroupPage.waitForResponse(
         (response) =>
           response.request().method() === "GET" &&
-          response
-            .url()
-            .includes(
-              `/dashboard/group/events/${TEST_EVENT_IDS.alpha.one}/update`,
-            ) &&
+          new URL(response.url()).pathname ===
+            `/dashboard/group/events/${TEST_EVENT_IDS.alpha.one}` &&
           response.ok(),
       ),
       eventRow
         .locator(
-          `td button[hx-get="/dashboard/group/events/${TEST_EVENT_IDS.alpha.one}/update"]`,
+          `td button[hx-get="/dashboard/group/events/${TEST_EVENT_IDS.alpha.one}"]`,
         )
         .click(),
     ]);

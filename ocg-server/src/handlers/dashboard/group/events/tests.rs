@@ -423,6 +423,13 @@ async fn test_list_page_success() {
     assert_html_response(&parts, &bytes, StatusCode::OK);
     let body = String::from_utf8(bytes.to_vec()).unwrap();
     assert!(body.contains("aria-label=\"Open event details: Sample Event\""));
+    assert!(body.contains("href=\"/dashboard/group/events/"));
+    assert!(body.contains("hx-get=\"/dashboard/group/events/"));
+    assert!(body.contains("hx-target=\"body\""));
+    assert!(body.contains("hx-push-url=\"true\""));
+    assert!(
+        !body.contains("/update\"\n                            hx-target=\"#dashboard-content\"")
+    );
     assert!(body.contains(">Test</span>"));
     assert!(body.contains("title=\"View canceled event\""));
     assert!(!body.contains("disabled title=\"Event is canceled\""));
@@ -721,6 +728,171 @@ async fn test_update_page_success() {
     // Check response matches expectations
     assert_html_response(&parts, &bytes, StatusCode::OK);
     assert!(String::from_utf8_lossy(&bytes).contains("Change group"));
+}
+
+#[tokio::test]
+#[allow(clippy::too_many_lines)]
+async fn test_event_page_opens_outside_the_events_list() {
+    // Setup identifiers and data structures
+    let alliance_id = Uuid::new_v4();
+    let event_id = Uuid::new_v4();
+    let group_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(
+        session_id,
+        user_id,
+        &auth_hash,
+        Some(alliance_id),
+        Some(group_id),
+    );
+    let groups = sample_user_groups_by_alliance(alliance_id, group_id);
+    let mut event_full = sample_event_full(alliance_id, event_id, group_id);
+    event_full.payment_currency_code = Some("USD".to_string());
+    let event_full_db = event_full.clone();
+    let category = sample_event_category();
+    let kind = sample_event_kind_summary();
+    let payment_currency_codes = vec!["EUR".to_string(), "USD".to_string()];
+    let session_kind = sample_session_kind_summary();
+    let sponsor = sample_group_sponsor();
+    let timezones = vec!["UTC".to_string()];
+
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == alliance_id
+                && *gid == group_id
+                && *uid == user_id
+                && permission == GroupPermission::Read
+        })
+        .returning(|_, _, _, _| Ok(true));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == alliance_id
+                && *gid == group_id
+                && *uid == user_id
+                && permission == GroupPermission::InboxWrite
+        })
+        .returning(|_, _, _, _| Ok(false));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == alliance_id
+                && *gid == group_id
+                && *uid == user_id
+                && permission == GroupPermission::EventsWrite
+        })
+        .returning(|_, _, _, _| Ok(true));
+    db.expect_user_has_alliance_permission()
+        .times(1)
+        .withf(move |cid, uid, permission| {
+            *cid == alliance_id && *uid == user_id && permission == AlliancePermission::GroupsWrite
+        })
+        .returning(|_, _, _| Ok(true));
+    db.expect_list_user_groups()
+        .times(1)
+        .withf(move |uid| uid == &user_id)
+        .returning(move |_| Ok(groups.clone()));
+    db.expect_get_site_settings()
+        .times(1)
+        .returning(|| Ok(sample_site_settings()));
+    db.expect_get_event_full()
+        .times(1)
+        .withf(move |cid, gid, eid| *cid == alliance_id && *gid == group_id && *eid == event_id)
+        .returning(move |_, _, _| Ok(event_full_db.clone()));
+    db.expect_list_event_categories()
+        .times(1)
+        .withf(move |cid| *cid == alliance_id)
+        .returning(move |_| Ok(vec![category.clone()]));
+    db.expect_list_event_kinds()
+        .times(1)
+        .returning(move || Ok(vec![kind.clone()]));
+    db.expect_list_payment_currency_codes()
+        .times(1)
+        .returning(move || Ok(payment_currency_codes.clone()));
+    db.expect_list_session_kinds()
+        .times(1)
+        .returning(move || Ok(vec![session_kind.clone()]));
+    db.expect_list_group_sponsors()
+        .times(1)
+        .withf(move |id, filters, full_list| {
+            *id == group_id
+                && filters.limit == Some(DASHBOARD_PAGINATION_LIMIT)
+                && filters.offset == Some(0)
+                && *full_list
+        })
+        .returning(move |_, _, _| {
+            Ok(
+                crate::templates::dashboard::group::sponsors::GroupSponsorsOutput {
+                    sponsors: vec![sponsor.clone()],
+                    total: 1,
+                },
+            )
+        });
+    db.expect_list_timezones()
+        .times(1)
+        .returning(move || Ok(timezones.clone()));
+    db.expect_list_group_organizers()
+        .times(1)
+        .withf(move |gid| *gid == group_id)
+        .returning(|_| Ok(vec![]));
+    db.expect_get_group_payment_recipient()
+        .times(1)
+        .withf(move |cid, gid| *cid == alliance_id && *gid == group_id)
+        .returning(move |_, _| Ok(None));
+    db.expect_list_event_approved_cfs_submissions()
+        .times(1)
+        .withf(move |eid| *eid == event_id)
+        .returning(|_| Ok(vec![]));
+    db.expect_list_cfs_submission_statuses_for_review()
+        .times(1)
+        .returning(|| Ok(vec![]));
+
+    // Setup notifications manager mock
+    let nm = MockNotificationsManager::new();
+
+    // Setup router and send request
+    let router = TestRouterBuilder::new(db, nm)
+        .with_payments_cfg(PaymentsConfig::Stripe(PaymentsStripeConfig {
+            mode: PaymentMode::Test,
+            publishable_key: "pk_test_123".to_string(),
+            secret_key: "sk_test_123".to_string(),
+            webhook_secret: "whsec_test_123".to_string(),
+            platform_fee_bps: 0,
+            automatic_tax: false,
+            create_invoices: false,
+        }))
+        .build()
+        .await;
+    let request = Request::builder()
+        .method("GET")
+        .uri(format!("/dashboard/group/events/{event_id}"))
+        .header(COOKIE, format!("id={session_id}"))
+        .body(Body::empty())
+        .unwrap();
+    let response = router.oneshot(request).await.unwrap();
+    let (parts, body) = response.into_parts();
+    let bytes = to_bytes(body, usize::MAX).await.unwrap();
+    let body = String::from_utf8(bytes.to_vec()).unwrap();
+
+    // The event opens inside the group dashboard, not as a bare form fragment.
+    assert_html_response(&parts, body.as_bytes(), StatusCode::OK);
+    assert!(body.contains("Group Dashboard"));
+    assert!(body.contains("Back to events"));
+    assert!(body.contains("id=\"event-update-page\""));
+    assert!(body.contains(&format!("/dashboard/group/events/{event_id}")));
 }
 
 #[tokio::test]

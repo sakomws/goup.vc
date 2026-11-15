@@ -26,6 +26,15 @@
      data-group-logo-url="{{ event.group.logo_url }}"
      data-group-banner-url="{%- if let Some(banner_url) = &event.group.banner_url -%}{{ banner_url }}{%- endif -%}"
      data-group-banner-mobile-url="{%- if let Some(banner_mobile_url) = &event.group.banner_mobile_url -%}{{ banner_mobile_url }}{%- endif -%}">
+  <a href="/dashboard/group?tab=events"
+     hx-get="/dashboard/group?tab=events"
+     hx-target="body"
+     hx-push-url="true"
+     hx-indicator="#dashboard-spinner"
+     class="inline-flex items-center gap-2 text-sm font-medium text-stone-600 hover:text-stone-950">
+    <div class="svg-icon size-4 icon-arrow-left bg-current"></div>
+    Back to events
+  </a>
   <div class="mb-10 grid min-w-0 grid-cols-1 items-stretch gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:gap-x-8">
     <div class="min-w-0 overflow-x-auto">
       <select data-section-select
