@@ -714,7 +714,8 @@
           </div>
           {% if !track_names.is_empty() -%}
             <div class="mb-10 max-w-xs">
-              <label for="event-speakers-track" class="mb-2 block text-sm font-medium text-stone-900">Track</label>
+              <label for="event-speakers-track"
+                     class="mb-2 block text-sm font-medium text-stone-900">Track</label>
               <select id="event-speakers-track" class="select-primary">
                 <option value="">All tracks</option>
                 {% for track_name in track_names -%}
@@ -734,10 +735,7 @@
                       <div class="mt-4 flex flex-wrap gap-3">
                         {% for speaker in session.speakers -%}
                           {% if speaker.user.name.is_some() -%}
-                            <user-chip user='{{ speaker.user|json }}'
-                                       tracks='{{ event.speaker_track_labels(speaker.user.user_id)|json }}'
-                                       small
-                                       display-modal></user-chip>
+                            <user-chip user='{{ speaker.user|json }}' tracks='{{ event.speaker_track_labels(speaker.user.user_id) |json }}' small display-modal></user-chip>
                           {% endif -%}
                         {% endfor -%}
                       </div>
@@ -772,10 +770,7 @@
                 <div data-speaker-card
                      data-speaker-search="{{ speaker.user.name.as_deref().unwrap_or(&speaker.user.username)|lower }}"
                      data-speaker-tracks="{{ event.speaker_tracks_attr(speaker.user.user_id) }}">
-                  <user-chip user='{{ speaker.user|json }}'
-                             tracks='{{ event.speaker_track_labels(speaker.user.user_id)|json }}'
-                             featured
-                             display-modal></user-chip>
+                  <user-chip user='{{ speaker.user|json }}' tracks='{{ event.speaker_track_labels(speaker.user.user_id) |json }}' featured display-modal></user-chip>
                 </div>
               {% endif -%}
             {% endfor -%}
@@ -802,9 +797,7 @@
                 <div data-speaker-card
                      data-speaker-search="{{ speaker.user.name.as_deref().unwrap_or(&speaker.user.username)|lower }}"
                      data-speaker-tracks="{{ event.speaker_tracks_attr(speaker.user.user_id) }}">
-                  <user-chip user='{{ speaker.user|json }}'
-                             tracks='{{ event.speaker_track_labels(speaker.user.user_id)|json }}'
-                             display-modal></user-chip>
+                  <user-chip user='{{ speaker.user|json }}' tracks='{{ event.speaker_track_labels(speaker.user.user_id) |json }}' display-modal></user-chip>
                 </div>
               {% endif -%}
             {% endfor -%}

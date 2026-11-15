@@ -160,12 +160,14 @@ const renderTrackLabels = (tracks) => {
   return html`${labels.map(
     (track) => html`
       <span
-        class="inline-flex max-w-full shrink-0 items-center truncate rounded-full border px-2 py-0.5 text-[11px] font-medium leading-4 text-stone-900 ${track.color
-          ? ""
-          : "border-stone-300 bg-stone-50"}"
-        style=${track.color
-          ? `--label-color:${track.color};border-color:var(--label-color);background-color:color-mix(in srgb, var(--label-color) 30%, transparent);`
-          : ""}
+        class="inline-flex max-w-full shrink-0 items-center truncate rounded-full border px-2 py-0.5 text-[11px] font-medium leading-4 text-stone-900 ${
+          track.color ? "" : "border-stone-300 bg-stone-50"
+        }"
+        style=${
+          track.color
+            ? `--label-color:${track.color};border-color:var(--label-color);background-color:color-mix(in srgb, var(--label-color) 30%, transparent);`
+            : ""
+        }
         data-speaker-track-label
         >${track.name}</span
       >
