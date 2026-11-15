@@ -154,7 +154,7 @@ const openAttendeesTab = async (page, event) => {
   await expect(eventRow).toBeVisible();
   await waitForActionResponse(page, () => eventRow.locator('button[aria-label^="Edit event:"]').click(), {
     method: "GET",
-    urlIncludes: `/dashboard/group/events/${event.id}/update`,
+    urlIncludes: `/dashboard/group/events/${event.id}`,
   });
   const attendeesTab = page.locator('button[data-section="attendees"]');
   const openAttendeesSection = async () => {

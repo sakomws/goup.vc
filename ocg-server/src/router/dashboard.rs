@@ -436,6 +436,10 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             get(dashboard::group::submissions::download_csv),
         )
         .route(
+            "/events/{event_id}",
+            get(dashboard::group::events::event_page),
+        )
+        .route(
             "/events/{event_id}/update",
             get(dashboard::group::events::update_page),
         )

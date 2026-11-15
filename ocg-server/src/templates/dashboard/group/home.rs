@@ -95,6 +95,8 @@ pub(crate) enum Content {
     Distribution(distribution::Page),
     /// Events management page.
     Events(Box<events::ListPage>),
+    /// One event's details, opened as its own dashboard page.
+    EventDetails(Box<events::UpdatePage>),
     /// GTM pipeline page.
     Gtm(Box<gtm::ListPage>),
     /// `CoffeeMeet` subscriber page.
@@ -146,9 +148,9 @@ impl Content {
         matches!(self, Content::Distribution(_))
     }
 
-    /// Check if the content is the events page.
+    /// Check if the content is the events list or one event's details page.
     fn is_events(&self) -> bool {
-        matches!(self, Content::Events(_))
+        matches!(self, Content::Events(_) | Content::EventDetails(_))
     }
 
     /// Check if the content is the GTM page.
@@ -240,6 +242,7 @@ impl std::fmt::Display for Content {
             Content::Cohosts(template) => write!(f, "{}", template.render()?),
             Content::Distribution(template) => write!(f, "{}", template.render()?),
             Content::Events(template) => write!(f, "{}", template.render()?),
+            Content::EventDetails(template) => write!(f, "{}", template.render()?),
             Content::Gtm(template) => write!(f, "{}", template.render()?),
             Content::IntentionalDating(template) => write!(f, "{}", template.render()?),
             Content::Integrations(template) => write!(f, "{}", template.render()?),

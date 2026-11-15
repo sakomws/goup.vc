@@ -31,11 +31,7 @@ test.describe("group dashboard waitlist tab", () => {
       organizerGroupPage.waitForResponse(
         (response) =>
           response.request().method() === "GET" &&
-          response
-            .url()
-            .includes(
-              `/dashboard/group/events/${TEST_EVENT_IDS.alpha.one}/update`,
-            ) &&
+          new URL(response.url()).pathname === `/dashboard/group/events/${TEST_EVENT_IDS.alpha.one}` &&
           response.ok(),
       ),
       eventRow
@@ -88,11 +84,7 @@ test.describe("group dashboard waitlist tab", () => {
         organizerGroupPage.waitForResponse(
           (response) =>
             response.request().method() === "GET" &&
-            response
-              .url()
-              .includes(
-                `/dashboard/group/events/${TEST_EVENT_IDS.alpha.one}/update`,
-              ) &&
+            new URL(response.url()).pathname === `/dashboard/group/events/${TEST_EVENT_IDS.alpha.one}` &&
             response.ok(),
         ),
         eventRow
@@ -229,11 +221,7 @@ test.describe("group dashboard waitlist tab", () => {
       organizerGroupPage.waitForResponse(
         (response) =>
           response.request().method() === "GET" &&
-          response
-            .url()
-            .includes(
-              `/dashboard/group/events/${TEST_EVENT_IDS.alpha.dashboardWaitlist}/update`,
-            ) &&
+          new URL(response.url()).pathname === `/dashboard/group/events/${TEST_EVENT_IDS.alpha.dashboardWaitlist}` &&
           response.ok(),
       ),
       eventRow

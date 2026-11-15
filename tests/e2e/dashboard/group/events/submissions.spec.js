@@ -27,11 +27,7 @@ test.describe("group dashboard submissions tab", () => {
       eventsManagerGroupPage.waitForResponse(
         (response) =>
           response.request().method() === "GET" &&
-          response
-            .url()
-            .includes(
-              `/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}/update`,
-            ) &&
+          new URL(response.url()).pathname === `/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}` &&
           response.ok(),
       ),
       cfsEventRow
@@ -121,11 +117,7 @@ test.describe("group dashboard submissions tab", () => {
       groupViewerPage.waitForResponse(
         (response) =>
           response.request().method() === "GET" &&
-          response
-            .url()
-            .includes(
-              `/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}/update`,
-            ) &&
+          new URL(response.url()).pathname === `/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}` &&
           response.ok(),
       ),
       cfsEventRow
@@ -178,11 +170,7 @@ test.describe("group dashboard submissions tab", () => {
       eventsManagerGroupPage.waitForResponse(
         (response) =>
           response.request().method() === "GET" &&
-          response
-            .url()
-            .includes(
-              `/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}/update`,
-            ) &&
+          new URL(response.url()).pathname === `/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}` &&
           response.ok(),
       ),
       cfsEventRow
@@ -258,11 +246,7 @@ test.describe("group dashboard submissions tab", () => {
       eventsManagerGroupPage.waitForResponse(
         (response) =>
           response.request().method() === "GET" &&
-          response
-            .url()
-            .includes(
-              `/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}/update`,
-            ) &&
+          new URL(response.url()).pathname === `/dashboard/group/events/${TEST_EVENT_IDS.alpha.cfsSummit}` &&
           response.ok(),
       ),
       updatedCfsEventRow

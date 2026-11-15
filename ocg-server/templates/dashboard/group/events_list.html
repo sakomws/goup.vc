@@ -110,18 +110,17 @@
                 <div class="flex items-center">
                   <div class="min-w-0">
                     {# Event name -#}
-                    <button type="button"
-                            hx-get="/dashboard/group/events/{{ event.event_id }}/update"
-                            hx-target="#dashboard-content"
-                            hx-replace-url="/dashboard/group?tab=events"
-                            hx-indicator="#dashboard-spinner"
-                            hx-swap="innerHTML show:body:top"
-                            hx-disabled-elt="this"
-                            class="block max-w-full truncate hover:underline text-left cursor-pointer bg-transparent border-0 p-0 font-medium text-stone-900"
-                            {% if let Some(created_by_tooltip) = event.created_by_tooltip() -%}
-                              title="{{ created_by_tooltip }}"
-                            {% endif -%}
-                            aria-label="Open event details: {{ event.name }}">{{ event.name }}</button>
+                    <a href="/dashboard/group/events/{{ event.event_id }}"
+                       hx-get="/dashboard/group/events/{{ event.event_id }}"
+                       hx-target="body"
+                       hx-push-url="true"
+                       hx-indicator="#dashboard-spinner"
+                       hx-swap="innerHTML show:window:top"
+                       class="block max-w-full truncate hover:underline text-left cursor-pointer font-medium text-stone-900"
+                       {% if let Some(created_by_tooltip) = event.created_by_tooltip() -%}
+                         title="{{ created_by_tooltip }}"
+                       {% endif -%}
+                       aria-label="Open event details: {{ event.name }}">{{ event.name }}</a>
                     {# End event name -#}
 
                     {# Mobile type and date -#}
@@ -200,11 +199,11 @@
                   {# Update event button -#}
                   <div>
                     <button type="button"
-                            hx-get="/dashboard/group/events/{{ event.event_id }}/update"
-                            hx-target="#dashboard-content"
-                            hx-replace-url="/dashboard/group?tab=events"
+                            hx-get="/dashboard/group/events/{{ event.event_id }}"
+                            hx-target="body"
+                            hx-push-url="true"
                             hx-indicator="#dashboard-spinner"
-                            hx-swap="innerHTML show:body:top"
+                            hx-swap="innerHTML show:window:top"
                             hx-disabled-elt="this"
                             class="btn-tertiary p-2"
                             {% if event.canceled %}title="View canceled event"{% endif %}
@@ -394,18 +393,17 @@
                 <div class="flex items-center">
                   <div class="min-w-0">
                     {# Event name -#}
-                    <button type="button"
-                            hx-get="/dashboard/group/events/{{ event.event_id }}/update"
-                            hx-target="#dashboard-content"
-                            hx-replace-url="/dashboard/group?tab=events"
-                            hx-indicator="#dashboard-spinner"
-                            hx-swap="innerHTML show:body:top"
-                            hx-disabled-elt="this"
-                            class="block max-w-full truncate hover:underline text-left cursor-pointer bg-transparent border-0 p-0 font-medium text-stone-900"
-                            {% if let Some(created_by_tooltip) = event.created_by_tooltip() -%}
-                              title="{{ created_by_tooltip }}"
-                            {% endif -%}
-                            aria-label="Open event details: {{ event.name }}">{{ event.name }}</button>
+                    <a href="/dashboard/group/events/{{ event.event_id }}"
+                       hx-get="/dashboard/group/events/{{ event.event_id }}"
+                       hx-target="body"
+                       hx-push-url="true"
+                       hx-indicator="#dashboard-spinner"
+                       hx-swap="innerHTML show:window:top"
+                       class="block max-w-full truncate hover:underline text-left cursor-pointer font-medium text-stone-900"
+                       {% if let Some(created_by_tooltip) = event.created_by_tooltip() -%}
+                         title="{{ created_by_tooltip }}"
+                       {% endif -%}
+                       aria-label="Open event details: {{ event.name }}">{{ event.name }}</a>
                     {# End event name -#}
 
                     {# Mobile type and date -#}
@@ -484,11 +482,11 @@
                   {# Update event button -#}
                   <div>
                     <button type="button"
-                            hx-get="/dashboard/group/events/{{ event.event_id }}/update"
-                            hx-target="#dashboard-content"
-                            hx-replace-url="/dashboard/group?tab=events"
+                            hx-get="/dashboard/group/events/{{ event.event_id }}"
+                            hx-target="body"
+                            hx-push-url="true"
                             hx-indicator="#dashboard-spinner"
-                            hx-swap="innerHTML show:body:top"
+                            hx-swap="innerHTML show:window:top"
                             hx-disabled-elt="this"
                             class="btn-tertiary p-2"
                             {% if event.canceled %}title="View canceled event"{% endif %}
