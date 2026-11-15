@@ -705,15 +705,27 @@
 
       {# Submitted talks grouped by track -#}
       {% let talks_by_track = event.talks_by_track() -%}
+      {% let track_names = event.speaker_track_names() -%}
       {% if !talks_by_track.is_empty() -%}
         <section aria-labelledby="speakers-and-talks-heading">
           <div id="speakers-and-talks-heading"
-               class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-8 lg:pt-2 lg:pb-14">
+               class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-4 lg:pt-2 lg:pb-6">
             Speakers and talks ({{ event.speakers_ids().len() }} speakers)
           </div>
+          {% if !track_names.is_empty() -%}
+            <div class="mb-10 max-w-xs">
+              <label for="event-speakers-track" class="mb-2 block text-sm font-medium text-stone-900">Track</label>
+              <select id="event-speakers-track" class="select-primary">
+                <option value="">All tracks</option>
+                {% for track_name in track_names -%}
+                  <option value="{{ track_name }}">{{ track_name }}</option>
+                {% endfor -%}
+              </select>
+            </div>
+          {% endif -%}
           <div class="space-y-10">
             {% for track in talks_by_track -%}
-              <div>
+              <div data-track-group="{{ track.0 }}">
                 <h3 class="text-xl font-bold mb-4">{{ track.0 }}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {% for session in track.1 -%}
@@ -722,7 +734,10 @@
                       <div class="mt-4 flex flex-wrap gap-3">
                         {% for speaker in session.speakers -%}
                           {% if speaker.user.name.is_some() -%}
-                            <user-chip user='{{ speaker.user|json }}' small display-modal></user-chip>
+                            <user-chip user='{{ speaker.user|json }}'
+                                       tracks='{{ event.speaker_track_labels(speaker.user.user_id)|json }}'
+                                       small
+                                       display-modal></user-chip>
                           {% endif -%}
                         {% endfor -%}
                       </div>
@@ -745,9 +760,9 @@
                  class="input-primary max-w-xl"
                  placeholder="Search speakers"
                  autocomplete="off">
-          <p class="mt-3 hidden text-sm text-stone-500" data-speakers-empty>No speakers match your search.</p>
+          <p class="mt-3 hidden text-sm text-stone-500" data-speakers-empty>No speakers match.</p>
         </div>
-        <div class="featured-speakers-section hidden has-[user-chip]:block">
+        <div class="featured-speakers-section hidden [&:has([data-speaker-card]:not(.hidden))]:block">
           <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-8 lg:pt-2 lg:pb-14">
             Featured speakers
           </div>
@@ -755,15 +770,19 @@
             {% for speaker in event.speakers -%}
               {% if speaker.featured && speaker.user.name.is_some() -%}
                 <div data-speaker-card
-                     data-speaker-search="{{ speaker.user.name.as_deref().unwrap_or(&speaker.user.username)|lower }}">
-                  <user-chip user='{{ speaker.user|json }}' featured display-modal></user-chip>
+                     data-speaker-search="{{ speaker.user.name.as_deref().unwrap_or(&speaker.user.username)|lower }}"
+                     data-speaker-tracks="{{ event.speaker_tracks_attr(speaker.user.user_id) }}">
+                  <user-chip user='{{ speaker.user|json }}'
+                             tracks='{{ event.speaker_track_labels(speaker.user.user_id)|json }}'
+                             featured
+                             display-modal></user-chip>
                 </div>
               {% endif -%}
             {% endfor -%}
           </div>
         </div>
 
-        <div class="hidden has-[user-chip]:block">
+        <div class="hidden [&:has([data-speaker-card]:not(.hidden))]:block">
           <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-8 lg:pt-2 lg:pb-14">
             Speakers
           </div>
@@ -781,8 +800,11 @@
             {% for speaker in event.speakers -%}
               {% if !speaker.featured && speaker.user.name.is_some() -%}
                 <div data-speaker-card
-                     data-speaker-search="{{ speaker.user.name.as_deref().unwrap_or(&speaker.user.username)|lower }}">
-                  <user-chip user='{{ speaker.user|json }}' display-modal></user-chip>
+                     data-speaker-search="{{ speaker.user.name.as_deref().unwrap_or(&speaker.user.username)|lower }}"
+                     data-speaker-tracks="{{ event.speaker_tracks_attr(speaker.user.user_id) }}">
+                  <user-chip user='{{ speaker.user|json }}'
+                             tracks='{{ event.speaker_track_labels(speaker.user.user_id)|json }}'
+                             display-modal></user-chip>
                 </div>
               {% endif -%}
             {% endfor -%}
@@ -799,20 +821,22 @@
                        class="input-primary max-w-xl"
                        placeholder="Search speakers"
                        autocomplete="off">
-                <p class="mt-3 hidden text-sm text-stone-500" data-speakers-empty>No speakers match your search.</p>
+                <p class="mt-3 hidden text-sm text-stone-500" data-speakers-empty>No speakers match.</p>
               </div>
-              <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-8 lg:pt-2 lg:pb-14">
-                Speakers
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {% for speaker in legacy_speakers -%}
-                  {% if speaker.name.is_some() -%}
-                    <div data-speaker-card
-                         data-speaker-search="{{ speaker.name.as_deref().unwrap_or("")|lower }}">
-                      <user-chip user='{{ speaker|json }}' bio-is-html display-modal></user-chip>
-                    </div>
-                  {% endif -%}
-                {% endfor -%}
+              <div class="hidden [&:has([data-speaker-card]:not(.hidden))]:block">
+                <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-8 lg:pt-2 lg:pb-14">
+                  Speakers
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {% for speaker in legacy_speakers -%}
+                    {% if speaker.name.is_some() -%}
+                      <div data-speaker-card
+                           data-speaker-search="{{ speaker.name.as_deref().unwrap_or("")|lower }}">
+                        <user-chip user='{{ speaker|json }}' bio-is-html display-modal></user-chip>
+                      </div>
+                    {% endif -%}
+                  {% endfor -%}
+                </div>
               </div>
             </div>
           {% endif -%}

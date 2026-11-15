@@ -1,6 +1,6 @@
 //! Event type definitions.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use chrono::{DateTime, Duration, NaiveDate, Utc};
 use chrono_tz::Tz;
@@ -32,6 +32,9 @@ mod tests;
 
 /// Minutes before the scheduled start when attendee meeting access opens.
 const EVENT_LIVE_LEAD_TIME_MINUTES: i64 = 15;
+
+/// Separates track names stored on public speaker cards.
+const SPEAKER_TRACK_SEPARATOR: &str = "\u{1f}";
 
 // Event types: summary and full.
 
@@ -449,6 +452,19 @@ pub struct EventFull {
     pub venue_zip_code: Option<String>,
 }
 
+/// Tracks for a submitted talk that has speakers.
+///
+/// Talks with no labels use `General`, matching the public event page.
+fn talk_tracks(session: &Session) -> Option<Vec<String>> {
+    if session.cfs_submission_id.is_none() || session.speakers.is_empty() {
+        return None;
+    }
+    if session.tracks.is_empty() {
+        return Some(vec!["General".to_string()]);
+    }
+    Some(session.tracks.clone())
+}
+
 impl EventFull {
     /// Check if call for speakers has closed.
     pub fn cfs_is_closed(&self) -> bool {
@@ -607,21 +623,69 @@ impl EventFull {
 
     /// Groups submitted talks and their speakers by call-for-speakers track.
     pub fn talks_by_track(&self) -> BTreeMap<String, Vec<Session>> {
-        let mut talks = BTreeMap::new();
+        let mut talks: BTreeMap<String, Vec<Session>> = BTreeMap::new();
         for session in self.sessions.values().flatten() {
-            if session.cfs_submission_id.is_none() || session.speakers.is_empty() {
+            let Some(tracks) = talk_tracks(session) else {
                 continue;
-            }
-            let tracks = if session.tracks.is_empty() {
-                vec!["General".to_string()]
-            } else {
-                session.tracks.clone()
             };
             for track in tracks {
-                talks.entry(track).or_insert_with(Vec::new).push(session.clone());
+                talks.entry(track).or_default().push(session.clone());
             }
         }
         talks
+    }
+
+    /// Sorted track names that can filter the public speaker list.
+    pub fn speaker_track_names(&self) -> Vec<String> {
+        let mut tracks = BTreeSet::new();
+        for session in self.sessions.values().flatten() {
+            if let Some(session_tracks) = talk_tracks(session) {
+                tracks.extend(session_tracks);
+            }
+        }
+        tracks.into_iter().collect()
+    }
+
+    /// Track names for one speaker, joined for the public speaker filter.
+    pub fn speaker_tracks_attr(&self, user_id: &Uuid) -> String {
+        self.tracks_for_speaker(user_id)
+            .into_iter()
+            .collect::<Vec<_>>()
+            .join(SPEAKER_TRACK_SEPARATOR)
+    }
+
+    /// Track labels for one speaker, in the order shown beside their name.
+    pub fn speaker_track_labels(&self, user_id: &Uuid) -> Vec<SpeakerTrackLabel> {
+        self.tracks_for_speaker(user_id)
+            .into_iter()
+            .map(|name| SpeakerTrackLabel {
+                color: self
+                    .cfs_labels
+                    .iter()
+                    .find(|label| label.name == name)
+                    .map(|label| label.color.clone())
+                    .filter(|color| !color.is_empty()),
+                name,
+            })
+            .collect()
+    }
+
+    /// Tracks assigned to a speaker through submitted talks.
+    fn tracks_for_speaker(&self, user_id: &Uuid) -> BTreeSet<String> {
+        let mut tracks = BTreeSet::new();
+        for session in self.sessions.values().flatten() {
+            let Some(session_tracks) = talk_tracks(session) else {
+                continue;
+            };
+            if session
+                .speakers
+                .iter()
+                .any(|speaker| &speaker.user.user_id == user_id)
+            {
+                tracks.extend(session_tracks);
+            }
+        }
+        tracks
     }
 
     /// Returns active ticket types shown in the tickets modal, sorted by price.
@@ -950,6 +1014,17 @@ pub struct EventCategory {
 
     /// Number of events currently using this category.
     pub events_count: Option<usize>,
+}
+
+/// Track label shown beside a speaker name on the event page.
+#[skip_serializing_none]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct SpeakerTrackLabel {
+    /// Track name.
+    pub name: String,
+
+    /// Label color when this track matches a call-for-speakers label.
+    pub color: Option<String>,
 }
 
 /// Event CFS label used for submissions.
