@@ -25,9 +25,10 @@ describe("custom domain dashboard template", () => {
     expect(groupResponse.ok).to.equal(true);
     expect(eventResponse.ok).to.equal(true);
 
-    expect(await groupResponse.text()).to.include(
-      'hx-get="/dashboard/group/custom-domain"',
-    );
+    const groupTemplate = await groupResponse.text();
+    expect(groupTemplate).to.include('hx-get="/dashboard/group/custom-domain"');
+    expect(groupTemplate).to.include('hx-target="this"');
+    expect(groupTemplate).to.include('hx-disinherit="hx-target"');
     expect(await eventResponse.text()).to.include(
       'hx-get="/dashboard/group/events/{{ event.event_id }}/custom-domain"',
     );

@@ -558,7 +558,7 @@ export class SponsorsSection extends LitWrapper {
                           id="event-sponsor-level"
                           type="text"
                           class="input-primary mt-2 w-full"
-                          placeholder="Gold, Silver, Community, ..."
+                          placeholder="Platinum, Gold, Silver, Partner, ..."
                           .value=${this.newSponsorLevel}
                           @input=${(event) => (this.newSponsorLevel = event.target.value || "")}
                         />
@@ -621,7 +621,7 @@ export class SponsorsSection extends LitWrapper {
                       id="sponsor-level-input"
                       type="text"
                       class="input-primary mt-2 w-full"
-                      placeholder="Gold, Silver, Bronze, ..."
+                      placeholder="Platinum, Gold, Silver, Partner, ..."
                       .value=${this.pendingLevel}
                       @input=${(event) => (this.pendingLevel = event.target.value || "")}
                       ?disabled=${this.disabled}
