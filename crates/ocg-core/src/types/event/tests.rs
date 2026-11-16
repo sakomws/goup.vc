@@ -706,6 +706,55 @@ fn session_is_live_returns_true_when_session_is_live() {
 
 // Helpers.
 
+#[test]
+fn event_full_groups_partners_and_sponsorship_levels() {
+    let event = EventFull {
+        sponsors: vec![
+            sponsor("Silver Co", "Silver"),
+            sponsor("Media Co", "Media partner"),
+            sponsor("Gold Co", "gold"),
+            sponsor("Platinum Co", "Platinum"),
+            sponsor("Community Co", "Community"),
+            sponsor("Partner Co", "Partner"),
+        ],
+        ..Default::default()
+    };
+
+    let partners = event.event_partners();
+    assert_eq!(
+        partners
+            .iter()
+            .map(|sponsor| sponsor.name.as_str())
+            .collect::<Vec<_>>(),
+        vec!["Media Co", "Partner Co"]
+    );
+
+    let groups = event.sponsors_by_level();
+    assert_eq!(
+        groups
+            .iter()
+            .map(|group| (group.level.as_str(), group.sponsors[0].name.as_str()))
+            .collect::<Vec<_>>(),
+        vec![
+            ("Platinum", "Platinum Co"),
+            ("Gold", "Gold Co"),
+            ("Silver", "Silver Co"),
+            ("Community", "Community Co"),
+        ]
+    );
+}
+
+fn sponsor(name: &str, level: &str) -> EventSponsor {
+    EventSponsor {
+        event_id: None,
+        group_sponsor_id: Uuid::new_v4(),
+        level: level.to_string(),
+        logo_url: "https://example.com/logo.png".to_string(),
+        name: name.to_string(),
+        website_url: None,
+    }
+}
+
 /// Build a sample ticket type with specified properties for testing.
 fn sample_ticket_type(
     active: bool,

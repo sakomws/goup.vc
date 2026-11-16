@@ -854,24 +854,52 @@
       {% endif -%}
       {# End organizers section -#}
 
-      {# Sponsors section -#}
-      {% if !event.sponsors.is_empty() -%}
+      {# Partners section -#}
+      {% let event_partners = event.event_partners() -%}
+      {% if !event_partners.is_empty() -%}
         <div>
           <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-8 lg:pt-2 lg:pb-14">
-            Sponsors
+            Partners
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {% for sponsor in event.sponsors -%}
+            {% for sponsor in event_partners -%}
               <div data-sponsor-placement
                    data-event-id="{{ event.event_id }}"
                    data-sponsor-id="{{ sponsor.group_sponsor_id }}">
-                {{ badges::sponsor_badge(name = sponsor.name, logo_url = sponsor.logo_url, website_url = sponsor.website_url, level = sponsor.level, with_level = true) -}}
+                {{ badges::sponsor_badge(name = sponsor.name, logo_url = sponsor.logo_url, website_url = sponsor.website_url, with_level = false) -}}
               </div>
             {% endfor -%}
           </div>
         </div>
       {% endif -%}
-      {# End sponsors section -#}
+      {# End partners section -#}
+
+      {# Sponsors grouped by level -#}
+      {% let sponsor_groups = event.sponsors_by_level() -%}
+      {% if !sponsor_groups.is_empty() -%}
+        <div>
+          <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-8 lg:pt-2 lg:pb-14">
+            Sponsors
+          </div>
+          <div class="space-y-10">
+            {% for group in sponsor_groups -%}
+              <div>
+                <h3 class="mb-4 text-sm font-bold uppercase tracking-[0.16em] text-stone-500">{{ group.level }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {% for sponsor in group.sponsors -%}
+                    <div data-sponsor-placement
+                         data-event-id="{{ event.event_id }}"
+                         data-sponsor-id="{{ sponsor.group_sponsor_id }}">
+                      {{ badges::sponsor_badge(name = sponsor.name, logo_url = sponsor.logo_url, website_url = sponsor.website_url, level = sponsor.level, with_level = false) -}}
+                    </div>
+                  {% endfor -%}
+                </div>
+              </div>
+            {% endfor -%}
+          </div>
+        </div>
+      {% endif -%}
+      {# End sponsors grouped by level -#}
 
       {# Gallery -#}
       {% if let Some(photos_urls) = &event.photos_urls -%}

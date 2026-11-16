@@ -465,6 +465,50 @@ fn talk_tracks(session: &Session) -> Option<Vec<String>> {
     Some(session.tracks.clone())
 }
 
+/// Returns true when a sponsor level should appear in the partners section.
+fn is_partner_level(level: &str) -> bool {
+    let normalized = normalize_sponsorship_level(level);
+    normalized == "partner"
+        || normalized == "partners"
+        || normalized.ends_with(" partner")
+        || normalized.ends_with(" partners")
+}
+
+/// Lowercases a sponsorship level for grouping and sorting.
+fn normalize_sponsorship_level(level: &str) -> String {
+    level.trim().to_ascii_lowercase()
+}
+
+/// Rank of a known sponsorship tier. Other levels sort after these.
+fn sponsorship_level_rank(level: &str) -> u8 {
+    match normalize_sponsorship_level(level).as_str() {
+        "platinum" => 0,
+        "gold" => 1,
+        "silver" => 2,
+        "bronze" => 3,
+        _ => 4,
+    }
+}
+
+/// Uses the organizer's capitalization, and title-cases an all-lowercase level.
+fn display_sponsorship_level(level: &str) -> String {
+    let trimmed = level.trim();
+    if trimmed.chars().any(|character| character.is_uppercase()) {
+        return trimmed.to_string();
+    }
+    trimmed
+        .split_whitespace()
+        .map(|word| {
+            let mut characters = word.chars();
+            match characters.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + characters.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 impl EventFull {
     /// Check if call for speakers has closed.
     pub fn cfs_is_closed(&self) -> bool {
@@ -619,6 +663,53 @@ impl EventFull {
         let mut ids: Vec<Uuid> = ids.into_iter().collect();
         ids.sort();
         ids
+    }
+
+    /// Sponsors whose level is a partner role, in saved order.
+    ///
+    /// `Partner`, `Partners`, and labels that end in `partner` (for example
+    /// `Media partner`) are partners. Named sponsorship tiers stay sponsors.
+    pub fn event_partners(&self) -> Vec<EventSponsor> {
+        self.sponsors
+            .iter()
+            .filter(|sponsor| is_partner_level(&sponsor.level))
+            .cloned()
+            .collect()
+    }
+
+    /// Remaining sponsors grouped under their sponsorship level.
+    ///
+    /// Platinum, gold, silver, and bronze come first. Any other level follows
+    /// in alphabetical order. The heading uses the organizer's capitalization
+    /// when they provided it.
+    pub fn sponsors_by_level(&self) -> Vec<EventSponsorGroup> {
+        let mut groups: Vec<EventSponsorGroup> = Vec::new();
+        for sponsor in &self.sponsors {
+            if is_partner_level(&sponsor.level) {
+                continue;
+            }
+            let key = normalize_sponsorship_level(&sponsor.level);
+            if let Some(group) = groups
+                .iter_mut()
+                .find(|group| normalize_sponsorship_level(&group.level) == key)
+            {
+                group.sponsors.push(sponsor.clone());
+                continue;
+            }
+            groups.push(EventSponsorGroup {
+                level: display_sponsorship_level(&sponsor.level),
+                sponsors: vec![sponsor.clone()],
+            });
+        }
+        groups.sort_by(|left, right| {
+            sponsorship_level_rank(&left.level)
+                .cmp(&sponsorship_level_rank(&right.level))
+                .then_with(|| {
+                    normalize_sponsorship_level(&left.level)
+                        .cmp(&normalize_sponsorship_level(&right.level))
+                })
+        });
+        groups
     }
 
     /// Groups submitted talks and their speakers by call-for-speakers track.
@@ -1125,9 +1216,18 @@ pub struct EventLeaveOutcome {
     pub refund_event_purchase_id: Option<Uuid>,
 }
 
+/// Sponsors that share one heading on the public event page.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EventSponsorGroup {
+    /// Sponsorship level, such as Platinum or Gold.
+    pub level: String,
+    /// Sponsors in that level, in the order they were saved.
+    pub sponsors: Vec<EventSponsor>,
+}
+
 /// Event sponsor information.
 #[skip_serializing_none]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EventSponsor {
     /// Event identifier when this sponsor is scoped to one event.
     pub event_id: Option<Uuid>,
