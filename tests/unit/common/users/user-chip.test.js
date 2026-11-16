@@ -131,4 +131,24 @@ describe("user-chip", () => {
     expect(element.querySelector(".icon-star")).to.not.equal(null);
     expect(element.textContent).to.include("Radia Perlman");
   });
+
+  it("shows track labels beside the name", async () => {
+    const element = await mountLitComponent("user-chip", {
+      tracks: [{ color: "#112233", name: "AI" }, { name: "General" }],
+      user: {
+        name: "Ada Lovelace",
+        title: "Mathematician",
+        username: "ada",
+      },
+    });
+
+    const labels = [...element.querySelectorAll("[data-speaker-track-label]")];
+    const nameRow = labels[0]?.parentElement;
+
+    expect(labels.map((label) => label.textContent.trim())).to.deep.equal(["AI", "General"]);
+    expect(nameRow?.textContent).to.include("Ada Lovelace");
+    expect(nameRow?.textContent).to.not.include("Mathematician");
+    expect(labels[0].getAttribute("style")).to.include("--label-color:#112233");
+    expect(labels[1].className).to.include("border-stone-300");
+  });
 });

@@ -751,7 +751,7 @@ async fn test_download_csv_success() {
     );
     assert_eq!(
         String::from_utf8(bytes.to_vec()).unwrap(),
-        "Name,Company,Title,Invited,Payment method,Amount,Payment deadline,Paid at,Marked by,Payment details\n\"Doe, Jane\",\"Example \"\"Cloud\"\"\",\"Principal\nEngineer\",Yes,,,,,,\nanonymous-attendee,,,No,,,,,,\n",
+        "Name,Company,Title,Invited\n\"Doe, Jane\",\"Example \"\"Cloud\"\"\",\"Principal\nEngineer\",Yes\nanonymous-attendee,,,No\n",
     );
 }
 
@@ -920,7 +920,7 @@ async fn test_download_csv_with_answers_success() {
     );
     assert_eq!(
         String::from_utf8(bytes.to_vec()).unwrap(),
-        "Name,Company,Title,Invited,Payment method,Amount,Payment deadline,Paid at,Marked by,Payment details,Dietary restrictions?,Meal preference,Topics\nEvent Attendee,Example,Engineer,No,,,,,,,No peanuts,Vegetarian,\"Rust, Databases\"\nNo Answers,Example,Engineer,No,,,,,,,,,\n",
+        "Name,Company,Title,Invited,Dietary restrictions?,Meal preference,Topics\nEvent Attendee,Example,Engineer,No,No peanuts,Vegetarian,\"Rust, Databases\"\nNo Answers,Example,Engineer,No,,,\n",
     );
 }
 
@@ -1539,12 +1539,15 @@ async fn test_list_page_success() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::CheckInsWrite
+                )
         })
         .returning(|_, _, _, _| Ok(true));
     db.expect_user_has_group_permission()
@@ -1639,12 +1642,15 @@ async fn test_list_page_db_error() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::CheckInsWrite
+                )
         })
         .returning(|_, _, _, _| Ok(true));
     db.expect_user_has_group_permission()
@@ -1844,12 +1850,15 @@ async fn test_list_page_with_pagination_params() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::CheckInsWrite
+                )
         })
         .returning(|_, _, _, _| Ok(true));
     db.expect_user_has_group_permission()
@@ -1947,12 +1956,15 @@ async fn test_list_page_with_search_query() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::CheckInsWrite
+                )
         })
         .returning(|_, _, _, _| Ok(true));
     db.expect_user_has_group_permission()
@@ -2060,7 +2072,7 @@ async fn test_manual_check_in_success() {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::EventsWrite
+                && permission == GroupPermission::CheckInsWrite
         })
         .returning(|_, _, _, _| Ok(true));
     db.expect_get_event_summary()
@@ -2150,9 +2162,9 @@ async fn test_mark_external_payment_success() {
         .build()
         .await;
     let request = Request::builder()
-        .method("POST")
+        .method("PUT")
         .uri(format!(
-            "/dashboard/group/events/{event_id}/attendees/{event_purchase_id}/external-payment"
+            "/dashboard/group/events/{event_id}/attendees/{event_purchase_id}/external-payment/confirm"
         ))
         .header(COOKIE, format!("id={session_id}"))
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
@@ -2223,9 +2235,9 @@ async fn test_mark_external_payment_success_with_blank_details() {
         .build()
         .await;
     let request = Request::builder()
-        .method("POST")
+        .method("PUT")
         .uri(format!(
-            "/dashboard/group/events/{event_id}/attendees/{event_purchase_id}/external-payment"
+            "/dashboard/group/events/{event_id}/attendees/{event_purchase_id}/external-payment/confirm"
         ))
         .header(COOKIE, format!("id={session_id}"))
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
@@ -2296,9 +2308,9 @@ async fn test_mark_external_payment_success_with_empty_body() {
         .build()
         .await;
     let request = Request::builder()
-        .method("POST")
+        .method("PUT")
         .uri(format!(
-            "/dashboard/group/events/{event_id}/attendees/{event_purchase_id}/external-payment"
+            "/dashboard/group/events/{event_id}/attendees/{event_purchase_id}/external-payment/confirm"
         ))
         .header(COOKIE, format!("id={session_id}"))
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")

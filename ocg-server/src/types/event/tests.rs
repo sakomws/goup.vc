@@ -406,6 +406,119 @@ fn event_full_speakers_ids_returns_empty_when_no_speakers() {
 }
 
 #[test]
+fn event_full_speaker_tracks_follow_submitted_talks() {
+    let ai_speaker_id = Uuid::from_u128(1);
+    let both_tracks_speaker_id = Uuid::from_u128(2);
+    let unlabeled_speaker_id = Uuid::from_u128(3);
+    let directory_only_speaker_id = Uuid::from_u128(4);
+    let date = Utc::now().date_naive();
+
+    let event = EventFull {
+        cfs_labels: vec![
+            EventCfsLabel {
+                color: "#112233".to_string(),
+                name: "AI".to_string(),
+                ..Default::default()
+            },
+            EventCfsLabel {
+                color: "#445566".to_string(),
+                name: "Security".to_string(),
+                ..Default::default()
+            },
+        ],
+        speakers: vec![speaker(directory_only_speaker_id)],
+        sessions: BTreeMap::from([(
+            date,
+            vec![
+                talk(
+                    vec!["Security", "AI"],
+                    vec![speaker(ai_speaker_id), speaker(both_tracks_speaker_id)],
+                    true,
+                ),
+                talk(vec![], vec![speaker(unlabeled_speaker_id)], true),
+                talk(vec!["Ignored"], vec![speaker(ai_speaker_id)], false),
+            ],
+        )]),
+        ..Default::default()
+    };
+
+    assert_eq!(
+        event.speaker_track_names(),
+        vec![
+            "AI".to_string(),
+            "General".to_string(),
+            "Security".to_string()
+        ]
+    );
+    assert_eq!(
+        event.speaker_track_labels(&ai_speaker_id),
+        vec![
+            SpeakerTrackLabel {
+                color: Some("#112233".to_string()),
+                name: "AI".to_string(),
+            },
+            SpeakerTrackLabel {
+                color: Some("#445566".to_string()),
+                name: "Security".to_string(),
+            },
+        ]
+    );
+    assert_eq!(
+        event.speaker_track_labels(&unlabeled_speaker_id),
+        vec![SpeakerTrackLabel {
+            color: None,
+            name: "General".to_string(),
+        }]
+    );
+    assert!(event.speaker_track_labels(&directory_only_speaker_id).is_empty());
+    assert_eq!(
+        event.speaker_tracks_attr(&ai_speaker_id),
+        "AI\u{1f}Security"
+    );
+    assert_eq!(
+        event.speaker_tracks_attr(&both_tracks_speaker_id),
+        "AI\u{1f}Security"
+    );
+    assert_eq!(event.speaker_tracks_attr(&unlabeled_speaker_id), "General");
+    assert_eq!(event.speaker_tracks_attr(&directory_only_speaker_id), "");
+
+    let grouped = event.talks_by_track();
+    assert_eq!(
+        grouped.keys().cloned().collect::<Vec<_>>(),
+        vec![
+            "AI".to_string(),
+            "General".to_string(),
+            "Security".to_string()
+        ]
+    );
+    assert_eq!(grouped["AI"].len(), 1);
+    assert_eq!(
+        grouped["General"][0].speakers[0].user.user_id,
+        unlabeled_speaker_id
+    );
+}
+
+fn speaker(user_id: Uuid) -> Speaker {
+    Speaker {
+        featured: false,
+        user: User {
+            user_id,
+            ..Default::default()
+        },
+    }
+}
+
+fn talk(tracks: Vec<&str>, speakers: Vec<Speaker>, submitted: bool) -> Session {
+    Session {
+        cfs_submission_id: submitted.then(|| Uuid::from_u128(42)),
+        speakers,
+        starts_at: Utc::now(),
+        tracks: tracks.into_iter().map(str::to_string).collect(),
+        ..Default::default()
+    }
+}
+
+#[test]
 fn event_full_speakers_ids_returns_sorted_ids() {
     let id_a = Uuid::from_u128(100);
     let id_b = Uuid::from_u128(50);

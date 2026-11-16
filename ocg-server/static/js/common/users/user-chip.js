@@ -14,6 +14,7 @@ import "/static/js/common/media/logo-image.js";
  * - bio-is-html: boolean (optional) - When true, bio is rendered as HTML
  * - display-modal: boolean (optional) - When true, clicking opens the user modal
  * - small: boolean (optional) - When true, renders a compact version
+ * - tracks: array (optional) - Track labels shown beside the name
  */
 export class UserChip extends LitWrapper {
   static get properties() {
@@ -23,6 +24,7 @@ export class UserChip extends LitWrapper {
       displayModal: { type: Boolean, attribute: "display-modal" },
       small: { type: Boolean },
       featured: { type: Boolean },
+      tracks: { type: Array },
     };
   }
 
@@ -33,6 +35,7 @@ export class UserChip extends LitWrapper {
     this.displayModal = false;
     this.small = false;
     this.featured = false;
+    this.tracks = [];
     this._handleClick = this._handleClick.bind(this);
     this._handleKeydown = this._handleKeydown.bind(this);
   }
@@ -108,7 +111,10 @@ export class UserChip extends LitWrapper {
           >
           </logo-image>
           ${this.featured ? html`<div class="svg-icon size-3 icon-star bg-amber-500"></div>` : ""}
-          <span class="min-w-0 truncate text-sm pe-1">${displayName}</span>
+          <span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 pe-1">
+            <span class="min-w-0 truncate text-sm">${displayName}</span>
+            ${renderTrackLabels(this.tracks)}
+          </span>
         </div>
       `;
     }
@@ -129,12 +135,63 @@ export class UserChip extends LitWrapper {
         <logo-image image-url=${imageUrl} size=${avatarSize} placeholder=${initials} font-size="text-lg">
         </logo-image>
         <div class="leading-tight min-w-0">
-          <div class="font-semibold text-stone-900 truncate ${nameSize}">${displayName}</div>
+          <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <span class="min-w-0 truncate font-semibold text-stone-900 ${nameSize}">${displayName}</span>
+            ${renderTrackLabels(this.tracks)}
+          </div>
           ${jobTitle ? html`<div class="text-stone-600 mt-3 truncate ${jobSize}">${jobTitle}</div>` : ""}
         </div>
       </div>
     `;
   }
 }
+
+/**
+ * Renders track labels that sit beside a speaker name.
+ * @param {unknown} tracks Raw track labels
+ * @returns {import("lit").TemplateResult|null}
+ */
+const renderTrackLabels = (tracks) => {
+  const labels = normalizeTracks(tracks);
+  if (labels.length === 0) {
+    return null;
+  }
+
+  return html`${labels.map(
+    (track) => html`
+      <span
+        class="inline-flex max-w-full shrink-0 items-center truncate rounded-full border px-2 py-0.5 text-[11px] font-medium leading-4 text-stone-900 ${
+          track.color ? "" : "border-stone-300 bg-stone-50"
+        }"
+        style=${
+          track.color
+            ? `--label-color:${track.color};border-color:var(--label-color);background-color:color-mix(in srgb, var(--label-color) 30%, transparent);`
+            : ""
+        }
+        data-speaker-track-label
+        >${track.name}</span
+      >
+    `,
+  )}`;
+};
+
+/**
+ * Keeps track labels that have a name.
+ * @param {unknown} tracks Raw track labels
+ * @returns {Array<{color: string, name: string}>}
+ */
+const normalizeTracks = (tracks) => {
+  const parsed = parseJsonAttribute(tracks, []);
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((track) => ({
+      color: String(track?.color || "").trim(),
+      name: String(track?.name || "").trim(),
+    }))
+    .filter((track) => track.name);
+};
 
 customElements.define("user-chip", UserChip);

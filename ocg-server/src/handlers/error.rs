@@ -83,11 +83,17 @@ impl IntoResponse for HandlerError {
 
 impl From<anyhow::Error> for HandlerError {
     fn from(err: anyhow::Error) -> Self {
-        // Surface user-facing database rejections by their SQLSTATE
-        if let Some(msg) = extract_db_error_message(&err) {
-            return HandlerError::Database(msg);
+        // Keep a handler error that was wrapped only to cross a `Result` boundary.
+        match err.downcast::<HandlerError>() {
+            Ok(handler_err) => handler_err,
+            Err(err) => {
+                // Surface user-facing database rejections by their SQLSTATE
+                if let Some(msg) = extract_db_error_message(&err) {
+                    return HandlerError::Database(msg);
+                }
+                HandlerError::Other(err)
+            }
         }
-        HandlerError::Other(err)
     }
 }
 

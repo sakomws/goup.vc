@@ -43,14 +43,17 @@ async fn test_page_analytics_tab_success() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::InboxWrite
+                )
         })
-        .returning(|_, _, _, _| Ok(true));
+        .returning(|_, _, _, permission| Ok(permission == GroupPermission::Read));
     db.expect_list_user_groups()
         .times(1)
         .withf(move |uid| uid == &user_id)
@@ -124,14 +127,17 @@ async fn test_page_coffee_meet_tab_success() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::InboxWrite
+                )
         })
-        .returning(|_, _, _, _| Ok(true));
+        .returning(|_, _, _, permission| Ok(permission == GroupPermission::Read));
     db.expect_list_user_groups()
         .times(1)
         .withf(move |uid| uid == &user_id)
@@ -203,6 +209,15 @@ async fn test_page_book_exchange_tab_allows_read_only_group_member() {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
+                && permission == GroupPermission::InboxWrite
+        })
+        .returning(|_, _, _, _| Ok(false));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == alliance_id
+                && *gid == group_id
+                && *uid == user_id
                 && permission == GroupPermission::SettingsWrite
         })
         .returning(|_, _, _, _| Ok(false));
@@ -264,14 +279,17 @@ async fn test_page_events_tab_success() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::InboxWrite
+                )
         })
-        .returning(|_, _, _, _| Ok(true));
+        .returning(|_, _, _, permission| Ok(permission == GroupPermission::Read));
     db.expect_user_has_group_permission()
         .times(1)
         .withf(move |cid, gid, uid, permission| {
@@ -365,14 +383,17 @@ async fn test_page_logs_tab_success() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::InboxWrite
+                )
         })
-        .returning(|_, _, _, _| Ok(true));
+        .returning(|_, _, _, permission| Ok(permission == GroupPermission::Read));
     db.expect_list_user_groups()
         .times(1)
         .withf(move |uid| uid == &user_id)
@@ -443,14 +464,17 @@ async fn test_page_members_tab_success() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::InboxWrite
+                )
         })
-        .returning(|_, _, _, _| Ok(true));
+        .returning(|_, _, _, permission| Ok(permission == GroupPermission::Read));
     db.expect_user_has_group_permission()
         .times(1)
         .withf(move |cid, gid, uid, permission| {
@@ -539,14 +563,17 @@ async fn test_page_settings_tab_success() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::InboxWrite
+                )
         })
-        .returning(|_, _, _, _| Ok(true));
+        .returning(|_, _, _, permission| Ok(permission == GroupPermission::Read));
     db.expect_user_has_group_permission()
         .times(1)
         .withf(move |cid, gid, uid, permission| {
@@ -639,14 +666,17 @@ async fn test_page_sponsors_tab_success() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::InboxWrite
+                )
         })
-        .returning(|_, _, _, _| Ok(true));
+        .returning(|_, _, _, permission| Ok(permission == GroupPermission::Read));
     db.expect_user_has_group_permission()
         .times(1)
         .withf(move |cid, gid, uid, permission| {
@@ -729,14 +759,17 @@ async fn test_page_team_tab_success() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == alliance_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::InboxWrite
+                )
         })
-        .returning(|_, _, _, _| Ok(true));
+        .returning(|_, _, _, permission| Ok(permission == GroupPermission::Read));
     db.expect_user_has_group_permission()
         .times(1)
         .withf(move |cid, gid, uid, permission| {
@@ -817,14 +850,17 @@ async fn test_page_refunds_tab_success() {
         .withf(move |id| *id == user_id)
         .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
     db.expect_user_has_group_permission()
-        .times(1)
+        .times(2)
         .withf(move |cid, gid, uid, permission| {
             *cid == community_id
                 && *gid == group_id
                 && *uid == user_id
-                && permission == GroupPermission::Read
+                && matches!(
+                    permission,
+                    GroupPermission::Read | GroupPermission::InboxWrite
+                )
         })
-        .returning(|_, _, _, _| Ok(true));
+        .returning(|_, _, _, permission| Ok(permission == GroupPermission::Read));
     db.expect_user_has_group_permission()
         .times(1)
         .withf(move |cid, gid, uid, permission| {

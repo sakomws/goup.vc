@@ -124,7 +124,7 @@ async fn test_list_page_renders_conversations_and_pushes_url() {
     );
     let html = String::from_utf8(bytes.to_vec()).unwrap();
     assert!(html.contains("Test Group"));
-    assert!(html.contains("Test Community"));
+    assert!(html.contains("Test Alliance"));
 }
 
 #[tokio::test]
