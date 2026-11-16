@@ -59,14 +59,18 @@ fn main() -> Result<()> {
         .to_str()
         .context("OUT_DIR path is not valid UTF-8")?;
 
+    // `@source` paths in styles.src.css are resolved from the working directory.
+    // They point at `templates` and `static/js` inside ocg-server. Cargo runs this
+    // build script from crates/ocg-assets, so Tailwind has to be started in the
+    // server directory or those sources are skipped and the stylesheet is empty.
+    let server_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../ocg-server")
+        .canonicalize()
+        .context("failed to resolve the ocg-server directory for tailwindcss")?;
     run(
         "tailwindcss",
-        &[
-            "-i",
-            &format!("{STATIC_PATH}/css/styles.src.css"),
-            "-o",
-            generated_styles_str,
-        ],
+        &["-i", "static/css/styles.src.css", "-o", generated_styles_str],
+        Some(&server_dir),
     )?;
 
     let mut expected_static_files = HashSet::new();
@@ -444,8 +448,11 @@ fn asset_refs_by_length(manifest: &AssetsManifest) -> Vec<(String, String)> {
 }
 
 /// Helper function to run a command.
-fn run(program: &str, args: &[&str]) -> Result<()> {
+fn run(program: &str, args: &[&str], current_dir: Option<&Path>) -> Result<()> {
     let mut cmd = new_cmd(program);
+    if let Some(dir) = current_dir {
+        cmd.current_dir(dir);
+    }
     cmd.args(args);
 
     let output = cmd.output()?;
