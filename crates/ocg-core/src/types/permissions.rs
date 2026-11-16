@@ -1,0 +1,90 @@
+//! Permission identifiers used by RBAC checks.
+
+/// Alliance-scoped permission identifiers.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AlliancePermission {
+    /// Permission to manage groups in a alliance.
+    GroupsWrite,
+    /// Permission to manage the alliance GTM pipeline.
+    GtmWrite,
+    /// Permission to read the alliance dashboard.
+    Read,
+    /// Permission to manage alliance settings.
+    SettingsWrite,
+    /// Permission to manage alliance taxonomy entities.
+    TaxonomyWrite,
+    /// Permission to manage alliance team membership.
+    TeamWrite,
+}
+
+impl AlliancePermission {
+    /// Returns the canonical string identifier used in SQL checks.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::GroupsWrite => "alliance.groups.write",
+            Self::GtmWrite => "alliance.gtm.write",
+            Self::Read => "alliance.read",
+            Self::SettingsWrite => "alliance.settings.write",
+            Self::TaxonomyWrite => "alliance.taxonomy.write",
+            Self::TeamWrite => "alliance.team.write",
+        }
+    }
+}
+
+impl PartialEq<AlliancePermission> for &AlliancePermission {
+    fn eq(&self, other: &AlliancePermission) -> bool {
+        **self == *other
+    }
+}
+
+/// Group-scoped permission identifiers.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum GroupPermission {
+    /// Permission to process attendee check-ins.
+    CheckInsWrite,
+    /// Permission to manage distribution planning.
+    DistributionWrite,
+    /// Permission to manage events in a group.
+    EventsWrite,
+    /// Permission to manage the group GTM pipeline.
+    GtmWrite,
+    /// Permission to manage the group inbox.
+    InboxWrite,
+    /// Permission to manage group members.
+    MembersWrite,
+    /// Permission to manage group collaboration projects.
+    ProjectsWrite,
+    /// Permission to read the group dashboard.
+    Read,
+    /// Permission to manage group settings.
+    SettingsWrite,
+    /// Permission to manage group sponsors.
+    SponsorsWrite,
+    /// Permission to manage group team membership.
+    TeamWrite,
+}
+
+impl GroupPermission {
+    /// Returns the canonical string identifier used in SQL checks.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::CheckInsWrite => "group.check-ins.write",
+            Self::DistributionWrite => "group.distribution.write",
+            Self::EventsWrite => "group.events.write",
+            Self::GtmWrite => "group.gtm.write",
+            Self::InboxWrite => "group.inbox.write",
+            Self::MembersWrite => "group.members.write",
+            Self::ProjectsWrite => "group.projects.write",
+            Self::Read => "group.read",
+            Self::SettingsWrite => "group.settings.write",
+            Self::SponsorsWrite => "group.sponsors.write",
+            Self::TeamWrite => "group.team.write",
+        }
+    }
+}
+
+impl PartialEq<GroupPermission> for &GroupPermission {
+    fn eq(&self, other: &GroupPermission) -> bool {
+        **self == *other
+    }
+}

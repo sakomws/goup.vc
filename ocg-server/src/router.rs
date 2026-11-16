@@ -29,7 +29,7 @@ use axum::{
 };
 use axum_login::login_required;
 use axum_messages::MessagesManagerLayer;
-use rust_embed::Embed;
+use ocg_assets::{COMMIT_SHA, StaticFile};
 use tokio::sync::RwLock;
 use tower::ServiceBuilder;
 use tower_http::{set_header::SetResponseHeaderLayer, trace::TraceLayer};
@@ -104,9 +104,6 @@ const CACHE_CONTROL_STATIC_DEVELOPMENT: &str = "max-age=0";
 #[cfg(any(not(debug_assertions), test))]
 const CACHE_CONTROL_STATIC_IMAGES: &str = "max-age=604800";
 
-/// Current application commit SHA embedded at build time.
-pub(crate) const COMMIT_SHA: &str = env!("OCG_COMMIT_SHA");
-
 /// Header carrying the loaded or current application commit SHA.
 pub(crate) const COMMIT_SHA_HEADER: &str = "x-ocg-commit-sha";
 
@@ -122,13 +119,6 @@ pub(crate) const PUBLIC_SHARED_CACHE_HEADERS: [(HeaderName, &str); 2] = [
 /// Vary header value for public shared-cache responses.
 pub(crate) const PUBLIC_SHARED_CACHE_VARY: &str =
     "cookie, x-ocg-commit-sha, hx-request, x-ocg-fetch";
-
-/// Static file embedder using rust-embed.
-///
-/// Embeds all files from the static directory into the binary.
-#[derive(Embed)]
-#[folder = "dist/static"]
-struct StaticFile;
 
 /// Shared state for the router.
 #[derive(Clone, FromRef)]
@@ -962,6 +952,4 @@ fn stale_client_refresh_response(is_htmx: bool, is_ocg_fetch: bool) -> axum::res
 // Helpers.
 
 /// Returns the `serde_qs` configuration for query string parsing.
-pub(crate) fn serde_qs_config() -> serde_qs::Config {
-    serde_qs::Config::new().max_depth(6).use_form_encoding(true)
-}
+pub(crate) use ocg_core::types::search::serde_qs_config;

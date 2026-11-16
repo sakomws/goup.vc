@@ -1,0 +1,82 @@
+//! Database functionality for storing and retrieving images.
+
+use anyhow::Result;
+use async_trait::async_trait;
+use tracing::instrument;
+use uuid::Uuid;
+
+use crate::PgExecutor;
+use ocg_core::shared::Image;
+
+/// Trait describing database operations for images.
+#[async_trait]
+pub trait DBImages {
+    /// Retrieves an image by file name.
+    async fn get_image(&self, file_name: &str) -> Result<Option<Image>>;
+
+    /// Returns whether the file is referenced as a public Open Graph image.
+    async fn is_open_graph_image(&self, file_name: &str) -> Result<bool>;
+
+    /// Saves the provided image.
+    async fn save_image(
+        &self,
+        user_id: Uuid,
+        file_name: &str,
+        data: &[u8],
+        content_type: &str,
+    ) -> Result<()>;
+}
+
+#[async_trait]
+impl<T> DBImages for T
+where
+    T: PgExecutor + Send + Sync,
+{
+    #[instrument(skip(self), err)]
+    async fn get_image(&self, file_name: &str) -> Result<Option<Image>> {
+        let db = self.client().await?;
+        let image = db
+            .query_opt(
+                "
+                select data, content_type
+                from images
+                where file_name = $1::text;
+                ",
+                &[&file_name],
+            )
+            .await?
+            .map(|row| Image {
+                bytes: row.get("data"),
+                content_type: row.get("content_type"),
+            });
+
+        Ok(image)
+    }
+
+    #[instrument(skip(self), err)]
+    async fn is_open_graph_image(&self, file_name: &str) -> Result<bool> {
+        let image_url = format!("/images/{file_name}");
+
+        self.fetch_scalar_one("select is_open_graph_image($1::text)", &[&image_url])
+            .await
+    }
+
+    #[instrument(skip(self, data, content_type), err)]
+    async fn save_image(
+        &self,
+        user_id: Uuid,
+        file_name: &str,
+        data: &[u8],
+        content_type: &str,
+    ) -> Result<()> {
+        self.execute(
+            "
+            insert into images (created_by, file_name, data, content_type)
+            values ($1::uuid, $2::text, $3::bytea, $4::text)
+            on conflict (file_name) do nothing;
+            ",
+            &[&user_id, &file_name, &data, &content_type],
+        )
+        .await
+    }
+}

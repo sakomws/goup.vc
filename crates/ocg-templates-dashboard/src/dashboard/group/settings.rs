@@ -1,0 +1,47 @@
+//! Templates for the group dashboard settings page.
+
+use askama::Template;
+use serde::{Deserialize, Serialize};
+
+use uuid::Uuid;
+
+use ocg_core::types::{
+    group::{GroupCategory, GroupFull, GroupParentOption, GroupRegion},
+    utm::GroupUtmSettings,
+};
+
+// Pages templates.
+
+/// Update page template for group settings.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "dashboard/group/settings_update.html")]
+pub struct UpdatePage {
+    /// Whether the current user can manage settings.
+    pub can_manage_settings: bool,
+    /// List of available group categories.
+    pub categories: Vec<GroupCategory>,
+    /// UTM mediums accepted by every group.
+    pub default_utm_mediums: Vec<String>,
+    /// Group information.
+    pub group: GroupFull,
+    /// Groups that can be selected as a parent chapter.
+    pub parent_group_options: Vec<GroupParentOption>,
+    /// Whether payments are globally enabled.
+    pub payments_enabled: bool,
+    /// List of available regions.
+    pub regions: Vec<GroupRegion>,
+    /// Group-specific UTM allowlists.
+    pub utm: GroupUtmSettings,
+}
+
+impl UpdatePage {
+    /// Returns true when the option matches the group's current parent.
+    pub fn is_selected_parent_group(&self, group_id: &Uuid) -> bool {
+        self.group.parent_group_id.as_ref() == Some(group_id)
+    }
+}
+
+// Types.
+
+/// Group update form data (alias for the Group type from alliance dashboard).
+pub use crate::dashboard::alliance::groups::Group as GroupUpdate;

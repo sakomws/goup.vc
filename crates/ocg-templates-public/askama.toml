@@ -1,0 +1,4 @@
+[general]
+dirs = [
+    "../../ocg-server/dist/templates"
+]

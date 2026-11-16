@@ -1,0 +1,589 @@
+//! Notifications templates.
+
+use askama::Template;
+use serde::{Deserialize, Serialize};
+
+use ocg_core::types::{
+    event::EventSummary, group::GroupSummary, opportunities::OpportunitySummary, site::Theme,
+};
+
+/// Optional reminder that manually published social content is due.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/distribution_content_due.html")]
+pub struct DistributionContentDue {
+    pub channel: String,
+    pub group_name: String,
+    pub title: String,
+    pub link: String,
+}
+
+// Emails templates.
+
+/// Template for CFS submission update notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/cfs_submission_updated.html")]
+pub struct CfsSubmissionUpdated {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the user dashboard submissions page.
+    pub link: String,
+    /// Submission status name.
+    pub status_name: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+
+    /// Action required message for the speaker.
+    pub action_required_message: Option<String>,
+}
+
+/// Template for a `CoffeeMeet` member suggestion.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/coffee_meet_suggestion.html")]
+pub struct CoffeeMeetSuggestion {
+    /// Group name where the match was made.
+    pub group_name: String,
+    /// Subscription frequency.
+    pub frequency: String,
+    /// Suggested member display name.
+    pub suggested_name: String,
+    /// Suggested member username.
+    pub suggested_username: String,
+    /// Suggested member profile image.
+    pub suggested_photo_url: Option<String>,
+    /// Suggested member title.
+    pub suggested_title: Option<String>,
+    /// Suggested member company.
+    pub suggested_company: Option<String>,
+    /// Suggested member bio.
+    pub suggested_bio: Option<String>,
+    /// Link to suggested member profile.
+    pub suggested_profile_url: String,
+    /// Link to group page.
+    pub group_url: String,
+    /// Link to manage `CoffeeMeet` subscriptions.
+    pub dashboard_link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Daily or weekly saved opportunity search digest.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/opportunity_digest.html")]
+pub struct OpportunityDigest {
+    pub search_name: String,
+    pub frequency: String,
+    pub match_count: usize,
+    pub opportunities: Vec<OpportunitySummary>,
+    pub board_link: String,
+    pub manage_link: String,
+    pub theme: Theme,
+}
+
+/// Template for alliance team invitation notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/alliance_team_invitation.html")]
+pub struct AllianceTeamInvitation {
+    /// Alliance display name.
+    pub alliance_name: String,
+    /// Link to manage invitations in the dashboard.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for email verification notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/email_verification.html")]
+pub struct EmailVerification {
+    /// Verification link for the user to confirm their email address.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for event attendance canceled notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_attendance_canceled.html")]
+pub struct EventAttendanceCanceled {
+    /// Link to the user dashboard events page.
+    pub dashboard_link: String,
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for event canceled notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_canceled.html")]
+pub struct EventCanceled {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for event custom notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_custom.html")]
+pub struct EventCustom {
+    /// Body text provided for the event notification.
+    pub body: String,
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Subject provided for the event notification.
+    #[serde(alias = "title")]
+    pub subject: String,
+    /// Theme configuration for the notification.
+    pub theme: Theme,
+}
+
+/// Template for an alliance Contact notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/community_custom.html")]
+pub struct AllianceCustom {
+    pub alliance_display_name: String,
+    pub body: String,
+    pub link: String,
+    pub subject: String,
+    pub theme: Theme,
+}
+
+/// Template for event invitation notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_invitation.html")]
+pub struct EventInvitation {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Whether the event has registration questions configured.
+    pub has_registration_questions: bool,
+    /// Link to manage invitations in the dashboard.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for an event co-host invitation sent to eligible organizers.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_cohost_invitation.html")]
+pub struct EventCohostInvitation {
+    /// Invited peer group display name.
+    pub cohost_group_name: String,
+    /// Event display name.
+    pub event_name: String,
+    /// Link to the personal invitations dashboard.
+    pub link: String,
+    /// Optional note supplied by the primary organizer.
+    pub message: Option<String>,
+    /// Primary host group display name.
+    pub primary_group_name: String,
+    /// Theme configuration for the site.
+    pub theme: Theme,
+}
+
+/// Template for event published notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_published.html")]
+pub struct EventPublished {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template event item for aggregate event series notifications.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventSeriesNotificationItem {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+}
+
+/// Template for attendee refund approval notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_refund_approved.html")]
+pub struct EventRefundApproved {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Whether the refund was completed outside the configured provider.
+    #[serde(default)]
+    pub external_payment: bool,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for attendee refund rejection notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_refund_rejected.html")]
+pub struct EventRefundRejected {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for organizer refund request notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_refund_requested.html")]
+pub struct EventRefundRequested {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for event reminder notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_reminder.html")]
+pub struct EventReminder {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Whether to show attendance cancellation copy.
+    pub show_attendance_cancellation_copy: bool,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+
+    /// Link to the user dashboard events page.
+    #[serde(default)]
+    pub dashboard_link: Option<String>,
+}
+
+/// Template for a post-event survey request or reminder.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_survey.html")]
+pub struct EventSurveyNotification {
+    pub event_name: String,
+    pub group_name: String,
+    pub audience: String,
+    pub link: String,
+    pub reminder: bool,
+    pub theme: Theme,
+}
+
+/// Template for event rescheduled notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_rescheduled.html")]
+pub struct EventRescheduled {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for aggregate event series canceled notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_series_canceled.html")]
+pub struct EventSeriesCanceled {
+    /// Number of events included in the notification.
+    pub event_count: usize,
+    /// Events included in the notification.
+    pub events: Vec<EventSeriesNotificationItem>,
+    /// Name of the group hosting the events.
+    pub group_name: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for aggregate event series published notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_series_published.html")]
+pub struct EventSeriesPublished {
+    /// Alliance display name for the events.
+    pub alliance_display_name: String,
+    /// Number of events included in the notification.
+    pub event_count: usize,
+    /// Events included in the notification.
+    pub events: Vec<EventSeriesNotificationItem>,
+    /// Name of the group hosting the events.
+    pub group_name: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for event waitlist joined notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_waitlist_joined.html")]
+pub struct EventWaitlistJoined {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for event waitlist left notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_waitlist_left.html")]
+pub struct EventWaitlistLeft {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for event waitlist promotion notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_waitlist_promoted.html")]
+pub struct EventWaitlistPromoted {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Whether the event has registration questions configured.
+    pub has_registration_questions: bool,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+
+    /// Link to the user dashboard events page.
+    #[serde(default)]
+    pub dashboard_link: Option<String>,
+}
+
+/// Template for event welcome notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/event_welcome.html")]
+pub struct EventWelcome {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+
+    /// Link to the user dashboard events page.
+    #[serde(default)]
+    pub dashboard_link: Option<String>,
+}
+
+/// Template for group custom notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/group_custom.html")]
+pub struct GroupCustom {
+    /// Body text provided for the group notification.
+    pub body: String,
+    /// Group summary data.
+    pub group: GroupSummary,
+    /// Link to the group page.
+    pub link: String,
+    /// Subject provided for the group notification.
+    #[serde(alias = "title")]
+    pub subject: String,
+    /// Theme configuration for the notification.
+    pub theme: Theme,
+}
+
+/// Template for group team invitation notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/group_team_invitation.html")]
+pub struct GroupTeamInvitation {
+    /// Group summary data.
+    pub group: GroupSummary,
+    /// Link to manage invitations in the dashboard.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for group welcome notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/group_welcome.html")]
+pub struct GroupWelcome {
+    /// Group summary data.
+    pub group: GroupSummary,
+    /// Link to the group page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for intentional dating introduction notifications.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/intentional_dating_introduction.html")]
+pub struct IntentionalDatingIntroduction {
+    /// Alliance display name for the introduction.
+    pub alliance_display_name: String,
+    /// Admin-written message shown to both matched members.
+    pub message: String,
+    /// Matched partner display name.
+    pub partner_name: String,
+    /// Matched partner public profile link.
+    pub partner_profile_url: String,
+    /// Matched partner username.
+    pub partner_username: String,
+    /// Group name where the introduction was curated.
+    pub group_name: String,
+    /// Link to the user's dashboard.
+    pub dashboard_link: String,
+    /// Theme configuration for the site.
+    pub theme: Theme,
+}
+
+/// Template for mock interview match notifications.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/mock_interview_matched.html")]
+pub struct MockInterviewMatched {
+    /// Link to the user's mock interview dashboard.
+    pub dashboard_link: String,
+    /// Interview format label.
+    pub interview_type: String,
+    /// Recipient's assigned role.
+    pub recipient_role: String,
+    /// Matched partner display name.
+    pub partner_name: String,
+    /// Matched partner username.
+    pub partner_username: Option<String>,
+    /// Theme configuration for the site.
+    pub theme: Theme,
+}
+
+/// Template for site onboarding notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/site_onboarding.html")]
+pub struct SiteOnboarding {
+    /// Editable body copy for the onboarding email.
+    #[serde(default = "default_site_onboarding_body")]
+    pub body: String,
+    /// Editable call-to-action button text.
+    #[serde(default = "default_site_onboarding_cta_text")]
+    pub cta_text: String,
+    /// Link to the public events and groups page.
+    pub explore_link: String,
+    /// Link to the public jobs board.
+    pub jobs_link: String,
+    /// Link to the public landscape page.
+    pub landscape_link: String,
+    /// Link to the public search page.
+    pub search_link: String,
+    /// Editable preheader text for the onboarding email.
+    #[serde(default = "default_site_onboarding_preheader")]
+    pub preheader: String,
+    /// Editable subject for the onboarding email.
+    #[serde(default = "default_site_onboarding_subject")]
+    pub subject: String,
+    /// Theme configuration for the site.
+    pub theme: Theme,
+    /// Link to the user's dashboard.
+    pub user_dashboard_link: String,
+    /// Display name for the recipient.
+    pub user_name: String,
+}
+
+pub fn default_site_onboarding_subject() -> String {
+    "Welcome to GOUP".to_string()
+}
+
+pub fn default_site_onboarding_preheader() -> String {
+    "Start with events, groups, jobs, and your profile.".to_string()
+}
+
+pub fn default_site_onboarding_body() -> String {
+    "Welcome to GOUP. Here are the best places to start:".to_string()
+}
+
+pub fn default_site_onboarding_cta_text() -> String {
+    "Open your dashboard".to_string()
+}
+
+/// Template telling group team members that a user wrote to the group inbox.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/inbox_message_received.html")]
+pub struct InboxMessageReceived {
+    /// Plain-text message written by the user.
+    pub body: String,
+    /// Display name of the group's community.
+    pub community_display_name: String,
+    /// Name of the group the message was sent to.
+    pub group_name: String,
+    /// Link to the conversation in the group dashboard Inbox.
+    pub link: String,
+    /// Name shown for the user who wrote the message.
+    pub sender_name: String,
+    /// Theme configuration for the community.
+    pub theme: Theme,
+
+    /// Name of the event the conversation started from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub event_name: Option<String>,
+}
+
+/// Template telling a user that the group replied to their message.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/inbox_reply_received.html")]
+pub struct InboxReplyReceived {
+    /// Plain-text reply written on behalf of the group.
+    pub body: String,
+    /// Display name of the group's community.
+    pub community_display_name: String,
+    /// Name of the group that replied.
+    pub group_name: String,
+    /// Link to the conversation in the user dashboard.
+    pub link: String,
+    /// Theme configuration for the community.
+    pub theme: Theme,
+
+    /// Name of the event the conversation started from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub event_name: Option<String>,
+}
+
+/// Template for session proposal co-speaker invitation notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/session_proposal_co_speaker_invitation.html")]
+pub struct SessionProposalCoSpeakerInvitation {
+    /// Link to review and respond to the invitation.
+    pub link: String,
+    /// Session proposal title included in the invitation.
+    pub session_proposal_title: String,
+    /// Name of the speaker who sent the invitation.
+    pub speaker_name: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for speaker welcome notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/speaker_welcome.html")]
+pub struct SpeakerWelcome {
+    /// Event summary data.
+    pub event: EventSummary,
+    /// Link to the event page.
+    pub link: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}
+
+/// Template for aggregate speaker welcome notification.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "notifications/speaker_series_welcome.html")]
+pub struct SpeakerSeriesWelcome {
+    /// Number of events included in the notification.
+    pub event_count: usize,
+    /// Events included in the notification.
+    pub events: Vec<EventSeriesNotificationItem>,
+    /// Name of the group hosting the events.
+    pub group_name: String,
+    /// Theme configuration for the alliance.
+    pub theme: Theme,
+}

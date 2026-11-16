@@ -1,0 +1,20 @@
+[package]
+name = "ocg-assets"
+description = "Static assets and compiled templates preparation for Open Alliance Groups"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+rust-embed = { workspace = true }
+
+[build-dependencies]
+anyhow = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
+which = { workspace = true }

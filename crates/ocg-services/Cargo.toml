@@ -1,0 +1,61 @@
+[package]
+name = "ocg-services"
+description = "Background workers and service integrations for Open Alliance Groups"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+default = []
+test-utils = ["dep:mockall", "ocg-core/test-utils", "ocg-db/test-utils"]
+
+[dependencies]
+anyhow = { workspace = true }
+askama = { workspace = true }
+async-trait = { workspace = true }
+aws-credential-types = { workspace = true }
+aws-sdk-s3 = { workspace = true }
+aws-smithy-http-client = { workspace = true }
+axum = { workspace = true }
+base64 = { workspace = true }
+chrono = { workspace = true }
+chrono-tz = { workspace = true }
+garde = { workspace = true }
+hex = { workspace = true }
+hmac = { workspace = true }
+lettre = { workspace = true }
+mime_guess = { workspace = true }
+mockall = { workspace = true, optional = true }
+ocg-core = { path = "../ocg-core" }
+ocg-db = { path = "../ocg-db" }
+ocg-templates-dashboard = { path = "../ocg-templates-dashboard" }
+ocg-templates-notifications = { path = "../ocg-templates-notifications" }
+percent-encoding = { workspace = true }
+quick-xml = { workspace = true }
+redis = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_urlencoded = { workspace = true }
+serde_with = { workspace = true }
+sha2 = { workspace = true }
+strum = { workspace = true }
+subtle = { workspace = true }
+thiserror = { workspace = true }
+time = { workspace = true }
+tokio = { workspace = true }
+tokio-postgres = { workspace = true }
+tokio-util = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+deadpool-postgres = { workspace = true }
+mockall = { workspace = true }
+ocg-core = { path = "../ocg-core", features = ["test-utils"] }
+ocg-db = { path = "../ocg-db", features = ["test-utils"] }

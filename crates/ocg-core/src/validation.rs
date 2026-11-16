@@ -1,0 +1,899 @@
+//! Validation utilities and custom validators for form input.
+//!
+//! This module provides custom garde validators for common validation patterns
+//! used throughout the application.
+//!
+//! Note: garde custom validators require specific signatures that may trigger clippy warnings.
+//! The `&()` context parameter and `&Option<T>` patterns are required by garde's API.
+
+#![allow(clippy::trivially_copy_pass_by_ref)]
+#![allow(clippy::ref_option)]
+
+use std::collections::BTreeMap;
+
+use garde::rules::email::parse_email;
+use reqwest::Url;
+use serde::{Deserialize, Deserializer};
+
+/// Allowed CFS label colors.
+pub const CFS_LABEL_COLORS: [&str; 10] = [
+    "#FFD866", "#FC9867", "#FF6188", "#AB9DF2", "#78DCE8", "#A9DC76", "#A88F6A", "#9DA5B4",
+    "#FF9EBB", "#6272A4",
+];
+
+// Maximum length constants for validation.
+
+// Generic size-based limits
+
+/// Maximum length for long text fields.
+pub const MAX_LEN_L: usize = 2000;
+
+/// Maximum length for medium text fields.
+pub const MAX_LEN_M: usize = 250;
+
+/// Maximum length for short text fields.
+pub const MAX_LEN_S: usize = 100;
+
+// Purpose-specific limits
+
+/// Maximum values accepted by each alliance contact filter.
+pub const MAX_CONTACT_FILTER_VALUES: usize = 500;
+
+/// Maximum number of elements in a collection (filters, tags, etc.).
+pub const MAX_ITEMS: usize = 25;
+
+/// Maximum length for biographies.
+pub const MAX_LEN_BIO: usize = 1000;
+
+/// Maximum length for country codes.
+pub const MAX_LEN_COUNTRY_CODE: usize = 3;
+
+/// Maximum length for international phone calling codes.
+pub const MAX_LEN_PHONE_COUNTRY_CODE: usize = 8;
+
+/// Maximum length for phone numbers.
+pub const MAX_LEN_PHONE_NUMBER: usize = 32;
+
+/// Maximum length for date strings (YYYY-MM-DD).
+pub const MAX_LEN_DATE: usize = 10;
+
+/// Maximum length for full descriptions.
+pub const MAX_LEN_DESCRIPTION: usize = 8000;
+
+/// Maximum length for short descriptions.
+pub const MAX_LEN_DESCRIPTION_SHORT: usize = 500;
+
+/// Maximum length for display names shown to users.
+pub const MAX_LEN_DISPLAY_NAME: usize = 80;
+
+/// Maximum length for entity names (groups, events, sessions, sponsors, venues).
+pub const MAX_LEN_ENTITY_NAME: usize = 120;
+
+/// Maximum length for CFS label names.
+pub const MAX_LEN_EVENT_LABEL_NAME: usize = 80;
+
+/// Maximum number of labels allowed per event.
+pub const MAX_LEN_EVENT_LABELS_PER_EVENT: usize = 200;
+
+/// Maximum number of labels allowed per submission.
+pub const MAX_LEN_EVENT_LABELS_PER_SUBMISSION: usize = 10;
+
+/// Maximum length for group pretty slugs.
+pub const MAX_LEN_GROUP_PRETTY_SLUG: usize = 50;
+
+/// Maximum length, in characters, for inbox message bodies.
+pub const MAX_LEN_INBOX_MESSAGE: usize = 5000;
+
+/// Maximum length for a DNS hostname.
+pub const MAX_LEN_CUSTOM_DOMAIN: usize = 253;
+
+/// Maximum length for link labels in custom link maps.
+pub const MAX_LEN_LINK_LABEL: usize = 80;
+
+/// Maximum length for notification bodies.
+pub const MAX_LEN_NOTIFICATION_BODY: usize = 5000;
+
+/// Maximum length for sort keys and directions.
+pub const MAX_LEN_SORT_KEY: usize = 32;
+
+/// Maximum length for tag or interest values.
+pub const MAX_LEN_TAG: usize = 50;
+
+/// Maximum length for UTM parameter values.
+pub const MAX_LEN_UTM_VALUE: usize = 50;
+
+/// Maximum number of values in each group UTM allowlist.
+pub const MAX_UTM_VALUES: usize = 20;
+
+/// Maximum length for timezone identifiers.
+pub const MAX_LEN_TIMEZONE: usize = 64;
+
+/// Maximum pagination limit for results per page.
+pub const MAX_PAGINATION_LIMIT: usize = 100;
+
+/// Maximum number of additional occurrences created for a recurring event.
+pub const MAX_RECURRING_ADDITIONAL_OCCURRENCES: i32 = 12;
+
+/// Returns whether a normalized UTM value matches the database constraints.
+pub fn is_valid_utm_value(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= MAX_LEN_UTM_VALUE
+        && value.bytes().all(|byte| {
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'.' | b'-' | b'_')
+        })
+}
+
+/// Validates a group-defined UTM allowlist.
+pub fn utm_value_vec(value: &Option<Vec<String>>, _ctx: &()) -> garde::Result {
+    let Some(values) = value else {
+        return Ok(());
+    };
+
+    if values.len() > MAX_UTM_VALUES {
+        return Err(garde::Error::new(format!(
+            "value exceeds max items of {MAX_UTM_VALUES}"
+        )));
+    }
+
+    for (index, value) in values.iter().enumerate() {
+        if !is_valid_utm_value(value) {
+            return Err(garde::Error::new(format!(
+                "utm value '{value}' must have up to {MAX_LEN_UTM_VALUE} lowercase letters, numbers, dots, hyphens, or underscores"
+            )));
+        }
+        if values[..index].contains(value) {
+            return Err(garde::Error::new(format!(
+                "utm value '{value}' is duplicated"
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+/// Deserializes an optional string, treating blank values as absent.
+pub fn blank_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<String>::deserialize(deserializer)?;
+    Ok(value.filter(|value| !value.trim().is_empty()))
+}
+
+/// Maximum duration for session proposals (minutes).
+pub const MAX_SESSION_PROPOSAL_DURATION_MINUTES: i32 = 480;
+
+/// Minimum length for passwords.
+pub const MIN_PASSWORD_LEN: usize = 8;
+
+// Custom validators.
+
+/// Validates that each string in a vector is a valid email address within max length.
+pub fn email_vec(value: &Option<Vec<String>>, _ctx: &()) -> garde::Result {
+    if let Some(vec) = value {
+        for email in vec {
+            if email.len() > MAX_LEN_M {
+                return Err(garde::Error::new(format!(
+                    "email exceeds max length of {MAX_LEN_M}"
+                )));
+            }
+            parse_email(email).map_err(|e| garde::Error::new(format!("invalid email: {e}")))?;
+        }
+    }
+    Ok(())
+}
+
+/// Validates an optional Google Analytics 4 measurement ID.
+pub fn ga4_measurement_id(value: &Option<String>, _ctx: &()) -> garde::Result {
+    let Some(value) = value else {
+        return Ok(());
+    };
+
+    let valid = value.len() >= 8
+        && value.len() <= 34
+        && value.starts_with("G-")
+        && value[2..]
+            .bytes()
+            .all(|character| character.is_ascii_uppercase() || character.is_ascii_digit());
+
+    if valid {
+        Ok(())
+    } else {
+        Err(garde::Error::new(
+            "Google Analytics measurement ID must use the G-XXXXXXXX format",
+        ))
+    }
+}
+
+/// Validates that a required string is a valid image URL (absolute or relative).
+///
+/// Accepts absolute URLs (with scheme) or relative URLs starting with `/`.
+pub fn image_url(value: &impl AsRef<str>, _ctx: &()) -> garde::Result {
+    validate_image_url(value.as_ref())
+}
+
+/// Validates a custom hostname used for a group or event.
+pub fn custom_domain(value: &impl AsRef<str>, _ctx: &()) -> garde::Result {
+    let hostname = value.as_ref();
+    if hostname.is_empty()
+        || hostname.len() > MAX_LEN_CUSTOM_DOMAIN
+        || hostname != hostname.to_ascii_lowercase()
+        || hostname.contains("://")
+        || hostname.contains(['/', ':', '*'])
+        || hostname == "goup.vc"
+        || hostname.ends_with(".goup.vc")
+    {
+        return Err(garde::Error::new("invalid custom domain"));
+    }
+
+    let labels: Vec<_> = hostname.split('.').collect();
+    if labels.len() < 2
+        || labels.iter().any(|label| {
+            label.is_empty()
+                || label.len() > 63
+                || label.starts_with('-')
+                || label.ends_with('-')
+                || !label
+                    .bytes()
+                    .all(|character| character.is_ascii_alphanumeric() || character == b'-')
+        })
+        || !labels.last().is_some_and(|label| {
+            label.bytes().all(|character| character.is_ascii_alphabetic())
+                || (label.starts_with("xn--")
+                    && label.len() > 4
+                    && label
+                        .bytes()
+                        .all(|character| character.is_ascii_alphanumeric() || character == b'-'))
+        })
+    {
+        return Err(garde::Error::new("invalid custom domain"));
+    }
+
+    Ok(())
+}
+
+/// Validates that an optional string is a valid image URL (absolute or relative).
+///
+/// Accepts absolute URLs (with scheme) or relative URLs starting with `/`.
+pub fn image_url_opt(value: &Option<String>, _ctx: &()) -> garde::Result {
+    if let Some(url) = value {
+        validate_image_url(url)?;
+    }
+    Ok(())
+}
+
+/// Validates that each string in a vector is a valid image URL (absolute or relative).
+///
+/// Accepts absolute URLs (with scheme) or relative URLs starting with `/`.
+pub fn image_url_vec(value: &Option<Vec<String>>, _ctx: &()) -> garde::Result {
+    if let Some(vec) = value {
+        for url in vec {
+            validate_image_url(url)?;
+        }
+    }
+    Ok(())
+}
+
+/// Validates that a string is non-empty after trimming whitespace.
+///
+/// Returns an error if the string is empty or contains only whitespace.
+pub fn trimmed_non_empty(value: &impl AsRef<str>, _ctx: &()) -> garde::Result {
+    if value.as_ref().trim().is_empty() {
+        return Err(garde::Error::new(
+            "value cannot be empty or whitespace-only",
+        ));
+    }
+    Ok(())
+}
+
+/// Validates that an optional string is non-empty after trimming if present.
+///
+/// Returns Ok if the value is None, or if it's Some with non-whitespace content.
+/// Returns an error if the value is Some but empty or whitespace-only.
+pub fn trimmed_non_empty_opt(value: &Option<String>, _ctx: &()) -> garde::Result {
+    if let Some(s) = value
+        && s.trim().is_empty()
+    {
+        return Err(garde::Error::new(
+            "value cannot be empty or whitespace-only",
+        ));
+    }
+    Ok(())
+}
+
+/// Deserializes optional form strings, treating blank values as absent.
+pub fn optional_trimmed_string<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<String>::deserialize(deserializer)?;
+    Ok(value.and_then(|value| {
+        let value = value.trim().to_string();
+        (!value.is_empty()).then_some(value)
+    }))
+}
+
+/// Validates that each tag in a vector is non-empty, within max length, and within max items.
+pub fn trimmed_non_empty_tag_vec(value: &Option<Vec<String>>, _ctx: &()) -> garde::Result {
+    validate_trimmed_non_empty_vec(value, MAX_LEN_TAG)
+}
+
+/// Validates that each string in a vector is non-empty after trimming and within max length.
+pub fn trimmed_non_empty_vec(value: &Option<Vec<String>>, _ctx: &()) -> garde::Result {
+    validate_trimmed_non_empty_vec(value, MAX_LEN_M)
+}
+
+/// Validates that all values in a `BTreeMap` are valid URLs within max length.
+pub fn url_map_values(value: &Option<BTreeMap<String, String>>, _ctx: &()) -> garde::Result {
+    if let Some(map) = value {
+        if map.len() > MAX_ITEMS {
+            return Err(garde::Error::new(format!(
+                "value exceeds max items of {MAX_ITEMS}"
+            )));
+        }
+        for (key, url) in map {
+            if key.len() > MAX_LEN_LINK_LABEL {
+                return Err(garde::Error::new(format!(
+                    "key '{key}' exceeds max length of {MAX_LEN_LINK_LABEL}"
+                )));
+            }
+            if url.trim().is_empty() {
+                return Err(garde::Error::new(format!(
+                    "URL for '{key}' cannot be empty"
+                )));
+            }
+            if url.len() > MAX_LEN_L {
+                return Err(garde::Error::new(format!(
+                    "URL for '{key}' exceeds max length of {MAX_LEN_L}"
+                )));
+            }
+            if Url::parse(url).is_err() {
+                return Err(garde::Error::new(format!("invalid URL for '{key}': {url}")));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Validates that a CFS label color belongs to the predefined palette.
+pub fn valid_cfs_label_color(value: &impl AsRef<str>, _ctx: &()) -> garde::Result {
+    if !CFS_LABEL_COLORS.contains(&value.as_ref()) {
+        return Err(garde::Error::new("invalid cfs label color"));
+    }
+    Ok(())
+}
+
+/// Validates an optional group pretty slug.
+pub fn valid_group_pretty_slug(value: &Option<String>, _ctx: &()) -> garde::Result {
+    // Normalize optional form input
+    let Some(value) = value.as_deref() else {
+        return Ok(());
+    };
+    let value = value.trim();
+
+    // Allow empty values so the database can clear the pretty slug
+    if value.is_empty() {
+        return Ok(());
+    }
+
+    // Enforce the public URL length limit
+    if value.len() > MAX_LEN_GROUP_PRETTY_SLUG {
+        return Err(garde::Error::new(
+            "Pretty slug must be 50 characters or fewer",
+        ));
+    }
+
+    // Enforce strict ASCII URL characters
+    if !value
+        .bytes()
+        .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+    {
+        return Err(garde::Error::new(
+            "Pretty slug must use lowercase ASCII letters, numbers, and hyphens only",
+        ));
+    }
+
+    // Enforce alphanumeric URL boundaries
+    if !value
+        .as_bytes()
+        .first()
+        .is_some_and(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
+        || !value
+            .as_bytes()
+            .last()
+            .is_some_and(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
+    {
+        return Err(garde::Error::new(
+            "Pretty slug must start and end with a lowercase ASCII letter or number",
+        ));
+    }
+
+    // Reject visually confusing duplicate separators
+    if value.contains("--") {
+        return Err(garde::Error::new(
+            "Pretty slug cannot contain consecutive hyphens",
+        ));
+    }
+
+    Ok(())
+}
+
+/// Validates that a latitude value is within valid range (-90 to 90).
+pub fn valid_latitude(value: &Option<f64>, _ctx: &()) -> garde::Result {
+    if let Some(lat) = value
+        && !(-90.0..=90.0).contains(lat)
+    {
+        return Err(garde::Error::new("latitude must be between -90 and 90"));
+    }
+    Ok(())
+}
+
+/// Validates that a longitude value is within valid range (-180 to 180).
+pub fn valid_longitude(value: &Option<f64>, _ctx: &()) -> garde::Result {
+    if let Some(lon) = value
+        && !(-180.0..=180.0).contains(lon)
+    {
+        return Err(garde::Error::new("longitude must be between -180 and 180"));
+    }
+    Ok(())
+}
+
+// Validates a single image URL string (absolute or relative)
+fn validate_image_url(url: &str) -> garde::Result {
+    if url.trim().is_empty() {
+        return Err(garde::Error::new("image URL cannot be empty"));
+    }
+    if url.len() > MAX_LEN_L {
+        return Err(garde::Error::new(format!(
+            "image URL exceeds max length of {MAX_LEN_L}"
+        )));
+    }
+    // Accept absolute URLs or relative URLs starting with /
+    if !url.starts_with('/') && Url::parse(url).is_err() {
+        return Err(garde::Error::new(format!("invalid image URL: {url}")));
+    }
+    Ok(())
+}
+
+// Validates a vector of trimmed non-empty strings with size and item limits
+fn validate_trimmed_non_empty_vec(value: &Option<Vec<String>>, max_len: usize) -> garde::Result {
+    if let Some(vec) = value {
+        if vec.len() > MAX_ITEMS {
+            return Err(garde::Error::new(format!(
+                "value exceeds max items of {MAX_ITEMS}"
+            )));
+        }
+        for s in vec {
+            if s.trim().is_empty() {
+                return Err(garde::Error::new(
+                    "value cannot be empty or whitespace-only",
+                ));
+            }
+            if s.len() > max_len {
+                return Err(garde::Error::new(format!(
+                    "value exceeds max length of {max_len}"
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
+// Tests.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_email_vec_invalid() {
+        assert!(email_vec(&Some(vec!["not-an-email".to_string()]), &()).is_err());
+        assert!(email_vec(&Some(vec![String::new()]), &()).is_err());
+        assert!(email_vec(&Some(vec!["   ".to_string()]), &()).is_err());
+        assert!(
+            email_vec(
+                &Some(vec!["valid@example.com".to_string(), "invalid".to_string()]),
+                &()
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn test_email_vec_length_exceeded() {
+        // Email exceeding MAX_LEN_M
+        let long_email = format!("{}@example.com", "a".repeat(MAX_LEN_M));
+        assert!(email_vec(&Some(vec![long_email]), &()).is_err());
+    }
+
+    #[test]
+    fn test_email_vec_none() {
+        assert!(email_vec(&None, &()).is_ok());
+    }
+
+    #[test]
+    fn test_email_vec_valid() {
+        assert!(email_vec(&Some(vec!["user@example.com".to_string()]), &()).is_ok());
+        assert!(
+            email_vec(
+                &Some(vec![
+                    "user@example.com".to_string(),
+                    "other@test.org".to_string()
+                ]),
+                &()
+            )
+            .is_ok()
+        );
+        // Empty vec is valid (no invalid elements)
+        assert!(email_vec(&Some(vec![]), &()).is_ok());
+    }
+
+    #[test]
+    fn test_image_url_invalid() {
+        // Not a valid URL and doesn't start with /
+        assert!(image_url(&"not-a-url", &()).is_err());
+        assert!(image_url(&"example.com/image.png", &()).is_err());
+        // Empty
+        assert!(image_url(&"", &()).is_err());
+        // Whitespace only
+        assert!(image_url(&"   ", &()).is_err());
+    }
+
+    #[test]
+    fn test_image_url_length_exceeded() {
+        let long_url = format!("/{}", "a".repeat(MAX_LEN_L));
+        assert!(image_url(&long_url, &()).is_err());
+    }
+
+    #[test]
+    fn test_image_url_opt_invalid() {
+        assert!(image_url_opt(&Some("not-a-url".to_string()), &()).is_err());
+        assert!(image_url_opt(&Some(String::new()), &()).is_err());
+        assert!(image_url_opt(&Some("   ".to_string()), &()).is_err());
+    }
+
+    #[test]
+    fn test_image_url_opt_length_exceeded() {
+        let long_url = format!("/{}", "a".repeat(MAX_LEN_L));
+        assert!(image_url_opt(&Some(long_url), &()).is_err());
+    }
+
+    #[test]
+    fn test_image_url_opt_none() {
+        assert!(image_url_opt(&None, &()).is_ok());
+    }
+
+    #[test]
+    fn test_image_url_opt_valid() {
+        // Absolute URLs
+        assert!(image_url_opt(&Some("https://example.com/image.png".to_string()), &()).is_ok());
+        assert!(image_url_opt(&Some("http://example.com/logo.svg".to_string()), &()).is_ok());
+        // Relative URLs
+        assert!(image_url_opt(&Some("/images/logo.png".to_string()), &()).is_ok());
+        assert!(image_url_opt(&Some("/logo.svg".to_string()), &()).is_ok());
+    }
+
+    #[test]
+    fn test_image_url_valid() {
+        // Absolute URLs
+        assert!(image_url(&"https://example.com/image.png", &()).is_ok());
+        assert!(image_url(&"http://example.com/logo.svg", &()).is_ok());
+        assert!(image_url(&"https://cdn.example.com/path/to/image.jpg", &()).is_ok());
+        // Relative URLs
+        assert!(image_url(&"/images/logo.png", &()).is_ok());
+        assert!(image_url(&"/logo.svg", &()).is_ok());
+        assert!(image_url(&"/path/to/image.jpg", &()).is_ok());
+    }
+
+    #[test]
+    fn test_custom_domain_valid() {
+        assert!(custom_domain(&"events.example.com", &()).is_ok());
+        assert!(custom_domain(&"example.co.uk", &()).is_ok());
+        assert!(custom_domain(&"xn--bcher-kva.example", &()).is_ok());
+        assert!(custom_domain(&"events.xn--p1ai", &()).is_ok());
+    }
+
+    #[test]
+    fn test_custom_domain_invalid() {
+        for value in [
+            "",
+            "localhost",
+            "HTTPS://example.com",
+            "https://example.com",
+            "Example.com",
+            "example.com/path",
+            "example.com:443",
+            "*.example.com",
+            "-event.example.com",
+            "event-.example.com",
+            "goup.vc",
+            "events.goup.vc",
+            "example.123",
+        ] {
+            assert!(
+                custom_domain(&value, &()).is_err(),
+                "{value} should be invalid"
+            );
+        }
+    }
+
+    #[test]
+    fn test_image_url_vec_invalid() {
+        assert!(image_url_vec(&Some(vec!["not-a-url".to_string()]), &()).is_err());
+        assert!(image_url_vec(&Some(vec![String::new()]), &()).is_err());
+        assert!(image_url_vec(&Some(vec!["   ".to_string()]), &()).is_err());
+        // One valid, one invalid
+        assert!(
+            image_url_vec(
+                &Some(vec![
+                    "/valid/image.png".to_string(),
+                    "not-a-url".to_string()
+                ]),
+                &()
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn test_ga4_measurement_id() {
+        assert!(ga4_measurement_id(&Some("G-AB12CD34".to_string()), &()).is_ok());
+        assert!(ga4_measurement_id(&Some("UA-123456".to_string()), &()).is_err());
+        assert!(ga4_measurement_id(&Some("G-lowercase".to_string()), &()).is_err());
+        assert!(ga4_measurement_id(&None, &()).is_ok());
+    }
+
+    #[test]
+    fn test_image_url_vec_length_exceeded() {
+        let long_url = format!("/{}", "a".repeat(MAX_LEN_L));
+        assert!(image_url_vec(&Some(vec![long_url]), &()).is_err());
+    }
+
+    #[test]
+    fn test_image_url_vec_none() {
+        assert!(image_url_vec(&None, &()).is_ok());
+    }
+
+    #[test]
+    fn test_image_url_vec_valid() {
+        // Absolute URLs
+        assert!(
+            image_url_vec(
+                &Some(vec!["https://example.com/image.png".to_string()]),
+                &()
+            )
+            .is_ok()
+        );
+        // Relative URLs
+        assert!(image_url_vec(&Some(vec!["/images/logo.png".to_string()]), &()).is_ok());
+        // Mix of absolute and relative
+        assert!(
+            image_url_vec(
+                &Some(vec![
+                    "https://example.com/image.png".to_string(),
+                    "/local/image.jpg".to_string()
+                ]),
+                &()
+            )
+            .is_ok()
+        );
+        // Empty vec is valid
+        assert!(image_url_vec(&Some(vec![]), &()).is_ok());
+    }
+
+    #[test]
+    fn test_trimmed_non_empty_invalid() {
+        assert!(trimmed_non_empty(&"", &()).is_err());
+        assert!(trimmed_non_empty(&"   ", &()).is_err());
+        assert!(trimmed_non_empty(&"\t\n", &()).is_err());
+        assert!(trimmed_non_empty(&"  \t  \n  ", &()).is_err());
+    }
+
+    #[test]
+    fn test_trimmed_non_empty_opt_invalid() {
+        assert!(trimmed_non_empty_opt(&Some(String::new()), &()).is_err());
+        assert!(trimmed_non_empty_opt(&Some("   ".to_string()), &()).is_err());
+        assert!(trimmed_non_empty_opt(&Some("\t\n".to_string()), &()).is_err());
+    }
+
+    #[test]
+    fn test_trimmed_non_empty_opt_none() {
+        assert!(trimmed_non_empty_opt(&None, &()).is_ok());
+    }
+
+    #[test]
+    fn test_trimmed_non_empty_opt_valid() {
+        assert!(trimmed_non_empty_opt(&Some("hello".to_string()), &()).is_ok());
+        assert!(trimmed_non_empty_opt(&Some("  hello  ".to_string()), &()).is_ok());
+    }
+
+    #[test]
+    fn test_trimmed_non_empty_valid() {
+        assert!(trimmed_non_empty(&"hello", &()).is_ok());
+        assert!(trimmed_non_empty(&"  hello  ", &()).is_ok());
+        assert!(trimmed_non_empty(&"a", &()).is_ok());
+    }
+
+    #[test]
+    fn test_valid_group_pretty_slug_invalid() {
+        assert!(valid_group_pretty_slug(&Some("Pretty-Group".to_string()), &()).is_err());
+        assert!(valid_group_pretty_slug(&Some("pretty_group".to_string()), &()).is_err());
+        assert!(valid_group_pretty_slug(&Some("-pretty-group".to_string()), &()).is_err());
+        assert!(valid_group_pretty_slug(&Some("pretty-group-".to_string()), &()).is_err());
+        assert!(valid_group_pretty_slug(&Some("pretty--group".to_string()), &()).is_err());
+        assert!(
+            valid_group_pretty_slug(&Some("a".repeat(MAX_LEN_GROUP_PRETTY_SLUG + 1)), &()).is_err()
+        );
+    }
+
+    #[test]
+    fn test_valid_group_pretty_slug_valid() {
+        assert!(valid_group_pretty_slug(&None, &()).is_ok());
+        assert!(valid_group_pretty_slug(&Some(String::new()), &()).is_ok());
+        assert!(valid_group_pretty_slug(&Some("pretty-group-2026".to_string()), &()).is_ok());
+        assert!(valid_group_pretty_slug(&Some("a".repeat(MAX_LEN_GROUP_PRETTY_SLUG)), &()).is_ok());
+    }
+
+    #[test]
+    fn test_validate_trimmed_non_empty_vec_invalid() {
+        assert!(validate_trimmed_non_empty_vec(&Some(vec![String::new()]), MAX_LEN_TAG).is_err());
+        assert!(
+            validate_trimmed_non_empty_vec(&Some(vec!["   ".to_string()]), MAX_LEN_TAG).is_err()
+        );
+        assert!(
+            validate_trimmed_non_empty_vec(
+                &Some(vec!["valid".to_string(), "   ".to_string()]),
+                MAX_LEN_TAG
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn test_validate_trimmed_non_empty_vec_length_exceeded() {
+        let long_tag = "a".repeat(MAX_LEN_TAG + 1);
+        assert!(
+            validate_trimmed_non_empty_vec(&Some(vec![long_tag.clone()]), MAX_LEN_TAG).is_err()
+        );
+        assert!(validate_trimmed_non_empty_vec(&Some(vec![long_tag]), MAX_LEN_M).is_ok());
+    }
+
+    #[test]
+    fn test_validate_trimmed_non_empty_vec_max_items() {
+        let tags = vec!["tag".to_string(); MAX_ITEMS + 1];
+        assert!(validate_trimmed_non_empty_vec(&Some(tags), MAX_LEN_TAG).is_err());
+    }
+
+    #[test]
+    fn test_validate_trimmed_non_empty_vec_none() {
+        assert!(validate_trimmed_non_empty_vec(&None, MAX_LEN_TAG).is_ok());
+    }
+
+    #[test]
+    fn test_validate_trimmed_non_empty_vec_valid() {
+        assert!(
+            validate_trimmed_non_empty_vec(&Some(vec!["hello".to_string()]), MAX_LEN_M).is_ok()
+        );
+        assert!(
+            validate_trimmed_non_empty_vec(
+                &Some(vec!["a".to_string(), "b".to_string()]),
+                MAX_LEN_M
+            )
+            .is_ok()
+        );
+        assert!(
+            validate_trimmed_non_empty_vec(&Some(vec!["  hello  ".to_string()]), MAX_LEN_M).is_ok()
+        );
+        // Empty vec is valid (no invalid elements)
+        assert!(validate_trimmed_non_empty_vec(&Some(vec![]), MAX_LEN_M).is_ok());
+    }
+
+    #[test]
+    fn test_url_map_values_invalid() {
+        let mut map = BTreeMap::new();
+        map.insert("test".to_string(), "not-a-url".to_string());
+        assert!(url_map_values(&Some(map), &()).is_err());
+
+        let mut map = BTreeMap::new();
+        map.insert("test".to_string(), String::new());
+        assert!(url_map_values(&Some(map), &()).is_err());
+
+        let mut map = BTreeMap::new();
+        map.insert("test".to_string(), "   ".to_string());
+        assert!(url_map_values(&Some(map), &()).is_err());
+
+        // One valid, one invalid
+        let mut map = BTreeMap::new();
+        map.insert("valid".to_string(), "https://example.com".to_string());
+        map.insert("invalid".to_string(), "not-a-url".to_string());
+        assert!(url_map_values(&Some(map), &()).is_err());
+    }
+
+    #[test]
+    fn test_url_map_values_length_exceeded() {
+        // Key exceeding MAX_LEN_LINK_LABEL
+        let mut map = BTreeMap::new();
+        let long_key = "a".repeat(MAX_LEN_LINK_LABEL + 1);
+        map.insert(long_key, "https://example.com".to_string());
+        assert!(url_map_values(&Some(map), &()).is_err());
+
+        // Exceeds MAX_ITEMS
+        let mut map = BTreeMap::new();
+        for idx in 0..=MAX_ITEMS {
+            map.insert(format!("key-{idx}"), "https://example.com".to_string());
+        }
+        assert!(url_map_values(&Some(map), &()).is_err());
+
+        // URL exceeding MAX_LEN_L
+        let mut map = BTreeMap::new();
+        let long_url = format!("https://example.com/{}", "a".repeat(MAX_LEN_L));
+        map.insert("test".to_string(), long_url);
+        assert!(url_map_values(&Some(map), &()).is_err());
+    }
+
+    #[test]
+    fn test_url_map_values_none() {
+        assert!(url_map_values(&None, &()).is_ok());
+    }
+
+    #[test]
+    fn test_url_map_values_valid() {
+        let mut map = BTreeMap::new();
+        map.insert("website".to_string(), "https://example.com".to_string());
+        assert!(url_map_values(&Some(map), &()).is_ok());
+
+        let mut map = BTreeMap::new();
+        map.insert("website".to_string(), "https://example.com".to_string());
+        map.insert(
+            "docs".to_string(),
+            "https://docs.example.com/path".to_string(),
+        );
+        assert!(url_map_values(&Some(map), &()).is_ok());
+
+        // Empty map is valid
+        assert!(url_map_values(&Some(BTreeMap::new()), &()).is_ok());
+    }
+
+    #[test]
+    fn test_valid_latitude_invalid() {
+        assert!(valid_latitude(&Some(90.1), &()).is_err());
+        assert!(valid_latitude(&Some(-90.1), &()).is_err());
+        assert!(valid_latitude(&Some(180.0), &()).is_err());
+        assert!(valid_latitude(&Some(-180.0), &()).is_err());
+    }
+
+    #[test]
+    fn test_valid_latitude_none() {
+        assert!(valid_latitude(&None, &()).is_ok());
+    }
+
+    #[test]
+    fn test_valid_latitude_valid() {
+        assert!(valid_latitude(&Some(0.0), &()).is_ok());
+        assert!(valid_latitude(&Some(90.0), &()).is_ok());
+        assert!(valid_latitude(&Some(-90.0), &()).is_ok());
+        assert!(valid_latitude(&Some(45.5), &()).is_ok());
+        assert!(valid_latitude(&Some(-45.5), &()).is_ok());
+    }
+
+    #[test]
+    fn test_valid_longitude_invalid() {
+        assert!(valid_longitude(&Some(180.1), &()).is_err());
+        assert!(valid_longitude(&Some(-180.1), &()).is_err());
+        assert!(valid_longitude(&Some(360.0), &()).is_err());
+    }
+
+    #[test]
+    fn test_valid_longitude_none() {
+        assert!(valid_longitude(&None, &()).is_ok());
+    }
+
+    #[test]
+    fn test_valid_longitude_valid() {
+        assert!(valid_longitude(&Some(0.0), &()).is_ok());
+        assert!(valid_longitude(&Some(180.0), &()).is_ok());
+        assert!(valid_longitude(&Some(-180.0), &()).is_ok());
+        assert!(valid_longitude(&Some(90.0), &()).is_ok());
+        assert!(valid_longitude(&Some(-90.0), &()).is_ok());
+    }
+}

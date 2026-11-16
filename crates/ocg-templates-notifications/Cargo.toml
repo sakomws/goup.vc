@@ -1,0 +1,21 @@
+[package]
+name = "ocg-templates-notifications"
+description = "Email and notification Askama templates for Open Alliance Groups"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+askama = { workspace = true }
+chrono = { workspace = true }
+chrono-tz = { workspace = true }
+ocg-assets = { path = "../ocg-assets" }
+ocg-core = { path = "../ocg-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }

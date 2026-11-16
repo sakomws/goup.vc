@@ -1,0 +1,73 @@
+//! Database operations used by the activity tracker.
+
+use std::sync::Arc;
+
+use anyhow::Result;
+use async_trait::async_trait;
+use tokio_postgres::types::Json;
+use tracing::instrument;
+use uuid::Uuid;
+
+use crate::PgExecutor;
+
+/// Type aliases.
+type Day = String;
+type Total = u32;
+type UtmCampaign = String;
+type UtmMedium = String;
+type UtmSource = String;
+
+/// Database interface required by the activity tracker.
+#[async_trait]
+pub trait DBActivityTracker {
+    /// Updates alliance page views counters.
+    async fn update_alliance_views(&self, data: Vec<(Uuid, Day, Total)>) -> Result<()>;
+
+    /// Updates event page views counters.
+    async fn update_event_views(&self, data: Vec<(Uuid, Day, Total)>) -> Result<()>;
+
+    /// Updates event page view counters attributed to UTM parameters.
+    async fn update_event_views_utm(
+        &self,
+        data: Vec<(Uuid, Day, UtmCampaign, UtmMedium, UtmSource, Total)>,
+    ) -> Result<()>;
+
+    /// Updates group page views counters.
+    async fn update_group_views(&self, data: Vec<(Uuid, Day, Total)>) -> Result<()>;
+}
+
+/// Shared database handle for activity tracking operations.
+pub type DynDBActivityTracker = Arc<dyn DBActivityTracker + Send + Sync>;
+
+#[async_trait]
+impl<T> DBActivityTracker for T
+where
+    T: PgExecutor + Send + Sync,
+{
+    #[instrument(skip(self), err)]
+    async fn update_alliance_views(&self, data: Vec<(Uuid, Day, Total)>) -> Result<()> {
+        self.execute("select update_alliance_views($1::jsonb)", &[&Json(&data)])
+            .await
+    }
+
+    #[instrument(skip(self), err)]
+    async fn update_event_views(&self, data: Vec<(Uuid, Day, Total)>) -> Result<()> {
+        self.execute("select update_event_views($1::jsonb)", &[&Json(&data)])
+            .await
+    }
+
+    #[instrument(skip(self, data), fields(entries = data.len()), err)]
+    async fn update_event_views_utm(
+        &self,
+        data: Vec<(Uuid, Day, UtmCampaign, UtmMedium, UtmSource, Total)>,
+    ) -> Result<()> {
+        self.execute("select update_event_views_utm($1::jsonb)", &[&Json(&data)])
+            .await
+    }
+
+    #[instrument(skip(self), err)]
+    async fn update_group_views(&self, data: Vec<(Uuid, Day, Total)>) -> Result<()> {
+        self.execute("select update_group_views($1::jsonb)", &[&Json(&data)])
+            .await
+    }
+}

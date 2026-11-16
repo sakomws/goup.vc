@@ -1,0 +1,385 @@
+//! This module defines the templates for the event page.
+
+use askama::Template;
+use chrono::{DateTime, Utc};
+use chrono_tz::Tz;
+use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
+use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
+use uuid::Uuid;
+
+use ocg_core::types::{
+    event::{EventCfsLabel, EventFull, EventKind, EventSponsorReport, EventSummary},
+    inbox::InboxContactContext,
+    site::SiteSettings,
+    survey::EventSurvey,
+    user::UserSummary,
+};
+use ocg_templates_common::PageId;
+use ocg_templates_common::auth::User;
+use ocg_templates_common::filters;
+use ocg_templates_common::helpers::{self, user_initials};
+use ocg_templates_dashboard::dashboard::user::session_proposals::SessionProposalLevel;
+
+// Pages and sections templates.
+
+/// Event page template.
+#[derive(Debug, Clone, Template)]
+#[template(path = "event/page.html")]
+pub struct Page {
+    /// Configured public base URL.
+    pub base_url: String,
+    /// Whether this page was reached through its verified custom hostname.
+    pub custom_domain: bool,
+    /// Detailed information about the event.
+    pub event: EventFull,
+    /// Identifier for the current page.
+    #[allow(dead_code)]
+    pub page_id: PageId,
+    /// Current URL path.
+    pub path: String,
+    /// Global site settings.
+    pub site_settings: SiteSettings,
+    /// Authenticated user information.
+    pub user: User,
+    /// Preferred timezone of the signed-in viewer, when configured.
+    pub viewer_timezone: Option<Tz>,
+}
+
+/// Aggregate-only sponsor report, used for organizer preview and public sharing.
+#[derive(Debug, Clone, Template)]
+#[template(path = "event/sponsor_report.html")]
+pub struct SponsorReportPage {
+    pub report: EventSponsorReport,
+    pub public: bool,
+}
+
+/// Authenticated post-event survey page.
+#[derive(Debug, Clone, Template)]
+#[template(path = "event/survey.html")]
+pub struct SurveyPage {
+    pub survey: EventSurvey,
+    pub notice: Option<String>,
+}
+
+/// Contact organizers modal.
+#[derive(Debug, Clone, Template)]
+#[template(path = "event/contact_modal.html")]
+pub struct ContactModal {
+    /// Authenticated viewer state.
+    pub user: User,
+
+    /// Event contact context, absent after a message is sent.
+    pub context: Option<InboxContactContext>,
+    /// Conversation created by the submitted message.
+    pub sent_inbox_conversation_id: Option<Uuid>,
+}
+
+impl Page {
+    /// Returns the canonical public URL for the event page.
+    pub fn canonical_url(&self) -> String {
+        if self.custom_domain {
+            return helpers::absolute_url(&self.base_url, "/");
+        }
+        helpers::absolute_url(
+            &self.base_url,
+            &format!(
+                "/{}/group/{}/event/{}",
+                self.event.alliance.name,
+                self.event.group.public_slug(),
+                self.event.slug
+            ),
+        )
+    }
+
+    /// Returns a `LinkedIn` share URL for the event page.
+    pub fn linkedin_share_url(&self) -> String {
+        format!(
+            "https://www.linkedin.com/sharing/share-offsite/?url={}",
+            utf8_percent_encode(&self.canonical_url(), NON_ALPHANUMERIC)
+        )
+    }
+
+    /// Returns suggested caption text for Instagram.
+    pub fn instagram_caption(&self) -> String {
+        format!("{}\n\n{}", self.preview_title(), self.preview_description())
+    }
+
+    /// Returns the Open Graph image URL for the event page.
+    pub fn open_graph_image_url(&self) -> Option<String> {
+        helpers::first_open_graph_image_url([
+            self.event.og_image_url.as_deref(),
+            self.event.group.og_image_url.as_deref(),
+            self.event.alliance.og_image_url.as_deref(),
+            Some(self.event.logo_url.as_str()),
+            self.event.banner_url.as_deref(),
+            self.event.group.banner_url.as_deref(),
+            Some(self.event.alliance.banner_url.as_str()),
+        ])
+        .map(|image_url| helpers::open_graph_image_url(&self.base_url, image_url))
+    }
+
+    /// Returns the preview description for the event page.
+    pub fn preview_description(&self) -> String {
+        format!(
+            "{} in {} alliance. Open Alliance Groups, where Open Source alliances thrive.",
+            self.event.group.name, self.event.alliance.display_name
+        )
+    }
+
+    /// Returns the preview title for the event page.
+    pub fn preview_title(&self) -> String {
+        if let Some(starts_at) = self.event.starts_at {
+            let starts_at = starts_at.with_timezone(&self.event.timezone);
+            format!("{} - {}", self.event.name, starts_at.format("%B %-d"))
+        } else {
+            self.event.name.clone()
+        }
+    }
+
+    /// Returns the event schedule rendered in the viewer's configured timezone.
+    pub fn viewer_event_time(&self) -> Option<String> {
+        let viewer_timezone = self.viewer_timezone?;
+        let starts_at = self.event.starts_at?;
+
+        if viewer_timezone == self.event.timezone {
+            return None;
+        }
+
+        let starts_at = starts_at.with_timezone(&viewer_timezone);
+        let date = starts_at.format("%b %-d, %Y");
+        let start_time = starts_at.format("%-I:%M %p %Z");
+        let schedule = match self.event.ends_at {
+            Some(ends_at) => {
+                let ends_at = ends_at.with_timezone(&viewer_timezone);
+                if starts_at.date_naive() == ends_at.date_naive() {
+                    format!("{date}, {start_time} – {}", ends_at.format("%-I:%M %p %Z"))
+                } else {
+                    format!(
+                        "{date}, {start_time} – {}",
+                        ends_at.format("%b %-d, %Y %-I:%M %p %Z")
+                    )
+                }
+            }
+            None => format!("{date}, {start_time}"),
+        };
+
+        Some(schedule)
+    }
+}
+
+/// Event check-in page template.
+#[derive(Debug, Clone, Template)]
+#[template(path = "event/check_in_page.html")]
+pub struct CheckInPage {
+    /// Whether the check-in window is open.
+    pub check_in_window_open: bool,
+    /// Event summary being checked into.
+    pub event: EventSummary,
+    /// Identifier for the current page.
+    #[allow(dead_code)]
+    pub page_id: PageId,
+    /// Current URL path.
+    pub path: String,
+    /// Global site settings.
+    pub site_settings: SiteSettings,
+    /// Authenticated user information.
+    pub user: User,
+    /// Whether the user is an attendee of the event.
+    pub user_is_attendee: bool,
+    /// Whether the user is already checked in to the event.
+    pub user_is_checked_in: bool,
+}
+
+/// Call for speakers modal template.
+#[derive(Debug, Clone, Template)]
+#[template(path = "event/cfs_modal.html")]
+pub struct CfsModal {
+    /// Current authenticated user identifier, or an empty string for guests.
+    pub current_user_id: String,
+    /// Event summary information.
+    pub event: EventSummary,
+    /// Labels available for the event.
+    pub labels: Vec<EventCfsLabel>,
+    /// List of session proposals for the current user.
+    pub session_proposals: Vec<SessionProposal>,
+    /// Available levels when creating a session proposal.
+    pub session_proposal_levels: Vec<SessionProposalLevel>,
+    /// Authenticated user information.
+    pub user: User,
+
+    /// Notice message displayed after submissions.
+    pub notice: Option<String>,
+}
+
+/// Session proposal details for CFS modal.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionProposal {
+    /// Proposal creation time.
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub created_at: DateTime<Utc>,
+    /// Proposal description.
+    pub description: String,
+    /// Duration in minutes.
+    pub duration_minutes: i32,
+    /// Whether the proposal has already been submitted.
+    pub is_submitted: bool,
+    /// Session proposal identifier.
+    pub session_proposal_id: Uuid,
+    /// Session proposal level identifier.
+    pub session_proposal_level_id: String,
+    /// Session proposal level display name.
+    pub session_proposal_level_name: String,
+    /// Proposal status identifier.
+    pub session_proposal_status_id: String,
+    /// Proposal status name.
+    pub status_name: String,
+    /// Proposal title.
+    pub title: String,
+
+    /// Co-speaker information.
+    pub co_speaker: Option<UserSummary>,
+    /// Submission status identifier.
+    pub submission_status_id: Option<String>,
+    /// Submission status name.
+    pub submission_status_name: Option<String>,
+    /// Proposal last update time.
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{DateTime, TimeZone, Utc};
+    use chrono_tz::{America::Los_Angeles, Tz};
+
+    use ocg_core::types::{alliance::AllianceSummary, group::GroupSummary};
+
+    use super::*;
+
+    #[test]
+    fn test_preview_title_uses_event_date_in_event_timezone() {
+        let page = sample_page(
+            Some(Utc.with_ymd_and_hms(2030, 3, 6, 7, 30, 0).unwrap()),
+            Los_Angeles,
+        );
+
+        assert_eq!(page.preview_title(), "Test Event - March 5");
+    }
+
+    #[test]
+    fn test_preview_title_without_start_date_uses_event_name() {
+        let page = sample_page(None, chrono_tz::UTC);
+
+        assert_eq!(page.preview_title(), "Test Event");
+    }
+
+    #[test]
+    fn test_viewer_event_time_uses_preferred_timezone() {
+        let mut page = sample_page(
+            Some(Utc.with_ymd_and_hms(2030, 3, 6, 7, 30, 0).unwrap()),
+            chrono_tz::UTC,
+        );
+        page.viewer_timezone = Some(Los_Angeles);
+
+        assert_eq!(
+            page.viewer_event_time().as_deref(),
+            Some("Mar 5, 2030, 11:30 PM PST")
+        );
+    }
+
+    #[test]
+    fn test_viewer_event_time_omits_matching_event_timezone() {
+        let mut page = sample_page(
+            Some(Utc.with_ymd_and_hms(2030, 3, 6, 7, 30, 0).unwrap()),
+            Los_Angeles,
+        );
+        page.viewer_timezone = Some(Los_Angeles);
+
+        assert_eq!(page.viewer_event_time(), None);
+    }
+
+    #[test]
+    fn test_preview_description_uses_group_and_alliance_names() {
+        let page = sample_page(None, chrono_tz::UTC);
+
+        assert_eq!(
+            page.preview_description(),
+            "Test Group in Test Alliance alliance. Open Alliance Groups, where Open Source alliances thrive."
+        );
+    }
+
+    #[test]
+    fn test_open_graph_image_url_falls_back_to_event_banner() {
+        let mut page = sample_page(None, chrono_tz::UTC);
+        page.event.banner_url = Some("/images/event-banner.png".to_string());
+
+        assert_eq!(
+            page.open_graph_image_url().as_deref(),
+            Some("https://example.test/images/og/event-banner.png")
+        );
+    }
+
+    #[test]
+    fn test_open_graph_image_url_prefers_event_logo_over_banner() {
+        let mut page = sample_page(None, chrono_tz::UTC);
+        page.event.logo_url = "/images/event-logo.png".to_string();
+        page.event.banner_url = Some("/images/event-banner.png".to_string());
+
+        assert_eq!(
+            page.open_graph_image_url().as_deref(),
+            Some("https://example.test/images/og/event-logo.png")
+        );
+    }
+
+    #[test]
+    fn test_open_graph_image_url_skips_svg_and_uses_event_logo() {
+        let mut page = sample_page(None, chrono_tz::UTC);
+        page.event.logo_url = "/images/event-logo.png".to_string();
+        page.event.banner_url = Some("/images/event-banner.svg".to_string());
+        page.event.alliance.banner_url = "/images/alliance-banner.svg".to_string();
+
+        assert_eq!(
+            page.open_graph_image_url().as_deref(),
+            Some("https://example.test/images/og/event-logo.png")
+        );
+    }
+
+    // Helpers.
+
+    fn sample_page(starts_at: Option<DateTime<Utc>>, timezone: Tz) -> Page {
+        Page {
+            base_url: "https://example.test".to_string(),
+            custom_domain: false,
+            event: EventFull {
+                alliance: AllianceSummary {
+                    display_name: "Test Alliance".to_string(),
+                    ..Default::default()
+                },
+                group: GroupSummary {
+                    name: "Test Group".to_string(),
+                    ..Default::default()
+                },
+                name: "Test Event".to_string(),
+                starts_at,
+                timezone,
+                ..Default::default()
+            },
+            page_id: PageId::Event,
+            path: "/test-alliance/group/test-group/event/test-event".to_string(),
+            site_settings: SiteSettings::default(),
+            user: User::default(),
+            viewer_timezone: None,
+        }
+    }
+    #[test]
+    fn test_custom_domain_canonical_url_uses_root() {
+        let mut page = sample_page(None, chrono_tz::UTC);
+        page.base_url = "https://events.example.com".to_string();
+        page.custom_domain = true;
+
+        assert_eq!(page.canonical_url(), "https://events.example.com/");
+        assert_ne!(page.path, "/");
+    }
+}
