@@ -25,6 +25,7 @@ jobs:
               - '.github/workflows/tern.conf'
               - 'Cargo.lock'
               - 'Cargo.toml'
+              - 'crates/**'
               - 'database/**'
               - 'docs/**'
               - 'ocg-server/**'
@@ -34,9 +35,48 @@ jobs:
         id: manual
         run: echo "e2e=true" >> "$GITHUB_OUTPUT"
 
+  build-e2e-server:
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.96.0
+
+      - name: Install mold
+        uses: taiki-e/install-action@mold
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Install Tailwind CSS
+        run: |
+          curl -sL https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.10/tailwindcss-linux-x64 -o tailwindcss
+          chmod +x tailwindcss
+          sudo mv tailwindcss /usr/local/bin/tailwindcss
+
+      - name: Build e2e server binary
+        run: mold -run cargo build --bin ocg-server
+
+      - name: Upload e2e server binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocg-server-e2e
+          path: target/debug/ocg-server
+          retention-days: 1
+
   e2e-tests:
     name: ${{ matrix.suite }}
-    needs: changes
+    needs: [changes, build-e2e-server]
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-24.04
     strategy:
@@ -44,12 +84,23 @@ jobs:
       matrix:
         include:
           - suite: Smoke
+            playwright_browsers: chromium firefox webkit
+            cache_key: all
             command: npx playwright test --config playwright.config.js --project=chromium-smoke --project=firefox-smoke --project=webkit-smoke
             artifact_name: playwright-artifacts-smoke
-          - suite: Functional
-            command: npx playwright test --config playwright.config.js --project=chromium-deep --project=chromium-mobile-deep
-            artifact_name: playwright-artifacts-deep
+          - suite: Functional (1/2)
+            playwright_browsers: chromium
+            cache_key: chromium
+            command: npx playwright test --config playwright.config.js --project=chromium-deep --project=chromium-mobile-deep --shard=1/2
+            artifact_name: playwright-artifacts-deep-1
+          - suite: Functional (2/2)
+            playwright_browsers: chromium
+            cache_key: chromium
+            command: npx playwright test --config playwright.config.js --project=chromium-deep --project=chromium-mobile-deep --shard=2/2
+            artifact_name: playwright-artifacts-deep-2
           - suite: Visual
+            playwright_browsers: chromium
+            cache_key: chromium
             command: npx playwright test --config playwright.config.js --grep @visual --project=chromium-deep --project=chromium-mobile-deep
             artifact_name: playwright-artifacts-visual
     permissions:
@@ -82,46 +133,50 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.96.0
-
-      - name: Cache Cargo dependencies
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
 
       - name: Install Node.js dependencies
         working-directory: tests/e2e
         run: npm ci
 
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ matrix.cache_key }}-${{ hashFiles('tests/e2e/package-lock.json') }}
+
       - name: Install Playwright browsers
         working-directory: tests/e2e
-        run: npx playwright install --with-deps
-
-      - name: Install Tailwind CSS
         run: |
-          curl -sL https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.10/tailwindcss-linux-x64 -o tailwindcss
-          chmod +x tailwindcss
-          sudo mv tailwindcss /usr/local/bin/tailwindcss
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+            npx playwright install --with-deps ${{ matrix.playwright_browsers }}
+          else
+            npx playwright install-deps ${{ matrix.playwright_browsers }}
+          fi
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Install tern
         run: |
           curl -sL https://github.com/jackc/tern/releases/download/v2.3.2/tern_2.3.2_linux_amd64.tar.gz -o tern.tar.gz
           tar -xzf tern.tar.gz
           sudo mv tern /usr/local/bin/tern
+
+      - name: Download e2e server binary
+        uses: actions/download-artifact@v4
+        with:
+          name: ocg-server-e2e
+          path: target/debug
+
+      - name: Make e2e server binary executable
+        run: chmod +x target/debug/ocg-server
 
       - name: Create e2e tern config
         run: |
@@ -202,9 +257,6 @@ jobs:
             oauth2: {}
             oidc: {}
           EOF
-
-      - name: Build e2e server binary
-        run: cargo build --bin ocg-server
 
       - name: Start server and wait for it to be ready
         uses: JarvusInnovations/background-action@v1

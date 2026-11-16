@@ -61,7 +61,7 @@ db-client-tests-e2e:
 
 # Run Rust database contract tests against the contract test database.
 db-contract-tests: db-recreate-tests-contract
-    OCG_DB_NAME_TESTS_CONTRACT="{{ db_name_tests_contract }}" cargo test -p ocg-server db_contracts -- --ignored --test-threads=1
+    OCG_DB_NAME_TESTS_CONTRACT="{{ db_name_tests_contract }}" cargo test -p ocg-db -p ocg-services db_contracts -- --ignored --test-threads=1
 
 # Create main database.
 db-create:
@@ -144,7 +144,7 @@ db-server data_dir:
 
 # Run database tests (recreates test db and runs pgTAP tests).
 db-tests: db-recreate-tests
-    @pg_prove -h {{ db_host }} -p {{ db_port }} -d {{ db_name_tests }} -U {{ db_user }} --psql-bin {{ pg_bin }}/psql -Q -f $(find "{{ source_dir }}/database/tests/schema" "{{ source_dir }}/database/tests/functions" -type f -name '*.sql' | sort)
+    @pg_prove -j 4 -h {{ db_host }} -p {{ db_port }} -d {{ db_name_tests }} -U {{ db_user }} --psql-bin {{ pg_bin }}/psql -Q -f $(find "{{ source_dir }}/database/tests/schema" "{{ source_dir }}/database/tests/functions" -type f -name '*.sql' | sort)
 
 # Run database tests on a specific file.
 db-tests-file file: db-migrate-tests
@@ -188,7 +188,7 @@ server-fmt-and-lint:
 
 # Run server tests.
 server-tests:
-    @output=$(cargo test -p ocg-server -- --quiet 2>&1); status=$?; if [ $status -eq 0 ]; then printf '%s\n' "$output" | awk '/^test result:/'; elif printf '%s\n' "$output" | grep -q '^test result:'; then printf '%s\n' "$output" | awk 'show || /^failures:/ { show = 1; print }'; else printf '%s\n' "$output"; fi; exit $status
+    @output=$(cargo test --workspace -- --quiet 2>&1); status=$?; if [ $status -eq 0 ]; then printf '%s\n' "$output" | awk '/^test result:/'; elif printf '%s\n' "$output" | grep -q '^test result:'; then printf '%s\n' "$output" | awk 'show || /^failures:/ { show = 1; print }'; else printf '%s\n' "$output"; fi; exit $status
 
 # Run the server with watchexec for auto-reload.
 server-watch:
