@@ -25,6 +25,9 @@ echo "Deploying $(git rev-parse --short HEAD) from $(git rev-parse --abbrev-ref 
     TERN_CONF="${TERN_CONF}" ./migrate.sh
 )
 
+echo "Backing up the current release binary"
+"${ROOT_DIR}/scripts/backup-ocg-server.sh"
+
 echo "Building ocg-server with CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS}"
 CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS}" cargo build --release -p ocg-server
 
