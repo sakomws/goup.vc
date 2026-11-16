@@ -78,7 +78,10 @@ impl InboxConversation {
 /// Context shown by the event page contact modal.
 #[derive(Debug, Clone, Deserialize)]
 pub struct InboxContactContext {
-    /// Name of the event's community (slug for URLs).
+    /// Alliance slug used in public URLs.
+    ///
+    /// The database function emits this as `alliance_name`.
+    #[serde(alias = "alliance_name")]
     pub community_name: String,
     /// Event identifier.
     pub event_id: Uuid,

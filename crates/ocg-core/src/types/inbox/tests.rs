@@ -43,6 +43,24 @@ fn test_event_url_uses_pretty_group_slug() {
 }
 
 #[test]
+fn test_inbox_contact_context_accepts_alliance_name_from_database() {
+    let context: InboxContactContext = serde_json::from_str(
+        r#"{
+            "alliance_name": "goup",
+            "event_id": "00000000-0000-0000-0000-000000000001",
+            "event_name": "Demo",
+            "event_slug": "demo",
+            "group_name": "Baku",
+            "group_slug": "baku"
+        }"#,
+    )
+    .unwrap();
+
+    assert_eq!(context.community_name, "goup");
+    assert_eq!(context.event_path(), "/goup/group/baku/event/demo");
+}
+
+#[test]
 fn test_inbox_contact_context_event_path_uses_pretty_group_slug() {
     let context = InboxContactContext {
         community_name: "test".to_string(),
