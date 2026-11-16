@@ -1,0 +1,1639 @@
+use std::sync::Arc;
+
+use anyhow::anyhow;
+use mockall::Sequence;
+use serde_json::json;
+use tokio_util::sync::CancellationToken;
+use uuid::Uuid;
+
+use ocg_core::config::{EmailConfig, SmtpConfig};
+use ocg_db::{DynDB, mock::MockDB};
+
+use super::{
+    Attachment, DELIVERY_MAX_CLAIMS, DELIVERY_PROCESSING_TIMEOUT, DELIVERY_REQUEUE_BASE_DELAY,
+    DELIVERY_REQUEUE_MAX_DELAY, DELIVERY_SEND_MAX_ATTEMPTS, DeliveryRecoveryWorker, DeliveryWorker,
+    DynEmailSender, EnqueueWorker, LettreEmailSender, MockEmailSender, NewNotification,
+    Notification, NotificationKind, NotificationsManager, PgNotificationsManager,
+};
+
+#[tokio::test]
+async fn test_notifications_manager_enqueue() {
+    // Setup identifiers and data structures
+    let recipient = Uuid::new_v4();
+    let expected_recipients = vec![recipient];
+    let notification = NewNotification {
+        attachments: vec![],
+        kind: NotificationKind::EmailVerification,
+        recipients: expected_recipients.clone(),
+        template_data: Some(sample_email_verification_template_data()),
+    };
+
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_enqueue_notification()
+        .times(1)
+        .withf(move |notif| {
+            notif.kind.to_string() == NotificationKind::EmailVerification.to_string()
+                && notif.recipients == expected_recipients
+                && notif.template_data.is_some()
+                && notif.attachments.is_empty()
+        })
+        .returning(|_| Ok(()));
+    let db: DynDB = Arc::new(db);
+
+    // Execute enqueue call
+    let email_sender: DynEmailSender = Arc::new(MockEmailSender::new());
+    let manager = PgNotificationsManager {
+        cfg: sample_email_config(None),
+        db: db.clone(),
+        email_sender,
+    };
+    manager.enqueue(&notification).await.unwrap();
+}
+
+#[tokio::test]
+async fn test_enqueue_worker_enqueue_due_notifications() {
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_enqueue_due_event_reminders()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(2));
+    db.expect_enqueue_due_event_survey_notifications()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(4));
+    db.expect_enqueue_due_coffee_meet_suggestions()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(1));
+    db.expect_enqueue_due_distribution_content_reminders()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(4));
+    db.expect_enqueue_due_opportunity_digests()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(0));
+    db.expect_enqueue_due_scheduled_event_attendee_emails()
+        .times(1)
+        .returning(|| Ok(3));
+    let db: DynDB = Arc::new(db);
+
+    // Setup worker and enqueue due notifications
+    let worker = EnqueueWorker {
+        db,
+        base_url: "https://example.test".to_string(),
+        cancellation_token: CancellationToken::new(),
+    };
+    let enqueued = worker.enqueue_due_notifications().await.unwrap();
+
+    // Check result matches expectations
+    assert_eq!(enqueued, 14);
+}
+
+#[tokio::test]
+async fn test_enqueue_worker_enqueue_due_notifications_error() {
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_enqueue_due_event_reminders()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Err(anyhow!("enqueue error")));
+    let db: DynDB = Arc::new(db);
+
+    // Setup worker and enqueue due notifications
+    let worker = EnqueueWorker {
+        db,
+        base_url: "https://example.test".to_string(),
+        cancellation_token: CancellationToken::new(),
+    };
+    let err = worker.enqueue_due_notifications().await.unwrap_err();
+
+    // Check error matches expectations
+    assert!(err.to_string().contains("enqueue error"));
+}
+
+#[tokio::test]
+async fn test_enqueue_worker_run_stops_on_cancellation_after_enqueue_error() {
+    // Setup cancellation token
+    let cancellation_token = CancellationToken::new();
+    let cancellation_token_for_mock = cancellation_token.clone();
+
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_enqueue_due_event_reminders()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(move |_| {
+            cancellation_token_for_mock.cancel();
+            Err(anyhow!("enqueue error"))
+        });
+    let db: DynDB = Arc::new(db);
+
+    // Setup worker and execute loop
+    let worker = EnqueueWorker {
+        db,
+        base_url: "https://example.test".to_string(),
+        cancellation_token: cancellation_token.clone(),
+    };
+    worker.run().await;
+
+    // Check cancellation state
+    assert!(cancellation_token.is_cancelled());
+}
+
+#[tokio::test]
+async fn test_enqueue_worker_run_stops_on_cancellation_after_enqueue_success() {
+    // Setup cancellation token
+    let cancellation_token = CancellationToken::new();
+    let cancellation_token_for_mock = cancellation_token.clone();
+
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_enqueue_due_event_reminders()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(move |_| {
+            cancellation_token_for_mock.cancel();
+            Ok(1)
+        });
+    db.expect_enqueue_due_event_survey_notifications()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(0));
+    db.expect_enqueue_due_coffee_meet_suggestions()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(0));
+    db.expect_enqueue_due_distribution_content_reminders()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(0));
+    db.expect_enqueue_due_opportunity_digests()
+        .times(1)
+        .withf(|base_url| base_url == "https://example.test")
+        .returning(|_| Ok(0));
+    db.expect_enqueue_due_scheduled_event_attendee_emails()
+        .times(1)
+        .returning(|| Ok(0));
+    let db: DynDB = Arc::new(db);
+
+    // Setup worker and execute loop
+    let worker = EnqueueWorker {
+        db,
+        base_url: "https://example.test".to_string(),
+        cancellation_token: cancellation_token.clone(),
+    };
+    worker.run().await;
+
+    // Check cancellation state
+    assert!(cancellation_token.is_cancelled());
+}
+
+#[tokio::test]
+async fn test_delivery_recovery_worker_mark_stale_processing_notifications_unknown() {
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_mark_stale_processing_notifications_unknown()
+        .times(1)
+        .withf(|timeout| *timeout == DELIVERY_PROCESSING_TIMEOUT)
+        .returning(|_| Ok(2));
+    let db: DynDB = Arc::new(db);
+
+    // Setup worker and recover stale processing notifications
+    let worker = DeliveryRecoveryWorker {
+        db,
+        cancellation_token: CancellationToken::new(),
+    };
+    let recovered = worker.mark_stale_processing_notifications_unknown().await.unwrap();
+
+    // Check result matches expectations
+    assert_eq!(recovered, 2);
+}
+
+#[tokio::test]
+async fn test_delivery_recovery_worker_run_stops_on_cancellation_after_success() {
+    // Setup cancellation token
+    let cancellation_token = CancellationToken::new();
+    let cancellation_token_for_mock = cancellation_token.clone();
+
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_mark_stale_processing_notifications_unknown()
+        .times(1)
+        .withf(|timeout| *timeout == DELIVERY_PROCESSING_TIMEOUT)
+        .returning(move |_| {
+            cancellation_token_for_mock.cancel();
+            Ok(1)
+        });
+    let db: DynDB = Arc::new(db);
+
+    // Setup worker and execute loop
+    let worker = DeliveryRecoveryWorker {
+        db,
+        cancellation_token: cancellation_token.clone(),
+    };
+    worker.run().await;
+
+    // Check cancellation state
+    assert!(cancellation_token.is_cancelled());
+}
+
+#[tokio::test]
+async fn test_delivery_worker_deliver_notification_sends_pending_notification() {
+    // Setup identifiers and data structures
+    let notification = Notification {
+        attachments: vec![],
+        email: "notify@example.test".to_string(),
+        kind: NotificationKind::EmailVerification,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_email_verification_template_data()),
+    };
+    let notification_id = notification.notification_id;
+    let recipient = notification.email.clone();
+
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_claim_pending_notification()
+        .times(1)
+        .returning(move || Ok(Some(notification.clone())));
+    db.expect_update_notification()
+        .times(1)
+        .withf(move |notif, err| notif.notification_id == notification_id && err.is_none())
+        .returning(|_, _| Ok(()));
+    let db: DynDB = Arc::new(db);
+
+    // Setup email sender mock
+    let mut es = MockEmailSender::new();
+    es.expect_send()
+        .times(1)
+        .withf(move |message| {
+            message
+                .envelope()
+                .to()
+                .iter()
+                .any(|rcpt| rcpt.to_string() == recipient)
+        })
+        .returning(|_| Box::pin(async { Ok::<(), anyhow::Error>(()) }));
+    let es: DynEmailSender = Arc::new(es);
+
+    // Setup worker and deliver notification
+    let mut worker = DeliveryWorker {
+        db,
+        cfg: sample_email_config(None),
+        cancellation_token: CancellationToken::new(),
+        email_sender: es,
+    };
+    let delivered = worker.deliver_notification().await.unwrap();
+
+    // Check result matches expectations
+    assert!(delivered);
+}
+
+#[tokio::test]
+async fn test_delivery_worker_deliver_notification_sends_pending_notification_with_attachment() {
+    // Setup identifiers and data structures
+    let attachments = vec![Attachment {
+        content_type: "text/calendar".to_string(),
+        data: b"BEGIN:VCALENDAR".to_vec(),
+        file_name: "event.ics".to_string(),
+    }];
+    let notification = Notification {
+        attachments: attachments.clone(),
+        email: "notify@example.test".to_string(),
+        kind: NotificationKind::EmailVerification,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_email_verification_template_data()),
+    };
+    let notification_id = notification.notification_id;
+    let recipient = notification.email.clone();
+
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_claim_pending_notification()
+        .times(1)
+        .returning(move || Ok(Some(notification.clone())));
+    db.expect_update_notification()
+        .times(1)
+        .withf(move |notif, err| notif.notification_id == notification_id && err.is_none())
+        .returning(|_, _| Ok(()));
+    let db: DynDB = Arc::new(db);
+
+    // Setup email sender mock
+    let mut es = MockEmailSender::new();
+    es.expect_send()
+        .times(1)
+        .withf(move |message| {
+            message
+                .envelope()
+                .to()
+                .iter()
+                .any(|rcpt| rcpt.to_string() == recipient)
+        })
+        .returning(|_| Box::pin(async { Ok::<(), anyhow::Error>(()) }));
+    let es: DynEmailSender = Arc::new(es);
+
+    // Setup worker and deliver notification
+    let mut worker = DeliveryWorker {
+        db,
+        cfg: sample_email_config(None),
+        cancellation_token: CancellationToken::new(),
+        email_sender: es,
+    };
+    let delivered = worker.deliver_notification().await.unwrap();
+
+    // Check result matches expectations
+    assert!(delivered);
+}
+
+#[tokio::test]
+async fn test_delivery_worker_deliver_notification_no_pending_notifications() {
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_claim_pending_notification().times(1).returning(|| Ok(None));
+    let db: DynDB = Arc::new(db);
+
+    // Setup email sender mock
+    let mut es = MockEmailSender::new();
+    es.expect_send().never();
+    let es: DynEmailSender = Arc::new(es);
+
+    // Setup worker and deliver notification
+    let mut worker = DeliveryWorker {
+        db,
+        cfg: sample_email_config(None),
+        cancellation_token: CancellationToken::new(),
+        email_sender: es,
+    };
+    let delivered = worker.deliver_notification().await.unwrap();
+
+    // Check result matches expectations
+    assert!(!delivered);
+}
+
+#[tokio::test]
+async fn test_delivery_worker_deliver_notification_records_send_error() {
+    // Setup identifiers and data structures
+    let notification = Notification {
+        attachments: vec![],
+        email: "notify@example.test".to_string(),
+        kind: NotificationKind::EmailVerification,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_email_verification_template_data()),
+    };
+    let notification_id = notification.notification_id;
+
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_claim_pending_notification()
+        .times(1)
+        .returning(move || Ok(Some(notification.clone())));
+    db.expect_update_notification()
+        .times(1)
+        .withf(move |notif, err| {
+            notif.notification_id == notification_id && err.as_deref() == Some("delivery error")
+        })
+        .returning(|_, _| Ok(()));
+    let db: DynDB = Arc::new(db);
+
+    // Setup email sender mock
+    let mut es = MockEmailSender::new();
+    es.expect_send()
+        .times(1)
+        .returning(|_| Box::pin(async { Err(anyhow!("delivery error")) }));
+    let es: DynEmailSender = Arc::new(es);
+
+    // Setup worker and deliver notification
+    let mut worker = DeliveryWorker {
+        db,
+        cfg: sample_email_config(None),
+        cancellation_token: CancellationToken::new(),
+        email_sender: es,
+    };
+    let delivered = worker.deliver_notification().await.unwrap();
+
+    // Check result matches expectations
+    assert!(delivered);
+}
+
+#[tokio::test(start_paused = true)]
+async fn test_delivery_worker_deliver_notification_requeues_retryable_send_error() {
+    // Setup identifiers and data structures
+    let notification = Notification {
+        attachments: vec![],
+        email: "notify@example.test".to_string(),
+        kind: NotificationKind::EmailVerification,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_email_verification_template_data()),
+    };
+    let notification_id = notification.notification_id;
+
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_claim_pending_notification()
+        .times(1)
+        .returning(move || Ok(Some(notification.clone())));
+    db.expect_requeue_notification()
+        .times(1)
+        .withf(
+            move |notif, err, base_retry_after, max_retry_after, max_delivery_attempts| {
+                notif.notification_id == notification_id
+                    && err == "Connection error: smtp unavailable"
+                    && *base_retry_after == DELIVERY_REQUEUE_BASE_DELAY
+                    && *max_retry_after == DELIVERY_REQUEUE_MAX_DELAY
+                    && *max_delivery_attempts == DELIVERY_MAX_CLAIMS
+            },
+        )
+        .returning(|_, _, _, _, _| Ok(()));
+    db.expect_update_notification().never();
+    let db: DynDB = Arc::new(db);
+
+    // Setup email sender mock
+    let mut es = MockEmailSender::new();
+    es.expect_send()
+        .times(DELIVERY_SEND_MAX_ATTEMPTS)
+        .returning(|_| Box::pin(async { Err(anyhow!("Connection error: smtp unavailable")) }));
+    let es: DynEmailSender = Arc::new(es);
+
+    // Setup worker and deliver notification
+    let mut worker = DeliveryWorker {
+        db,
+        cfg: sample_email_config(None),
+        cancellation_token: CancellationToken::new(),
+        email_sender: es,
+    };
+    let delivered = worker.deliver_notification().await.unwrap();
+
+    // Check result matches expectations
+    assert!(delivered);
+}
+
+#[tokio::test]
+async fn test_delivery_worker_deliver_notification_returns_update_error() {
+    // Setup identifiers and data structures
+    let notification = Notification {
+        attachments: vec![],
+        email: "notify@example.test".to_string(),
+        kind: NotificationKind::EmailVerification,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_email_verification_template_data()),
+    };
+    let notification_id = notification.notification_id;
+
+    // Setup database mock
+    let mut db = MockDB::new();
+    db.expect_claim_pending_notification()
+        .times(1)
+        .returning(move || Ok(Some(notification.clone())));
+    db.expect_update_notification()
+        .times(1)
+        .withf(move |notif, err| notif.notification_id == notification_id && err.is_none())
+        .returning(|_, _| Err(anyhow!("update error")));
+    let db: DynDB = Arc::new(db);
+
+    // Setup email sender mock
+    let mut es = MockEmailSender::new();
+    es.expect_send()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok::<(), anyhow::Error>(()) }));
+    let es: DynEmailSender = Arc::new(es);
+
+    // Setup worker and deliver notification
+    let mut worker = DeliveryWorker {
+        db,
+        cfg: sample_email_config(None),
+        cancellation_token: CancellationToken::new(),
+        email_sender: es,
+    };
+    let err = worker.deliver_notification().await.unwrap_err();
+
+    // Check result matches expectations
+    assert!(err.to_string().contains("update error"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_email_verification() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EmailVerification,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_email_verification_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Verify your email address");
+    assert!(body.contains("Verify your email"));
+    assert!(body.contains("https://example.test/verify"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_site_onboarding() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::SiteOnboarding,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_site_onboarding_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Custom onboarding subject");
+    assert!(body.contains("Hi Test User"));
+    assert!(body.contains("Custom onboarding body"));
+    assert!(body.contains("Start now"));
+    assert!(body.contains("https://example.test/explore"));
+    assert!(body.contains("https://example.test/jobs"));
+    assert!(body.contains("https://example.test/landscape"));
+    assert!(body.contains("https://example.test/search"));
+    assert!(body.contains("https://example.test/dashboard/user"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_attendance_canceled() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventAttendanceCanceled,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_attendance_canceled_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Attendance canceled");
+    assert!(body.contains("Your attendance for"));
+    assert!(body.contains("Reminder Event"));
+    assert!(body.contains("Open My Events"));
+    assert!(body.contains("https://example.test/dashboard/user?tab=events"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_custom() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventCustom,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_custom_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Custom event subject");
+    assert!(body.contains("Custom event subject"));
+    assert!(body.contains("Custom event body"));
+    assert!(body.contains("You received this email notification because you're a member of"));
+    assert!(body.contains("Notification Group"));
+    assert!(body.contains("Test Alliance alliance"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_custom_legacy_template_data() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventCustom,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_custom_legacy_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Custom event title");
+    assert!(body.contains("Custom event title"));
+    assert!(body.contains("Custom event body"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_invitation() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventInvitation,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_invitation_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "You have been invited to an event");
+    assert!(body.contains("Invitation Event"));
+    assert!(body.contains("Review invitation"));
+    assert!(body.contains("same email address this invitation was sent to"));
+    assert!(body.contains("Linux Foundation"));
+    assert!(body.contains("https://example.test/dashboard/user?tab=invitations"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_cohost_invitation() {
+    let notification = Notification {
+        attachments: vec![],
+        email: "organizer@example.test".to_string(),
+        kind: NotificationKind::EventCohostInvitation,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(json!({
+            "cohost_group_name": "Peer Group",
+            "event_name": "Community Summit",
+            "link": "https://example.test/dashboard/user?tab=invitations",
+            "message": "Let's collaborate",
+            "primary_group_name": "Primary Group",
+            "theme": { "primary_color": "#000000" }
+        })),
+    };
+
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    assert_eq!(subject, "Co-host invitation: Community Summit");
+    assert!(body.contains("Primary Group"));
+    assert!(body.contains("Peer Group"));
+    assert!(body.contains("collaborate"));
+    assert!(body.contains("https://example.test/dashboard/user?tab=invitations"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_published() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventPublished,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_reminder_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "New event published");
+    assert!(body.contains("You received this email notification because you're a member of"));
+    assert!(body.contains("Notification Group"));
+    assert!(body.contains("Test Alliance alliance"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_reminder() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventReminder,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_reminder_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Reminder: Reminder Event starts in 24 hours");
+    assert!(body.contains("Reminder Event"));
+    assert!(body.contains("Use your registration name when joining."));
+    assert!(body.contains("If you can no longer attend"));
+    assert!(
+        body.contains(
+            "You received this email notification because you're attending or speaking at"
+        )
+    );
+    assert!(body.contains("Reminder Event"));
+    assert!(body.contains("Notification Group"));
+    assert!(body.contains("Test Alliance alliance"));
+    assert!(body.contains(
+        "https://example.test/test-alliance/group/notification-group/event/reminder-event"
+    ));
+    assert!(body.contains("https://example.test/dashboard/user?tab=events"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_survey_reminder() {
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventSurveyReminder,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(json!({
+            "event_name": "Community Summit",
+            "group_name": "Community Group",
+            "audience": "speaker",
+            "link": "https://example.test/alliance/event/id/survey/speaker",
+            "reminder": true,
+            "theme": sample_event_reminder_template_data()["theme"].clone(),
+        })),
+    };
+
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    assert_eq!(subject, "Reminder: share feedback on Community Summit");
+    assert!(body.contains("Open survey"));
+    assert!(body.contains("eligible speaker"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_reminder_legacy_template_data() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventReminder,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_reminder_legacy_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Reminder: Reminder Event starts in 24 hours");
+    assert!(body.contains("Reminder Event"));
+    assert!(body.contains(
+        "https://example.test/test-alliance/group/notification-group/event/reminder-event"
+    ));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_reminder_speaker_only() {
+    // Setup notification
+    let mut template_data = sample_event_reminder_template_data();
+    template_data["show_attendance_cancellation_copy"] = json!(false);
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventReminder,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(template_data),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Reminder: Reminder Event starts in 24 hours");
+    assert!(body.contains("You can review this event from the My Events section"));
+    assert!(!body.contains("If you can no longer attend"));
+    assert!(body.contains("https://example.test/dashboard/user?tab=events"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_series_canceled() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventSeriesCanceled,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_series_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Events canceled");
+    assert!(body.contains("2 events from"));
+    assert!(body.contains("Series Event One"));
+    assert!(body.contains("Series Event Two"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_series_published() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventSeriesPublished,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_series_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "New events published");
+    assert!(body.contains("2 new events"));
+    assert!(body.contains("Series Event One"));
+    assert!(body.contains("Series Event Two"));
+    assert!(body.contains("You received this email notification because you're a member of"));
+    assert!(body.contains("Notification Group"));
+    assert!(body.contains("Test Alliance alliance"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_speaker_series_welcome() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::SpeakerSeriesWelcome,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_series_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "You're speaking at upcoming events");
+    assert!(body.contains("2 events with"));
+    assert!(body.contains("Join five minutes early for speaker setup."));
+    assert!(body.contains("Series Event One"));
+    assert!(body.contains("Series Event Two"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_waitlist_joined() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventWaitlistJoined,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_waitlist_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "You joined the waiting list");
+    assert!(body.contains("You have been added to the waiting list"));
+    assert!(body.contains("Waitlist Event"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_waitlist_left() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventWaitlistLeft,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_waitlist_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "You left the waiting list");
+    assert!(body.contains("You have left the waiting list"));
+    assert!(body.contains("Waitlist Event"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_waitlist_promoted() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventWaitlistPromoted,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_waitlist_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "You moved off the waiting list");
+    assert!(body.contains("You are now registered"));
+    assert!(body.contains("View event"));
+    assert!(!body.contains("Open My Events"));
+    assert!(body.contains("Use the waiting room display name from your ticket."));
+    assert!(body.contains("Please find attached an .ics file containing the event details."));
+    assert!(body.contains("Waitlist Event"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_waitlist_promoted_with_registration_questions() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventWaitlistPromoted,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_waitlist_template_data_with_registration_questions()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "You moved off the waiting list");
+    assert!(body.contains("Open My Events"));
+    assert!(body.contains("https://example.test/dashboard/user?tab=events"));
+    assert!(!body.contains(
+        "https://example.test/test-alliance/group/notification-group/event/waitlist-event"
+    ));
+    assert!(!body.contains("https://example.test/waitlist-event/live"));
+    assert!(!body.contains("Use the waiting room display name from your ticket."));
+    assert!(!body.contains("Please find attached an .ics file containing the event details."));
+    assert!(body.contains("Waitlist Event"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_welcome_omits_dashboard_cancellation_guidance() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventWelcome,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_welcome_template_data(None)),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Welcome to the event");
+    assert!(!body.contains("cancel your attendance from the My"));
+    assert!(!body.contains("Open My Events"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_event_welcome_renders_dashboard_cancellation_guidance() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventWelcome,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_welcome_template_data(Some(
+            "https://example.test/dashboard/user?tab=events",
+        ))),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Welcome to the event");
+    assert!(body.contains("cancel your attendance from the My"));
+    assert!(body.contains("Open My Events"));
+    assert!(body.contains("https://example.test/dashboard/user?tab=events"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_footer_points_to_notification_preferences() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EventPublished,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_event_reminder_template_data()),
+    };
+
+    // Prepare content
+    let (_, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check the footer explains where preferences are managed
+    let body = body.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(body.contains(
+        "You can choose which optional emails you receive, and mute specific groups, from the \
+         Notifications section of your user dashboard."
+    ));
+    assert!(!body.contains("Profile section"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_group_custom() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::GroupCustom,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_group_custom_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Custom group subject");
+    assert!(body.contains("Custom group subject"));
+    assert!(body.contains("Custom group body"));
+    assert!(body.contains("You received this email notification because you're a member of"));
+    assert!(body.contains("Hello Group"));
+    assert!(body.contains("Test Alliance alliance"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_group_custom_legacy_template_data() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::GroupCustom,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_group_custom_legacy_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "Custom group title");
+    assert!(body.contains("Custom group title"));
+    assert!(body.contains("Custom group body"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_intentional_dating_introduction() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::IntentionalDatingIntroduction,
+        notification_id: Uuid::new_v4(),
+        template_data: Some(sample_intentional_dating_introduction_template_data()),
+    };
+
+    // Prepare content
+    let (subject, body) = DeliveryWorker::prepare_content(&notification).unwrap();
+
+    // Check content matches expectations
+    assert_eq!(subject, "You have an intentional dating introduction");
+    assert!(body.contains("Test Alliance"));
+    assert!(body.contains("Pat Partner"));
+    assert!(body.contains("You both mentioned founder life and long-term relationship goals."));
+    assert!(body.contains("https://example.test/profiles/pat"));
+}
+
+#[test]
+fn test_delivery_worker_prepare_content_missing_data() {
+    // Setup notification
+    let notification = Notification {
+        attachments: vec![],
+        email: "user@example.test".to_string(),
+        kind: NotificationKind::EmailVerification,
+        notification_id: Uuid::new_v4(),
+        template_data: None,
+    };
+
+    // Prepare content and expect an error
+    let err = DeliveryWorker::prepare_content(&notification).unwrap_err();
+
+    // Check error message
+    assert!(err.to_string().contains("missing template data"));
+}
+
+#[tokio::test]
+async fn test_delivery_worker_send_email_allows_whitelisted_recipient() {
+    // Setup email config and sender mock
+    let cfg = sample_email_config(Some(vec!["notify@example.test".to_string()]));
+    let mut es = MockEmailSender::new();
+    es.expect_send()
+        .times(1)
+        .withf(|message| {
+            message
+                .envelope()
+                .to()
+                .iter()
+                .any(|rcpt| rcpt.to_string() == "notify@example.test")
+        })
+        .returning(|_| Box::pin(async { Ok::<(), anyhow::Error>(()) }));
+    let es: DynEmailSender = Arc::new(es);
+
+    // Setup worker and send email
+    let worker = sample_delivery_worker(cfg, es);
+    worker
+        .send_email(
+            "notify@example.test",
+            "Subject line",
+            "<p>Body content</p>".to_string(),
+            &[],
+        )
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn test_delivery_worker_send_email_blocks_non_whitelisted_recipient() {
+    // Setup email config and sender mock
+    let cfg = sample_email_config(Some(vec!["notify@example.test".to_string()]));
+    let mut es = MockEmailSender::new();
+    es.expect_send().never();
+    let es: DynEmailSender = Arc::new(es);
+
+    // Setup worker and send email
+    let worker = sample_delivery_worker(cfg, es);
+    worker
+        .send_email(
+            "other@example.test",
+            "Subject line",
+            "<p>Body content</p>".to_string(),
+            &[],
+        )
+        .await
+        .unwrap();
+}
+
+#[tokio::test(start_paused = true)]
+async fn test_delivery_worker_send_email_retries_transient_send_error() {
+    // Setup email config and sender mock
+    let cfg = sample_email_config(None);
+    let mut es = MockEmailSender::new();
+    let mut seq = Sequence::new();
+    es.expect_send().times(1).in_sequence(&mut seq).returning(|_| {
+        Box::pin(async {
+            Err(anyhow!(
+                "Connection error: Connection error: received fatal alert: UnexpectedMessage"
+            ))
+        })
+    });
+    es.expect_send()
+        .times(1)
+        .in_sequence(&mut seq)
+        .returning(|_| Box::pin(async { Ok(()) }));
+    let es: DynEmailSender = Arc::new(es);
+
+    // Setup worker and send email
+    let worker = sample_delivery_worker(cfg, es);
+    worker
+        .send_email_with_retries(
+            "notify@example.test",
+            "Subject line",
+            "<p>Body content</p>".to_string(),
+            &[],
+        )
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn test_delivery_worker_send_email_does_not_retry_unknown_network_error() {
+    // Setup email config and sender mock
+    let cfg = sample_email_config(None);
+    let mut es = MockEmailSender::new();
+    es.expect_send()
+        .times(1)
+        .returning(|_| Box::pin(async { Err(anyhow!("network error: connection reset by peer")) }));
+    let es: DynEmailSender = Arc::new(es);
+
+    // Setup worker and send email
+    let worker = sample_delivery_worker(cfg, es);
+    let err = worker
+        .send_email_with_retries(
+            "notify@example.test",
+            "Subject line",
+            "<p>Body content</p>".to_string(),
+            &[],
+        )
+        .await
+        .unwrap_err();
+
+    // Check the unknown network outcome is not retried
+    assert_eq!(err.to_string(), "network error: connection reset by peer");
+}
+
+#[test]
+fn test_lettre_email_sender_uses_starttls_for_submission_port() {
+    // Setup email config
+    let cfg = sample_email_config(None);
+
+    // Build transport configuration
+    let builder = LettreEmailSender::transport_builder(&cfg).unwrap();
+    let debug = format!("{builder:?}");
+
+    // Check configured port and TLS mode
+    assert!(debug.contains("port: 587"), "{debug}");
+    assert!(debug.contains("tls: Required"), "{debug}");
+}
+
+#[test]
+fn test_lettre_email_sender_uses_wrapper_tls_for_submissions_port() {
+    // Setup email config
+    let mut cfg = sample_email_config(None);
+    cfg.smtp.port = 465;
+
+    // Build transport configuration
+    let builder = LettreEmailSender::transport_builder(&cfg).unwrap();
+    let debug = format!("{builder:?}");
+
+    // Check configured port and TLS mode
+    assert!(debug.contains("port: 465"), "{debug}");
+    assert!(debug.contains("tls: Wrapper"), "{debug}");
+}
+
+// Helpers.
+
+/// Create a sample email configuration with an optional recipients whitelist.
+fn sample_email_config(rcpts_whitelist: Option<Vec<String>>) -> EmailConfig {
+    EmailConfig {
+        from_address: "no-reply@example.test".to_string(),
+        from_name: "Open Alliance Groups".to_string(),
+        smtp: SmtpConfig {
+            host: "smtp.example.test".to_string(),
+            port: 587,
+            username: "user".to_string(),
+            password: "pass".to_string(),
+        },
+
+        rcpts_whitelist,
+    }
+}
+
+/// Create a sample worker with mock dependencies.
+fn sample_delivery_worker(cfg: EmailConfig, email_sender: DynEmailSender) -> DeliveryWorker {
+    let db: DynDB = Arc::new(MockDB::new());
+
+    DeliveryWorker {
+        db,
+        cfg,
+        cancellation_token: CancellationToken::new(),
+        email_sender,
+    }
+}
+
+/// Sample template payload for email verification notifications.
+fn sample_email_verification_template_data() -> serde_json::Value {
+    json!({
+        "link": "https://example.test/verify",
+        "theme": {
+            "primary_color": "#000000"
+        }
+    })
+}
+
+/// Sample template payload for site onboarding notifications.
+fn sample_site_onboarding_template_data() -> serde_json::Value {
+    json!({
+        "body": "Custom onboarding body",
+        "cta_text": "Start now",
+        "explore_link": "https://example.test/explore",
+        "jobs_link": "https://example.test/jobs",
+        "landscape_link": "https://example.test/landscape",
+        "preheader": "Custom onboarding preheader",
+        "search_link": "https://example.test/search",
+        "subject": "Custom onboarding subject",
+        "theme": {
+            "primary_color": "#000000"
+        },
+        "user_dashboard_link": "https://example.test/dashboard/user",
+        "user_name": "Test User"
+    })
+}
+
+/// Sample template payload for event attendance cancellation notifications.
+fn sample_event_attendance_canceled_template_data() -> serde_json::Value {
+    json!({
+        "dashboard_link": "https://example.test/dashboard/user?tab=events",
+        "event": {
+            "canceled": false,
+            "alliance_display_name": "Test Alliance",
+            "alliance_name": "test-alliance",
+            "event_id": "11111111-1111-1111-1111-111111111111",
+            "group_category_name": "Alliance",
+            "group_name": "Notification Group",
+            "group_slug": "notification-group",
+            "kind": "hybrid",
+            "logo_url": "https://example.com/logo.png",
+            "name": "Reminder Event",
+            "published": true,
+            "slug": "reminder-event",
+            "starts_at": 1_914_724_800,
+            "timezone": "UTC",
+            "venue_name": "Conference Hall",
+            "waitlist_count": 0,
+            "waitlist_enabled": false
+        },
+        "link": "https://example.test/test-alliance/group/notification-group/event/reminder-event",
+        "theme": {
+            "primary_color": "#000000"
+        }
+    })
+}
+
+/// Sample template payload for custom event notifications.
+fn sample_event_custom_template_data() -> serde_json::Value {
+    json!({
+        "subject": "Custom event subject",
+        "body": "Custom event body",
+        "event": {
+            "canceled": false,
+            "alliance_display_name": "Test Alliance",
+            "alliance_name": "test-alliance",
+            "event_id": "11111111-1111-1111-1111-111111111111",
+            "group_category_name": "Alliance",
+            "group_name": "Notification Group",
+            "group_slug": "notification-group",
+            "kind": "virtual",
+            "logo_url": "https://example.com/logo.png",
+            "name": "Custom Event",
+            "published": true,
+            "slug": "custom-event",
+            "timezone": "UTC",
+            "waitlist_count": 0,
+            "waitlist_enabled": false
+        },
+        "link": "https://example.test/test-alliance/group/notification-group/event/custom-event",
+        "theme": {
+            "primary_color": "#000000"
+        }
+    })
+}
+
+/// Sample legacy payload for custom event notifications.
+fn sample_event_custom_legacy_template_data() -> serde_json::Value {
+    let mut payload = sample_event_custom_template_data();
+    let object = payload.as_object_mut().expect("custom event payload is an object");
+    object.remove("subject");
+    object.insert("title".to_string(), json!("Custom event title"));
+    payload
+}
+
+/// Sample template payload for event invitation notifications.
+fn sample_event_invitation_template_data() -> serde_json::Value {
+    json!({
+        "event": {
+            "canceled": false,
+            "alliance_display_name": "Test Alliance",
+            "alliance_name": "test-alliance",
+            "event_id": "11111111-1111-1111-1111-111111111111",
+            "group_category_name": "Alliance",
+            "group_name": "Notification Group",
+            "group_slug": "notification-group",
+            "kind": "virtual",
+            "logo_url": "https://example.com/logo.png",
+            "name": "Invitation Event",
+            "published": true,
+            "slug": "invitation-event",
+            "timezone": "UTC",
+            "waitlist_count": 0,
+            "waitlist_enabled": false
+        },
+        "has_registration_questions": false,
+        "link": "https://example.test/dashboard/user?tab=invitations",
+        "theme": {
+            "primary_color": "#000000"
+        }
+    })
+}
+
+/// Sample legacy payload for event reminder notifications without waitlist data.
+fn sample_event_reminder_legacy_template_data() -> serde_json::Value {
+    json!({
+        "event": {
+            "canceled": false,
+            "alliance_display_name": "Test Alliance",
+            "alliance_name": "test-alliance",
+            "event_id": "11111111-1111-1111-1111-111111111111",
+            "group_category_name": "Alliance",
+            "group_name": "Notification Group",
+            "group_slug": "notification-group",
+            "kind": "hybrid",
+            "logo_url": "https://example.com/logo.png",
+            "name": "Reminder Event",
+            "published": true,
+            "slug": "reminder-event",
+            "starts_at": 1_914_724_800,
+            "timezone": "UTC",
+            "venue_name": "Conference Hall"
+        },
+        "link": "https://example.test/test-alliance/group/notification-group/event/reminder-event",
+        "show_attendance_cancellation_copy": true,
+        "theme": {
+            "primary_color": "#000000"
+        }
+    })
+}
+
+/// Sample template payload for event reminder notifications.
+fn sample_event_reminder_template_data() -> serde_json::Value {
+    json!({
+        "show_attendance_cancellation_copy": true,
+        "event": {
+            "canceled": false,
+            "alliance_display_name": "Test Alliance",
+            "alliance_name": "test-alliance",
+            "event_id": "11111111-1111-1111-1111-111111111111",
+            "group_category_name": "Alliance",
+            "group_name": "Notification Group",
+            "group_slug": "notification-group",
+            "kind": "hybrid",
+            "logo_url": "https://example.com/logo.png",
+            "meeting_join_instructions": "Use your registration name when joining.",
+            "name": "Reminder Event",
+            "published": true,
+            "slug": "reminder-event",
+            "starts_at": 1_914_724_800,
+            "timezone": "UTC",
+            "venue_name": "Conference Hall",
+            "waitlist_count": 0,
+            "waitlist_enabled": false
+        },
+        "dashboard_link": "https://example.test/dashboard/user?tab=events",
+        "link": "https://example.test/test-alliance/group/notification-group/event/reminder-event",
+        "theme": {
+            "primary_color": "#000000"
+        }
+    })
+}
+
+/// Sample template payload for aggregate event series notifications.
+fn sample_event_series_template_data() -> serde_json::Value {
+    json!({
+        "alliance_display_name": "Test Alliance",
+        "event_count": 2,
+        "events": [
+            {
+                "event": {
+                    "canceled": false,
+                    "alliance_display_name": "Test Alliance",
+                    "alliance_name": "test-alliance",
+                    "event_id": "11111111-1111-1111-1111-111111111111",
+                    "group_category_name": "Alliance",
+                    "group_name": "Notification Group",
+                    "group_slug": "notification-group",
+                    "kind": "hybrid",
+                    "logo_url": "https://example.com/logo.png",
+                    "meeting_join_instructions": "Join five minutes early for speaker setup.",
+                    "name": "Series Event One",
+                    "published": true,
+                    "slug": "series-event-one",
+                    "starts_at": 1_914_724_800,
+                    "timezone": "UTC",
+                    "venue_name": "Conference Hall",
+                    "waitlist_count": 0,
+                    "waitlist_enabled": false
+                },
+                "link": "https://example.test/test-alliance/group/notification-group/event/series-event-one"
+            },
+            {
+                "event": {
+                    "canceled": false,
+                    "alliance_display_name": "Test Alliance",
+                    "alliance_name": "test-alliance",
+                    "event_id": "22222222-2222-2222-2222-222222222222",
+                    "group_category_name": "Alliance",
+                    "group_name": "Notification Group",
+                    "group_slug": "notification-group",
+                    "kind": "hybrid",
+                    "logo_url": "https://example.com/logo.png",
+                    "name": "Series Event Two",
+                    "published": true,
+                    "slug": "series-event-two",
+                    "starts_at": 1_915_329_600,
+                    "timezone": "UTC",
+                    "venue_name": "Conference Hall",
+                    "waitlist_count": 0,
+                    "waitlist_enabled": false
+                },
+                "link": "https://example.test/test-alliance/group/notification-group/event/series-event-two"
+            }
+        ],
+        "group_name": "Notification Group",
+        "theme": {
+            "primary_color": "#000000"
+        }
+    })
+}
+
+/// Sample template payload for event waitlist notifications.
+fn sample_event_waitlist_template_data() -> serde_json::Value {
+    json!({
+        "event": {
+            "canceled": false,
+            "alliance_display_name": "Test Alliance",
+            "alliance_name": "test-alliance",
+            "event_id": "11111111-1111-1111-1111-111111111111",
+            "group_category_name": "Alliance",
+            "group_name": "Notification Group",
+            "group_slug": "notification-group",
+            "kind": "virtual",
+            "logo_url": "https://example.com/logo.png",
+            "meeting_join_instructions": "Use the waiting room display name from your ticket.",
+            "meeting_join_url": "https://example.test/waitlist-event/live",
+            "name": "Waitlist Event",
+            "published": true,
+            "slug": "waitlist-event",
+            "starts_at": 1_914_724_800,
+            "timezone": "UTC",
+            "waitlist_count": 3,
+            "waitlist_enabled": true
+        },
+        "dashboard_link": "https://example.test/dashboard/user?tab=events",
+        "has_registration_questions": false,
+        "link": "https://example.test/test-alliance/group/notification-group/event/waitlist-event",
+        "theme": {
+            "primary_color": "#000000"
+        }
+    })
+}
+
+/// Sample template payload for event waitlist notifications with registration questions.
+fn sample_event_waitlist_template_data_with_registration_questions() -> serde_json::Value {
+    let mut payload = sample_event_waitlist_template_data();
+    let object = payload.as_object_mut().unwrap();
+    object.insert("has_registration_questions".to_string(), json!(true));
+    payload
+}
+
+/// Sample template payload for event welcome notifications.
+fn sample_event_welcome_template_data(dashboard_link: Option<&str>) -> serde_json::Value {
+    let mut payload = json!({
+        "event": {
+            "canceled": false,
+            "alliance_display_name": "Test Alliance",
+            "alliance_name": "test-alliance",
+            "event_id": "11111111-1111-1111-1111-111111111111",
+            "group_category_name": "Alliance",
+            "group_name": "Notification Group",
+            "group_slug": "notification-group",
+            "kind": "hybrid",
+            "logo_url": "https://example.com/logo.png",
+            "name": "Welcome Event",
+            "published": true,
+            "slug": "welcome-event",
+            "starts_at": 1_914_724_800,
+            "timezone": "UTC",
+            "venue_name": "Conference Hall",
+            "waitlist_count": 0,
+            "waitlist_enabled": false
+        },
+        "link": "https://example.test/test-alliance/group/notification-group/event/welcome-event",
+        "theme": {
+            "primary_color": "#000000"
+        }
+    });
+    let object = payload.as_object_mut().expect("event welcome payload is an object");
+    object.insert("dashboard_link".to_string(), json!(dashboard_link));
+    payload
+}
+
+/// Sample template payload for custom group notifications.
+fn sample_group_custom_template_data() -> serde_json::Value {
+    json!({
+        "subject": "Custom group subject",
+        "body": "Custom group body",
+        "group": {
+            "active": true,
+            "category": {
+                "group_category_id": "22222222-2222-2222-2222-222222222222",
+                "name": "Sample Category",
+                "normalized_name": "sample-category"
+            },
+            "alliance_display_name": "Test Alliance",
+            "alliance_name": "test-alliance",
+            "created_at": 1,
+            "group_id": "33333333-3333-3333-3333-333333333333",
+            "logo_url": "https://example.com/logo.png",
+            "name": "Hello Group",
+            "slug": "hello-group"
+        },
+        "link": "https://example.test/test-alliance/group/hello-group",
+        "theme": {
+            "primary_color": "#000000"
+        }
+    })
+}
+
+/// Sample legacy payload for custom group notifications.
+fn sample_group_custom_legacy_template_data() -> serde_json::Value {
+    let mut payload = sample_group_custom_template_data();
+    let object = payload.as_object_mut().expect("custom group payload is an object");
+    object.remove("subject");
+    object.insert("title".to_string(), json!("Custom group title"));
+    payload
+}
+
+/// Sample template payload for intentional dating introduction notifications.
+fn sample_intentional_dating_introduction_template_data() -> serde_json::Value {
+    json!({
+        "alliance_display_name": "Test Alliance",
+        "dashboard_link": "https://example.test/dashboard/user",
+        "group_name": "Founders Circle",
+        "message": "You both mentioned founder life and long-term relationship goals.",
+        "partner_name": "Pat Partner",
+        "partner_profile_url": "https://example.test/profiles/pat",
+        "partner_username": "pat",
+        "theme": {
+            "primary_color": "#000000"
+        }
+    })
+}

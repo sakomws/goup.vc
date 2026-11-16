@@ -1,0 +1,1171 @@
+//! Templates and types for managing events in the group dashboard.
+
+use std::collections::HashMap;
+
+use askama::Template;
+use chrono::{DateTime, NaiveDateTime, Utc};
+use garde::Validate;
+use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
+use serde_with::skip_serializing_none;
+use uuid::Uuid;
+
+use crate::dashboard;
+use ocg_core::shared::MeetingProvider;
+use ocg_core::types::{
+    event::{
+        EventCategory, EventCfsLabel, EventFull, EventGrowth, EventKindSummary,
+        EventRegistrationMode, EventSummary, SessionKind, SessionKindSummary,
+    },
+    group::{GroupParentOption, GroupSponsor},
+    pagination::{self, Pagination, ToRawQuery},
+    payments::EventDiscountType,
+    questionnaire::QuestionnaireQuestion,
+    survey::EventSurveyDashboard,
+    user::User,
+};
+use ocg_core::validation::{
+    MAX_LEN_COUNTRY_CODE, MAX_LEN_DESCRIPTION, MAX_LEN_DESCRIPTION_SHORT, MAX_LEN_ENTITY_NAME,
+    MAX_LEN_EVENT_LABELS_PER_EVENT, MAX_LEN_L, MAX_LEN_S, MAX_LEN_TIMEZONE, MAX_PAGINATION_LIMIT,
+    MAX_RECURRING_ADDITIONAL_OCCURRENCES, email_vec, image_url_opt, trimmed_non_empty,
+    trimmed_non_empty_opt, trimmed_non_empty_tag_vec, trimmed_non_empty_vec, valid_latitude,
+    valid_longitude,
+};
+use ocg_templates_common::filters;
+use ocg_templates_common::helpers::DATE_FORMAT;
+
+pub mod preview;
+
+// Pages templates.
+
+/// Add event page template.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "dashboard/group/events_add.html")]
+#[allow(clippy::struct_excessive_bools)]
+pub struct AddPage {
+    /// Whether the current user can manage events.
+    pub can_manage_events: bool,
+    /// List of available event categories.
+    pub categories: Vec<EventCategory>,
+    /// List of available event kinds.
+    pub event_kinds: Vec<EventKindSummary>,
+    /// Default event payload configured for this group.
+    pub event_defaults: Option<Value>,
+    /// Group identifier.
+    pub group_id: Uuid,
+    /// Flag indicating if meetings functionality is enabled.
+    pub meetings_enabled: bool,
+    /// Maximum participants per meeting provider.
+    pub meetings_max_participants: HashMap<MeetingProvider, i32>,
+    /// Whether payments are globally enabled.
+    pub payments_enabled: bool,
+    /// Supported payment currency codes.
+    pub payment_currency_codes: Vec<String>,
+    /// Whether this group can publish paid events.
+    pub payments_ready: bool,
+    /// List of available session kinds.
+    pub session_kinds: Vec<SessionKindSummary>,
+    /// List of sponsors available for this group.
+    pub sponsors: Vec<GroupSponsor>,
+    /// Accepted group team members available as event organizers.
+    pub team_members: Vec<User>,
+    /// List of available timezones.
+    pub timezones: Vec<String>,
+}
+
+/// List events page template.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "dashboard/group/events_list.html")]
+pub struct ListPage {
+    /// Whether the current user can manage events.
+    pub can_manage_events: bool,
+    /// Group events split by upcoming and past ones.
+    pub events: GroupEvents,
+    /// Current events tab selection.
+    pub events_tab: EventsTab,
+    /// Pagination links for past events.
+    pub past_navigation_links: pagination::NavigationLinks,
+    /// Pagination links for upcoming events.
+    pub upcoming_navigation_links: pagination::NavigationLinks,
+
+    /// Number of results per page.
+    pub limit: Option<usize>,
+    /// Pagination offset for past events.
+    pub past_offset: Option<usize>,
+    /// Pagination offset for upcoming events.
+    pub upcoming_offset: Option<usize>,
+}
+
+/// Update event page template.
+#[derive(Debug, Clone, Template, Serialize, Deserialize)]
+#[template(path = "dashboard/group/events_update.html")]
+#[allow(clippy::struct_excessive_bools)]
+pub struct UpdatePage {
+    /// Approved CFS submissions for linking sessions.
+    pub approved_submissions: Vec<ApprovedSubmissionSummary>,
+    /// Whether the current user can manage events.
+    pub can_manage_events: bool,
+    /// Whether the current user can move events between alliance groups.
+    pub can_move_events: bool,
+    /// List of available event categories.
+    pub categories: Vec<EventCategory>,
+    /// CFS submission status options.
+    pub cfs_submission_statuses: Vec<CfsSubmissionStatus>,
+    /// Current authenticated user identifier.
+    pub current_user_id: Uuid,
+    /// Event details to update.
+    pub event: EventFull,
+    /// List of available event kinds.
+    pub event_kinds: Vec<EventKindSummary>,
+    /// Group identifier.
+    pub group_id: Uuid,
+    /// Flag indicating if meetings functionality is enabled.
+    pub meetings_enabled: bool,
+    /// Maximum participants per meeting provider.
+    pub meetings_max_participants: HashMap<MeetingProvider, i32>,
+    /// Whether payments are globally enabled.
+    pub payments_enabled: bool,
+    /// Supported payment currency codes.
+    pub payment_currency_codes: Vec<String>,
+    /// Whether this group can publish paid events.
+    pub payments_ready: bool,
+    /// List of available session kinds.
+    pub session_kinds: Vec<SessionKindSummary>,
+    /// List of sponsors available for this group.
+    pub sponsors: Vec<GroupSponsor>,
+    /// Accepted group team members available as event organizers.
+    pub team_members: Vec<User>,
+    /// List of available timezones.
+    pub timezones: Vec<String>,
+}
+
+/// Event growth and finances partial.
+#[derive(Debug, Clone, Template)]
+#[template(path = "dashboard/group/event_growth.html")]
+pub struct GrowthPage {
+    /// Whether manual finance entries can be changed.
+    pub can_manage_events: bool,
+    /// Event identifier used by finance actions.
+    pub event_id: Uuid,
+    /// Funnel, attribution, collaboration, and finance data.
+    pub growth: EventGrowth,
+}
+
+/// Aggregate and anonymous event survey results.
+#[derive(Debug, Clone, Template)]
+#[template(path = "dashboard/group/event_surveys.html")]
+pub struct SurveyDashboardPage {
+    pub event_id: Uuid,
+    pub audience: Option<String>,
+    pub dashboard: EventSurveyDashboard,
+}
+
+impl UpdatePage {
+    /// Returns true when the provided currency code matches the current event currency.
+    pub fn is_selected_payment_currency_code(&self, payment_currency_code: &str) -> bool {
+        self.event.payment_currency_code.as_deref() == Some(payment_currency_code)
+    }
+}
+
+/// Options partial listing the groups an event can be moved into.
+#[derive(Debug, Clone, Template)]
+#[template(path = "dashboard/group/event_move_targets.html")]
+pub struct MoveTargets {
+    /// Groups the event can be moved into.
+    pub targets: Vec<GroupParentOption>,
+}
+
+// Types.
+
+/// Approved CFS submission summary for linking sessions.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApprovedSubmissionSummary {
+    /// Submission identifier.
+    pub cfs_submission_id: Uuid,
+    /// Session proposal identifier.
+    pub session_proposal_id: Uuid,
+    /// Speaker display name.
+    pub speaker_name: String,
+    /// Submission title.
+    pub title: String,
+}
+
+/// CFS submission status option.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CfsSubmissionStatus {
+    /// Submission status identifier.
+    pub cfs_submission_status_id: String,
+    /// Display name.
+    pub display_name: String,
+}
+
+/// Dashboard discount code payload.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct DiscountCode {
+    /// Whether the code is currently enabled.
+    #[garde(skip)]
+    pub active: bool,
+    /// Discount code entered by attendees.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_S))]
+    pub code: String,
+    /// Type of discount to apply.
+    #[garde(skip)]
+    pub kind: EventDiscountType,
+    /// Display title shown in the dashboard.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub title: String,
+
+    /// Number of redemptions still available.
+    #[garde(range(min = 0))]
+    pub available: Option<i32>,
+    /// Whether Uses remaining should stay in manual override mode.
+    #[garde(skip)]
+    pub available_override_active: Option<bool>,
+    /// Whether clearing Uses remaining should remove the manual override.
+    #[garde(skip)]
+    pub available_cleared: Option<bool>,
+    /// Fixed amount discount in minor units.
+    #[garde(skip)]
+    pub amount_minor: Option<i64>,
+    /// Last date and time when the code can be used.
+    #[serde(default)]
+    #[garde(skip)]
+    pub ends_at: Option<DateTime<Utc>>,
+    /// Unique identifier for the discount code.
+    #[garde(skip)]
+    pub event_discount_code_id: Option<Uuid>,
+    /// Percentage discount to apply.
+    #[garde(range(min = 1, max = 100))]
+    pub percentage: Option<i32>,
+    /// First date and time when the code can be used.
+    #[serde(default)]
+    #[garde(skip)]
+    pub starts_at: Option<DateTime<Utc>>,
+    /// Maximum number of redemptions allowed.
+    #[garde(range(min = 0))]
+    pub total_available: Option<i32>,
+}
+
+/// Event details for dashboard management.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Validate)]
+pub struct Event {
+    /// Category this event belongs to.
+    #[garde(skip)]
+    pub category_id: Uuid,
+    /// Call for speakers labels.
+    #[serde(default)]
+    #[garde(length(max = MAX_LEN_EVENT_LABELS_PER_EVENT), dive)]
+    pub cfs_labels: Vec<EventCfsLabel>,
+    /// Event description.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_DESCRIPTION))]
+    pub description: String,
+    /// Type of event (in-person, virtual, hybrid).
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_S))]
+    pub kind_id: String,
+    /// Event name.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub name: String,
+    /// Registration questions shown to attendees before registration completes.
+    #[serde(default)]
+    #[garde(dive)]
+    pub registration_questions: Vec<QuestionnaireQuestion>,
+    /// Registration flow selected by the organizer.
+    #[serde(default)]
+    #[garde(skip)]
+    pub registration_mode: EventRegistrationMode,
+    /// Timezone for the event.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_TIMEZONE))]
+    pub timezone: String,
+
+    /// Whether attendee requests require organizer approval.
+    #[garde(skip)]
+    pub attendee_approval_required: Option<bool>,
+    /// URL to the event banner image optimized for mobile devices.
+    #[garde(custom(image_url_opt))]
+    pub banner_mobile_url: Option<String>,
+    /// Banner image URL.
+    #[garde(custom(image_url_opt))]
+    pub banner_url: Option<String>,
+    /// Maximum capacity for the event.
+    #[garde(range(min = 0))]
+    pub capacity: Option<i32>,
+    /// Call for speakers description.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION))]
+    pub cfs_description: Option<String>,
+    /// Whether call for speakers is enabled.
+    #[garde(skip)]
+    pub cfs_enabled: Option<bool>,
+    /// Call for speakers end time.
+    #[garde(skip)]
+    pub cfs_ends_at: Option<NaiveDateTime>,
+    /// Call for speakers start time.
+    #[garde(skip)]
+    pub cfs_starts_at: Option<NaiveDateTime>,
+    /// Whether ticketing should be removed from an existing event.
+    #[garde(skip)]
+    pub clear_ticketing: Option<bool>,
+    /// Short description of the event.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION_SHORT))]
+    pub description_short: Option<String>,
+    /// Discount codes configured for the event.
+    #[garde(dive)]
+    pub discount_codes: Option<Vec<DiscountCode>>,
+    /// Whether the discount codes section was submitted.
+    #[garde(skip)]
+    pub discount_codes_present: Option<bool>,
+    /// Event end time.
+    #[garde(skip)]
+    pub ends_at: Option<NaiveDateTime>,
+    /// Whether event reminder notifications are enabled.
+    #[garde(skip)]
+    pub event_reminder_enabled: Option<bool>,
+    /// User IDs of event hosts.
+    #[garde(skip)]
+    pub hosts: Option<Vec<Uuid>>,
+    /// User IDs shown as event organizers.
+    #[garde(skip)]
+    pub organizers: Option<Vec<Uuid>>,
+    /// Whether the organizers section was explicitly submitted.
+    #[garde(skip)]
+    pub organizers_present: Option<bool>,
+    /// Latitude coordinate of the event location.
+    #[garde(custom(valid_latitude))]
+    pub latitude: Option<f64>,
+    /// Longitude coordinate of the event location.
+    #[garde(custom(valid_longitude))]
+    pub longitude: Option<f64>,
+    /// URL to the event logo.
+    #[garde(custom(image_url_opt))]
+    pub logo_url: Option<String>,
+    /// Open Graph image URL used in event link previews.
+    #[garde(custom(image_url_opt))]
+    pub og_image_url: Option<String>,
+    /// Luma URL.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub luma_url: Option<String>,
+    /// Meeting hosts to synchronize with provider (email addresses).
+    #[garde(custom(email_vec))]
+    pub meeting_hosts: Option<Vec<String>>,
+    /// Extra instructions attendees need to join the event meeting.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION_SHORT))]
+    pub meeting_join_instructions: Option<String>,
+    /// URL to join the meeting.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub meeting_join_url: Option<String>,
+    /// Desired meeting provider.
+    #[serde(rename = "meeting_provider_id")]
+    #[garde(skip)]
+    pub meeting_provider: Option<MeetingProvider>,
+    /// Whether the recording is publicly visible.
+    #[garde(skip)]
+    pub meeting_recording_published: Option<bool>,
+    /// Whether automatic event meetings should be recorded.
+    #[garde(skip)]
+    pub meeting_recording_requested: Option<bool>,
+    /// Organizer-managed final recording URL for meeting.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub meeting_recording_url: Option<String>,
+    /// Whether a meeting has been requested for the event.
+    #[garde(skip)]
+    pub meeting_requested: Option<bool>,
+    /// Meetup.com URL.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub meetup_url: Option<String>,
+    /// Currency used for ticket purchases.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub payment_currency_code: Option<String>,
+    /// Off-Stripe payment instructions shown to attendees.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION_SHORT))]
+    pub external_payment_instructions: Option<String>,
+    /// Off-Stripe payment URL shown to attendees.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub external_payment_url: Option<String>,
+    /// Hours an external payment hold stays open.
+    #[garde(range(min = 1, max = 8760))]
+    pub external_payment_window_hours: Option<i32>,
+    /// Whether ticket prices include tax.
+    #[garde(skip)]
+    pub tax_behavior: Option<String>,
+    /// How tax is calculated for this event.
+    #[garde(skip)]
+    pub tax_calculation_mode: Option<String>,
+    /// Gallery of photo URLs.
+    #[garde(custom(trimmed_non_empty_vec))]
+    pub photos_urls: Option<Vec<String>>,
+    /// Number of additional occurrences to create for recurring events.
+    #[garde(range(min = 1, max = MAX_RECURRING_ADDITIONAL_OCCURRENCES))]
+    pub recurrence_additional_occurrences: Option<i32>,
+    /// Recurrence pattern selected for new event creation.
+    #[garde(skip)]
+    pub recurrence_pattern: Option<EventRecurrencePattern>,
+    /// Registration end time.
+    #[garde(skip)]
+    pub registration_ends_at: Option<NaiveDateTime>,
+    /// Destination used when registration is handled outside Goup.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub external_registration_url: Option<String>,
+    /// Whether the registration questions section was submitted.
+    #[garde(skip)]
+    pub registration_questions_present: Option<bool>,
+    /// Whether registration is required.
+    #[garde(skip)]
+    pub registration_required: Option<bool>,
+    /// Registration start time.
+    #[garde(skip)]
+    pub registration_starts_at: Option<NaiveDateTime>,
+    /// Event sessions.
+    #[garde(dive)]
+    pub sessions: Option<Vec<Session>>,
+    /// Event-level speakers.
+    #[garde(dive)]
+    pub speakers: Option<Vec<Speaker>>,
+    /// Event sponsors.
+    #[garde(dive)]
+    pub sponsors: Option<Vec<EventSponsor>>,
+    /// Event start time.
+    #[garde(skip)]
+    pub starts_at: Option<NaiveDateTime>,
+    /// Tags associated with the event.
+    #[garde(custom(trimmed_non_empty_tag_vec))]
+    pub tags: Option<Vec<String>>,
+    /// Whether this event is only for testing.
+    #[garde(skip)]
+    pub test_event: Option<bool>,
+    /// Ticket types configured for the event.
+    #[garde(dive)]
+    pub ticket_types: Option<Vec<TicketType>>,
+    /// Whether the ticket types section was submitted.
+    #[garde(skip)]
+    pub ticket_types_present: Option<bool>,
+    /// Venue address.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub venue_address: Option<String>,
+    /// City where the venue is located.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub venue_city: Option<String>,
+    /// ISO country code of the venue's location.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_COUNTRY_CODE))]
+    pub venue_country_code: Option<String>,
+    /// Full country name of the venue's location.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub venue_country_name: Option<String>,
+    /// Name of the venue.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_ENTITY_NAME))]
+    pub venue_name: Option<String>,
+    /// State or province where the venue is located.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub venue_state: Option<String>,
+    /// Venue zip code.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub venue_zip_code: Option<String>,
+    /// Whether the event waiting list is enabled.
+    #[garde(skip)]
+    pub waitlist_enabled: Option<bool>,
+}
+
+impl Event {
+    /// Converts the dashboard form payload into the JSON shape used by the database.
+    pub fn to_db_payload(&self) -> anyhow::Result<Value> {
+        if self.sponsors.as_ref().is_some_and(|sponsors| {
+            sponsors.iter().any(|sponsor| {
+                sponsor.group_sponsor_id.is_none()
+                    && (sponsor.name.as_deref().is_none_or(str::is_empty)
+                        || sponsor.logo_url.as_deref().is_none_or(str::is_empty))
+            })
+        }) {
+            anyhow::bail!("event-only sponsor requires name and logo URL");
+        }
+
+        // Serialize the full event form into a mutable JSON object
+        let mut payload = match serde_json::to_value(self)? {
+            Value::Object(map) => map,
+            _ => Map::new(),
+        };
+
+        // Assign identifiers to discount codes that do not have one yet
+        let mut discount_codes = self.discount_codes.clone();
+        if let Some(discount_codes) = discount_codes.as_mut() {
+            Self::normalize_discount_codes(discount_codes);
+        }
+
+        // Assign identifiers to ticket types and nested price windows
+        let mut ticket_types = self.ticket_types.clone();
+        if let Some(ticket_types) = ticket_types.as_mut() {
+            Self::normalize_ticket_types(ticket_types);
+        }
+
+        // Remove ticketing fields so they can be reinserted from submitted inputs
+        payload.remove("clear_ticketing");
+        payload.remove("discount_codes");
+        payload.remove("discount_codes_present");
+        payload.remove("recurrence_additional_occurrences");
+        payload.remove("recurrence_pattern");
+        payload.remove("registration_questions");
+        payload.remove("registration_questions_present");
+        payload.remove("organizers");
+        payload.remove("organizers_present");
+        payload.remove("ticket_types");
+        payload.remove("ticket_types_present");
+
+        // Preserve omitted registration questions on partial form submissions,
+        // but allow an explicitly submitted empty questions editor to clear them
+        if self.registration_questions_present.is_some() {
+            payload.insert(
+                "registration_questions".to_string(),
+                serde_json::to_value(&self.registration_questions)?,
+            );
+        }
+
+        if self.organizers_present.is_some() {
+            payload.insert(
+                "organizers".to_string(),
+                serde_json::to_value(self.organizers.as_deref().unwrap_or_default())?,
+            );
+        }
+
+        // Null out persisted ticketing fields when ticketing should be cleared
+        if self.clear_ticketing.unwrap_or(false) {
+            payload.insert("discount_codes".to_string(), Value::Null);
+            payload.insert("payment_currency_code".to_string(), Value::Null);
+            payload.insert("ticket_types".to_string(), Value::Null);
+            return Ok(Value::Object(payload));
+        }
+
+        // Reinsert ticketing sections only when the form submitted those inputs
+        Self::insert_optional_ticketing_field(
+            &mut payload,
+            "discount_codes",
+            self.discount_codes_present.is_some(),
+            discount_codes,
+        )?;
+        Self::insert_optional_ticketing_field(
+            &mut payload,
+            "ticket_types",
+            self.ticket_types_present.is_some(),
+            ticket_types,
+        )?;
+
+        Ok(Value::Object(payload))
+    }
+
+    /// Inserts a ticketing field only when it was submitted in the form.
+    fn insert_optional_ticketing_field<T: Serialize>(
+        payload: &mut Map<String, Value>,
+        field_name: &str,
+        field_present: bool,
+        field_value: Option<T>,
+    ) -> anyhow::Result<()> {
+        if field_present {
+            payload.insert(field_name.to_string(), serde_json::to_value(field_value)?);
+        }
+
+        Ok(())
+    }
+
+    /// Fills in missing identifiers for newly added discount codes.
+    fn normalize_discount_codes(discount_codes: &mut Vec<DiscountCode>) {
+        for discount_code in discount_codes {
+            if discount_code.event_discount_code_id.is_none() {
+                discount_code.event_discount_code_id = Some(Uuid::new_v4());
+            }
+        }
+    }
+
+    /// Fills in missing identifiers for newly added ticketing rows.
+    fn normalize_ticket_types(ticket_types: &mut Vec<TicketType>) {
+        for ticket_type in ticket_types {
+            if ticket_type.event_ticket_type_id.is_none() {
+                ticket_type.event_ticket_type_id = Some(Uuid::new_v4());
+            }
+
+            for price_window in &mut ticket_type.price_windows {
+                if price_window.event_ticket_price_window_id.is_none() {
+                    price_window.event_ticket_price_window_id = Some(Uuid::new_v4());
+                }
+            }
+        }
+    }
+}
+
+/// Filter parameters for events list pagination.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct EventsListFilters {
+    /// Selected events tab.
+    #[garde(skip)]
+    pub events_tab: Option<EventsTab>,
+    /// Number of results per page.
+    #[serde(default = "dashboard::default_limit")]
+    #[garde(range(max = MAX_PAGINATION_LIMIT))]
+    pub limit: Option<usize>,
+    /// Pagination offset for past events.
+    #[serde(default = "dashboard::default_offset")]
+    #[garde(skip)]
+    pub past_offset: Option<usize>,
+    /// Pagination offset for upcoming events.
+    #[serde(default = "dashboard::default_offset")]
+    #[garde(skip)]
+    pub upcoming_offset: Option<usize>,
+}
+
+impl EventsListFilters {
+    /// Current tab or default.
+    pub fn current_tab(&self) -> EventsTab {
+        self.events_tab.clone().unwrap_or_default()
+    }
+}
+
+impl Pagination for EventsListFilters {
+    fn limit(&self) -> Option<usize> {
+        self.limit
+    }
+
+    fn offset(&self) -> Option<usize> {
+        match self.current_tab() {
+            EventsTab::Past => self.past_offset,
+            EventsTab::Upcoming => self.upcoming_offset,
+        }
+    }
+
+    fn set_offset(&mut self, offset: Option<usize>) {
+        match self.current_tab() {
+            EventsTab::Past => {
+                self.past_offset = offset;
+            }
+            EventsTab::Upcoming => {
+                self.upcoming_offset = offset;
+            }
+        }
+    }
+}
+
+ocg_core::impl_to_raw_query!(EventsListFilters);
+
+/// Recurrence options supported by the add event flow.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum EventRecurrencePattern {
+    /// Create only the event currently described by the form.
+    #[default]
+    JustOnce,
+    /// Create weekly on the same weekday.
+    Weekly,
+    /// Create every two weeks on the same weekday.
+    Biweekly,
+    /// Create monthly on the same ordinal weekday.
+    Monthly,
+}
+
+impl EventRecurrencePattern {
+    /// Returns the database value for patterns that create an event series.
+    pub fn recurrence_db_value(self) -> Option<&'static str> {
+        match self {
+            Self::JustOnce => None,
+            Self::Biweekly => Some("biweekly"),
+            Self::Monthly => Some("monthly"),
+            Self::Weekly => Some("weekly"),
+        }
+    }
+}
+
+/// Event sponsor information.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct EventSponsor {
+    /// Existing reusable or event-scoped sponsor identifier.
+    #[garde(skip)]
+    pub group_sponsor_id: Option<Uuid>,
+    /// Sponsor level for this event.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_S))]
+    pub level: String,
+    /// Logo URL for a new event-only sponsor.
+    #[garde(custom(image_url_opt))]
+    pub logo_url: Option<String>,
+    /// Name for a new event-only sponsor.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_ENTITY_NAME))]
+    pub name: Option<String>,
+    /// Website URL for a new event-only sponsor.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub website_url: Option<String>,
+}
+
+/// Group events separated by status.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupEvents {
+    /// Events that already happened.
+    pub past: PaginatedEvents,
+    /// Events happening in the future.
+    pub upcoming: PaginatedEvents,
+}
+
+/// Events list with pagination metadata.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaginatedEvents {
+    /// List of events for this section.
+    pub events: Vec<EventSummary>,
+    /// Total number of events for this section.
+    pub total: usize,
+}
+
+/// Tab selection for the events list.
+#[derive(
+    Debug, Clone, Default, PartialEq, Serialize, Deserialize, strum::Display, strum::EnumString,
+)]
+#[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "kebab-case")]
+pub enum EventsTab {
+    /// Past events tab (default).
+    Past,
+    /// Upcoming events tab.
+    #[default]
+    Upcoming,
+}
+
+/// Session details within an event.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct Session {
+    /// Type of session (hybrid, in-person, virtual).
+    #[garde(skip)]
+    pub kind: SessionKind,
+    /// Session name.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub name: String,
+    /// Unique identifier for the session.
+    #[garde(skip)]
+    pub session_id: Option<Uuid>,
+    /// Session start time.
+    #[garde(skip)]
+    pub starts_at: NaiveDateTime,
+
+    /// Linked CFS submission identifier.
+    #[garde(skip)]
+    pub cfs_submission_id: Option<Uuid>,
+    /// Session description.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION))]
+    pub description: Option<String>,
+    /// Session end time.
+    #[garde(skip)]
+    pub ends_at: Option<NaiveDateTime>,
+    /// Location for the session.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_S))]
+    pub location: Option<String>,
+    /// Meeting hosts to synchronize with provider (email addresses).
+    #[garde(custom(email_vec))]
+    pub meeting_hosts: Option<Vec<String>>,
+    /// Extra instructions attendees need to join the session meeting.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION_SHORT))]
+    pub meeting_join_instructions: Option<String>,
+    /// URL to join the meeting.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub meeting_join_url: Option<String>,
+    /// Desired meeting provider.
+    #[serde(rename = "meeting_provider_id")]
+    #[garde(skip)]
+    pub meeting_provider: Option<MeetingProvider>,
+    /// Whether the recording is publicly visible.
+    #[garde(skip)]
+    pub meeting_recording_published: Option<bool>,
+    /// Organizer-managed final recording URL for meeting.
+    #[garde(url, length(max = MAX_LEN_L))]
+    pub meeting_recording_url: Option<String>,
+    /// Whether a meeting has been requested for the session.
+    #[garde(skip)]
+    pub meeting_requested: Option<bool>,
+    /// Session speakers.
+    #[garde(dive)]
+    pub speakers: Option<Vec<Speaker>>,
+}
+
+/// Speaker selection with optional featured flag.
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct Speaker {
+    /// Whether the speaker is featured.
+    #[serde(default)]
+    #[garde(skip)]
+    pub featured: bool,
+    /// Unique identifier for the speaker.
+    #[garde(skip)]
+    pub user_id: Uuid,
+}
+
+/// Dashboard ticket price window payload.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct TicketPriceWindow {
+    /// Price in minor units.
+    #[garde(skip)]
+    pub amount_minor: i64,
+
+    /// Window end date and time.
+    #[serde(default)]
+    #[garde(skip)]
+    pub ends_at: Option<DateTime<Utc>>,
+    /// Unique identifier for the price window.
+    #[garde(skip)]
+    pub event_ticket_price_window_id: Option<Uuid>,
+    /// Window start date and time.
+    #[serde(default)]
+    #[garde(skip)]
+    pub starts_at: Option<DateTime<Utc>>,
+}
+
+/// Dashboard ticket type payload.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct TicketType {
+    /// Whether the ticket type can currently be selected.
+    #[garde(skip)]
+    pub active: bool,
+    /// Display order in event pages and forms.
+    #[garde(range(min = 1))]
+    pub order: i32,
+    /// Price windows configured for this ticket type.
+    #[serde(default)]
+    #[garde(dive)]
+    pub price_windows: Vec<TicketPriceWindow>,
+    /// Ticket type display name.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub title: String,
+
+    /// Optional subtitle shown in forms and event pages.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION_SHORT))]
+    pub description: Option<String>,
+    /// Unique identifier for the ticket type.
+    #[garde(skip)]
+    pub event_ticket_type_id: Option<Uuid>,
+    /// Total seats available for this ticket type.
+    #[garde(range(min = 0))]
+    pub seats_total: Option<i32>,
+}
+
+#[cfg(test)]
+mod tests {
+    use garde::Validate;
+    use serde_json::Value;
+
+    use ocg_core::types::{event::EventRegistrationMode, payments::EventDiscountType};
+
+    use super::{DiscountCode, Event, TicketPriceWindow, TicketType};
+
+    #[test]
+    fn discount_code_deserialization_keeps_explicit_availability_override_signals() {
+        let discount_code: DiscountCode = serde_qs::from_str(
+            "active=true&available=12&available_override_active=true&code=EARLY20&kind=percentage&percentage=20&title=Early%20supporter",
+        )
+        .unwrap();
+
+        assert_eq!(discount_code.available, Some(12));
+        assert_eq!(discount_code.available_override_active, Some(true));
+    }
+
+    #[test]
+    fn event_deserialization_accepts_nested_registration_questions() {
+        let event: Event = serde_qs::from_str(
+            "\
+category_id=00000000-0000-0000-0000-000000000001&\
+description=Event%20description&\
+kind_id=virtual&\
+name=Sample%20Event&\
+timezone=UTC&\
+registration_questions_present=true&\
+registration_questions[0][id]=00000000-0000-0000-0000-000000000101&\
+registration_questions[0][kind]=single-select&\
+registration_questions[0][prompt]=Meal%20preference&\
+registration_questions[0][required]=true&\
+registration_questions[0][options][0][id]=00000000-0000-0000-0000-000000000201&\
+registration_questions[0][options][0][label]=Vegetarian",
+        )
+        .unwrap();
+
+        assert!(event.registration_questions_present.is_some());
+        assert_eq!(event.registration_questions.len(), 1);
+        assert_eq!(event.registration_questions[0].prompt, "Meal preference");
+        assert_eq!(
+            event.registration_questions[0].options[0].label,
+            "Vegetarian"
+        );
+    }
+
+    #[test]
+    fn event_deserialization_accepts_external_registration() {
+        let event: Event = serde_qs::from_str(
+            "\
+category_id=00000000-0000-0000-0000-000000000001&\
+description=Event%20description&\
+kind_id=virtual&\
+name=Sample%20Event&\
+timezone=UTC&\
+registration_mode=external&\
+external_registration_url=https%3A%2F%2Fexample.com%2Fregister",
+        )
+        .unwrap();
+
+        assert_eq!(event.registration_mode, EventRegistrationMode::External);
+        assert_eq!(
+            event.external_registration_url.as_deref(),
+            Some("https://example.com/register")
+        );
+        assert_eq!(
+            event.to_db_payload().unwrap()["registration_mode"],
+            "external"
+        );
+    }
+
+    #[test]
+    fn event_deserialization_accepts_event_only_sponsor() {
+        let event: Event = serde_qs::from_str(
+            "\
+category_id=00000000-0000-0000-0000-000000000001&\
+description=Event%20description&\
+kind_id=virtual&\
+name=Sample%20Event&\
+timezone=UTC&\
+sponsors[0][name]=Event%20Partner&\
+sponsors[0][logo_url]=https%3A%2F%2Fexample.com%2Fpartner.png&\
+sponsors[0][website_url]=https%3A%2F%2Fexample.com&\
+sponsors[0][level]=Gold",
+        )
+        .unwrap();
+
+        event.validate().unwrap();
+        let payload = event.to_db_payload().unwrap();
+
+        assert!(payload["sponsors"][0].get("group_sponsor_id").is_none());
+        assert_eq!(payload["sponsors"][0]["name"], "Event Partner");
+        assert_eq!(
+            payload["sponsors"][0]["logo_url"],
+            "https://example.com/partner.png"
+        );
+        assert_eq!(payload["sponsors"][0]["level"], "Gold");
+    }
+
+    #[test]
+    fn to_db_payload_rejects_incomplete_event_only_sponsor() {
+        let mut event = sample_event();
+        event.sponsors = Some(vec![super::EventSponsor {
+            group_sponsor_id: None,
+            level: "Gold".to_string(),
+            logo_url: None,
+            name: Some("Event Partner".to_string()),
+            website_url: None,
+        }]);
+
+        assert_eq!(
+            event.to_db_payload().unwrap_err().to_string(),
+            "event-only sponsor requires name and logo URL"
+        );
+    }
+
+    #[test]
+    fn to_db_payload_keeps_optional_section_keys_omitted_when_form_omits_inputs() {
+        let payload = sample_event().to_db_payload().unwrap();
+
+        assert_eq!(payload["cfs_labels"], Value::Array(Vec::new()));
+        assert_eq!(payload["description"], "Event description");
+        assert_eq!(payload["kind_id"], "virtual");
+        assert_eq!(payload["name"], "Sample Event");
+        assert_eq!(payload["timezone"], "UTC");
+        assert!(payload.get("discount_codes").is_none());
+        assert!(payload.get("registration_questions").is_none());
+        assert!(payload.get("ticket_types").is_none());
+    }
+
+    #[test]
+    fn to_db_payload_includes_empty_registration_questions_when_inputs_are_present() {
+        let mut event = sample_event();
+        event.registration_questions_present = Some(true);
+
+        let payload = event.to_db_payload().unwrap();
+
+        assert_eq!(payload["registration_questions"], Value::Array(Vec::new()));
+    }
+
+    #[test]
+    fn to_db_payload_preserves_organizers_when_section_is_omitted() {
+        let mut event = sample_event();
+        event.organizers = Some(vec![uuid::Uuid::new_v4()]);
+
+        let payload = event.to_db_payload().unwrap();
+
+        assert!(payload.get("organizers").is_none());
+    }
+
+    #[test]
+    fn to_db_payload_includes_explicit_empty_organizer_selection() {
+        let mut event = sample_event();
+        event.organizers = Some(Vec::new());
+        event.organizers_present = Some(true);
+
+        let payload = event.to_db_payload().unwrap();
+
+        assert_eq!(payload["organizers"], Value::Array(Vec::new()));
+        assert!(payload.get("organizers_present").is_none());
+    }
+
+    #[test]
+    fn to_db_payload_sets_ticketing_keys_to_null_when_inputs_are_present_but_empty() {
+        let mut event = sample_event();
+        event.discount_codes_present = Some(true);
+        event.ticket_types_present = Some(true);
+
+        let payload = event.to_db_payload().unwrap();
+
+        assert_eq!(payload["discount_codes"], Value::Null);
+        assert_eq!(payload["ticket_types"], Value::Null);
+    }
+
+    #[test]
+    fn to_db_payload_accepts_new_ticketing_rows_without_ids() {
+        let mut event = sample_event();
+        event.discount_codes = Some(vec![DiscountCode {
+            active: true,
+            code: "EARLY20".to_string(),
+            kind: EventDiscountType::Percentage,
+            title: "Early supporter".to_string(),
+
+            available: None,
+            available_override_active: None,
+            available_cleared: None,
+            amount_minor: None,
+            ends_at: None,
+            event_discount_code_id: None,
+            percentage: Some(20),
+            starts_at: None,
+            total_available: None,
+        }]);
+        event.discount_codes_present = Some(true);
+        event.ticket_types = Some(vec![TicketType {
+            active: true,
+            order: 1,
+            price_windows: vec![TicketPriceWindow {
+                amount_minor: 2500,
+
+                ends_at: None,
+                event_ticket_price_window_id: None,
+                starts_at: None,
+            }],
+            title: "General admission".to_string(),
+
+            description: None,
+            event_ticket_type_id: None,
+            seats_total: Some(100),
+        }]);
+        event.ticket_types_present = Some(true);
+
+        let payload = event.to_db_payload().unwrap();
+
+        assert_eq!(payload["discount_codes"][0]["code"], "EARLY20");
+        assert!(
+            uuid::Uuid::parse_str(
+                payload["discount_codes"][0]["event_discount_code_id"]
+                    .as_str()
+                    .unwrap()
+            )
+            .is_ok()
+        );
+        assert_eq!(payload["ticket_types"][0]["title"], "General admission");
+        assert!(
+            uuid::Uuid::parse_str(
+                payload["ticket_types"][0]["event_ticket_type_id"].as_str().unwrap()
+            )
+            .is_ok()
+        );
+        assert!(
+            uuid::Uuid::parse_str(
+                payload["ticket_types"][0]["price_windows"][0]["event_ticket_price_window_id"]
+                    .as_str()
+                    .unwrap()
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn to_db_payload_keeps_explicit_discount_availability_override_state() {
+        let mut event = sample_event();
+        event.discount_codes = Some(vec![DiscountCode {
+            active: true,
+            code: "EARLY20".to_string(),
+            kind: EventDiscountType::Percentage,
+            title: "Early supporter".to_string(),
+
+            available: None,
+            available_override_active: Some(true),
+            available_cleared: None,
+            amount_minor: None,
+            ends_at: None,
+            event_discount_code_id: None,
+            percentage: Some(20),
+            starts_at: None,
+            total_available: Some(50),
+        }]);
+        event.discount_codes_present = Some(true);
+
+        let payload = event.to_db_payload().unwrap();
+
+        assert!(payload["discount_codes"][0].get("available").is_none());
+        assert_eq!(
+            payload["discount_codes"][0]["available_override_active"],
+            Value::Bool(true)
+        );
+    }
+
+    #[test]
+    fn to_db_payload_omits_discount_availability_override_state_when_form_omits_it() {
+        let mut event = sample_event();
+        event.discount_codes = Some(vec![DiscountCode {
+            active: true,
+            code: "EARLY20".to_string(),
+            kind: EventDiscountType::Percentage,
+            title: "Early supporter".to_string(),
+
+            available: None,
+            available_override_active: None,
+            available_cleared: None,
+            amount_minor: None,
+            ends_at: None,
+            event_discount_code_id: None,
+            percentage: Some(20),
+            starts_at: None,
+            total_available: Some(50),
+        }]);
+        event.discount_codes_present = Some(true);
+
+        let payload = event.to_db_payload().unwrap();
+
+        assert!(
+            payload["discount_codes"][0]
+                .get("available_override_active")
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn to_db_payload_clears_ticketing_when_requested() {
+        let mut event = sample_event();
+        event.clear_ticketing = Some(true);
+
+        let payload = event.to_db_payload().unwrap();
+
+        assert_eq!(payload["discount_codes"], Value::Null);
+        assert_eq!(payload["payment_currency_code"], Value::Null);
+        assert_eq!(payload["ticket_types"], Value::Null);
+    }
+
+    // Helpers.
+
+    /// Creates a sample event with required fields for testing.
+    fn sample_event() -> Event {
+        Event {
+            category_id: uuid::Uuid::new_v4(),
+            description: "Event description".to_string(),
+            kind_id: "virtual".to_string(),
+            name: "Sample Event".to_string(),
+            timezone: "UTC".to_string(),
+            ..Event::default()
+        }
+    }
+}

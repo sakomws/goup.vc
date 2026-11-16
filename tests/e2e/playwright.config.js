@@ -60,8 +60,8 @@ const webServer =
 
 export default defineConfig({
   testDir: __dirname,
-  fullyParallel: false,
-  workers: 1,
+  fullyParallel: isVisualOnlyRun,
+  workers: isVisualOnlyRun ? (isCI ? 4 : undefined) : 1,
   retries: isCI ? 2 : 0,
   expect: {
     toHaveScreenshot: isCI ? { maxDiffPixelRatio: 0.03 } : undefined,

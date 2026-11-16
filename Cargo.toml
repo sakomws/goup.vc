@@ -1,8 +1,16 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/ocg-assets",
+    "crates/ocg-core",
+    "crates/ocg-db",
+    "crates/ocg-services",
+    "crates/ocg-templates-common",
+    "crates/ocg-templates-dashboard",
+    "crates/ocg-templates-notifications",
+    "crates/ocg-templates-public",
     "ocg-redirector",
-    "ocg-server"
+    "ocg-server",
 ]
 
 [workspace.package]
@@ -11,6 +19,45 @@ license = "Apache-2.0"
 edition = "2024"
 rust-version = "1.96.0"
 
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+default_trait_access = "allow"
+doc_markdown = "allow"
+duration_suboptimal_units = "allow"
+ignored_unit_patterns = "allow"
+ip_constant = "allow"
+large_futures = "allow"
+map_unwrap_or = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+needless_borrow = "allow"
+needless_raw_string_hashes = "allow"
+redundant_closure_for_method_calls = "allow"
+return_self_not_must_use = "allow"
+semicolon_if_nothing_returned = "allow"
+struct_excessive_bools = "allow"
+struct_field_names = "allow"
+too_many_arguments = "allow"
+too_many_lines = "allow"
+trivially_copy_pass_by_ref = "allow"
+unnecessary_semicolon = "allow"
+unnecessary_wraps = "allow"
+unused_self = "allow"
+
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.release]
+opt-level = 2
+
 [workspace.dependencies]
 anyhow = "1.0.103"
 base64 = "0.22"
@@ -18,11 +65,11 @@ askama = { version = "0.16.0", features = ["serde_json"] }
 async-trait = "0.1.89"
 aws-credential-types = "1.2.14"
 aws-sdk-s3 = { version = "1.137.0", default-features = false, features = [
-    "default-https-client",
     "http-1x",
     "rt-tokio",
     "sigv4a",
 ] }
+aws-smithy-http-client = { version = "1.1.12", default-features = false, features = ["rustls-ring"] }
 axum = { version = "0.8.9", features = ["macros", "multipart", "ws"] }
 axum-login = "0.18.0"
 axum-messages = "0.8.0"
@@ -44,23 +91,18 @@ image = { version = "0.25.10", default-features = false, features = ["gif", "jpe
 lettre = { version = "0.11.22", default-features = false, features = ["builder", "hostname", "pool", "smtp-transport", "tokio1-rustls-tls"] }
 markdown = "1.0.0"
 mime_guess = "2.0.5"
-minify-html = "0.18.1"
 mockall = "0.14.0"
 num-format = "0.4.4"
 oauth2 = "5.0.0"
 openidconnect = { version = "4.0.1", features = ["accept-rfc3339-timestamps"] }
-openssl = { version = "0.10.81", features = ["vendored"] }
 password-auth = "1.0.0"
 percent-encoding = "2.3.2"
-postgres-openssl = "0.5.3"
 quick-xml = "0.41.0"
 qrcode = { version = "0.14.1", features = ["svg"] }
-reqwest = { version = "0.13.4", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 redis = { version = "1.4.1", features = ["tokio-comp"] }
-# Keep this exact pin so the workspace resolves to patched rkyv 0.7.46.
-# parcel_sourcemap otherwise pulls vulnerable rkyv 0.7.45 (RUSTSEC-2026-0001).
-rkyv = "=0.7.46"
 rust-embed = "8.11.0"
+rustls = { version = "0.23.40", default-features = false, features = ["logging", "ring", "std", "tls12"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 serde_qs = { version = "1.1.2", features = ["axum"] }
@@ -86,7 +128,8 @@ tokio-postgres = { version = "0.7.18", features = [
     "with-time-0_3",
     "with-uuid-1",
 ] }
-tokio-util = { version = "0.7.18", features = ["full"] }
+tokio-postgres-rustls = { version = "0.14.0", features = ["ring"] }
+tokio-util = { version = "0.7.18", features = ["rt"] }
 tower = "0.5.3"
 tower-http = { version = "0.7.0", features = ["auth", "fs", "set-header", "trace"] }
 tower-sessions = { version = "0.14.0", features = ["signed"] }

@@ -1,0 +1,898 @@
+//! Database interface for user dashboard operations.
+
+use anyhow::Result;
+use async_trait::async_trait;
+use tokio_postgres::types::Json;
+use tracing::instrument;
+use uuid::Uuid;
+
+use crate::PgExecutor;
+use ocg_core::types::{
+    dashboard::user::notifications::{
+        NotificationGroupOption, NotificationPreferences, NotificationPreferencesInput,
+    },
+    questionnaire::QuestionnaireAnswers,
+};
+use ocg_templates_dashboard::dashboard::{
+    audit::{AuditLogFilters, AuditLogsOutput},
+    user::{
+        affiliations::{LandscapeEntryOption, UserAffiliation, UserAffiliationForm},
+        check_in::UserCheckInEvent,
+        coffee_meet::{CoffeeMeetSubscription, CoffeeMeetSubscriptionForm},
+        events::{UserEventsFilters, UserEventsOutput},
+        invitations::{
+            AllianceTeamInvitation, EventCohostInvitation, EventInvitation, GroupTeamInvitation,
+        },
+        mentorship::{ListPage as MentorshipRequestsOutput, MentorshipRequest},
+        session_proposals::{
+            PendingCoSpeakerInvitation, SessionProposalInput, SessionProposalLevel,
+            SessionProposalsFilters, SessionProposalsOutput,
+        },
+        submissions::{CfsSubmissionsFilters, CfsSubmissionsOutput},
+    },
+};
+
+/// Database trait for user dashboard operations.
+#[async_trait]
+pub trait DBDashboardUser {
+    /// Accepts a pending alliance team invitation.
+    async fn accept_alliance_team_invitation(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+    ) -> Result<()>;
+
+    /// Accepts a pending organizer-created event invitation.
+    async fn accept_event_attendee_invitation(
+        &self,
+        actor_user_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Uuid>;
+
+    /// Accepts a pending group team invitation.
+    async fn accept_group_team_invitation(&self, actor_user_id: Uuid, group_id: Uuid)
+    -> Result<()>;
+
+    /// Approves or rejects a co-host invitation visible in the user dashboard.
+    async fn decide_user_event_cohost(
+        &self,
+        actor_user_id: Uuid,
+        event_cohost_id: Uuid,
+        approve: bool,
+    ) -> Result<()>;
+
+    /// Accepts a pending co-speaker invitation for a session proposal.
+    async fn accept_session_proposal_co_speaker_invitation(
+        &self,
+        actor_user_id: Uuid,
+        session_proposal_id: Uuid,
+    ) -> Result<()>;
+
+    /// Counts pending dashboard invitations the user can act on.
+    async fn count_user_pending_invitations(&self, user_id: Uuid) -> Result<i64>;
+
+    /// Adds a new session proposal for the user.
+    async fn add_session_proposal(
+        &self,
+        actor_user_id: Uuid,
+        session_proposal: &SessionProposalInput,
+    ) -> Result<Uuid>;
+
+    /// Adds an affiliation for the user, updating the role if the affiliation
+    /// already exists.
+    async fn add_user_affiliation(
+        &self,
+        actor_user_id: Uuid,
+        affiliation: &UserAffiliationForm,
+    ) -> Result<()>;
+
+    /// Deletes a session proposal for the user.
+    async fn delete_session_proposal(
+        &self,
+        actor_user_id: Uuid,
+        session_proposal_id: Uuid,
+    ) -> Result<()>;
+
+    /// Deletes one of the user's affiliations.
+    async fn delete_user_affiliation(
+        &self,
+        actor_user_id: Uuid,
+        user_affiliation_id: Uuid,
+    ) -> Result<()>;
+
+    /// Gets the co-speaker user id for one of the user's session proposals.
+    async fn get_session_proposal_co_speaker_user_id(
+        &self,
+        user_id: Uuid,
+        session_proposal_id: Uuid,
+    ) -> Result<Option<SessionProposalCoSpeakerUser>>;
+
+    /// Gets the current user's confirmed attendee credential for an event.
+    async fn get_user_check_in_code(&self, event_id: Uuid, user_id: Uuid) -> Result<Option<Uuid>>;
+
+    /// Gets the user's notification category opt-outs and muted groups.
+    async fn get_user_notification_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> Result<NotificationPreferences>;
+
+    /// Lists published landscape entries available for affiliation selection.
+    async fn list_landscape_entry_options(&self) -> Result<Vec<LandscapeEntryOption>>;
+
+    /// Lists all available session proposal levels.
+    async fn list_session_proposal_levels(&self) -> Result<Vec<SessionProposalLevel>>;
+
+    /// Lists user dashboard audit log rows.
+    async fn list_user_audit_logs(
+        &self,
+        actor_user_id: Uuid,
+        filters: &AuditLogFilters,
+    ) -> Result<AuditLogsOutput>;
+
+    /// Lists all CFS submissions for the user.
+    async fn list_user_cfs_submissions(
+        &self,
+        user_id: Uuid,
+        filters: &CfsSubmissionsFilters,
+    ) -> Result<CfsSubmissionsOutput>;
+
+    /// Lists current and upcoming events carrying the user's credential.
+    async fn list_user_check_in_events(&self, user_id: Uuid) -> Result<Vec<UserCheckInEvent>>;
+
+    /// Lists the user's affiliations.
+    async fn list_user_affiliations(&self, user_id: Uuid) -> Result<Vec<UserAffiliation>>;
+
+    /// Lists all pending alliance team invitations for the user.
+    async fn list_user_alliance_team_invitations(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<AllianceTeamInvitation>>;
+
+    /// Lists all pending organizer-created event invitations for the user.
+    async fn list_user_event_invitations(&self, user_id: Uuid) -> Result<Vec<EventInvitation>>;
+
+    /// Lists pending co-host invitations across groups the user can manage.
+    async fn list_user_event_cohost_invitations(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<EventCohostInvitation>>;
+
+    /// Lists upcoming events where the user participates.
+    async fn list_user_events(
+        &self,
+        user_id: Uuid,
+        filters: &UserEventsFilters,
+    ) -> Result<UserEventsOutput>;
+
+    /// Lists all pending group team invitations for the user.
+    async fn list_user_group_team_invitations(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<GroupTeamInvitation>>;
+
+    /// Lists the connected groups the user can mute.
+    async fn list_user_notification_group_options(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<NotificationGroupOption>>;
+
+    /// Lists `CoffeeMeet` subscriptions available to a user.
+    async fn list_user_coffee_meet_subscriptions(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<CoffeeMeetSubscription>>;
+
+    /// Lists mentorship requests received by the user.
+    async fn list_user_mentorship_requests(
+        &self,
+        user_id: Uuid,
+    ) -> Result<MentorshipRequestsOutput>;
+
+    /// Lists pending co-speaker invitations for the user.
+    async fn list_user_pending_session_proposal_co_speaker_invitations(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<PendingCoSpeakerInvitation>>;
+
+    /// Mutes optional notifications from a connected group for the user.
+    async fn mute_user_group_notifications(&self, user_id: Uuid, group_id: Uuid) -> Result<()>;
+
+    /// Lists session proposals for the user.
+    async fn list_user_session_proposals(
+        &self,
+        user_id: Uuid,
+        filters: &SessionProposalsFilters,
+    ) -> Result<SessionProposalsOutput>;
+
+    /// Rejects a pending alliance team invitation.
+    async fn reject_alliance_team_invitation(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+    ) -> Result<()>;
+
+    /// Rejects a pending organizer-created event invitation.
+    async fn reject_event_attendee_invitation(
+        &self,
+        actor_user_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<()>;
+
+    /// Rejects a pending group team invitation.
+    async fn reject_group_team_invitation(&self, actor_user_id: Uuid, group_id: Uuid)
+    -> Result<()>;
+
+    /// Rejects a pending co-speaker invitation for a session proposal.
+    async fn reject_session_proposal_co_speaker_invitation(
+        &self,
+        actor_user_id: Uuid,
+        session_proposal_id: Uuid,
+    ) -> Result<()>;
+
+    /// Resubmits a CFS submission for the user.
+    async fn resubmit_cfs_submission(
+        &self,
+        actor_user_id: Uuid,
+        cfs_submission_id: Uuid,
+    ) -> Result<()>;
+
+    /// Submits registration question answers for a user's event and returns whether it became confirmed.
+    async fn submit_event_registration_answers(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        event_id: Uuid,
+        registration_answers: &QuestionnaireAnswers,
+    ) -> Result<bool>;
+
+    /// Subscribes or updates a `CoffeeMeet` cadence.
+    async fn upsert_coffee_meet_subscription(
+        &self,
+        actor_user_id: Uuid,
+        subscription: &CoffeeMeetSubscriptionForm,
+    ) -> Result<()>;
+
+    /// Unmutes optional notifications from a group for the user.
+    async fn unmute_user_group_notifications(&self, user_id: Uuid, group_id: Uuid) -> Result<()>;
+
+    /// Unsubscribes from `CoffeeMeet` for a group.
+    async fn unsubscribe_coffee_meet(&self, actor_user_id: Uuid, group_id: Uuid) -> Result<()>;
+
+    /// Updates a session proposal for the user.
+    async fn update_session_proposal(
+        &self,
+        actor_user_id: Uuid,
+        session_proposal_id: Uuid,
+        session_proposal: &SessionProposalInput,
+    ) -> Result<()>;
+
+    /// Updates the submitted notification category preferences for the user.
+    async fn update_user_notification_preferences(
+        &self,
+        user_id: Uuid,
+        input: &NotificationPreferencesInput,
+    ) -> Result<()>;
+
+    /// Withdraws a CFS submission for the user.
+    async fn withdraw_cfs_submission(
+        &self,
+        actor_user_id: Uuid,
+        cfs_submission_id: Uuid,
+    ) -> Result<()>;
+}
+
+#[async_trait]
+impl<T> DBDashboardUser for T
+where
+    T: PgExecutor + Send + Sync,
+{
+    /// [`DBDashboardUser::accept_alliance_team_invitation`]
+    #[instrument(skip(self), err)]
+    async fn accept_alliance_team_invitation(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select accept_alliance_team_invitation($1::uuid, $2::uuid)",
+            &[&actor_user_id, &alliance_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::accept_event_attendee_invitation`]
+    #[instrument(skip(self), err)]
+    async fn accept_event_attendee_invitation(
+        &self,
+        actor_user_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<Uuid> {
+        self.fetch_scalar_one(
+            "select accept_event_attendee_invitation($1::uuid, $2::uuid)::uuid",
+            &[&actor_user_id, &event_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::accept_group_team_invitation`]
+    #[instrument(skip(self), err)]
+    async fn accept_group_team_invitation(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select accept_group_team_invitation($1::uuid, $2::uuid)",
+            &[&actor_user_id, &group_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::decide_user_event_cohost`]
+    #[instrument(skip(self), err)]
+    async fn decide_user_event_cohost(
+        &self,
+        actor_user_id: Uuid,
+        event_cohost_id: Uuid,
+        approve: bool,
+    ) -> Result<()> {
+        self.execute(
+            "select decide_event_cohost($1::uuid, $2::uuid, $3::boolean)",
+            &[&actor_user_id, &event_cohost_id, &approve],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::accept_session_proposal_co_speaker_invitation`]
+    #[instrument(skip(self), err)]
+    async fn accept_session_proposal_co_speaker_invitation(
+        &self,
+        actor_user_id: Uuid,
+        session_proposal_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select accept_session_proposal_co_speaker_invitation($1::uuid, $2::uuid)",
+            &[&actor_user_id, &session_proposal_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::count_user_pending_invitations`]
+    #[instrument(skip(self), err)]
+    async fn count_user_pending_invitations(&self, user_id: Uuid) -> Result<i64> {
+        self.fetch_scalar_one(
+            "select count_user_pending_invitations($1::uuid)::bigint",
+            &[&user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::add_session_proposal`]
+    #[instrument(skip(self, session_proposal), err)]
+    async fn add_session_proposal(
+        &self,
+        actor_user_id: Uuid,
+        session_proposal: &SessionProposalInput,
+    ) -> Result<Uuid> {
+        self.fetch_scalar_one(
+            "select add_session_proposal($1::uuid, $2::jsonb)::uuid",
+            &[&actor_user_id, &Json(session_proposal)],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::add_user_affiliation`]
+    #[instrument(skip(self), err)]
+    async fn add_user_affiliation(
+        &self,
+        actor_user_id: Uuid,
+        affiliation: &UserAffiliationForm,
+    ) -> Result<()> {
+        self.execute(
+            "select add_user_affiliation($1::uuid, $2::uuid, $3::text)",
+            &[
+                &actor_user_id,
+                &affiliation.landscape_entry_id,
+                &affiliation.role,
+            ],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::delete_session_proposal`]
+    #[instrument(skip(self), err)]
+    async fn delete_session_proposal(
+        &self,
+        actor_user_id: Uuid,
+        session_proposal_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select delete_session_proposal($1::uuid, $2::uuid)",
+            &[&actor_user_id, &session_proposal_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::delete_user_affiliation`]
+    #[instrument(skip(self), err)]
+    async fn delete_user_affiliation(
+        &self,
+        actor_user_id: Uuid,
+        user_affiliation_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select delete_user_affiliation($1::uuid, $2::uuid)",
+            &[&actor_user_id, &user_affiliation_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::get_session_proposal_co_speaker_user_id`]
+    #[instrument(skip(self), err)]
+    async fn get_session_proposal_co_speaker_user_id(
+        &self,
+        user_id: Uuid,
+        session_proposal_id: Uuid,
+    ) -> Result<Option<SessionProposalCoSpeakerUser>> {
+        let db = self.client().await?;
+        let row = db
+            .query_opt(
+                "
+                select co_speaker_user_id
+                from session_proposal
+                where session_proposal_id = $1::uuid
+                and user_id = $2::uuid
+                ",
+                &[&session_proposal_id, &user_id],
+            )
+            .await?;
+
+        Ok(row.map(|row| SessionProposalCoSpeakerUser {
+            co_speaker_user_id: row.get("co_speaker_user_id"),
+        }))
+    }
+
+    /// [`DBDashboardUser::get_user_check_in_code`].
+    #[instrument(skip(self), err)]
+    async fn get_user_check_in_code(&self, event_id: Uuid, user_id: Uuid) -> Result<Option<Uuid>> {
+        self.fetch_scalar_opt(
+            "
+            select check_in_code
+            from event_attendee
+            where event_id = $1::uuid
+              and user_id = $2::uuid
+              and status = 'confirmed'
+            ",
+            &[&event_id, &user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::get_user_notification_preferences`].
+    #[instrument(skip(self), err)]
+    async fn get_user_notification_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> Result<NotificationPreferences> {
+        self.fetch_json_one(
+            "select get_user_notification_preferences($1::uuid)",
+            &[&user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::list_landscape_entry_options`]
+    #[instrument(skip(self), err)]
+    async fn list_landscape_entry_options(&self) -> Result<Vec<LandscapeEntryOption>> {
+        self.fetch_json_one("select list_landscape_entry_options()", &[])
+            .await
+    }
+
+    /// [`DBDashboardUser::list_session_proposal_levels`]
+    #[instrument(skip(self), err)]
+    async fn list_session_proposal_levels(&self) -> Result<Vec<SessionProposalLevel>> {
+        self.fetch_json_one("select list_session_proposal_levels()", &[])
+            .await
+    }
+
+    /// [`DBDashboardUser::list_user_audit_logs`]
+    #[instrument(skip(self, filters), err)]
+    async fn list_user_audit_logs(
+        &self,
+        actor_user_id: Uuid,
+        filters: &AuditLogFilters,
+    ) -> Result<AuditLogsOutput> {
+        self.fetch_json_one(
+            "select list_user_audit_logs($1::uuid, $2::jsonb)",
+            &[&actor_user_id, &Json(filters)],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::list_user_cfs_submissions`]
+    #[instrument(skip(self, filters), err)]
+    async fn list_user_cfs_submissions(
+        &self,
+        user_id: Uuid,
+        filters: &CfsSubmissionsFilters,
+    ) -> Result<CfsSubmissionsOutput> {
+        self.fetch_json_one(
+            "select list_user_cfs_submissions($1::uuid, $2::jsonb)",
+            &[&user_id, &Json(filters)],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::list_user_check_in_events`].
+    #[instrument(skip(self), err)]
+    async fn list_user_check_in_events(&self, user_id: Uuid) -> Result<Vec<UserCheckInEvent>> {
+        self.fetch_json_one("select list_user_check_in_events($1::uuid)", &[&user_id])
+            .await
+    }
+
+    /// [`DBDashboardUser::list_user_affiliations`]
+    #[instrument(skip(self), err)]
+    async fn list_user_affiliations(&self, user_id: Uuid) -> Result<Vec<UserAffiliation>> {
+        self.fetch_json_one("select list_user_affiliations($1::uuid)", &[&user_id])
+            .await
+    }
+
+    /// [`DBDashboardUser::list_user_alliance_team_invitations`]
+    #[instrument(skip(self), err)]
+    async fn list_user_alliance_team_invitations(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<AllianceTeamInvitation>> {
+        self.fetch_json_one(
+            "select list_user_alliance_team_invitations($1::uuid)",
+            &[&user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::list_user_event_invitations`]
+    #[instrument(skip(self), err)]
+    async fn list_user_event_invitations(&self, user_id: Uuid) -> Result<Vec<EventInvitation>> {
+        self.fetch_json_one("select list_user_event_invitations($1::uuid)", &[&user_id])
+            .await
+    }
+
+    /// [`DBDashboardUser::list_user_event_cohost_invitations`]
+    #[instrument(skip(self), err)]
+    async fn list_user_event_cohost_invitations(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<EventCohostInvitation>> {
+        self.fetch_json_one(
+            "select list_user_event_cohost_invitations($1::uuid)",
+            &[&user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::list_user_events`]
+    #[instrument(skip(self, filters), err)]
+    async fn list_user_events(
+        &self,
+        user_id: Uuid,
+        filters: &UserEventsFilters,
+    ) -> Result<UserEventsOutput> {
+        self.fetch_json_one(
+            "select list_user_events($1::uuid, $2::jsonb)",
+            &[&user_id, &Json(filters)],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::list_user_group_team_invitations`]
+    #[instrument(skip(self), err)]
+    async fn list_user_group_team_invitations(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<GroupTeamInvitation>> {
+        self.fetch_json_one(
+            "select list_user_group_team_invitations($1::uuid)",
+            &[&user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::list_user_notification_group_options`].
+    #[instrument(skip(self), err)]
+    async fn list_user_notification_group_options(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<NotificationGroupOption>> {
+        self.fetch_json_one(
+            "select list_user_notification_group_options($1::uuid)",
+            &[&user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::list_user_coffee_meet_subscriptions`]
+    #[instrument(skip(self), err)]
+    async fn list_user_coffee_meet_subscriptions(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<CoffeeMeetSubscription>> {
+        self.fetch_json_one(
+            "select list_user_coffee_meet_subscriptions($1::uuid)",
+            &[&user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::list_user_mentorship_requests`]
+    #[instrument(skip(self), err)]
+    async fn list_user_mentorship_requests(
+        &self,
+        user_id: Uuid,
+    ) -> Result<MentorshipRequestsOutput> {
+        let db = self.client().await?;
+        let rows = db
+            .query(
+                "
+                select
+                    mr.mentorship_request_id,
+                    mr.requester_user_id,
+                    requester.email as requester_email,
+                    requester.username as requester_username,
+                    requester.name as requester_name,
+                    requester.company as requester_company,
+                    requester.title as requester_title,
+                    requester.photo_url as requester_photo_url,
+                    mr.audience_type,
+                    mr.message,
+                    mr.created_at,
+                    count(*) over()::bigint as total
+                from mentorship_request mr
+                join \"user\" requester on requester.user_id = mr.requester_user_id
+                where mr.mentor_user_id = $1::uuid
+                order by mr.created_at desc
+                limit 100;
+                ",
+                &[&user_id],
+            )
+            .await?;
+
+        let total = rows.first().map_or(0, |row| row.get("total"));
+        let requests = rows
+            .into_iter()
+            .map(|row| MentorshipRequest {
+                mentorship_request_id: row.get("mentorship_request_id"),
+                requester_user_id: row.get("requester_user_id"),
+                requester_email: row.get("requester_email"),
+                requester_username: row.get("requester_username"),
+                requester_name: row.get("requester_name"),
+                requester_company: row.get("requester_company"),
+                requester_title: row.get("requester_title"),
+                requester_photo_url: row.get("requester_photo_url"),
+                audience_type: row.get("audience_type"),
+                message: row.get("message"),
+                created_at: row.get("created_at"),
+            })
+            .collect();
+
+        Ok(MentorshipRequestsOutput { total, requests })
+    }
+
+    /// [`DBDashboardUser::list_user_pending_session_proposal_co_speaker_invitations`]
+    #[instrument(skip(self), err)]
+    async fn list_user_pending_session_proposal_co_speaker_invitations(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<PendingCoSpeakerInvitation>> {
+        self.fetch_json_one(
+            "select list_user_pending_session_proposal_co_speaker_invitations($1::uuid)",
+            &[&user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::mute_user_group_notifications`].
+    #[instrument(skip(self), err)]
+    async fn mute_user_group_notifications(&self, user_id: Uuid, group_id: Uuid) -> Result<()> {
+        self.execute(
+            "select mute_user_group_notifications($1::uuid, $2::uuid)",
+            &[&user_id, &group_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::list_user_session_proposals`]
+    #[instrument(skip(self, filters), err)]
+    async fn list_user_session_proposals(
+        &self,
+        user_id: Uuid,
+        filters: &SessionProposalsFilters,
+    ) -> Result<SessionProposalsOutput> {
+        self.fetch_json_one(
+            "select list_user_session_proposals($1::uuid, $2::jsonb)",
+            &[&user_id, &Json(filters)],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::reject_alliance_team_invitation`]
+    #[instrument(skip(self), err)]
+    async fn reject_alliance_team_invitation(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select reject_alliance_team_invitation($1::uuid, $2::uuid)",
+            &[&actor_user_id, &alliance_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::reject_event_attendee_invitation`]
+    #[instrument(skip(self), err)]
+    async fn reject_event_attendee_invitation(
+        &self,
+        actor_user_id: Uuid,
+        event_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select reject_event_attendee_invitation($1::uuid, $2::uuid)",
+            &[&actor_user_id, &event_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::reject_group_team_invitation`]
+    #[instrument(skip(self), err)]
+    async fn reject_group_team_invitation(
+        &self,
+        actor_user_id: Uuid,
+        group_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select reject_group_team_invitation($1::uuid, $2::uuid)",
+            &[&actor_user_id, &group_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::reject_session_proposal_co_speaker_invitation`]
+    #[instrument(skip(self), err)]
+    async fn reject_session_proposal_co_speaker_invitation(
+        &self,
+        actor_user_id: Uuid,
+        session_proposal_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select reject_session_proposal_co_speaker_invitation($1::uuid, $2::uuid)",
+            &[&actor_user_id, &session_proposal_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::resubmit_cfs_submission`]
+    #[instrument(skip(self), err)]
+    async fn resubmit_cfs_submission(
+        &self,
+        actor_user_id: Uuid,
+        cfs_submission_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select resubmit_cfs_submission($1::uuid, $2::uuid)",
+            &[&actor_user_id, &cfs_submission_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::submit_event_registration_answers`]
+    #[instrument(skip(self, registration_answers), err)]
+    async fn submit_event_registration_answers(
+        &self,
+        actor_user_id: Uuid,
+        alliance_id: Uuid,
+        event_id: Uuid,
+        registration_answers: &QuestionnaireAnswers,
+    ) -> Result<bool> {
+        self.fetch_scalar_one(
+            "select submit_event_registration_answers($1::uuid, $2::uuid, $3::uuid, $4::jsonb)",
+            &[
+                &actor_user_id,
+                &alliance_id,
+                &event_id,
+                &Json(registration_answers),
+            ],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::upsert_coffee_meet_subscription`]
+    #[instrument(skip(self, subscription), err)]
+    async fn upsert_coffee_meet_subscription(
+        &self,
+        actor_user_id: Uuid,
+        subscription: &CoffeeMeetSubscriptionForm,
+    ) -> Result<()> {
+        self.execute(
+            "select upsert_coffee_meet_subscription($1::uuid, $2::uuid, $3::text)",
+            &[
+                &actor_user_id,
+                &subscription.group_id,
+                &subscription.frequency,
+            ],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::unsubscribe_coffee_meet`]
+    #[instrument(skip(self), err)]
+    async fn unsubscribe_coffee_meet(&self, actor_user_id: Uuid, group_id: Uuid) -> Result<()> {
+        self.execute(
+            "select unsubscribe_coffee_meet($1::uuid, $2::uuid)",
+            &[&actor_user_id, &group_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::unmute_user_group_notifications`].
+    #[instrument(skip(self), err)]
+    async fn unmute_user_group_notifications(&self, user_id: Uuid, group_id: Uuid) -> Result<()> {
+        self.execute(
+            "select unmute_user_group_notifications($1::uuid, $2::uuid)",
+            &[&user_id, &group_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::update_session_proposal`]
+    #[instrument(skip(self, session_proposal), err)]
+    async fn update_session_proposal(
+        &self,
+        actor_user_id: Uuid,
+        session_proposal_id: Uuid,
+        session_proposal: &SessionProposalInput,
+    ) -> Result<()> {
+        self.execute(
+            "select update_session_proposal($1::uuid, $2::uuid, $3::jsonb)",
+            &[
+                &actor_user_id,
+                &session_proposal_id,
+                &Json(session_proposal),
+            ],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::update_user_notification_preferences`].
+    #[instrument(skip(self, input), err)]
+    async fn update_user_notification_preferences(
+        &self,
+        user_id: Uuid,
+        input: &NotificationPreferencesInput,
+    ) -> Result<()> {
+        self.execute(
+            "select update_user_notification_preferences($1::uuid, $2::jsonb)",
+            &[&user_id, &Json(&input.preferences)],
+        )
+        .await
+    }
+
+    /// [`DBDashboardUser::withdraw_cfs_submission`]
+    #[instrument(skip(self), err)]
+    async fn withdraw_cfs_submission(
+        &self,
+        actor_user_id: Uuid,
+        cfs_submission_id: Uuid,
+    ) -> Result<()> {
+        self.execute(
+            "select withdraw_cfs_submission($1::uuid, $2::uuid)",
+            &[&actor_user_id, &cfs_submission_id],
+        )
+        .await
+    }
+}
+
+/// Co-speaker identifier for a session proposal.
+#[derive(Debug, Clone)]
+pub struct SessionProposalCoSpeakerUser {
+    pub co_speaker_user_id: Option<Uuid>,
+}

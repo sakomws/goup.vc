@@ -11,9 +11,14 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use anyhow::{Context, Result};
 use clap::Parser;
 use deadpool_postgres::Runtime;
-use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
-use postgres_openssl::MakeTlsConnector;
+use rustls::{
+    ClientConfig, DigitallySignedStruct, Error as RustlsError, SignatureScheme,
+    client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
+    crypto::WebPkiSupportedAlgorithms,
+    pki_types::{CertificateDer, ServerName, UnixTime},
+};
 use tokio::{net::TcpListener, signal, sync::RwLock, time};
+use tokio_postgres_rustls::MakeRustlsConnect;
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
@@ -81,14 +86,57 @@ fn setup_logging(log_format: &LogFormat) {
     }
 }
 
+/// TLS certificate verifier matching `SslVerifyMode::NONE` for Postgres connections.
+#[derive(Debug)]
+struct NoCertificateVerification(WebPkiSupportedAlgorithms);
+
+impl ServerCertVerifier for NoCertificateVerification {
+    fn verify_server_cert(
+        &self,
+        _end_entity: &CertificateDer<'_>,
+        _intermediates: &[CertificateDer<'_>],
+        _server_name: &ServerName<'_>,
+        _ocsp_response: &[u8],
+        _now: UnixTime,
+    ) -> std::result::Result<ServerCertVerified, RustlsError> {
+        Ok(ServerCertVerified::assertion())
+    }
+
+    fn verify_tls12_signature(
+        &self,
+        message: &[u8],
+        cert: &CertificateDer<'_>,
+        dss: &DigitallySignedStruct,
+    ) -> std::result::Result<HandshakeSignatureValid, RustlsError> {
+        rustls::crypto::verify_tls12_signature(message, cert, dss, &self.0)
+    }
+
+    fn verify_tls13_signature(
+        &self,
+        message: &[u8],
+        cert: &CertificateDer<'_>,
+        dss: &DigitallySignedStruct,
+    ) -> std::result::Result<HandshakeSignatureValid, RustlsError> {
+        rustls::crypto::verify_tls13_signature(message, cert, dss, &self.0)
+    }
+
+    fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
+        self.0.supported_schemes()
+    }
+}
+
 /// Configure the database pool used by the redirector.
 fn setup_db(cfg: &Config) -> Result<PgDB> {
-    // Build the TLS connector used by the Postgres pool
-    let mut builder = SslConnector::builder(SslMethod::tls())?;
-    builder.set_verify(SslVerifyMode::NONE);
+    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let tls_config = ClientConfig::builder_with_provider(provider.clone())
+        .with_safe_default_protocol_versions()?
+        .dangerous()
+        .with_custom_certificate_verifier(Arc::new(NoCertificateVerification(
+            provider.signature_verification_algorithms,
+        )))
+        .with_no_client_auth();
 
-    // Create the pool with the configured TLS connector
-    let connector = MakeTlsConnector::new(builder.build());
+    let connector = MakeRustlsConnect::new(tls_config);
     let pool = cfg.db.create_pool(Some(Runtime::Tokio1), connector)?;
 
     Ok(PgDB::new(pool))

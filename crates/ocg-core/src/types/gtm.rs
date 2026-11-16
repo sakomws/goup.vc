@@ -1,0 +1,727 @@
+//! GTM pipeline types for alliance and group leads.
+
+#![allow(clippy::ref_option, clippy::trivially_copy_pass_by_ref)]
+
+use chrono::{DateTime, Utc};
+use garde::Validate;
+use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
+use uuid::Uuid;
+
+use crate::{
+    impl_pagination_and_raw_query,
+    types::pagination as dashboard,
+    types::pagination::{Pagination, ToRawQuery},
+    validation::{
+        MAX_LEN_DESCRIPTION, MAX_LEN_ENTITY_NAME, MAX_LEN_L, MAX_LEN_M, MAX_PAGINATION_LIMIT,
+        optional_trimmed_string, trimmed_non_empty, trimmed_non_empty_opt,
+    },
+};
+
+/// Allowed GTM lead kinds.
+pub const GTM_KINDS: [&str; 5] = ["sponsor", "startup", "investor", "speaker", "organizer"];
+
+/// Pipeline stages, including the won/lost fork.
+pub const GTM_STAGES: [&str; 10] = [
+    "lead_generation",
+    "reachout",
+    "get_response",
+    "qualification",
+    "proposal",
+    "negotiation",
+    "won",
+    "lost",
+    "delivered",
+    "renewal",
+];
+
+/// Draft-only agent identifiers.
+pub const GTM_AGENTS: [&str; 9] = [
+    "lead_generation",
+    "reachout",
+    "get_response",
+    "qualification",
+    "proposal",
+    "negotiation",
+    "won_lost",
+    "delivered",
+    "renewal",
+];
+
+const GTM_SOURCES: [&str; 4] = ["manual", "landscape", "member", "discovery"];
+pub const GTM_LOST_REASONS: [(&str, &str); 7] = [
+    ("budget", "Budget unavailable"),
+    ("timing", "Timing"),
+    ("no_response", "No response"),
+    ("not_a_fit", "Not a fit"),
+    ("competitor", "Selected another partner"),
+    ("internal_change", "Internal change"),
+    ("other", "Other"),
+];
+
+/// Dashboard list filters.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmLeadFilters {
+    /// Free-text search.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub query: Option<String>,
+    /// Filter by lead kind.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M), custom(valid_gtm_kind_opt))]
+    pub kind: Option<String>,
+    /// Filter by pipeline stage.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M), custom(valid_gtm_stage_opt))]
+    pub stage: Option<String>,
+    /// Filter by assigned group.
+    #[garde(skip)]
+    pub group_id: Option<Uuid>,
+    /// Filter by owner.
+    #[garde(skip)]
+    pub owner_user_id: Option<Uuid>,
+    /// Page size.
+    #[serde(default = "dashboard::default_limit")]
+    #[garde(range(max = MAX_PAGINATION_LIMIT))]
+    pub limit: Option<usize>,
+    /// Page offset.
+    #[serde(default = "dashboard::default_offset")]
+    #[garde(skip)]
+    pub offset: Option<usize>,
+}
+
+impl_pagination_and_raw_query!(GtmLeadFilters, limit, offset);
+
+/// Paginated lead list plus stage counts.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmLeadList {
+    /// Matching leads.
+    #[serde(default)]
+    pub leads: Vec<GtmLead>,
+    /// Total matching leads.
+    #[serde(default)]
+    pub total: usize,
+    /// Counts keyed by stage.
+    #[serde(default)]
+    pub stage_counts: serde_json::Map<String, serde_json::Value>,
+}
+
+/// Stored GTM lead.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmLead {
+    /// Lead identifier.
+    pub gtm_lead_id: Uuid,
+    /// Owning alliance.
+    pub alliance_id: Uuid,
+    /// Optional group assignment.
+    pub group_id: Option<Uuid>,
+    /// Lead kind.
+    pub kind: String,
+    /// Current stage.
+    pub stage: String,
+    /// Contact or company display name.
+    pub name: String,
+    /// Organization name.
+    pub org_name: Option<String>,
+    /// Contact email.
+    pub email: Option<String>,
+    /// Website.
+    pub website_url: Option<String>,
+    /// `LinkedIn` profile URL.
+    pub linkedin_url: Option<String>,
+    /// Linked landscape entry.
+    pub landscape_entry_id: Option<Uuid>,
+    /// Linked platform user.
+    pub user_id: Option<Uuid>,
+    /// Linked group sponsor after a win.
+    pub group_sponsor_id: Option<Uuid>,
+    /// Organizer who owns the deal.
+    pub owner_user_id: Option<Uuid>,
+    /// Qualification score.
+    pub score: Option<i32>,
+    /// Estimated deal value in cents.
+    pub estimated_value_cents: Option<i64>,
+    /// Currency code.
+    pub currency: Option<String>,
+    /// Next follow-up time.
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub next_action_at: Option<DateTime<Utc>>,
+    /// Renewal date.
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub renewal_at: Option<DateTime<Utc>>,
+    /// Lost reason.
+    pub lost_reason: Option<String>,
+    /// How the lead was created.
+    pub source: String,
+    /// Free-form notes.
+    pub notes: Option<String>,
+    /// Structured extras.
+    #[serde(default)]
+    pub payload: serde_json::Value,
+    /// Activity timeline (detail view).
+    #[serde(default)]
+    pub activities: Vec<GtmLeadActivity>,
+    /// Agent drafts (detail view).
+    #[serde(default)]
+    pub drafts: Vec<GtmAgentDraft>,
+    /// Sponsor contacts.
+    #[serde(default)]
+    pub contacts: Vec<GtmSponsorContact>,
+    /// Sponsor proposals.
+    #[serde(default)]
+    pub proposals: Vec<GtmSponsorProposal>,
+    /// Follow-up tasks.
+    #[serde(default)]
+    pub tasks: Vec<GtmTask>,
+    /// Sponsor deliverables.
+    #[serde(default)]
+    pub deliverables: Vec<GtmSponsorDeliverable>,
+    /// Created at.
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub created_at: Option<DateTime<Utc>>,
+    /// Updated at.
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
+/// Timeline row on a lead.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmLeadActivity {
+    /// Activity identifier.
+    pub gtm_lead_activity_id: Uuid,
+    /// Lead identifier.
+    pub gtm_lead_id: Option<Uuid>,
+    /// Human actor, if any.
+    pub actor_user_id: Option<Uuid>,
+    /// Agent identifier, if any.
+    pub agent_id: Option<String>,
+    /// Activity kind.
+    pub kind: String,
+    /// Display body.
+    pub body: Option<String>,
+    /// Structured details.
+    #[serde(default)]
+    pub details: serde_json::Value,
+    /// Created at.
+    #[serde(default, with = "chrono::serde::ts_seconds")]
+    pub created_at: DateTime<Utc>,
+}
+
+/// Draft produced by an agent.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmAgentDraft {
+    /// Draft identifier.
+    pub gtm_agent_draft_id: Uuid,
+    /// Owning alliance.
+    pub alliance_id: Uuid,
+    /// Optional group.
+    pub group_id: Option<Uuid>,
+    /// Target lead, if any.
+    pub gtm_lead_id: Option<Uuid>,
+    /// Agent that produced the draft.
+    pub agent_id: String,
+    /// Review status.
+    pub status: String,
+    /// Short title.
+    pub title: String,
+    /// Email or proposal body.
+    pub body: String,
+    /// Suggested next stage.
+    pub suggested_stage: Option<String>,
+    /// Structured extras.
+    #[serde(default)]
+    pub payload: serde_json::Value,
+    /// Created at.
+    #[serde(default, with = "chrono::serde::ts_seconds")]
+    pub created_at: DateTime<Utc>,
+    /// Reviewed at.
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub reviewed_at: Option<DateTime<Utc>>,
+    /// Reviewer.
+    pub reviewed_by: Option<Uuid>,
+}
+
+/// Manual create/update input.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmLeadInput {
+    /// Optional group assignment.
+    #[garde(skip)]
+    pub group_id: Option<Uuid>,
+    /// Lead kind.
+    #[garde(custom(valid_gtm_kind))]
+    pub kind: String,
+    /// Display name.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub name: String,
+    /// Organization.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_ENTITY_NAME))]
+    pub org_name: Option<String>,
+    /// Email.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(email, length(max = MAX_LEN_M), custom(trimmed_non_empty_opt))]
+    pub email: Option<String>,
+    /// Website.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(url, length(max = MAX_LEN_M), custom(trimmed_non_empty_opt))]
+    pub website_url: Option<String>,
+    /// `LinkedIn` profile URL.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(url, length(max = MAX_LEN_M), custom(trimmed_non_empty_opt))]
+    pub linkedin_url: Option<String>,
+    /// Owner.
+    #[garde(skip)]
+    pub owner_user_id: Option<Uuid>,
+    /// Estimated deal value in cents.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(valid_cents_opt))]
+    pub estimated_value_cents: Option<String>,
+    /// ISO-4217 currency code.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(valid_currency_opt))]
+    pub currency: Option<String>,
+    /// Browser-local follow-up timestamp.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub next_action_at: Option<String>,
+    /// Browser-local renewal timestamp.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub renewal_at: Option<String>,
+    /// Notes.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_DESCRIPTION))]
+    pub notes: Option<String>,
+    /// Source.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M), custom(valid_gtm_source_opt))]
+    pub source: Option<String>,
+}
+
+/// Human stage move.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmLeadTransitionInput {
+    /// Target stage.
+    #[garde(custom(valid_gtm_stage))]
+    pub stage: String,
+    /// Optional lost reason.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_L))]
+    pub lost_reason: Option<String>,
+}
+
+/// Sponsor package shown in campaign forms.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmSponsorPackage {
+    pub gtm_sponsor_package_id: Uuid,
+    pub alliance_id: Uuid,
+    pub group_id: Option<Uuid>,
+    pub name: String,
+    pub description: Option<String>,
+    pub price_cents: i64,
+    pub currency: String,
+    pub billing_period: String,
+    pub active: bool,
+    #[serde(default)]
+    pub deliverables: Vec<serde_json::Value>,
+}
+
+/// Sponsor package list returned by SQL.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmSponsorPackages(pub Vec<GtmSponsorPackage>);
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmSponsorContact {
+    pub gtm_sponsor_contact_id: Uuid,
+    pub user_id: Option<Uuid>,
+    pub name: String,
+    pub email: Option<String>,
+    pub title: Option<String>,
+    pub is_primary: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmSponsorProposal {
+    pub gtm_sponsor_proposal_id: Uuid,
+    pub gtm_sponsor_package_id: Option<Uuid>,
+    pub status: String,
+    pub title: String,
+    #[serde(default)]
+    pub package_snapshot: serde_json::Value,
+    pub amount_cents: i64,
+    pub currency: String,
+    pub valid_until: Option<String>,
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub created_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmTask {
+    pub gtm_task_id: Uuid,
+    pub gtm_lead_id: Option<Uuid>,
+    pub lead_name: Option<String>,
+    pub title: String,
+    pub notes: Option<String>,
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub due_at: Option<DateTime<Utc>>,
+    pub state: String,
+    pub assigned_user_id: Option<Uuid>,
+    pub reminder_key: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmDueTasks(pub Vec<GtmTask>);
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmSponsorDeliverable {
+    pub gtm_sponsor_deliverable_id: Uuid,
+    pub gtm_sponsor_proposal_id: Option<Uuid>,
+    pub title: String,
+    pub notes: Option<String>,
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub due_at: Option<DateTime<Utc>>,
+    pub state: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmSponsorPackageInput {
+    #[garde(skip)]
+    pub group_id: Option<Uuid>,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub name: String,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_DESCRIPTION))]
+    pub description: Option<String>,
+    #[garde(range(min = 0))]
+    pub price_cents: i64,
+    #[garde(custom(valid_currency))]
+    pub currency: String,
+    #[garde(custom(valid_billing_period))]
+    pub billing_period: String,
+    #[serde(default)]
+    #[garde(length(max = MAX_LEN_DESCRIPTION))]
+    pub deliverables: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmSponsorContactInput {
+    #[garde(skip)]
+    pub user_id: Option<Uuid>,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub name: String,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(email, length(max = MAX_LEN_M))]
+    pub email: Option<String>,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub title: Option<String>,
+    #[serde(default)]
+    #[garde(skip)]
+    pub is_primary: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmSponsorProposalInput {
+    #[garde(skip)]
+    pub gtm_sponsor_package_id: Uuid,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub title: String,
+    #[garde(range(min = 0))]
+    pub amount_cents: Option<i64>,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(valid_currency_opt))]
+    pub currency: Option<String>,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub valid_until: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmTaskInput {
+    #[garde(skip)]
+    pub assigned_user_id: Option<Uuid>,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub title: String,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_DESCRIPTION))]
+    pub notes: Option<String>,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
+    pub due_at: String,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub reminder_key: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmActivityInput {
+    #[garde(custom(valid_activity_kind))]
+    pub kind: String,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_L))]
+    pub body: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmDeliverableInput {
+    #[garde(skip)]
+    pub gtm_sponsor_proposal_id: Option<Uuid>,
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_ENTITY_NAME))]
+    pub title: String,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_DESCRIPTION))]
+    pub notes: Option<String>,
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M))]
+    pub due_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmStateInput {
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
+    pub state: String,
+}
+
+/// Request to run one agent.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmRunAgentInput {
+    /// Agent to run.
+    #[garde(custom(valid_gtm_agent))]
+    pub agent_id: String,
+    /// Optional pasted reply used by Get Response.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_L))]
+    pub reply: Option<String>,
+}
+
+/// Human review of an agent draft.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
+pub struct GtmReviewDraftInput {
+    /// approved or rejected.
+    #[garde(custom(valid_gtm_review_status))]
+    pub status: String,
+    /// Optional edited body.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_L))]
+    pub body: Option<String>,
+    /// Optional edited suggested stage.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(length(max = MAX_LEN_M), custom(valid_gtm_stage_opt))]
+    pub suggested_stage: Option<String>,
+    /// Reviewer note.
+    #[serde(default, deserialize_with = "optional_trimmed_string")]
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_L))]
+    pub note: Option<String>,
+    /// Create a sponsor record on won.
+    #[serde(default)]
+    #[garde(skip)]
+    pub create_sponsor: bool,
+    /// Create a landscape entry on won.
+    #[serde(default)]
+    #[garde(skip)]
+    pub create_landscape_entry: bool,
+    /// Invite as organizer on won.
+    #[serde(default)]
+    #[garde(skip)]
+    pub invite_organizer: bool,
+}
+
+/// Result of reviewing a draft.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmReviewDraftResult {
+    /// Draft identifier.
+    pub gtm_agent_draft_id: Uuid,
+    /// New status.
+    pub status: String,
+    /// Leads created from a lead-gen draft.
+    #[serde(default)]
+    pub created_lead_ids: Vec<Uuid>,
+    /// Optional won side effects.
+    #[serde(default)]
+    pub side_effects: serde_json::Value,
+    /// Related lead.
+    pub gtm_lead_id: Option<Uuid>,
+    /// Agent identifier.
+    pub agent_id: Option<String>,
+    /// Approved body.
+    pub body: Option<String>,
+    /// Applied stage.
+    pub suggested_stage: Option<String>,
+}
+
+/// Candidate rows returned by lead generation.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmLeadCandidates {
+    /// Suggested leads.
+    #[serde(default)]
+    pub candidates: Vec<serde_json::Value>,
+}
+
+/// Draft list wrapper.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GtmAgentDraftList {
+    /// Drafts.
+    #[serde(default)]
+    pub drafts: Vec<GtmAgentDraft>,
+}
+
+fn valid_gtm_kind(value: &str, _: &()) -> garde::Result {
+    if GTM_KINDS.contains(&value) {
+        Ok(())
+    } else {
+        Err(garde::Error::new("invalid gtm kind"))
+    }
+}
+
+fn valid_gtm_kind_opt(value: &Option<String>, _: &()) -> garde::Result {
+    match value {
+        Some(kind) => valid_gtm_kind(kind, &()),
+        None => Ok(()),
+    }
+}
+
+fn valid_gtm_stage(value: &str, _: &()) -> garde::Result {
+    if GTM_STAGES.contains(&value) {
+        Ok(())
+    } else {
+        Err(garde::Error::new("invalid gtm stage"))
+    }
+}
+
+fn valid_gtm_stage_opt(value: &Option<String>, _: &()) -> garde::Result {
+    match value {
+        Some(stage) => valid_gtm_stage(stage, &()),
+        None => Ok(()),
+    }
+}
+
+fn valid_gtm_agent(value: &str, _: &()) -> garde::Result {
+    if GTM_AGENTS.contains(&value) {
+        Ok(())
+    } else {
+        Err(garde::Error::new("invalid gtm agent"))
+    }
+}
+
+fn valid_gtm_source_opt(value: &Option<String>, _: &()) -> garde::Result {
+    match value {
+        Some(source) if GTM_SOURCES.contains(&source.as_str()) => Ok(()),
+        Some(_) => Err(garde::Error::new("invalid gtm source")),
+        None => Ok(()),
+    }
+}
+
+fn valid_gtm_review_status(value: &str, _: &()) -> garde::Result {
+    if matches!(value, "approved" | "rejected") {
+        Ok(())
+    } else {
+        Err(garde::Error::new("invalid gtm review status"))
+    }
+}
+
+fn valid_currency(value: &str, _: &()) -> garde::Result {
+    if value.len() == 3 && value.bytes().all(|c| c.is_ascii_alphabetic()) {
+        Ok(())
+    } else {
+        Err(garde::Error::new("currency must be a three-letter code"))
+    }
+}
+
+fn valid_cents_opt(value: &Option<String>, _: &()) -> garde::Result {
+    match value {
+        Some(value) if value.parse::<i64>().is_ok_and(|value| value >= 0) => Ok(()),
+        Some(_) => Err(garde::Error::new("value must be non-negative cents")),
+        None => Ok(()),
+    }
+}
+
+fn valid_currency_opt(value: &Option<String>, _: &()) -> garde::Result {
+    value.as_deref().map_or(Ok(()), |value| valid_currency(value, &()))
+}
+
+fn valid_billing_period(value: &str, _: &()) -> garde::Result {
+    if matches!(value, "one_time" | "monthly" | "quarterly" | "annual") {
+        Ok(())
+    } else {
+        Err(garde::Error::new("invalid billing period"))
+    }
+}
+
+fn valid_activity_kind(value: &str, _: &()) -> garde::Result {
+    if matches!(value, "note" | "call" | "email" | "meeting") {
+        Ok(())
+    } else {
+        Err(garde::Error::new("invalid manual activity kind"))
+    }
+}
+
+/// Recommended next stage for an agent given the current stage.
+pub fn suggested_stage_for_agent(agent_id: &str, current_stage: &str) -> Option<&'static str> {
+    let preferred = match agent_id {
+        "lead_generation" => "lead_generation",
+        "reachout" => "reachout",
+        "get_response" => "get_response",
+        "qualification" => "qualification",
+        "proposal" => "proposal",
+        "negotiation" => "negotiation",
+        "won_lost" => "won",
+        "delivered" => "delivered",
+        "renewal" => "renewal",
+        _ => return None,
+    };
+    if current_stage == preferred || agent_may_suggest(current_stage, preferred) {
+        Some(preferred)
+    } else {
+        next_legal_agent_stage(current_stage).or(Some(preferred))
+    }
+}
+
+fn agent_may_suggest(from: &str, to: &str) -> bool {
+    matches!(
+        (from, to),
+        ("lead_generation" | "renewal" | "lost", "reachout")
+            | ("reachout", "get_response")
+            | ("get_response", "qualification")
+            | ("qualification", "proposal" | "lost")
+            | ("proposal", "negotiation")
+            | ("negotiation", "won" | "lost")
+            | ("won", "delivered")
+            | ("delivered", "renewal")
+    )
+}
+
+fn next_legal_agent_stage(from: &str) -> Option<&'static str> {
+    match from {
+        "reachout" => Some("get_response"),
+        "get_response" => Some("qualification"),
+        "qualification" => Some("proposal"),
+        "proposal" => Some("negotiation"),
+        "negotiation" => Some("won"),
+        "won" => Some("delivered"),
+        "delivered" => Some("renewal"),
+        "lead_generation" | "renewal" | "lost" => Some("reachout"),
+        _ => None,
+    }
+}
+
+/// Display label for a stage.
+pub fn stage_label(stage: &str) -> &'static str {
+    match stage {
+        "lead_generation" => "Lead generation",
+        "reachout" => "Reachout",
+        "get_response" => "Get response",
+        "qualification" => "Qualification",
+        "proposal" => "Proposal",
+        "negotiation" => "Negotiation",
+        "won" => "Won",
+        "lost" => "Lost",
+        "delivered" => "Delivered",
+        "renewal" => "Renewal",
+        _ => "Unknown",
+    }
+}

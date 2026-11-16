@@ -678,7 +678,7 @@ fn user_summary_from_linkedin_id_token_claims_extracts_verified_user() {
     );
 
     // Execute conversion
-    let result = UserSummary::from_linkedin_id_token_claims(&claims).unwrap();
+    let result = super::user_summary_from_linkedin_id_token_claims(&claims).unwrap();
 
     // Check result
     assert_eq!(result.email, "user@example.com");
@@ -703,7 +703,7 @@ fn user_summary_from_linkedin_id_token_claims_rejects_missing_email() {
     let claims = sample_oidc_claims(None, Some(true), Some("Test User"), Some("test-user"));
 
     // Execute conversion
-    let result = UserSummary::from_linkedin_id_token_claims(&claims);
+    let result = super::user_summary_from_linkedin_id_token_claims(&claims);
 
     // Check result
     assert!(result.is_err());
@@ -721,7 +721,7 @@ fn user_summary_from_linkedin_id_token_claims_rejects_missing_name() {
     );
 
     // Execute conversion
-    let result = UserSummary::from_linkedin_id_token_claims(&claims);
+    let result = super::user_summary_from_linkedin_id_token_claims(&claims);
 
     // Check result
     assert!(result.is_err());
@@ -739,7 +739,7 @@ fn user_summary_from_linkedin_id_token_claims_rejects_missing_email_verified() {
     );
 
     // Execute conversion
-    let result = UserSummary::from_linkedin_id_token_claims(&claims);
+    let result = super::user_summary_from_linkedin_id_token_claims(&claims);
 
     // Check result
     assert!(result.is_err());
@@ -757,7 +757,7 @@ fn user_summary_from_linkedin_id_token_claims_rejects_unverified_email() {
     );
 
     // Execute conversion
-    let result = UserSummary::from_linkedin_id_token_claims(&claims);
+    let result = super::user_summary_from_linkedin_id_token_claims(&claims);
 
     // Check result
     assert!(result.is_err());

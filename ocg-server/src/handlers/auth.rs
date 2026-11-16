@@ -47,8 +47,7 @@ use crate::{
 #[cfg(test)]
 mod tests;
 
-/// Key used to store the authentication provider in the session.
-pub(crate) const AUTH_PROVIDER_KEY: &str = "auth_provider";
+pub(crate) use ocg_core::auth::AUTH_PROVIDER_KEY;
 
 /// Alliance slug used for `LinkedIn` auto-join.
 const LINKEDIN_AUTO_JOIN_ALLIANCE_NAME: &str = "goup";

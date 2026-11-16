@@ -1,0 +1,42 @@
+[package]
+name = "ocg-db"
+description = "PostgreSQL database abstraction and queries for Open Alliance Groups"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+default = []
+test-utils = ["dep:mockall", "ocg-core/test-utils"]
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+axum-login = { workspace = true }
+base64 = { workspace = true }
+cached = { workspace = true }
+chrono = { workspace = true }
+chrono-tz = { workspace = true }
+deadpool-postgres = { workspace = true }
+mockall = { workspace = true, optional = true }
+ocg-core = { path = "../ocg-core" }
+ocg-templates-common = { path = "../ocg-templates-common" }
+ocg-templates-dashboard = { path = "../ocg-templates-dashboard" }
+ocg-templates-notifications = { path = "../ocg-templates-notifications" }
+ocg-templates-public = { path = "../ocg-templates-public" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+strum = { workspace = true }
+tokio = { workspace = true }
+tokio-postgres = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+mockall = { workspace = true }
+ocg-core = { path = "../ocg-core", features = ["test-utils"] }

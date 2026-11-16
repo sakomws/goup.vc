@@ -1,0 +1,770 @@
+//! This module defines types and logic to manage and send user notifications.
+
+use std::{sync::Arc, time::Duration};
+
+use anyhow::{Result, anyhow};
+use askama::Template;
+use async_trait::async_trait;
+use lettre::{
+    AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
+    message::{
+        Mailbox, MessageBuilder, MultiPart, SinglePart,
+        header::{ContentDisposition, ContentType},
+    },
+    transport::smtp::{
+        AsyncSmtpTransportBuilder, Error as SmtpError, SUBMISSIONS_PORT,
+        authentication::Credentials,
+    },
+};
+#[cfg(any(test, feature = "test-utils"))]
+use mockall::automock;
+use tokio::time::sleep;
+use tokio_util::{sync::CancellationToken, task::TaskTracker};
+use tracing::{error, instrument, warn};
+
+use ocg_core::config::EmailConfig;
+use ocg_db::DynDB;
+use ocg_templates_notifications::{
+    AllianceCustom, AllianceTeamInvitation, CfsSubmissionUpdated, CoffeeMeetSuggestion,
+    DistributionContentDue, EmailVerification, EventAttendanceCanceled, EventCanceled,
+    EventCohostInvitation, EventCustom, EventInvitation, EventPublished, EventRefundApproved,
+    EventRefundRejected, EventRefundRequested, EventReminder, EventRescheduled,
+    EventSeriesCanceled, EventSeriesPublished, EventSurveyNotification, EventWaitlistJoined,
+    EventWaitlistLeft, EventWaitlistPromoted, EventWelcome, GroupCustom, GroupTeamInvitation,
+    GroupWelcome, InboxMessageReceived, InboxReplyReceived, IntentionalDatingIntroduction,
+    MockInterviewMatched, OpportunityDigest, SessionProposalCoSpeakerInvitation, SiteOnboarding,
+    SpeakerSeriesWelcome, SpeakerWelcome,
+};
+
+pub mod enqueue;
+pub mod payloads;
+
+#[cfg(test)]
+mod tests;
+
+/// Maximum number of delivery claims before a retryable failure becomes terminal.
+const DELIVERY_MAX_CLAIMS: usize = 10;
+
+/// Time after which a claimed notification requires manual delivery review.
+const DELIVERY_PROCESSING_TIMEOUT: Duration = Duration::from_mins(15);
+
+/// Initial delay before requeueing a retryable notification delivery failure.
+const DELIVERY_REQUEUE_BASE_DELAY: Duration = Duration::from_mins(1);
+
+/// Maximum delay before requeueing a retryable notification delivery failure.
+const DELIVERY_REQUEUE_MAX_DELAY: Duration = Duration::from_mins(30);
+
+/// Maximum number of attempts for one notification delivery claim.
+const DELIVERY_SEND_MAX_ATTEMPTS: usize = 3;
+
+/// Number of workers that recover stale notification delivery claims.
+const NUM_DELIVERY_RECOVERY_WORKERS: usize = 1;
+
+/// Number of concurrent workers that deliver notifications.
+const NUM_DELIVERY_WORKERS: usize = 2;
+
+/// Number of workers that enqueue due notifications.
+const NUM_ENQUEUE_WORKERS: usize = 1;
+
+/// Time to wait after a delivery error before retrying.
+const PAUSE_ON_DELIVERY_ERROR: Duration = Duration::from_secs(10);
+
+/// Time to wait when there are no notifications to deliver.
+const PAUSE_ON_DELIVERY_NONE: Duration = Duration::from_secs(15);
+
+/// Time to wait after a delivery recovery error before retrying.
+const PAUSE_ON_DELIVERY_RECOVERY_ERROR: Duration = Duration::from_secs(30);
+
+/// Time to wait between delivery recovery checks.
+const PAUSE_ON_DELIVERY_RECOVERY_NONE: Duration = Duration::from_mins(1);
+
+/// Time to wait before retrying a transient notification delivery error.
+const PAUSE_ON_DELIVERY_RETRY: Duration = Duration::from_secs(5);
+
+/// Time to wait after an enqueue error before retrying.
+const PAUSE_ON_ENQUEUE_ERROR: Duration = Duration::from_secs(30);
+
+/// Time to wait when there are no due notifications to enqueue.
+const PAUSE_ON_ENQUEUE_NONE: Duration = Duration::from_mins(5);
+
+/// Trait for a notifications manager, responsible for delivering notifications.
+#[async_trait]
+#[cfg_attr(any(test, feature = "test-utils"), automock)]
+pub trait NotificationsManager {
+    /// Enqueue a notification for delivery.
+    async fn enqueue(&self, notification: &NewNotification) -> Result<()>;
+
+    /// Send an email directly to an external address.
+    async fn send_email(&self, email: &OutboundEmail) -> Result<()>;
+}
+
+/// Shared trait object for a notifications manager.
+pub type DynNotificationsManager = Arc<dyn NotificationsManager + Send + Sync>;
+
+/// PostgreSQL-backed notifications manager implementation.
+pub struct PgNotificationsManager {
+    /// Email configuration used for direct sends.
+    cfg: EmailConfig,
+    /// Handle to the database for notification operations.
+    db: DynDB,
+    /// Shared email sender.
+    email_sender: DynEmailSender,
+}
+
+impl PgNotificationsManager {
+    /// Create a new `PgNotificationsManager`.
+    pub fn new(
+        db: DynDB,
+        cfg: &EmailConfig,
+        base_url: &str,
+        email_sender: &DynEmailSender,
+        task_tracker: &TaskTracker,
+        cancellation_token: &CancellationToken,
+    ) -> Self {
+        // Setup and run workers to enqueue due notifications
+        for _ in 1..=NUM_ENQUEUE_WORKERS {
+            let worker = EnqueueWorker {
+                db: db.clone(),
+                base_url: base_url.to_string(),
+                cancellation_token: cancellation_token.clone(),
+            };
+            task_tracker.spawn(async move {
+                worker.run().await;
+            });
+        }
+
+        // Setup and run workers to recover abandoned notification delivery claims
+        for _ in 1..=NUM_DELIVERY_RECOVERY_WORKERS {
+            let worker = DeliveryRecoveryWorker {
+                db: db.clone(),
+                cancellation_token: cancellation_token.clone(),
+            };
+            task_tracker.spawn(async move {
+                worker.run().await;
+            });
+        }
+
+        // Setup and run workers to deliver notifications
+        for _ in 1..=NUM_DELIVERY_WORKERS {
+            let mut worker = DeliveryWorker {
+                db: db.clone(),
+                cfg: cfg.clone(),
+                cancellation_token: cancellation_token.clone(),
+                email_sender: email_sender.clone(),
+            };
+            task_tracker.spawn(async move {
+                worker.run().await;
+            });
+        }
+
+        Self {
+            cfg: cfg.clone(),
+            db,
+            email_sender: email_sender.clone(),
+        }
+    }
+}
+
+#[async_trait]
+impl NotificationsManager for PgNotificationsManager {
+    /// Enqueue a notification for delivery.
+    async fn enqueue(&self, notification: &NewNotification) -> Result<()> {
+        self.db.enqueue_notification(notification).await
+    }
+
+    /// Send an email directly to an external address.
+    async fn send_email(&self, email: &OutboundEmail) -> Result<()> {
+        let worker = DeliveryWorker {
+            db: self.db.clone(),
+            cfg: self.cfg.clone(),
+            cancellation_token: CancellationToken::new(),
+            email_sender: self.email_sender.clone(),
+        };
+        worker
+            .send_email_with_retries(&email.to, &email.subject, email.body.clone(), &[])
+            .await
+    }
+}
+
+/// Worker responsible for enqueuing due notifications.
+struct EnqueueWorker {
+    /// Database handle for notification queries.
+    db: DynDB,
+    /// Base URL used for generated links in reminders.
+    base_url: String,
+    /// Token to signal worker shutdown.
+    cancellation_token: CancellationToken,
+}
+
+impl EnqueueWorker {
+    /// Main worker loop: enqueues due notifications until cancelled.
+    async fn run(&self) {
+        loop {
+            // Enqueue due notifications and pick next pause interval
+            let pause = match self.enqueue_due_notifications().await {
+                Ok(_) => PAUSE_ON_ENQUEUE_NONE,
+                Err(err) => {
+                    error!(?err, "error enqueueing due notifications");
+                    PAUSE_ON_ENQUEUE_ERROR
+                }
+            };
+
+            // Exit if the worker has been asked to stop
+            tokio::select! {
+                () = sleep(pause) => {},
+                () = self.cancellation_token.cancelled() => break,
+            }
+        }
+    }
+
+    /// Enqueue due notifications and return the number enqueued.
+    #[instrument(skip(self), err)]
+    async fn enqueue_due_notifications(&self) -> Result<usize> {
+        let event_reminders = self.db.enqueue_due_event_reminders(&self.base_url).await?;
+        let event_surveys = self.db.enqueue_due_event_survey_notifications(&self.base_url).await?;
+        let coffee_meet_suggestions =
+            self.db.enqueue_due_coffee_meet_suggestions(&self.base_url).await?;
+        let distribution_reminders = self
+            .db
+            .enqueue_due_distribution_content_reminders(&self.base_url)
+            .await?;
+        let opportunity_digests = self.db.enqueue_due_opportunity_digests(&self.base_url).await?;
+        let scheduled_event_attendee_emails =
+            self.db.enqueue_due_scheduled_event_attendee_emails().await?;
+
+        Ok(event_reminders
+            + event_surveys
+            + coffee_meet_suggestions
+            + distribution_reminders
+            + opportunity_digests
+            + scheduled_event_attendee_emails)
+    }
+}
+
+/// Worker responsible for marking abandoned delivery claims as unknown.
+struct DeliveryRecoveryWorker {
+    /// Database handle for notification queries.
+    db: DynDB,
+    /// Token to signal worker shutdown.
+    cancellation_token: CancellationToken,
+}
+
+impl DeliveryRecoveryWorker {
+    /// Main worker loop: marks stale processing notifications until cancelled.
+    async fn run(&self) {
+        loop {
+            // Recover stale delivery claims and pick next pause interval
+            let pause = match self.mark_stale_processing_notifications_unknown().await {
+                Ok(recovered) => {
+                    if recovered > 0 {
+                        warn!(recovered, "marked stale notification deliveries unknown");
+                    }
+                    PAUSE_ON_DELIVERY_RECOVERY_NONE
+                }
+                Err(err) => {
+                    error!(?err, "error recovering stale notification deliveries");
+                    PAUSE_ON_DELIVERY_RECOVERY_ERROR
+                }
+            };
+
+            // Exit if the worker has been asked to stop
+            tokio::select! {
+                () = sleep(pause) => {},
+                () = self.cancellation_token.cancelled() => break,
+            }
+        }
+    }
+
+    /// Mark stale processing notifications with an unknown delivery outcome.
+    #[instrument(skip(self), err)]
+    async fn mark_stale_processing_notifications_unknown(&self) -> Result<usize> {
+        self.db
+            .mark_stale_processing_notifications_unknown(DELIVERY_PROCESSING_TIMEOUT)
+            .await
+    }
+}
+
+/// Worker responsible for delivering notifications from the queue.
+struct DeliveryWorker {
+    /// Database handle for notification queries.
+    db: DynDB,
+    /// Email configuration for sending notifications.
+    cfg: EmailConfig,
+    /// Token to signal worker shutdown.
+    cancellation_token: CancellationToken,
+    /// Email sender for dispatching messages.
+    email_sender: DynEmailSender,
+}
+
+impl DeliveryWorker {
+    /// Main worker loop: delivers notifications until cancelled.
+    async fn run(&mut self) {
+        loop {
+            // Try to deliver a pending notification
+            match self.deliver_notification().await {
+                Ok(true) => {
+                    // One notification was delivered, try to deliver another
+                    // one immediately
+                }
+                Ok(false) => tokio::select! {
+                    // No pending notifications, pause unless we've been asked
+                    // to stop
+                    () = sleep(PAUSE_ON_DELIVERY_NONE) => {},
+                    () = self.cancellation_token.cancelled() => break,
+                },
+                Err(err) => {
+                    // Something went wrong delivering the notification, pause
+                    // unless we've been asked to stop
+                    error!(?err, "error delivering notification");
+                    tokio::select! {
+                        () = sleep(PAUSE_ON_DELIVERY_ERROR) => {},
+                        () = self.cancellation_token.cancelled() => break,
+                    }
+                }
+            }
+
+            // Exit if the worker has been asked to stop
+            if self.cancellation_token.is_cancelled() {
+                break;
+            }
+        }
+    }
+
+    /// Attempt to deliver a pending notification, if available.
+    #[instrument(skip(self), err)]
+    async fn deliver_notification(&mut self) -> Result<bool> {
+        // Claim a notification before any external delivery side effects
+        let Some(notification) = self.db.claim_pending_notification().await? else {
+            return Ok(false);
+        };
+
+        // Prepare and send the notification
+        match Self::prepare_content(&notification) {
+            Ok((subject, body)) => match self
+                .send_email_with_retries(
+                    &notification.email,
+                    subject.as_str(),
+                    body,
+                    &notification.attachments,
+                )
+                .await
+            {
+                Ok(()) => self.db.update_notification(&notification, None).await?,
+                Err(err) => self.record_delivery_error(&notification, err).await?,
+            },
+            Err(err) => {
+                self.db
+                    .update_notification(&notification, Some(err.to_string()))
+                    .await?;
+            }
+        }
+
+        Ok(true)
+    }
+
+    /// Prepare the subject and body for a notification email.
+    #[allow(clippy::too_many_lines)]
+    fn prepare_content(notification: &Notification) -> Result<(String, String)> {
+        let template_data = notification
+            .template_data
+            .clone()
+            .ok_or_else(|| anyhow!("missing template data"))?;
+
+        let (subject, body) = match notification.kind {
+            NotificationKind::AllianceCustom => {
+                let template: AllianceCustom = serde_json::from_value(template_data)?;
+                let subject = template.subject.clone();
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::AllianceTeamInvitation => {
+                let subject = "You have been invited to join a alliance team".to_string();
+                let template: AllianceTeamInvitation = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::CfsSubmissionUpdated => {
+                let template: CfsSubmissionUpdated = serde_json::from_value(template_data)?;
+                let subject = format!("Submission update: {}", template.event.name);
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::CoffeeMeetSuggestion => {
+                let template: CoffeeMeetSuggestion = serde_json::from_value(template_data)?;
+                let subject = format!("CoffeeMeet suggestion for {}", template.group_name);
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::OpportunityDigest => {
+                let template: OpportunityDigest = serde_json::from_value(template_data)?;
+                let subject = format!(
+                    "{} new opportunities for {}",
+                    template.match_count, template.search_name
+                );
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EmailVerification => {
+                let subject = "Verify your email address".to_string();
+                let template: EmailVerification = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventAttendanceCanceled => {
+                let subject = "Attendance canceled".to_string();
+                let template: EventAttendanceCanceled = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventCanceled => {
+                let subject = "Event canceled".to_string();
+                let template: EventCanceled = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventCohostInvitation => {
+                let template: EventCohostInvitation = serde_json::from_value(template_data)?;
+                let subject = format!("Co-host invitation: {}", template.event_name);
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventCustom => {
+                let template: EventCustom = serde_json::from_value(template_data)?;
+                let subject = template.subject.clone();
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::DistributionContentDue => {
+                let template: DistributionContentDue = serde_json::from_value(template_data)?;
+                let subject = format!("Distribution content due: {}", template.title);
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventInvitation => {
+                let subject = "You have been invited to an event".to_string();
+                let template: EventInvitation = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventPublished => {
+                let subject = "New event published".to_string();
+                let template: EventPublished = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventRefundApproved => {
+                let subject = "Refund approved".to_string();
+                let template: EventRefundApproved = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventRefundRejected => {
+                let subject = "Refund request update".to_string();
+                let template: EventRefundRejected = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventRefundRequested => {
+                let subject = "Refund requested".to_string();
+                let template: EventRefundRequested = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventReminder => {
+                let template: EventReminder = serde_json::from_value(template_data)?;
+                let subject = format!("Reminder: {} starts in 24 hours", template.event.name);
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventSurveyRequest | NotificationKind::EventSurveyReminder => {
+                let template: EventSurveyNotification = serde_json::from_value(template_data)?;
+                let subject = if template.reminder {
+                    format!("Reminder: share feedback on {}", template.event_name)
+                } else {
+                    format!("Share feedback on {}", template.event_name)
+                };
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventRescheduled => {
+                let subject = "Event rescheduled".to_string();
+                let template: EventRescheduled = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventSeriesCanceled => {
+                let subject = "Events canceled".to_string();
+                let template: EventSeriesCanceled = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventSeriesPublished => {
+                let subject = "New events published".to_string();
+                let template: EventSeriesPublished = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventWaitlistJoined => {
+                let subject = "You joined the waiting list".to_string();
+                let template: EventWaitlistJoined = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventWaitlistLeft => {
+                let subject = "You left the waiting list".to_string();
+                let template: EventWaitlistLeft = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventWaitlistPromoted => {
+                let subject = "You moved off the waiting list".to_string();
+                let template: EventWaitlistPromoted = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::EventWelcome => {
+                let subject = "Welcome to the event".to_string();
+                let template: EventWelcome = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::GroupCustom => {
+                let template: GroupCustom = serde_json::from_value(template_data)?;
+                let subject = template.subject.clone();
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::GroupTeamInvitation => {
+                let subject = "You have been invited to join a group team".to_string();
+                let template: GroupTeamInvitation = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::GroupWelcome => {
+                let subject = "Welcome to the group".to_string();
+                let template: GroupWelcome = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::InboxMessageReceived => {
+                let template: InboxMessageReceived = serde_json::from_value(template_data)?;
+                let subject = format!("New inbox message for {}", template.group_name);
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::InboxReplyReceived => {
+                let template: InboxReplyReceived = serde_json::from_value(template_data)?;
+                let subject = format!("{} replied to your message", template.group_name);
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::IntentionalDatingIntroduction => {
+                let subject = "You have an intentional dating introduction".to_string();
+                let template: IntentionalDatingIntroduction =
+                    serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::MockInterviewMatched => {
+                let subject = "You have a mock interview match".to_string();
+                let template: MockInterviewMatched = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::SiteOnboarding => {
+                let template: SiteOnboarding = serde_json::from_value(template_data)?;
+                let subject = template.subject.clone();
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::SessionProposalCoSpeakerInvitation => {
+                let subject = "Session proposal co-speaker invitation".to_string();
+                let template: SessionProposalCoSpeakerInvitation =
+                    serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::SpeakerSeriesWelcome => {
+                let subject = "You're speaking at upcoming events".to_string();
+                let template: SpeakerSeriesWelcome = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+            NotificationKind::SpeakerWelcome => {
+                let subject = "You're speaking at an event".to_string();
+                let template: SpeakerWelcome = serde_json::from_value(template_data)?;
+                let body = template.render()?;
+                (subject, body)
+            }
+        };
+
+        Ok((subject, body))
+    }
+
+    /// Record a failed delivery attempt, requeueing retryable errors.
+    async fn record_delivery_error(
+        &self,
+        notification: &Notification,
+        err: anyhow::Error,
+    ) -> Result<()> {
+        let error = err.to_string();
+        if is_retryable_delivery_error(&err) {
+            self.db
+                .requeue_notification(
+                    notification,
+                    &error,
+                    DELIVERY_REQUEUE_BASE_DELAY,
+                    DELIVERY_REQUEUE_MAX_DELAY,
+                    DELIVERY_MAX_CLAIMS,
+                )
+                .await
+        } else {
+            self.db.update_notification(notification, Some(error)).await
+        }
+    }
+
+    /// Send an email to the specified address with the given subject and body.
+    async fn send_email(
+        &self,
+        to_address: &str,
+        subject: &str,
+        body: String,
+        attachments: &[Attachment],
+    ) -> Result<()> {
+        // Prepare email message
+        let body_part = SinglePart::builder().header(ContentType::TEXT_HTML).body(body);
+        let builder = MessageBuilder::new()
+            .from(Mailbox::new(
+                Some(self.cfg.from_name.clone()),
+                self.cfg.from_address.parse()?,
+            ))
+            .to(to_address.parse()?)
+            .subject(subject);
+        let message = if attachments.is_empty() {
+            builder.singlepart(body_part)?
+        } else {
+            let mut multipart = MultiPart::mixed().singlepart(body_part);
+            for attachment in attachments {
+                let attachment_part = SinglePart::builder()
+                    .header(ContentType::parse(&attachment.content_type)?)
+                    .header(ContentDisposition::attachment(&attachment.file_name))
+                    .body(attachment.data.clone());
+                multipart = multipart.singlepart(attachment_part);
+            }
+            builder.multipart(multipart)?
+        };
+
+        // Send email
+        if let Some(whitelist) = &self.cfg.rcpts_whitelist {
+            // If whitelist is present but empty, none are allowed.
+            let allowed = !whitelist.is_empty() && whitelist.iter().any(|wa| wa == to_address);
+            if !allowed {
+                warn!(%to_address, "email recipient not allowed; skipping send");
+                return Ok(());
+            }
+        }
+        self.email_sender.send(message).await?;
+
+        Ok(())
+    }
+
+    /// Send an email and retry transient transport errors before giving up.
+    async fn send_email_with_retries(
+        &self,
+        to_address: &str,
+        subject: &str,
+        body: String,
+        attachments: &[Attachment],
+    ) -> Result<()> {
+        let mut attempt = 1;
+        loop {
+            match self.send_email(to_address, subject, body.clone(), attachments).await {
+                Ok(()) => return Ok(()),
+                Err(err)
+                    if attempt < DELIVERY_SEND_MAX_ATTEMPTS
+                        && is_retryable_delivery_error(&err) =>
+                {
+                    warn!(
+                        %to_address,
+                        attempt,
+                        next_attempt = attempt + 1,
+                        max_attempts = DELIVERY_SEND_MAX_ATTEMPTS,
+                        error = %err,
+                        "transient notification email delivery error; retrying",
+                    );
+                    sleep(PAUSE_ON_DELIVERY_RETRY).await;
+                    attempt += 1;
+                }
+                Err(err) => return Err(err),
+            }
+        }
+    }
+}
+
+/// Return whether a delivery error may succeed on a later attempt.
+fn is_retryable_delivery_error(err: &anyhow::Error) -> bool {
+    err.chain().any(|source| {
+        // Prefer typed Lettre SMTP error classification when available
+        if let Some(smtp_err) = source.downcast_ref::<SmtpError>() {
+            return smtp_err.is_transient() || smtp_err.to_string().starts_with("Connection error");
+        }
+
+        // Fall back to persisted transport messages from wrapped errors
+        let message = source.to_string();
+        message.starts_with("Connection error")
+    })
+}
+
+/// Trait representing an async email sender used by the notifications workers.
+#[async_trait]
+#[cfg_attr(any(test, feature = "test-utils"), automock)]
+pub trait EmailSender {
+    /// Send an email represented by the provided message.
+    async fn send(&self, message: Message) -> Result<()>;
+}
+
+/// Shared trait object for an email sender.
+pub type DynEmailSender = Arc<dyn EmailSender + Send + Sync>;
+
+/// Concrete email sender backed by a Lettre SMTP transport.
+pub struct LettreEmailSender {
+    transport: AsyncSmtpTransport<Tokio1Executor>,
+}
+
+impl LettreEmailSender {
+    /// Create a new `LettreEmailSender` from the provided config.
+    pub fn new(cfg: &EmailConfig) -> Result<Self> {
+        let transport = Self::transport_builder(cfg)?
+            .credentials(Credentials::new(
+                cfg.smtp.username.clone(),
+                cfg.smtp.password.clone(),
+            ))
+            .build();
+
+        Ok(Self { transport })
+    }
+
+    /// Create a SMTP transport builder for the configured server.
+    fn transport_builder(cfg: &EmailConfig) -> Result<AsyncSmtpTransportBuilder> {
+        // Port 465 expects TLS before SMTP; other submission ports use STARTTLS.
+        let builder = if cfg.smtp.port == SUBMISSIONS_PORT {
+            AsyncSmtpTransport::<Tokio1Executor>::relay(&cfg.smtp.host)?
+        } else {
+            AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&cfg.smtp.host)?
+        };
+
+        Ok(builder.port(cfg.smtp.port))
+    }
+}
+
+#[async_trait]
+impl EmailSender for LettreEmailSender {
+    async fn send(&self, message: Message) -> Result<()> {
+        self.transport.send(message).await?;
+        Ok(())
+    }
+}
+
+pub use ocg_core::shared::{
+    Attachment, NewNotification, Notification, NotificationKind, OutboundEmail,
+};

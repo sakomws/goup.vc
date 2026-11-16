@@ -9,24 +9,20 @@ use axum_login::{
     AuthManagerLayer, AuthManagerLayerBuilder,
     tower_sessions::{self, session, session_store},
 };
-use garde::Validate;
 use oauth2::{RequestTokenError, TokenResponse, reqwest as oauth2_reqwest};
 use openidconnect::{self as oidc, LocalizedClaim};
 use password_auth::verify_password;
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};
-use serde_with::skip_serializing_none;
 use time::Duration;
 use tower_sessions::{Expiry, SessionManagerLayer, cookie::SameSite};
-use uuid::Uuid;
+
+pub(crate) use ocg_core::auth::{User, UserSummary};
 
 use crate::{
     config::{HttpServerConfig, OAuth2Config, OAuth2Provider, OidcConfig, OidcProvider},
     db::DynDB,
     types::user::UserProvider,
-    validation::{
-        MAX_LEN_DISPLAY_NAME, MAX_LEN_S, MIN_PASSWORD_LEN, trimmed_non_empty, trimmed_non_empty_opt,
-    },
 };
 
 #[cfg(test)]
@@ -177,7 +173,7 @@ impl AuthnBackend {
 
         // Get the user if they exist, otherwise sign them up
         let user_summary = match creds.provider {
-            OAuth2Provider::GitHub => UserSummary::from_github_profile(&access_token).await?,
+            OAuth2Provider::GitHub => user_summary_from_github_profile(&access_token).await?,
         };
         let user = self.get_or_sign_up_external_user(&user_summary).await?;
 
@@ -207,7 +203,7 @@ impl AuthnBackend {
                     )
                 })?;
             let user_summary =
-                UserSummary::from_linkedin_userinfo(&token_response.access_token).await?;
+                user_summary_from_linkedin_userinfo(&token_response.access_token).await?;
             let user = self.get_or_sign_up_external_user(&user_summary).await?;
 
             return Ok(Some(user));
@@ -230,7 +226,7 @@ impl AuthnBackend {
 
         // Get the user if they exist, otherwise sign them up
         let user_summary = match creds.provider {
-            OidcProvider::LinkedIn => UserSummary::from_linkedin_id_token_claims(claims)?,
+            OidcProvider::LinkedIn => user_summary_from_linkedin_id_token_claims(claims)?,
         };
         let user = self.get_or_sign_up_external_user(&user_summary).await?;
 
@@ -552,323 +548,120 @@ pub(crate) struct PasswordCredentials {
 
 // User types and implementations.
 
-/// Represents a user in the system.
-#[allow(clippy::struct_excessive_bools)]
-#[derive(Clone, Default, Serialize, Deserialize)]
-pub(crate) struct User {
-    /// Unique user ID.
-    pub user_id: Uuid,
-    /// Authentication hash for session validation.
-    pub auth_hash: String,
-    /// User's email address.
-    pub email: String,
-    /// Whether the user's email is verified.
-    pub email_verified: bool,
-    /// User's display name.
-    pub name: String,
-    /// Whether this request just created or activated the user account.
-    #[serde(default, skip_serializing)]
-    pub newly_registered: bool,
-    /// Whether the user receives optional notifications.
-    pub optional_notifications_enabled: bool,
-    /// Whether the user can manage platform-level resources.
-    #[serde(default)]
-    pub platform_admin: bool,
-    /// Registration state for placeholder and regular users.
-    #[serde(default = "default_registration_status")]
-    pub registration_status: String,
-    /// User's username.
-    pub username: String,
+/// Create a `UserSummary` instance from a GitHub profile.
+async fn user_summary_from_github_profile(access_token: &str) -> Result<UserSummary> {
+    // Setup headers for GitHub API requests.
+    let mut headers = HeaderMap::new();
+    headers.insert(USER_AGENT, "open-alliance-groups".parse()?);
+    headers.insert(
+        AUTHORIZATION,
+        format!("Bearer {access_token}").as_str().parse()?,
+    );
 
-    /// Whether the user belongs to any group team.
-    pub belongs_to_any_group_team: Option<bool>,
-    /// Whether the user belongs to their alliance team.
-    pub belongs_to_alliance_team: Option<bool>,
-    /// User's biography.
-    pub bio: Option<String>,
-    /// User's Bluesky URL.
-    pub bluesky_url: Option<String>,
-    /// Whether the user privately opts into book exchange.
-    #[serde(default)]
-    pub book_exchange_enabled: bool,
-    /// Private book list visible only to eligible community admins.
-    pub book_exchange_books: Option<String>,
-    /// User's city.
-    pub city: Option<String>,
-    /// Whether this user accepts direct `CoffeeMeet` requests.
-    #[serde(default = "default_true")]
-    pub coffee_meet_enabled: bool,
-    /// User's company.
-    pub company: Option<String>,
-    /// User's country.
-    pub country: Option<String>,
-    /// User's Facebook URL.
-    pub facebook_url: Option<String>,
-    /// User's GitHub URL.
-    pub github_url: Option<String>,
-    /// Whether the user has a password set.
-    pub has_password: Option<bool>,
-    /// User's interests.
-    pub interests: Option<Vec<String>>,
-    /// Whether the user privately opts into intentional dating introductions.
-    #[serde(default)]
-    pub intentional_dating_enabled: bool,
-    /// Private dating goals visible only to eligible community admins.
-    pub intentional_dating_goals: Option<String>,
-    /// Private dating preferences visible only to eligible community admins.
-    pub intentional_dating_preferences: Option<String>,
-    /// User's `LinkedIn` URL.
-    pub linkedin_url: Option<String>,
-    /// Whether the user offers mentorship services for businesses.
-    #[serde(default)]
-    pub mentorship_businesses: bool,
-    /// Whether the user offers mentorship services for individuals.
-    #[serde(default)]
-    pub mentorship_individuals: bool,
-    /// Optional description of the user's mentorship offering.
-    pub mentorship_note: Option<String>,
-    /// Optional price or pricing guidance for mentorship.
-    pub mentorship_price: Option<String>,
-    /// User's password hash (if present).
-    pub password: Option<String>,
-    /// User's photo URL.
-    pub photo_url: Option<String>,
-    /// International calling code for the user's phone number.
-    pub phone_country_code: Option<String>,
-    /// User's phone number.
-    pub phone_number: Option<String>,
-    /// External provider metadata.
-    pub provider: Option<UserProvider>,
-    /// User's `Substack` URL.
-    pub substack_url: Option<String>,
-    /// User's timezone.
-    pub timezone: Option<String>,
-    /// User's title.
-    pub title: Option<String>,
-    /// User's Twitter URL.
-    pub twitter_url: Option<String>,
-    /// User's website URL.
-    pub website_url: Option<String>,
-    /// User's `YouTube` URL.
-    pub youtube_url: Option<String>,
+    // Get user profile from GitHub.
+    let profile = reqwest::Client::new()
+        .get("https://api.github.com/user")
+        .headers(headers.clone())
+        .send()
+        .await?
+        .json::<GitHubProfile>()
+        .await?;
+
+    // Get user emails from GitHub.
+    let emails = reqwest::Client::new()
+        .get("https://api.github.com/user/emails")
+        .headers(headers)
+        .send()
+        .await?
+        .json::<Vec<GitHubUserEmail>>()
+        .await?;
+
+    // Get primary, verified email.
+    let email = emails
+        .into_iter()
+        .find(|email| email.primary && email.verified)
+        .ok_or_else(|| anyhow!("no valid email found (primary email must be verified)"))?;
+
+    Ok(UserSummary {
+        email: email.email,
+        name: profile.name,
+        provider: Some(UserProvider::from_github_username(profile.login.clone())),
+        username: profile.login,
+        photo_url: None,
+        has_password: Some(false),
+        password: None,
+    })
 }
 
-impl User {
-    /// Returns whether the user has completed the profile fields useful to organizers.
-    pub(crate) fn is_profile_complete(&self) -> bool {
-        profile_field_is_filled(self.title.as_deref())
-            && profile_field_is_filled(self.bio.as_deref())
-            && [
-                self.linkedin_url.as_deref(),
-                self.twitter_url.as_deref(),
-                self.website_url.as_deref(),
-            ]
-            .into_iter()
-            .any(profile_field_is_filled)
+/// Create a `UserSummary` from `LinkedIn` OIDC ID token claims.
+fn user_summary_from_linkedin_id_token_claims(
+    claims: &oidc::IdTokenClaims<oidc::EmptyAdditionalClaims, oidc::core::CoreGenderClaim>,
+) -> Result<UserSummary> {
+    // Ensure email is verified and extract user info.
+    if !claims.email_verified().unwrap_or(false) {
+        bail!("email not verified");
     }
+
+    let email = claims.email().ok_or_else(|| anyhow!("email missing"))?.to_string();
+    let name = get_localized_claim(claims.name()).ok_or_else(|| anyhow!("name missing"))?;
+    let subject = claims.subject().to_string();
+    let username = email
+        .split_once('@')
+        .map(|(username, _)| username)
+        .filter(|username| !username.trim().is_empty())
+        .ok_or_else(|| anyhow!("email username missing"))?
+        .to_string();
+
+    Ok(UserSummary {
+        email,
+        name: name.to_string(),
+        provider: Some(UserProvider::from_linkedin_subject(subject)),
+        username,
+        photo_url: get_localized_claim(claims.picture()).map(|picture| picture.to_string()),
+        has_password: Some(false),
+        password: None,
+    })
 }
 
-fn default_true() -> bool {
-    true
-}
+/// Create a `UserSummary` from `LinkedIn`'s OIDC `UserInfo` endpoint.
+async fn user_summary_from_linkedin_userinfo(access_token: &str) -> Result<UserSummary> {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        AUTHORIZATION,
+        format!("Bearer {access_token}").as_str().parse()?,
+    );
 
-/// Returns whether an optional profile field has non-whitespace content.
-fn profile_field_is_filled(value: Option<&str>) -> bool {
-    value.is_some_and(|value| !value.trim().is_empty())
-}
+    let profile = reqwest::Client::new()
+        .get("https://api.linkedin.com/v2/userinfo")
+        .headers(headers)
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<LinkedInUserInfo>()
+        .await?;
 
-impl axum_login::AuthUser for User {
-    type Id = Uuid;
-
-    /// Get the user's unique ID.
-    fn id(&self) -> Self::Id {
-        self.user_id
+    if !profile.email_verified() {
+        bail!("email not verified");
     }
 
-    /// Get the session authentication hash.
-    fn session_auth_hash(&self) -> &[u8] {
-        self.auth_hash.as_bytes()
-    }
-}
+    let email = profile.email.ok_or_else(|| anyhow!("email missing"))?;
+    let name = profile.name.ok_or_else(|| anyhow!("name missing"))?;
+    let username = email
+        .split_once('@')
+        .map(|(username, _)| username)
+        .filter(|username| !username.trim().is_empty())
+        .ok_or_else(|| anyhow!("email username missing"))?
+        .to_string();
 
-impl std::fmt::Debug for User {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("User")
-            .field("user_id", &self.user_id)
-            .field("username", &self.username)
-            .finish_non_exhaustive()
-    }
-}
-
-/// Summary of user information.
-#[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Validate)]
-pub(crate) struct UserSummary {
-    /// User's email address.
-    #[garde(email)]
-    pub email: String,
-    /// User's display name.
-    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_DISPLAY_NAME))]
-    pub name: String,
-    /// User's username.
-    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_S))]
-    pub username: String,
-
-    /// User's profile photo URL.
-    #[garde(skip)]
-    pub photo_url: Option<String>,
-    /// Whether the user has a password set.
-    #[garde(skip)]
-    pub has_password: Option<bool>,
-    /// User's password (if present).
-    #[garde(custom(trimmed_non_empty_opt), length(min = MIN_PASSWORD_LEN, max = MAX_LEN_S))]
-    pub password: Option<String>,
-    /// External provider metadata.
-    #[garde(skip)]
-    pub provider: Option<UserProvider>,
-}
-
-impl UserSummary {
-    /// Create a `UserSummary` instance from a GitHub profile.
-    async fn from_github_profile(access_token: &str) -> Result<Self> {
-        // Setup headers for GitHub API requests.
-        let mut headers = HeaderMap::new();
-        headers.insert(USER_AGENT, "open-alliance-groups".parse()?);
-        headers.insert(
-            AUTHORIZATION,
-            format!("Bearer {access_token}").as_str().parse()?,
-        );
-
-        // Get user profile from GitHub.
-        let profile = reqwest::Client::new()
-            .get("https://api.github.com/user")
-            .headers(headers.clone())
-            .send()
-            .await?
-            .json::<GitHubProfile>()
-            .await?;
-
-        // Get user emails from GitHub.
-        let emails = reqwest::Client::new()
-            .get("https://api.github.com/user/emails")
-            .headers(headers)
-            .send()
-            .await?
-            .json::<Vec<GitHubUserEmail>>()
-            .await?;
-
-        // Get primary, verified email.
-        let email = emails
-            .into_iter()
-            .find(|email| email.primary && email.verified)
-            .ok_or_else(|| anyhow!("no valid email found (primary email must be verified)"))?;
-
-        Ok(Self {
-            email: email.email,
-            name: profile.name,
-            provider: Some(UserProvider::from_github_username(profile.login.clone())),
-            username: profile.login,
-            photo_url: None,
-            has_password: Some(false),
-            password: None,
-        })
-    }
-
-    /// Create a `UserSummary` from `LinkedIn` OIDC ID token claims.
-    fn from_linkedin_id_token_claims(
-        claims: &oidc::IdTokenClaims<oidc::EmptyAdditionalClaims, oidc::core::CoreGenderClaim>,
-    ) -> Result<Self> {
-        // Ensure email is verified and extract user info.
-        if !claims.email_verified().unwrap_or(false) {
-            bail!("email not verified");
-        }
-
-        let email = claims.email().ok_or_else(|| anyhow!("email missing"))?.to_string();
-        let name = get_localized_claim(claims.name()).ok_or_else(|| anyhow!("name missing"))?;
-        let subject = claims.subject().to_string();
-        let username = email
-            .split_once('@')
-            .map(|(username, _)| username)
-            .filter(|username| !username.trim().is_empty())
-            .ok_or_else(|| anyhow!("email username missing"))?
-            .to_string();
-
-        Ok(Self {
-            email,
-            name: name.to_string(),
-            provider: Some(UserProvider::from_linkedin_subject(subject)),
-            username,
-            photo_url: get_localized_claim(claims.picture()).map(|picture| picture.to_string()),
-            has_password: Some(false),
-            password: None,
-        })
-    }
-
-    /// Create a `UserSummary` from `LinkedIn`'s OIDC `UserInfo` endpoint.
-    async fn from_linkedin_userinfo(access_token: &str) -> Result<Self> {
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            AUTHORIZATION,
-            format!("Bearer {access_token}").as_str().parse()?,
-        );
-
-        let profile = reqwest::Client::new()
-            .get("https://api.linkedin.com/v2/userinfo")
-            .headers(headers)
-            .send()
-            .await?
-            .error_for_status()?
-            .json::<LinkedInUserInfo>()
-            .await?;
-
-        if !profile.email_verified() {
-            bail!("email not verified");
-        }
-
-        let email = profile.email.ok_or_else(|| anyhow!("email missing"))?;
-        let name = profile.name.ok_or_else(|| anyhow!("name missing"))?;
-        let username = email
-            .split_once('@')
-            .map(|(username, _)| username)
-            .filter(|username| !username.trim().is_empty())
-            .ok_or_else(|| anyhow!("email username missing"))?
-            .to_string();
-
-        Ok(Self {
-            email,
-            name,
-            provider: Some(UserProvider::from_linkedin_subject(profile.sub)),
-            username,
-            photo_url: profile.picture,
-            has_password: Some(false),
-            password: None,
-        })
-    }
-}
-
-impl From<User> for UserSummary {
-    /// Convert a `User` into a `UserSummary`.
-    fn from(user: User) -> Self {
-        Self {
-            email: user.email,
-            name: user.name,
-            username: user.username,
-            photo_url: user.photo_url,
-            has_password: user.has_password,
-            password: None,
-            provider: user.provider,
-        }
-    }
-}
-
-impl std::fmt::Debug for UserSummary {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("UserSummary")
-            .field("email", &self.email)
-            .field("name", &self.name)
-            .field("username", &self.username)
-            .finish_non_exhaustive()
-    }
+    Ok(UserSummary {
+        email,
+        name,
+        provider: Some(UserProvider::from_linkedin_subject(profile.sub)),
+        username,
+        photo_url: profile.picture,
+        has_password: Some(false),
+        password: None,
+    })
 }
 
 /// Get the first value from a localized claim, if present.
@@ -927,9 +720,4 @@ impl LinkedInUserInfo {
             _ => false,
         }
     }
-}
-
-/// Default persisted registration status for regular users.
-fn default_registration_status() -> String {
-    "registered".to_string()
 }

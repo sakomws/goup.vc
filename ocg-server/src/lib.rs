@@ -1,0 +1,560 @@
+//! Open Alliance Groups server.
+//!
+//! This is the main entry point for the OCG server, which provides a web-based platform
+//! for managing alliance groups and events.
+
+#![warn(clippy::all, clippy::pedantic)]
+// Keep the existing Clippy debt explicit while CI denies all other warnings.
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::default_trait_access,
+    clippy::doc_markdown,
+    clippy::duration_suboptimal_units,
+    clippy::ignored_unit_patterns,
+    clippy::ip_constant,
+    clippy::large_futures,
+    clippy::map_unwrap_or,
+    clippy::needless_borrow,
+    clippy::needless_raw_string_hashes,
+    clippy::redundant_closure_for_method_calls,
+    clippy::semicolon_if_nothing_returned,
+    clippy::struct_excessive_bools,
+    clippy::struct_field_names,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::unnecessary_semicolon,
+    clippy::unnecessary_wraps,
+    clippy::unused_self
+)]
+
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
+
+use activity_tracker::ActivityTrackerDB;
+use anyhow::{Context, Result};
+use axum::{Extension, Router, middleware, routing::get};
+use axum_login::login_required;
+use clap::Parser;
+use deadpool_postgres::Runtime;
+use rustls::{
+    ClientConfig, DigitallySignedStruct, Error as RustlsError, SignatureScheme,
+    client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
+    crypto::WebPkiSupportedAlgorithms,
+    pki_types::{CertificateDer, ServerName, UnixTime},
+};
+use tokio::{net::TcpListener, signal};
+use tokio_postgres_rustls::MakeRustlsConnect;
+use tokio_util::{sync::CancellationToken, task::TaskTracker};
+use tracing::{error, info};
+use tracing_subscriber::EnvFilter;
+
+use crate::{
+    config::{
+        Config, HttpServerConfig, ImageStorageConfig, LogFormat, MeetingsConfig, PaymentsConfig,
+    },
+    db::{DynDB, PgDB, pool as db_pool},
+    services::{
+        images::{DbImageStorage, DynImageStorage, S3ImageStorage},
+        meetings::{
+            DynMeetingsProvider, MeetingProvider, MeetingsManager,
+            google::GoogleMeetMeetingsProvider, zoom::ZoomMeetingsProvider,
+        },
+        notifications::{DynEmailSender, LettreEmailSender, PgNotificationsManager},
+        payments::{
+            DynPaymentsManager, DynPaymentsProvider, PgPaymentsManager, build_payments_provider,
+            start_payment_workers,
+        },
+        realtime::{DiscoveryRealtime, configure as configure_discovery_realtime},
+        recording_publishing::RecordingPublishingManager,
+    },
+    types::permissions::GroupPermission,
+};
+
+/// Activity tracking.
+mod activity_tracker;
+/// Authentication and authorization functionality.
+mod auth;
+/// Application configuration management.
+mod config;
+/// Database abstraction layer and operations.
+mod db;
+/// HTTP request handlers.
+mod handlers;
+/// External partner integrations.
+mod integrations;
+/// HTTP router configuration and setup.
+mod router;
+/// Background services and workers.
+mod services;
+/// Templates for rendering pages, notifications, etc.
+mod templates;
+/// Domain types and data structures.
+mod types;
+/// Utility helpers shared across modules.
+mod util;
+/// Validation utilities and custom validators.
+mod validation;
+
+/// Command-line arguments for the application.
+#[derive(Debug, Parser)]
+#[clap(author, version, about)]
+struct Args {
+    /// Path to the configuration file.
+    #[clap(short, long)]
+    config_file: Option<PathBuf>,
+}
+
+/// Background worker coordination primitives.
+struct BackgroundTasks {
+    cancellation_token: CancellationToken,
+    task_tracker: TaskTracker,
+}
+
+impl BackgroundTasks {
+    /// Create background task coordination primitives.
+    fn new() -> Self {
+        Self {
+            cancellation_token: CancellationToken::new(),
+            task_tracker: TaskTracker::new(),
+        }
+    }
+
+    /// Request background workers to stop and wait for them.
+    async fn shutdown(self) {
+        self.task_tracker.close();
+        self.cancellation_token.cancel();
+        self.task_tracker.wait().await;
+    }
+}
+
+/// Main entry point for the application.
+#[allow(clippy::missing_errors_doc)]
+pub async fn run() -> Result<()> {
+    // Load configuration and initialize logging
+    let cfg = setup_config()?;
+    setup_logging(&cfg.log.format);
+
+    // Setup shared worker coordination and core infrastructure
+    let background_tasks = BackgroundTasks::new();
+    let db = setup_db(&cfg)?;
+    let image_storage = setup_image_storage(&cfg, db.clone());
+    let discovery_realtime = DiscoveryRealtime::from_config(cfg.redis.as_ref());
+    configure_discovery_realtime(discovery_realtime.clone());
+
+    // Configure background services that depend on the database
+    start_meetings_workers(&cfg, db.clone(), &background_tasks);
+    start_recording_publishing_workers(&cfg, &db, &background_tasks);
+    start_event_discovery_worker(
+        &cfg,
+        db.clone(),
+        discovery_realtime.clone(),
+        &background_tasks,
+    );
+    start_job_discovery_worker(
+        &cfg,
+        db.clone(),
+        discovery_realtime.clone(),
+        &background_tasks,
+    );
+    let activity_tracker = setup_activity_tracker(db.clone(), &background_tasks);
+    let notifications_manager = setup_notifications_manager(&cfg, db.clone(), &background_tasks)?;
+    let payments_provider = build_payments_provider(cfg.payments.as_ref());
+    let payment_workers_db = db.clone() as DynDB;
+    start_payment_workers(
+        &payment_workers_db,
+        notifications_manager.clone(),
+        payments_provider.as_ref(),
+        cfg.server.clone(),
+        &background_tasks.task_tracker,
+        &background_tasks.cancellation_token,
+    );
+    let payments_manager = setup_payments_manager(
+        db.clone(),
+        notifications_manager.clone(),
+        payments_provider,
+        &cfg.server,
+    );
+
+    // Serve HTTP requests until a shutdown signal is received
+    run_server(
+        activity_tracker,
+        db,
+        image_storage,
+        cfg.integrations
+            .as_ref()
+            .and_then(|integrations| integrations.you_com.clone()),
+        cfg.meetings.clone(),
+        cfg.payments.clone(),
+        payments_manager,
+        notifications_manager,
+        discovery_realtime,
+        &cfg.server,
+    )
+    .await?;
+
+    // Stop background workers gracefully before exiting
+    background_tasks.shutdown().await;
+
+    Ok(())
+}
+
+/// Parse the command line arguments and load configuration.
+fn setup_config() -> Result<Config> {
+    let args = Args::parse();
+    Config::new(args.config_file.as_ref()).context("error setting up configuration")
+}
+
+/// Configure tracing based on the configured log format.
+fn setup_logging(log_format: &LogFormat) {
+    // Build the shared subscriber configuration first
+    let ts = tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| format!("{}=debug", env!("CARGO_CRATE_NAME")).into()),
+        )
+        .with_file(true)
+        .with_line_number(true);
+
+    // Select the configured output formatter
+    match log_format {
+        LogFormat::Json => ts.json().init(),
+        LogFormat::Pretty => ts.init(),
+    }
+}
+
+/// TLS certificate verifier matching `SslVerifyMode::NONE` for Postgres connections.
+#[derive(Debug)]
+struct NoCertificateVerification(WebPkiSupportedAlgorithms);
+
+impl ServerCertVerifier for NoCertificateVerification {
+    fn verify_server_cert(
+        &self,
+        _end_entity: &CertificateDer<'_>,
+        _intermediates: &[CertificateDer<'_>],
+        _server_name: &ServerName<'_>,
+        _ocsp_response: &[u8],
+        _now: UnixTime,
+    ) -> std::result::Result<ServerCertVerified, RustlsError> {
+        Ok(ServerCertVerified::assertion())
+    }
+
+    fn verify_tls12_signature(
+        &self,
+        message: &[u8],
+        cert: &CertificateDer<'_>,
+        dss: &DigitallySignedStruct,
+    ) -> std::result::Result<HandshakeSignatureValid, RustlsError> {
+        rustls::crypto::verify_tls12_signature(message, cert, dss, &self.0)
+    }
+
+    fn verify_tls13_signature(
+        &self,
+        message: &[u8],
+        cert: &CertificateDer<'_>,
+        dss: &DigitallySignedStruct,
+    ) -> std::result::Result<HandshakeSignatureValid, RustlsError> {
+        rustls::crypto::verify_tls13_signature(message, cert, dss, &self.0)
+    }
+
+    fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
+        self.0.supported_schemes()
+    }
+}
+
+/// Configure the database pool.
+fn setup_db(cfg: &Config) -> Result<Arc<PgDB>> {
+    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let tls_config = ClientConfig::builder_with_provider(provider.clone())
+        .with_safe_default_protocol_versions()?
+        .dangerous()
+        .with_custom_certificate_verifier(Arc::new(NoCertificateVerification(
+            provider.signature_verification_algorithms,
+        )))
+        .with_no_client_auth();
+
+    let connector = MakeRustlsConnect::new(tls_config);
+    let db_cfg = db_pool::config_with_defaults(&cfg.db);
+    let pool = db_cfg.create_pool(Some(Runtime::Tokio1), connector)?;
+    let db = Arc::new(PgDB::new(pool));
+
+    Ok(db)
+}
+
+/// Configure the image storage implementation.
+fn setup_image_storage(cfg: &Config, db: Arc<PgDB>) -> DynImageStorage {
+    match &cfg.images {
+        ImageStorageConfig::Db => Arc::new(DbImageStorage::new(db)),
+        ImageStorageConfig::S3(s3_cfg) => Arc::new(S3ImageStorage::new(s3_cfg)),
+    }
+}
+
+/// Starts You.com discovery when its integration is configured and enabled.
+fn start_event_discovery_worker(
+    cfg: &Config,
+    db: Arc<PgDB>,
+    realtime: Option<DiscoveryRealtime>,
+    background_tasks: &BackgroundTasks,
+) {
+    if let Some(you_com_cfg) = cfg
+        .integrations
+        .as_ref()
+        .and_then(|integrations| integrations.you_com.clone())
+    {
+        services::event_discovery::start(
+            you_com_cfg,
+            db,
+            realtime,
+            &background_tasks.task_tracker,
+            &background_tasks.cancellation_token,
+        );
+    }
+}
+
+/// Starts global job discovery with the same configured You.com account.
+fn start_job_discovery_worker(
+    cfg: &Config,
+    db: Arc<PgDB>,
+    realtime: Option<DiscoveryRealtime>,
+    background_tasks: &BackgroundTasks,
+) {
+    if let Some(you_com_cfg) = cfg
+        .integrations
+        .as_ref()
+        .and_then(|integrations| integrations.you_com.clone())
+    {
+        services::job_discovery::start(
+            you_com_cfg,
+            db,
+            realtime,
+            &background_tasks.task_tracker,
+            &background_tasks.cancellation_token,
+        );
+    }
+}
+
+/// Start meetings workers for the enabled providers.
+fn start_meetings_workers(cfg: &Config, db: Arc<PgDB>, background_tasks: &BackgroundTasks) {
+    // Collect the meetings providers enabled in the configuration
+    let mut meetings_providers = HashMap::new();
+
+    if let Some(ref meetings_cfg) = cfg.meetings
+        && let Some(ref google_cfg) = meetings_cfg.google_meet
+        && google_cfg.enabled
+    {
+        meetings_providers.insert(
+            MeetingProvider::GoogleMeet,
+            Arc::new(GoogleMeetMeetingsProvider::new(google_cfg)) as DynMeetingsProvider,
+        );
+    }
+
+    if let Some(ref meetings_cfg) = cfg.meetings
+        && let Some(ref zoom_cfg) = meetings_cfg.zoom
+        && zoom_cfg.enabled
+    {
+        meetings_providers.insert(
+            MeetingProvider::Zoom,
+            Arc::new(ZoomMeetingsProvider::new(zoom_cfg)) as DynMeetingsProvider,
+        );
+    }
+
+    // Start meetings workers only when at least one provider is enabled
+    if !meetings_providers.is_empty() {
+        MeetingsManager::new(
+            Arc::new(meetings_providers),
+            db,
+            cfg.meetings
+                .as_ref()
+                .and_then(|meetings_cfg| meetings_cfg.zoom.clone()),
+            &background_tasks.task_tracker,
+            &background_tasks.cancellation_token,
+        );
+    }
+}
+
+/// Start recording publishing workers when configured.
+fn start_recording_publishing_workers(
+    cfg: &Config,
+    db: &Arc<PgDB>,
+    background_tasks: &BackgroundTasks,
+) {
+    if let Some(recording_publishing_cfg) = &cfg.recording_publishing
+        && let Some(youtube_cfg) = &recording_publishing_cfg.youtube
+        && youtube_cfg.enabled
+    {
+        let dyn_db: DynDB = db.clone();
+        RecordingPublishingManager::new(
+            &dyn_db,
+            youtube_cfg,
+            &background_tasks.task_tracker,
+            &background_tasks.cancellation_token,
+        );
+    }
+}
+
+/// Configure the notifications manager and start its workers.
+fn setup_notifications_manager(
+    cfg: &Config,
+    db: Arc<PgDB>,
+    background_tasks: &BackgroundTasks,
+) -> Result<Arc<PgNotificationsManager>> {
+    // Create the sender first so the manager can share it with workers
+    let email_sender: DynEmailSender = Arc::new(LettreEmailSender::new(&cfg.email)?);
+
+    Ok(Arc::new(PgNotificationsManager::new(
+        db,
+        &cfg.email,
+        &cfg.server.base_url,
+        &email_sender,
+        &background_tasks.task_tracker,
+        &background_tasks.cancellation_token,
+    )))
+}
+
+/// Configure the payments manager.
+fn setup_payments_manager(
+    db: Arc<PgDB>,
+    notifications_manager: Arc<PgNotificationsManager>,
+    payments_provider: Option<DynPaymentsProvider>,
+    server_cfg: &HttpServerConfig,
+) -> DynPaymentsManager {
+    Arc::new(PgPaymentsManager::new(
+        db,
+        notifications_manager,
+        payments_provider,
+        server_cfg.clone(),
+    ))
+}
+
+/// Configure the activity tracker and start its workers.
+fn setup_activity_tracker(
+    db: Arc<PgDB>,
+    background_tasks: &BackgroundTasks,
+) -> Arc<ActivityTrackerDB> {
+    Arc::new(ActivityTrackerDB::new(
+        db,
+        &background_tasks.task_tracker,
+        &background_tasks.cancellation_token,
+    ))
+}
+
+/// Build the router and serve HTTP requests until shutdown.
+#[allow(clippy::too_many_arguments)]
+async fn run_server(
+    activity_tracker: Arc<ActivityTrackerDB>,
+    db: Arc<PgDB>,
+    image_storage: DynImageStorage,
+    you_com_cfg: Option<config::YouComConfig>,
+    meetings_cfg: Option<MeetingsConfig>,
+    payments_cfg: Option<PaymentsConfig>,
+    payments_manager: DynPaymentsManager,
+    notifications_manager: Arc<PgNotificationsManager>,
+    discovery_realtime: Option<DiscoveryRealtime>,
+    server_cfg: &HttpServerConfig,
+) -> Result<()> {
+    // Build the router before binding the TCP listener
+    let router = router::setup(
+        activity_tracker,
+        db.clone(),
+        Some(db.clone()),
+        image_storage,
+        you_com_cfg,
+        meetings_cfg,
+        payments_cfg,
+        payments_manager,
+        notifications_manager,
+        None,
+        server_cfg,
+    )
+    .await?;
+    let router = with_realtime_routes(router, db, server_cfg, discovery_realtime)?;
+    let listener = TcpListener::bind(&server_cfg.addr).await?;
+
+    // Serve requests until a graceful shutdown signal arrives
+    info!("server started");
+    info!(%server_cfg.addr, "listening");
+
+    if let Err(err) = axum::serve(listener, router)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+    {
+        error!(?err, "server error");
+        return Err(err.into());
+    }
+
+    info!("server stopped");
+
+    Ok(())
+}
+
+/// Adds optional, separately authenticated WebSocket endpoints for discovery updates.
+fn with_realtime_routes(
+    router: Router,
+    db: Arc<PgDB>,
+    server_cfg: &HttpServerConfig,
+    realtime: Option<DiscoveryRealtime>,
+) -> Result<Router> {
+    let Some(realtime) = realtime else {
+        return Ok(router);
+    };
+    let db: DynDB = db;
+    let auth_layer = auth::setup_layer(server_cfg, db.clone())?;
+    let login_required = login_required!(
+        auth::AuthnBackend,
+        login_url = crate::handlers::auth::LOG_IN_URL,
+        redirect_field = "next_url"
+    );
+
+    let user_realtime_router = Router::new()
+        .route(
+            "/ws/discovery/user",
+            get(crate::handlers::realtime::user_discovery),
+        )
+        .route_layer(login_required.clone())
+        .layer(Extension(realtime.clone()))
+        .layer(auth_layer.clone());
+    let group_realtime_router = Router::new()
+        .route(
+            "/ws/discovery/group",
+            get(crate::handlers::realtime::group_discovery),
+        )
+        .route_layer(middleware::from_fn_with_state(
+            (db, GroupPermission::Read),
+            crate::handlers::auth::user_has_selected_group_permission,
+        ))
+        .route_layer(login_required)
+        .layer(Extension(realtime))
+        .layer(auth_layer);
+
+    Ok(user_realtime_router.merge(group_realtime_router).merge(router))
+}
+
+/// Returns a future that completes when the program receives a shutdown signal.
+///
+/// Handles both ctrl+c and terminate signals for graceful shutdown.
+async fn shutdown_signal() {
+    // Setup ctrl+c signal handler.
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install ctrl+c signal handler");
+    };
+
+    #[cfg(unix)]
+    // Setup terminate signal handler (Unix only).
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install terminate signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    // Wait for either ctrl+c or terminate signal.
+    tokio::select! {
+        () = ctrl_c => {},
+        () = terminate => {},
+    }
+}

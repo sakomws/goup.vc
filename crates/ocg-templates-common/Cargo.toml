@@ -1,0 +1,31 @@
+[package]
+name = "ocg-templates-common"
+description = "Shared Askama template filters, helpers, and auth templates for Open Alliance Groups"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+askama = { workspace = true }
+axum-login = { workspace = true }
+axum-messages = { workspace = true }
+chrono = { workspace = true }
+chrono-tz = { workspace = true }
+emojis = { workspace = true }
+garde = { workspace = true }
+markdown = { workspace = true }
+num-format = { workspace = true }
+ocg-assets = { path = "../ocg-assets" }
+ocg-core = { path = "../ocg-core" }
+percent-encoding = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_with = { workspace = true }
+tracing = { workspace = true }
+unicode-segmentation = { workspace = true }
