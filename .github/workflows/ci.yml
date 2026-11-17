@@ -105,6 +105,8 @@ jobs:
     needs: changes
     if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
+    env:
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: -C link-arg=-fuse-ld=mold
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -126,9 +128,9 @@ jobs:
       - name: Run rustfmt
         run: cargo fmt --all -- --check
       - name: Run clippy
-        run: mold -run cargo clippy --workspace --all-targets --all-features -- --deny warnings
+        run: cargo clippy --workspace --all-targets --all-features -- --deny warnings
       - name: Run tests
-        run: mold -run cargo test --workspace --lib --bins
+        run: cargo test --workspace --lib --bins
 
   lint-markdown-files:
     needs: changes
@@ -249,6 +251,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: -C link-arg=-fuse-ld=mold
     services:
       postgres:
         image: postgis/postgis:17-3.5
@@ -304,7 +308,7 @@ jobs:
           OCG_DB_PASSWORD: tests
           OCG_DB_USER: tests
           OCG_PG_BIN: /usr/bin
-        run: mold -run just db-contract-tests
+        run: just db-contract-tests
 
   test-frontend:
     needs: changes
