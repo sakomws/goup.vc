@@ -122,6 +122,32 @@ describe("sponsors-section", () => {
     expect(element.newSponsorLogoUrl).to.equal("https://example.com/logo.png");
   });
 
+  it("keeps the add-sponsor dialog open when the opening click hits the backdrop", async () => {
+    const element = await mountLitComponent("sponsors-section", { sponsors });
+
+    element.querySelector("button").click();
+    await element.updateComplete;
+
+    const modal = document.querySelector("[data-event-sponsor-modal='create']");
+    const backdrop = modal.querySelector("[data-event-sponsor-backdrop]");
+    const panel = backdrop.nextElementSibling;
+    expect(panel.className).to.include("max-h-[calc(100dvh-2rem)]");
+    expect(panel.className).to.include("overflow-y-auto");
+    expect(panel.className).to.include("z-10");
+
+    backdrop.click();
+    await element.updateComplete;
+    expect(document.querySelector("[data-event-sponsor-modal='create']")).to.exist;
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+    backdrop.click();
+    await element.updateComplete;
+    expect(element.showCreateModal).to.equal(false);
+    expect(document.querySelector("[data-event-sponsor-modal='create']")).to.equal(null);
+  });
+
   it("adds an event-only sponsor with inline hidden fields", async () => {
     const element = await mountLitComponent("sponsors-section", { sponsors });
 
