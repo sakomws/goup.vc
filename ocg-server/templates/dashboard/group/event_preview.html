@@ -230,26 +230,32 @@
               </section>
               {# End event date and location -#}
 
-              {# Call for Speakers -#}
-              {% if event.has_cfs() -%}
+              {# Sponsors section -#}
+              {% if !event.sponsors.is_empty() -%}
                 <section>
-                  <div class="pb-6 text-lg font-bold uppercase leading-6 tracking-wide text-stone-900 lg:pb-10 lg:text-2xl">
-                    Call for Speakers
+                  <div class="pb-8 text-lg font-bold uppercase leading-10 tracking-wide text-stone-900 lg:pb-14 lg:pt-2 lg:text-2xl">
+                    Sponsors
                   </div>
-                  <div class="text-lg text-stone-700">
-                    <span class="me-2 uppercase text-stone-500">Submissions open:</span>
-                    <span class="font-semibold">{{ event.cfs_date_label() }}</span>
+                  <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {% for sponsor in event.sponsors -%}
+                      {% if let Some(logo_url) = &sponsor.logo_url -%}
+                        {{ badges::sponsor_badge(name = sponsor.name_label() , logo_url = logo_url, website_url = sponsor.website_url, level = sponsor.level_label(), with_level = true) -}}
+                      {% else -%}
+                        <div class="inline-flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-white p-4">
+                          <div class="flex size-15 shrink-0 items-center justify-center rounded-lg border border-stone-200 bg-white md:size-18">
+                            <div class="svg-icon size-6 bg-amber-500 icon-handshake"></div>
+                          </div>
+                          <div class="min-w-0 leading-tight">
+                            <div class="truncate text-sm font-semibold text-stone-900 md:text-base">{{ sponsor.name_label() }}</div>
+                            <div class="mt-1.5 truncate text-xs uppercase tracking-wide text-stone-600">{{ sponsor.level_label() }}</div>
+                          </div>
+                        </div>
+                      {% endif -%}
+                    {% endfor -%}
                   </div>
-                  {% if let Some(cfs_description) = &event.input.cfs_description -%}
-                    <div class="markdown mt-6 text-sm/6 text-stone-500">{{ cfs_description|md_to_html|safe }}</div>
-                  {% else -%}
-                    <div class="mt-6 rounded-lg border border-dashed border-stone-200 p-4 text-sm font-medium text-stone-500">
-                      Missing CFS description
-                    </div>
-                  {% endif -%}
                 </section>
               {% endif -%}
-              {# End Call for Speakers -#}
+              {# End sponsors section -#}
 
               {# Event description -#}
               <section>
@@ -293,6 +299,27 @@
                 {% endif -%}
               </section>
               {# End event description -#}
+
+              {# Call for Speakers -#}
+              {% if event.has_cfs() -%}
+                <section>
+                  <div class="pb-6 text-lg font-bold uppercase leading-6 tracking-wide text-stone-900 lg:pb-10 lg:text-2xl">
+                    Call for Speakers
+                  </div>
+                  <div class="text-lg text-stone-700">
+                    <span class="me-2 uppercase text-stone-500">Submissions open:</span>
+                    <span class="font-semibold">{{ event.cfs_date_label() }}</span>
+                  </div>
+                  {% if let Some(cfs_description) = &event.input.cfs_description -%}
+                    <div class="markdown mt-6 text-sm/6 text-stone-500">{{ cfs_description|md_to_html|safe }}</div>
+                  {% else -%}
+                    <div class="mt-6 rounded-lg border border-dashed border-stone-200 p-4 text-sm font-medium text-stone-500">
+                      Missing CFS description
+                    </div>
+                  {% endif -%}
+                </section>
+              {% endif -%}
+              {# End Call for Speakers -#}
 
               {# Tags -#}
               <section class="hidden" data-event-preview-tags-section>
@@ -343,8 +370,8 @@
               {% endif -%}
               {# End sessions section -#}
 
-              {# People and sponsors section -#}
-              {% if event.has_people_or_sponsors() -%}
+              {# People section -#}
+              {% if !event.hosts.is_empty() || !event.speakers.is_empty() -%}
                 <section class="space-y-8 lg:space-y-12">
                   {# Hosts section -#}
                   {% if !event.hosts.is_empty() -%}
@@ -404,36 +431,9 @@
                     </div>
                   {% endif -%}
                   {# End event speakers section -#}
-
-                  {# Sponsors section -#}
-                  {% if !event.sponsors.is_empty() -%}
-                    <div>
-                      <div class="pb-8 text-lg font-bold uppercase leading-10 tracking-wide text-stone-900 lg:pb-14 lg:pt-2 lg:text-2xl">
-                        Sponsors
-                      </div>
-                      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {% for sponsor in event.sponsors -%}
-                          {% if let Some(logo_url) = &sponsor.logo_url -%}
-                            {{ badges::sponsor_badge(name = sponsor.name_label() , logo_url = logo_url, website_url = sponsor.website_url, level = sponsor.level_label(), with_level = true) -}}
-                          {% else -%}
-                            <div class="inline-flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-white p-4">
-                              <div class="flex size-15 shrink-0 items-center justify-center rounded-lg border border-stone-200 bg-white md:size-18">
-                                <div class="svg-icon size-6 bg-amber-500 icon-handshake"></div>
-                              </div>
-                              <div class="min-w-0 leading-tight">
-                                <div class="truncate text-sm font-semibold text-stone-900 md:text-base">{{ sponsor.name_label() }}</div>
-                                <div class="mt-1.5 truncate text-xs uppercase tracking-wide text-stone-600">{{ sponsor.level_label() }}</div>
-                              </div>
-                            </div>
-                          {% endif -%}
-                        {% endfor -%}
-                      </div>
-                    </div>
-                  {% endif -%}
-                  {# End sponsors section -#}
                 </section>
               {% endif -%}
-              {# End people and sponsors section -#}
+              {# End people section -#}
 
               {# Gallery -#}
               {% if !event.photos.is_empty() -%}
