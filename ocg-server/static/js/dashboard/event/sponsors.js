@@ -548,7 +548,10 @@ export class SponsorsSection extends LitWrapper {
       return;
     }
 
-    render(this.showCreateModal ? this._renderCreateModal() : this._renderLevelModal(), this._ensureModalContainer());
+    render(
+      this.showCreateModal ? this._renderCreateModal() : this._renderLevelModal(),
+      this._ensureModalContainer(),
+    );
   }
 
   /**
@@ -647,7 +650,9 @@ export class SponsorsSection extends LitWrapper {
               />
             </div>
             <div>
-              <label class="form-label" for="event-sponsor-level">Level <span class="asterisk">*</span></label>
+              <label class="form-label" for="event-sponsor-level"
+                >Level <span class="asterisk">*</span></label
+              >
               <input
                 id="event-sponsor-level"
                 type="text"

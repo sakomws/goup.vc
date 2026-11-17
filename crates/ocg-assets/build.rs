@@ -69,7 +69,12 @@ fn main() -> Result<()> {
         .context("failed to resolve the ocg-server directory for tailwindcss")?;
     run(
         "tailwindcss",
-        &["-i", "static/css/styles.src.css", "-o", generated_styles_str],
+        &[
+            "-i",
+            "static/css/styles.src.css",
+            "-o",
+            generated_styles_str,
+        ],
         Some(&server_dir),
     )?;
 
