@@ -680,8 +680,8 @@ export class SponsorsSection extends LitWrapper {
                 required
                 .value=${this.newSponsorLogoUrl}
                 @image-change=${(event) => {
-                this.newSponsorLogoUrl = event.detail?.value || "";
-              }}
+                  this.newSponsorLogoUrl = event.detail?.value || "";
+                }}
               ></image-field>
               <div>
                 <label class="form-label" for="event-sponsor-website">Website URL</label>
@@ -716,8 +716,10 @@ export class SponsorsSection extends LitWrapper {
                 type="button"
                 class="btn-primary"
                 ?disabled=${
-                !this.newSponsorName.trim() || !this.newSponsorLogoUrl.trim() || !this.newSponsorLevel.trim()
-              }
+                  !this.newSponsorName.trim() ||
+                  !this.newSponsorLogoUrl.trim() ||
+                  !this.newSponsorLevel.trim()
+                }
                 @click=${() => this._confirmCreateSponsor()}
               >
                 Add sponsor
