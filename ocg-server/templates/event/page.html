@@ -405,70 +405,32 @@
       </div>
       {# End event date and location -#}
 
-      {# Call for Speakers -#}
-      {% if event.cfs_is_enabled() && !event.canceled -%}
-        <div class="pb-4">
-          <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-6 pb-6 lg:pt-2 lg:pb-14">
-            Call for Speakers
+      {# Sponsors grouped by level -#}
+      {% let sponsor_groups = event.sponsors_by_level() -%}
+      {% if !sponsor_groups.is_empty() -%}
+        <div>
+          <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-8 lg:pt-2 lg:pb-14">
+            Sponsors
           </div>
-          {% if let Some(cfs_description) = &event.cfs_description -%}
-            <div class="text-stone-500 text-sm/6 markdown">{{ cfs_description|md_to_html|safe }}</div>
-          {% endif -%}
-          {% if let Some(cfs_starts_at) = &event.cfs_starts_at -%}
-            {% let cfs_start_tz = cfs_starts_at.with_timezone(event.timezone) -%}
-            {% if let Some(cfs_ends_at) = &event.cfs_ends_at -%}
-              {% let cfs_end_tz = cfs_ends_at.with_timezone(event.timezone) -%}
-              <div class="text-lg text-stone-700 pt-9">
-                <span class="uppercase text-stone-500 me-2">Submissions open:</span>
-                <span class="font-semibold">{{ cfs_start_tz.format("%b %-e, %l:%M %p") }} - {{ cfs_end_tz.format("%b %-e, %l:%M %p %Z, %G") }}</span>
-              </div>
-            {% endif -%}
-          {% endif -%}
-          <div class="pt-6">
-            {% if event.cfs_is_open() -%}
-              <button id="open-cfs-modal"
-                      hx-get="/{{ event.alliance.name }}/event/{{ event.event_id }}/cfs-modal"
-                      hx-target="#cfs-modal-root"
-                      hx-swap="innerHTML"
-                      class="btn-primary-outline h-10 md:h-[30px] px-4 flex items-center justify-center"
-                      hx-disabled-elt="#open-cfs-modal">Submit session proposal</button>
-            {% else -%}
-              <button type="button"
-                      class="btn-primary-outline h-10 md:h-[30px] px-4 flex items-center justify-center opacity-50 cursor-not-allowed"
-                      {% if event.cfs_is_upcoming() -%}
-                      title="Call for Speakers will open soon"
-                      {% elif event.cfs_is_closed() -%}
-                      title="Call for Speakers is now closed"
-                      {%- endif -%}
-                      disabled>Submit session proposal</button>
-            {% endif -%}
-          </div>
-          <div id="cfs-modal"
-               role="dialog"
-               aria-modal="true"
-               aria-labelledby="cfs-modal-title"
-               class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 justify-center items-center w-full md:inset-0 h-full max-h-full flex z-[1000]">
-            <div id="overlay-cfs-modal"
-                 class="modal-overlay absolute w-full h-full bg-stone-950 opacity-[0.35]"></div>
-            <div class="modal-panel p-4 max-w-2xl">
-              <div class="modal-card rounded-lg modal-overflow-visible">
-                <div class="flex items-center justify-between p-4 md:p-5 border-b border-stone-200 rounded-t">
-                  <h3 id="cfs-modal-title" class="text-xl font-semibold text-stone-900">Submit a proposal</h3>
-                  <button id="close-cfs-modal"
-                          type="button"
-                          class="group text-stone-400 bg-transparent hover:bg-stone-200 hover:text-stone-900 transition-colors rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center">
-                    <div class="svg-icon w-5 h-5 bg-stone-500 group-hover:bg-stone-900 transition-colors icon-close"></div>
-                    <span class="sr-only">Close modal</span>
-                  </button>
+          <div class="space-y-10">
+            {% for group in sponsor_groups -%}
+              <div>
+                <h3 class="mb-4 text-sm font-bold uppercase tracking-[0.16em] text-stone-500">{{ group.level }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {% for sponsor in group.sponsors -%}
+                    <div data-sponsor-placement
+                         data-event-id="{{ event.event_id }}"
+                         data-sponsor-id="{{ sponsor.group_sponsor_id }}">
+                      {{ badges::sponsor_badge(name = sponsor.name, logo_url = sponsor.logo_url, website_url = sponsor.website_url, level = sponsor.level, with_level = false) -}}
+                    </div>
+                  {% endfor -%}
                 </div>
-                <div id="cfs-modal-root"
-                     class="modal-body p-4 md:p-6 space-y-6 modal-overflow-visible"></div>
               </div>
-            </div>
+            {% endfor -%}
           </div>
         </div>
       {% endif -%}
-      {# End Call for Speakers -#}
+      {# End sponsors grouped by level -#}
 
       {% if let Some(ad_banner_url) = &event.alliance.ad_banner_url -%}
         {{ ui::floating_advertisement_banner(alt = event.alliance.display_name.clone() + " advertisement",
@@ -595,6 +557,71 @@
         {# End contact organizers modal -#}
       </div>
       {# End event description -#}
+
+      {# Call for Speakers -#}
+      {% if event.cfs_is_enabled() && !event.canceled -%}
+        <div class="pb-4">
+          <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-6 pb-6 lg:pt-2 lg:pb-14">
+            Call for Speakers
+          </div>
+          {% if let Some(cfs_description) = &event.cfs_description -%}
+            <div class="text-stone-500 text-sm/6 markdown">{{ cfs_description|md_to_html|safe }}</div>
+          {% endif -%}
+          {% if let Some(cfs_starts_at) = &event.cfs_starts_at -%}
+            {% let cfs_start_tz = cfs_starts_at.with_timezone(event.timezone) -%}
+            {% if let Some(cfs_ends_at) = &event.cfs_ends_at -%}
+              {% let cfs_end_tz = cfs_ends_at.with_timezone(event.timezone) -%}
+              <div class="text-lg text-stone-700 pt-9">
+                <span class="uppercase text-stone-500 me-2">Submissions open:</span>
+                <span class="font-semibold">{{ cfs_start_tz.format("%b %-e, %l:%M %p") }} - {{ cfs_end_tz.format("%b %-e, %l:%M %p %Z, %G") }}</span>
+              </div>
+            {% endif -%}
+          {% endif -%}
+          <div class="pt-6">
+            {% if event.cfs_is_open() -%}
+              <button id="open-cfs-modal"
+                      hx-get="/{{ event.alliance.name }}/event/{{ event.event_id }}/cfs-modal"
+                      hx-target="#cfs-modal-root"
+                      hx-swap="innerHTML"
+                      class="btn-primary-outline h-10 md:h-[30px] px-4 flex items-center justify-center"
+                      hx-disabled-elt="#open-cfs-modal">Submit session proposal</button>
+            {% else -%}
+              <button type="button"
+                      class="btn-primary-outline h-10 md:h-[30px] px-4 flex items-center justify-center opacity-50 cursor-not-allowed"
+                      {% if event.cfs_is_upcoming() -%}
+                      title="Call for Speakers will open soon"
+                      {% elif event.cfs_is_closed() -%}
+                      title="Call for Speakers is now closed"
+                      {%- endif -%}
+                      disabled>Submit session proposal</button>
+            {% endif -%}
+          </div>
+          <div id="cfs-modal"
+               role="dialog"
+               aria-modal="true"
+               aria-labelledby="cfs-modal-title"
+               class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 justify-center items-center w-full md:inset-0 h-full max-h-full flex z-[1000]">
+            <div id="overlay-cfs-modal"
+                 class="modal-overlay absolute w-full h-full bg-stone-950 opacity-[0.35]"></div>
+            <div class="modal-panel p-4 max-w-2xl">
+              <div class="modal-card rounded-lg modal-overflow-visible">
+                <div class="flex items-center justify-between p-4 md:p-5 border-b border-stone-200 rounded-t">
+                  <h3 id="cfs-modal-title" class="text-xl font-semibold text-stone-900">Submit a proposal</h3>
+                  <button id="close-cfs-modal"
+                          type="button"
+                          class="group text-stone-400 bg-transparent hover:bg-stone-200 hover:text-stone-900 transition-colors rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center">
+                    <div class="svg-icon w-5 h-5 bg-stone-500 group-hover:bg-stone-900 transition-colors icon-close"></div>
+                    <span class="sr-only">Close modal</span>
+                  </button>
+                </div>
+                <div id="cfs-modal-root"
+                     class="modal-body p-4 md:p-6 space-y-6 modal-overflow-visible"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif -%}
+      {# End Call for Speakers -#}
 
       {# Tags -#}
       {% if let Some(tags) = &event.tags -%}
@@ -873,33 +900,6 @@
         </div>
       {% endif -%}
       {# End partners section -#}
-
-      {# Sponsors grouped by level -#}
-      {% let sponsor_groups = event.sponsors_by_level() -%}
-      {% if !sponsor_groups.is_empty() -%}
-        <div>
-          <div class="uppercase text-lg lg:text-2xl tracking-wide font-bold leading-10 pb-8 lg:pt-2 lg:pb-14">
-            Sponsors
-          </div>
-          <div class="space-y-10">
-            {% for group in sponsor_groups -%}
-              <div>
-                <h3 class="mb-4 text-sm font-bold uppercase tracking-[0.16em] text-stone-500">{{ group.level }}</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {% for sponsor in group.sponsors -%}
-                    <div data-sponsor-placement
-                         data-event-id="{{ event.event_id }}"
-                         data-sponsor-id="{{ sponsor.group_sponsor_id }}">
-                      {{ badges::sponsor_badge(name = sponsor.name, logo_url = sponsor.logo_url, website_url = sponsor.website_url, level = sponsor.level, with_level = false) -}}
-                    </div>
-                  {% endfor -%}
-                </div>
-              </div>
-            {% endfor -%}
-          </div>
-        </div>
-      {% endif -%}
-      {# End sponsors grouped by level -#}
 
       {# Gallery -#}
       {% if let Some(photos_urls) = &event.photos_urls -%}
