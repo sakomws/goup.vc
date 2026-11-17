@@ -41,6 +41,8 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+    env:
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: -C link-arg=-fuse-ld=mold
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -65,7 +67,7 @@ jobs:
           sudo mv tailwindcss /usr/local/bin/tailwindcss
 
       - name: Build e2e server binary
-        run: mold -run cargo build --bin ocg-server
+        run: cargo build --bin ocg-server
 
       - name: Upload e2e server binary
         uses: actions/upload-artifact@v4
