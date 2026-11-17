@@ -5,6 +5,7 @@ returns json as $$
         -- Parse pagination and sorting filters
         filters as (
             select
+                f.ilike_pattern,
                 f.limit_value,
                 f.offset_value,
                 case
@@ -68,8 +69,22 @@ returns json as $$
                 cs.status_id,
                 cs.updated_at
             from cfs_submission cs
+            join session_proposal sp on sp.session_proposal_id = cs.session_proposal_id
+            join "user" speaker on speaker.user_id = sp.user_id
+            left join "user" co_speaker on co_speaker.user_id = sp.co_speaker_user_id
+            cross join filters f
             where cs.event_id = p_event_id
             and cs.status_id <> 'withdrawn'
+            and (
+                f.ilike_pattern is null
+                or sp.title ilike f.ilike_pattern
+                or speaker.name ilike f.ilike_pattern
+                or speaker.username ilike f.ilike_pattern
+                or speaker.company ilike f.ilike_pattern
+                or speaker.title ilike f.ilike_pattern
+                or co_speaker.name ilike f.ilike_pattern
+                or co_speaker.username ilike f.ilike_pattern
+            )
             and (
                 (select labels_total from label_filter) = 0
                 or cs.cfs_submission_id in (

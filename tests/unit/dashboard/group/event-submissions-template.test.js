@@ -12,5 +12,7 @@ describe("dashboard event submissions template", () => {
       'href="/dashboard/group/events/{{ event_id }}/submissions.csv"',
     );
     expect(template).to.include("Export CSV");
+    expect(template).to.include('name="ts_query"');
+    expect(template).to.include('placeholder="Search speaker or proposal"');
   });
 });
