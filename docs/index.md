@@ -224,6 +224,7 @@ git pull origin main
 cd database/migrations
 TERN_CONF="$HOME/.config/ocg/tern.conf" ./migrate.sh
 cd ~/goup.vc
+./scripts/backup-ocg-server.sh
 nohup env CARGO_BUILD_JOBS=1 cargo build --release -p ocg-server > ~/goup-build.log 2>&1 &
 tail -f ~/goup-build.log
 sudo systemctl restart ocg-server

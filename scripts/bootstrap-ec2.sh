@@ -476,6 +476,8 @@ server:
 EOF
 
 if [[ "$RUN_BUILD" == "true" ]]; then
+    log "Backing up the current release binary"
+    "$ROOT_DIR/scripts/backup-ocg-server.sh"
     log "Building release binary"
     (cd "$ROOT_DIR" && CARGO_BUILD_JOBS="$CARGO_BUILD_JOBS" cargo build --release -p ocg-server)
 fi
