@@ -99,6 +99,29 @@ describe("sponsors-section", () => {
     expect(element.querySelector('input[name="sponsors[0][level]"]').value).to.equal("Gold");
   });
 
+  it("opens the add-sponsor dialog on the document body", async () => {
+    const element = await mountLitComponent("sponsors-section", { sponsors });
+
+    element.querySelector("button").click();
+    await element.updateComplete;
+
+    const modal = document.querySelector("[data-event-sponsor-modal='create']");
+    expect(modal).to.exist;
+    expect(element.contains(modal)).to.equal(false);
+    const logoField = modal.querySelector("image-field");
+    expect(logoField.getAttribute("image-kind")).to.equal("logo");
+    expect(logoField.getAttribute("target")).to.equal("logo");
+
+    logoField.dispatchEvent(
+      new CustomEvent("image-change", {
+        bubbles: true,
+        detail: { value: "https://example.com/logo.png" },
+      }),
+    );
+    await element.updateComplete;
+    expect(element.newSponsorLogoUrl).to.equal("https://example.com/logo.png");
+  });
+
   it("adds an event-only sponsor with inline hidden fields", async () => {
     const element = await mountLitComponent("sponsors-section", { sponsors });
 
