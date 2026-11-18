@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(9);
+select plan(11);
 
 -- ============================================================================
 -- VARIABLES
@@ -550,6 +550,36 @@ select is(
     ),
     jsonb_build_array(:'submission2ID'::uuid, :'submission1ID'::uuid),
     'Should sort stars descending'
+);
+
+-- Should search submissions by proposal title
+select is(
+    (
+        select jsonb_agg(submission->'cfs_submission_id')
+        from jsonb_array_elements(
+            list_event_cfs_submissions(
+                :'eventID'::uuid,
+                '{"limit": 10, "offset": 0, "ts_query": "Rust"}'::jsonb
+            )::jsonb->'submissions'
+        ) submission
+    ),
+    jsonb_build_array(:'submission1ID'::uuid),
+    'Should search submissions by proposal title'
+);
+
+-- Should search submissions by speaker username
+select is(
+    (
+        select jsonb_agg(submission->'cfs_submission_id')
+        from jsonb_array_elements(
+            list_event_cfs_submissions(
+                :'eventID'::uuid,
+                '{"limit": 10, "offset": 0, "ts_query": "bob"}'::jsonb
+            )::jsonb->'submissions'
+        ) submission
+    ),
+    jsonb_build_array(:'submission2ID'::uuid),
+    'Should search submissions by speaker username'
 );
 
 -- ============================================================================

@@ -12,5 +12,7 @@ describe("dashboard event submissions template", () => {
     expect(template).to.include('data-audience="approved"');
     expect(template).to.include('data-audience="rejected"');
     expect(template).to.include('data-audience="all"');
+    expect(template).to.include('name="ts_query"');
+    expect(template).to.include('placeholder="Search speaker or proposal"');
   });
 });

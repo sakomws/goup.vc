@@ -15,6 +15,8 @@ const SUBMISSIONS_CONTENT_ID = "submissions-content";
 const SUBMISSIONS_FILTERS_FORM_ID = "submissions-filters-form";
 const SUBMISSIONS_FILTER_ID = "submissions-label-filter";
 const SUBMISSIONS_FILTERS_SORT_ID = "submissions-sort";
+const SUBMISSIONS_SEARCH_ID = "submissions-search";
+const SUBMISSIONS_SEARCH_CLEAR_ID = "submissions-search-clear";
 const SUBMISSIONS_FILTERS_BOUND_KEY = "submissionsFiltersBound";
 const SUBMISSION_EMAIL_MODAL_ID = "submission-email-modal";
 const SUBMISSION_EMAIL_FORM_ID = "submission-email-form";
@@ -222,12 +224,21 @@ export const initializeSubmissionFilters = (root = document) => {
 
   const sort = getElementById(root, SUBMISSIONS_FILTERS_SORT_ID);
   const labelFilter = getElementById(root, SUBMISSIONS_FILTER_ID);
+  const search = getElementById(root, SUBMISSIONS_SEARCH_ID);
+  const clearSearch = getElementById(root, SUBMISSIONS_SEARCH_CLEAR_ID);
   const submitFilters = () => {
     window.requestAnimationFrame(() => form.requestSubmit());
   };
 
   sort?.addEventListener("change", submitFilters);
   labelFilter?.addEventListener("change", submitFilters);
+  search?.addEventListener("change", submitFilters);
+  clearSearch?.addEventListener("click", () => {
+    if (search instanceof HTMLInputElement) {
+      search.value = "";
+    }
+    submitFilters();
+  });
 };
 
 /**

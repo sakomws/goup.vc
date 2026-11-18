@@ -15,7 +15,7 @@ use ocg_core::types::{
 };
 use ocg_core::validation::{
     MAX_LEN_DESCRIPTION, MAX_LEN_EVENT_LABELS_PER_EVENT, MAX_LEN_EVENT_LABELS_PER_SUBMISSION,
-    MAX_LEN_SORT_KEY, MAX_PAGINATION_LIMIT, trimmed_non_empty, trimmed_non_empty_opt,
+    MAX_LEN_M, MAX_LEN_SORT_KEY, MAX_PAGINATION_LIMIT, trimmed_non_empty, trimmed_non_empty_opt,
 };
 use ocg_templates_common::{filters, helpers::user_initials};
 
@@ -43,6 +43,8 @@ pub struct ListPage {
     pub selected_event_cfs_label_ids: Option<Vec<Uuid>>,
     /// Sort option used to order submissions.
     pub sort: String,
+    /// Text search query used to filter submissions.
+    pub ts_query: Option<String>,
     /// Submission status options.
     pub statuses: Vec<CfsSubmissionStatus>,
     /// List of submissions.
@@ -175,6 +177,9 @@ pub struct CfsSubmissionsFilters {
     /// Sort option used to order submissions.
     #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_SORT_KEY))]
     pub sort: Option<String>,
+    /// Search query for speaker name, username, company, title, or proposal title.
+    #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_M))]
+    pub ts_query: Option<String>,
 }
 
 ocg_core::impl_pagination_and_raw_query!(CfsSubmissionsFilters, limit, offset);
