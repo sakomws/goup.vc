@@ -661,6 +661,10 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             put(dashboard::group::submissions::update),
         )
         .route(
+            "/events/{event_id}/speakers/sync",
+            post(dashboard::group::events::sync_approved_speakers),
+        )
+        .route(
             "/events/{event_id}/unpublish",
             put(dashboard::group::events::unpublish),
         )

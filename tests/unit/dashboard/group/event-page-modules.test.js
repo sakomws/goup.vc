@@ -1,5 +1,6 @@
 import { expect } from "@open-wc/testing";
 
+import "/static/js/common/users/speakers-selector.js";
 import "/static/js/dashboard/event/ticketing/discount-codes-editor.js";
 import "/static/js/dashboard/event/ticketing/ticket-types-editor.js";
 import "/static/js/dashboard/event/sessions/section.js";
@@ -1145,5 +1146,122 @@ describe("event page modules", () => {
     // Submissions refresh is emitted from the update page root.
     expect(refreshEvents).to.deep.equal(["page"]);
     expect(bodyEvents).to.deep.equal([]);
+  });
+
+  it("syncs approved speakers into speakers-selector without triggering pending changes when clean", async () => {
+    // Mount the update page shell with speakers-selector and sync button.
+    mountUpdatePageShell({ canManageEvents: true, waitlistCount: "0" });
+    const pageRoot = document.getElementById("event-update-page");
+    const pendingChangesAlert = document.getElementById("pending-changes-alert");
+    pendingChangesAlert.classList.add("hidden");
+
+    const hostsForm = document.getElementById("hosts-sponsors-form");
+    hostsForm.innerHTML = `
+      <button id="sync-event-approved-speakers-button" type="button"></button>
+      <speakers-selector
+        selected-speakers='[{"user_id":"1","username":"alice","name":"Alice","featured":true}]'
+        field-name-prefix="speakers"
+      ></speakers-selector>
+    `;
+
+    initializeEventUpdatePage(pageRoot);
+    await waitForAnimationFrames(2);
+
+    const syncButton = document.getElementById("sync-event-approved-speakers-button");
+    const speakersSelector = pageRoot.querySelector('speakers-selector[field-name-prefix="speakers"]');
+    await speakersSelector.updateComplete;
+
+    // Simulate a successful sync response adding Bob.
+    syncButton.dispatchEvent(
+      new CustomEvent("htmx:afterRequest", {
+        bubbles: true,
+        detail: {
+          elt: syncButton,
+          xhr: {
+            status: 200,
+            responseText: JSON.stringify({
+              added_count: 1,
+              speakers: [
+                { user_id: "1", username: "alice", name: "Alice", featured: true },
+                { user_id: "2", username: "bob", name: "Bob", featured: false },
+              ],
+            }),
+          },
+        },
+      }),
+    );
+
+    await speakersSelector.updateComplete;
+    await waitForAnimationFrames(2);
+
+    // Synced speaker is added to speakers-selector and clean baseline stays intact.
+    expect(speakersSelector.selectedSpeakers.map((s) => s.user_id)).to.deep.equal(["1", "2"]);
+    expect(pendingChangesAlert.classList.contains("hidden")).to.equal(true);
+    expect(swal.calls.length).to.equal(1);
+    expect(swal.calls[0].text).to.equal("Synced 1 approved speaker to the event.");
+  });
+
+  it("merges synced speakers while preserving pending unsaved edits when dirty", async () => {
+    // Mount the update page shell with speakers-selector and sync button.
+    mountUpdatePageShell({ canManageEvents: true, waitlistCount: "0" });
+    const pageRoot = document.getElementById("event-update-page");
+    const pendingChangesAlert = document.getElementById("pending-changes-alert");
+    pendingChangesAlert.classList.add("hidden");
+
+    const detailsForm = document.getElementById("details-form");
+    detailsForm.innerHTML = `<input id="test-title" name="title" value="Original Title" />`;
+
+    const hostsForm = document.getElementById("hosts-sponsors-form");
+    hostsForm.innerHTML = `
+      <button id="sync-event-approved-speakers-button" type="button"></button>
+      <speakers-selector
+        selected-speakers='[{"user_id":"1","username":"alice","name":"Alice","featured":false}]'
+        field-name-prefix="speakers"
+      ></speakers-selector>
+    `;
+
+    initializeEventUpdatePage(pageRoot);
+    await waitForAnimationFrames(2);
+
+    // Make an unsaved edit inside a tracked form so the page is dirty.
+    const titleInput = document.getElementById("test-title");
+    titleInput.value = "Updated Title";
+    titleInput.dispatchEvent(new Event("input", { bubbles: true }));
+    await waitForAnimationFrames(2);
+    expect(pendingChangesAlert.classList.contains("hidden")).to.equal(false);
+
+    const syncButton = document.getElementById("sync-event-approved-speakers-button");
+    const speakersSelector = pageRoot.querySelector('speakers-selector[field-name-prefix="speakers"]');
+    await speakersSelector.updateComplete;
+
+    // Simulate a sync response returning Alice (featured=true in DB) and Bob.
+    syncButton.dispatchEvent(
+      new CustomEvent("htmx:afterRequest", {
+        bubbles: true,
+        detail: {
+          elt: syncButton,
+          xhr: {
+            status: 200,
+            responseText: JSON.stringify({
+              added_count: 1,
+              speakers: [
+                { user_id: "1", username: "alice", name: "Alice", featured: true },
+                { user_id: "2", username: "bob", name: "Bob", featured: false },
+              ],
+            }),
+          },
+        },
+      }),
+    );
+
+    await speakersSelector.updateComplete;
+    await waitForAnimationFrames(2);
+
+    // Unsaved speaker entry stays intact, missing approved speaker is merged, and dirty alert stays visible.
+    expect(speakersSelector.selectedSpeakers.map((s) => s.user_id)).to.deep.equal(["1", "2"]);
+    expect(speakersSelector.selectedSpeakers[0].featured).to.equal(false);
+    expect(pendingChangesAlert.classList.contains("hidden")).to.equal(false);
+    expect(swal.calls.length).to.equal(1);
+    expect(swal.calls[0].text).to.equal("Synced 1 approved speaker to the event.");
   });
 });

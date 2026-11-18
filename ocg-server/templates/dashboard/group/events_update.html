@@ -1288,7 +1288,29 @@
 
           {# Event Speakers Section -#}
           <div class="border-b border-stone-900/10 pb-12">
-            <div class="text-xl lg:text-2xl font-medium text-stone-900">Event Speakers</div>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="text-xl lg:text-2xl font-medium text-stone-900">Event Speakers</div>
+              <button id="sync-event-approved-speakers-button"
+                      type="button"
+                      hx-post="/dashboard/group/events/{{ event.event_id }}/speakers/sync"
+                      hx-swap="none"
+                      hx-indicator="#dashboard-spinner"
+                      hx-disabled-elt="this"
+                      class="btn-secondary btn-mini inline-flex items-center gap-2 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
+                      {% if event_read_only -%}
+                        disabled
+                        {% if event.canceled -%}
+                          title="Canceled events are read-only."
+                        {% else -%}
+                          title="Your role cannot update events."
+                        {% endif -%}
+                      {% else -%}
+                      title="Add speakers from approved Call for Speakers submissions to this event's speakers list."
+                      {% endif -%}>
+                <div class="svg-icon size-3 icon-refresh shrink-0"></div>
+                <span>Sync approved speakers</span>
+              </button>
+            </div>
             <div class="mt-5">
               {% if let Some(legacy_speakers) = &event.legacy_speakers -%}
                 {% if !legacy_speakers.is_empty() -%}

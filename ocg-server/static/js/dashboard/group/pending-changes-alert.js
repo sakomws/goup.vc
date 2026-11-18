@@ -241,8 +241,18 @@ export const initializePendingChangesAlert = ({
     );
   }
 
+  const resetBaseline = () => {
+    if (!pendingChangesAlert || trackedForms.length === 0) {
+      return;
+    }
+    initialFormSnapshot = buildFormsSnapshot(trackedForms);
+    pendingChangesReady = true;
+    refreshPendingChangesState();
+  };
+
   return {
     hasPendingChanges: () => hasPendingChanges,
     refresh: refreshPendingChangesState,
+    resetBaseline,
   };
 };

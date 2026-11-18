@@ -683,6 +683,21 @@ pub(crate) async fn set_group_defaults(
         .into_response())
 }
 
+/// Synchronizes speakers from approved CFS submissions into the event speakers list.
+#[instrument(skip_all, err)]
+pub(crate) async fn sync_approved_speakers(
+    CurrentUser(user): CurrentUser,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    Path(event_id): Path<Uuid>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let result = db
+        .sync_event_approved_speakers(user.user_id, group_id, event_id)
+        .await?;
+
+    Ok(Json(result).into_response())
+}
+
 /// Returns the `<option>` list of groups the current event can be moved into.
 #[instrument(skip_all, err)]
 pub(crate) async fn move_targets(

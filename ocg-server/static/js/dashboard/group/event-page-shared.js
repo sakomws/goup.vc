@@ -712,7 +712,7 @@ const initializeEventKindField = ({
  * @param {string} config.confirmMessage Confirmation text shown on cancel.
  * @returns {void}
  */
-export const initializeEventPagePendingChanges = ({ pageRoot, confirmMessage }) => {
+export const initializeEventPagePendingChanges = ({ pageRoot, confirmMessage }) =>
   initializePendingChangesAlert({
     alertId: "pending-changes-alert",
     formIds: collectExistingFormIds(EVENT_PAGE_FORM_IDS, pageRoot),
@@ -720,7 +720,6 @@ export const initializeEventPagePendingChanges = ({ pageRoot, confirmMessage }) 
     confirmMessage,
     confirmText: "Leave",
   });
-};
 
 /**
  * Attaches the shared HTMX before-request validation flow for event save buttons.
