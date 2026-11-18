@@ -202,6 +202,15 @@ returns json as $$
                 fs.action_required_message,
                 rs.average_rating,
                 s.session_id as linked_session_id,
+                (
+                    select coalesce(
+                        json_agg(prep.prep_step order by prep.created_at asc, prep.prep_step asc),
+                        '[]'::json
+                    )
+                    from cfs_submission_prep_email prep
+                    where prep.cfs_submission_id = fs.cfs_submission_id
+                ) as prep_emails,
+                epoch_seconds(s.starts_at) as session_starts_at,
                 case
                     when reviewer.user_id is null then null
                     else public_user_summary(reviewer)

@@ -846,6 +846,7 @@ pub(crate) fn sample_group_cfs_submission(
         cfs_submission_id,
         created_at: Utc.with_ymd_and_hms(2024, 1, 2, 12, 0, 0).unwrap(),
         labels: vec![],
+        prep_emails: vec![],
         ratings: vec![],
         ratings_count: 0,
         session_proposal: sample_group_cfs_session_proposal(session_proposal_id),
@@ -856,6 +857,7 @@ pub(crate) fn sample_group_cfs_submission(
         action_required_message: None,
         average_rating: None,
         linked_session_id: None,
+        session_starts_at: None,
         reviewed_by: None,
         updated_at: None,
     }

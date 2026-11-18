@@ -618,3 +618,181 @@ async fn test_send_email_rejects_empty_recipient_list() {
         "No rejected speakers with verified email addresses who accept messages from event organizers."
     );
 }
+
+#[tokio::test]
+async fn test_send_prep_schedule_email() {
+    let alliance_id = Uuid::new_v4();
+    let group_id = Uuid::new_v4();
+    let event_id = Uuid::new_v4();
+    let submission_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(
+        session_id,
+        user_id,
+        &auth_hash,
+        Some(alliance_id),
+        Some(group_id),
+    );
+    let event = sample_event_summary(event_id, group_id);
+    let starts_at = chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2024, 2, 1, 10, 0, 0).unwrap();
+    let context = crate::templates::dashboard::group::submissions::CfsSubmissionPrepEmailContext {
+        speaker_user_id: Uuid::new_v4(),
+        status_id: "approved".to_string(),
+        title: "Opening keynote".to_string(),
+        co_speaker_user_id: None,
+        linked_session_id: Some(Uuid::new_v4()),
+        prep_emails: vec![],
+        session_starts_at: Some(starts_at),
+        tracks: vec!["AI".to_string()],
+        venue_name: Some("Sample Venue".to_string()),
+    };
+    let expected_subject = "Your time slot for Sample Event".to_string();
+    let expected_body = "Your talk \"Opening keynote\" is on the AI track at Feb 01, 2024 10:00 UTC. The venue is Sample Venue. The event page has the schedule.".to_string();
+
+    let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == alliance_id
+                && *gid == group_id
+                && *uid == user_id
+                && permission == GroupPermission::EventsWrite
+        })
+        .returning(|_, _, _, _| Ok(true));
+    db.expect_get_site_settings()
+        .times(1)
+        .returning(|| Ok(sample_site_settings()));
+    db.expect_get_event_summary()
+        .times(1)
+        .returning(move |_, _, _| Ok(event.clone()));
+    db.expect_get_cfs_submission_prep_email_context()
+        .times(1)
+        .withf(move |gid, eid, sid| *gid == group_id && *eid == event_id && *sid == submission_id)
+        .returning(move |_, _, _| Ok(Some(context.clone())));
+    db.expect_send_cfs_submission_prep_email()
+        .times(1)
+        .withf(
+            move |created_by, gid, eid, sid, step, _template, subject, body| {
+                *created_by == user_id
+                    && *gid == group_id
+                    && *eid == event_id
+                    && *sid == submission_id
+                    && step == "schedule"
+                    && subject == expected_subject
+                    && body == expected_body
+            },
+        )
+        .returning(|_, _, _, _, _, _, _, _| Ok(()));
+
+    let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
+        .build()
+        .await;
+    let request = Request::builder()
+        .method("POST")
+        .uri(format!(
+            "/dashboard/group/events/{event_id}/submissions/{submission_id}/prep-email"
+        ))
+        .header(COOKIE, format!("id={session_id}"))
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from("step=schedule"))
+        .unwrap();
+    let response = router.oneshot(request).await.unwrap();
+    let (parts, body) = response.into_parts();
+    let bytes = to_bytes(body, usize::MAX).await.unwrap();
+
+    assert_empty_response(&parts, &bytes, StatusCode::NO_CONTENT);
+    assert_eq!(
+        parts.headers.get("hx-trigger").and_then(|value| value.to_str().ok()),
+        Some("refresh-event-submissions")
+    );
+}
+
+#[tokio::test]
+async fn test_send_prep_listed_email_requires_a_session() {
+    let alliance_id = Uuid::new_v4();
+    let group_id = Uuid::new_v4();
+    let event_id = Uuid::new_v4();
+    let submission_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(
+        session_id,
+        user_id,
+        &auth_hash,
+        Some(alliance_id),
+        Some(group_id),
+    );
+    let event = sample_event_summary(event_id, group_id);
+    let context = crate::templates::dashboard::group::submissions::CfsSubmissionPrepEmailContext {
+        speaker_user_id: Uuid::new_v4(),
+        status_id: "approved".to_string(),
+        title: "Opening keynote".to_string(),
+        co_speaker_user_id: None,
+        linked_session_id: None,
+        prep_emails: vec![],
+        session_starts_at: None,
+        tracks: vec![],
+        venue_name: None,
+    };
+
+    let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == alliance_id
+                && *gid == group_id
+                && *uid == user_id
+                && permission == GroupPermission::EventsWrite
+        })
+        .returning(|_, _, _, _| Ok(true));
+    db.expect_get_site_settings()
+        .times(1)
+        .returning(|| Ok(sample_site_settings()));
+    db.expect_get_event_summary()
+        .times(1)
+        .returning(move |_, _, _| Ok(event.clone()));
+    db.expect_get_cfs_submission_prep_email_context()
+        .times(1)
+        .returning(move |_, _, _| Ok(Some(context.clone())));
+
+    let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
+        .build()
+        .await;
+    let request = Request::builder()
+        .method("POST")
+        .uri(format!(
+            "/dashboard/group/events/{event_id}/submissions/{submission_id}/prep-email"
+        ))
+        .header(COOKIE, format!("id={session_id}"))
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from("step=listed"))
+        .unwrap();
+    let response = router.oneshot(request).await.unwrap();
+    let (parts, body) = response.into_parts();
+    let bytes = to_bytes(body, usize::MAX).await.unwrap();
+
+    assert_eq!(parts.status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        String::from_utf8(bytes.to_vec()).unwrap(),
+        "Add this talk to the agenda before emailing that it is listed."
+    );
+}

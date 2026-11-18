@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(88);
+select plan(89);
 
 -- ============================================================================
 -- TESTS
@@ -73,6 +73,14 @@ select columns_are('cfs_submission_label', array[
     'cfs_submission_id',
     'created_at',
     'event_cfs_label_id'
+]);
+
+-- Test: cfs_submission_rating columns should match expected
+select columns_are('cfs_submission_prep_email', array[
+    'cfs_submission_id',
+    'prep_step',
+    'created_at',
+    'sent_by'
 ]);
 
 -- Test: cfs_submission_rating columns should match expected

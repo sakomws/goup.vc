@@ -25,7 +25,8 @@ use crate::{
     services::notifications::{DynNotificationsManager, NewNotification, NotificationKind},
     templates::{
         dashboard::group::submissions::{
-            self, CfsLabelFilterOption, CfsSubmission, CfsSubmissionUpdate, CfsSubmissionsFilters,
+            self, CfsLabelFilterOption, CfsSubmission, CfsSubmissionPrepEmailContext,
+            CfsSubmissionUpdate, CfsSubmissionsFilters,
         },
         notifications::{CfsSubmissionUpdated, EventCustom},
     },
@@ -95,6 +96,10 @@ pub(crate) async fn list_page(
     let template = submissions::ListPage {
         can_manage_events,
         event_canceled: event.canceled,
+        event_has_venue: event
+            .venue_name
+            .as_deref()
+            .is_some_and(|name| !name.trim().is_empty()),
         event_cfs_labels,
         event_id,
         statuses,
@@ -383,6 +388,175 @@ pub(crate) async fn send_email(
     .await?;
 
     Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+/// Emails one speaker prep step and records that it was sent.
+#[instrument(skip_all, err)]
+pub(crate) async fn send_prep_email(
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    State(server_cfg): State<HttpServerConfig>,
+    Path((event_id, cfs_submission_id)): Path<(Uuid, Uuid)>,
+    ValidatedFormQs(email): ValidatedFormQs<CfsPrepEmail>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let (site_settings, event, context) = tokio::try_join!(
+        db.get_site_settings(),
+        db.get_event_summary(alliance_id, group_id, event_id),
+        db.get_cfs_submission_prep_email_context(group_id, event_id, cfs_submission_id),
+    )?;
+    let Some(context) = context else {
+        return Err(HandlerError::NotFound);
+    };
+
+    if let Some(message) = prep_email_block(&event, &context, email.step) {
+        return Ok((StatusCode::BAD_REQUEST, message).into_response());
+    }
+
+    let base_url = server_cfg.base_url.strip_suffix('/').unwrap_or(&server_cfg.base_url);
+    let link = format!(
+        "{}/{}/group/{}/event/{}",
+        base_url,
+        event.alliance_name,
+        event.public_group_slug(),
+        event.slug
+    );
+    let (subject, body) = prep_email_content(email.step, &event, &context, base_url);
+    let template_data = EventCustom {
+        body: body.clone(),
+        event,
+        link,
+        subject: subject.clone(),
+        theme: site_settings.theme,
+    };
+    db.send_cfs_submission_prep_email(
+        user.user_id,
+        group_id,
+        event_id,
+        cfs_submission_id,
+        email.step.as_ref(),
+        &serde_json::to_value(&template_data)?,
+        &subject,
+        &body,
+    )
+    .await?;
+
+    Ok((
+        StatusCode::NO_CONTENT,
+        [("HX-Trigger", "refresh-event-submissions")],
+    )
+        .into_response())
+}
+
+fn prep_email_block(
+    event: &crate::types::event::EventSummary,
+    context: &CfsSubmissionPrepEmailContext,
+    step: PrepEmailStep,
+) -> Option<&'static str> {
+    if event.canceled {
+        return Some("Canceled events cannot send speaker emails.");
+    }
+    if context.status_id != "approved" {
+        return Some("Only approved submissions can receive speaker prep emails.");
+    }
+    if context.prep_email_sent(step.as_ref()) {
+        return Some("This speaker prep email was already sent.");
+    }
+    match step {
+        PrepEmailStep::Listed if !context.has_session() => {
+            Some("Add this talk to the agenda before emailing that it is listed.")
+        }
+        PrepEmailStep::Schedule if context.tracks.is_empty() => {
+            Some("Assign a track before emailing the schedule.")
+        }
+        PrepEmailStep::Schedule if context.session_starts_at.is_none() => {
+            Some("Set the session time before emailing the schedule.")
+        }
+        PrepEmailStep::Schedule
+            if context
+                .venue_name
+                .as_deref()
+                .is_none_or(|name| name.trim().is_empty()) =>
+        {
+            Some("Add the event venue before emailing the schedule.")
+        }
+        PrepEmailStep::Listed
+        | PrepEmailStep::Profile
+        | PrepEmailStep::Slides
+        | PrepEmailStep::Schedule => None,
+    }
+}
+
+fn prep_email_content(
+    step: PrepEmailStep,
+    event: &crate::types::event::EventSummary,
+    context: &CfsSubmissionPrepEmailContext,
+    base_url: &str,
+) -> (String, String) {
+    let title = &context.title;
+    match step {
+        PrepEmailStep::Listed => (
+            format!("You're on the speakers list for {}", event.name),
+            format!("Your talk \"{title}\" is on the speakers list."),
+        ),
+        PrepEmailStep::Profile => (
+            format!("Add your photo and bio for {}", event.name),
+            format!(
+                "Please add a photo and a short bio on your account so we can use them on the speaker poster.\n\n{base_url}/dashboard/user?tab=account"
+            ),
+        ),
+        PrepEmailStep::Slides => (
+            format!("Add your slides for {}", event.name),
+            format!(
+                "Please add your slides for \"{title}\" to the shared speaker deck and reply to this email with the link."
+            ),
+        ),
+        PrepEmailStep::Schedule => {
+            let starts_at = context
+                .session_starts_at
+                .expect("schedule email requires a session time");
+            let when = format!(
+                "{} {}",
+                starts_at.with_timezone(&event.timezone).format("%b %d, %Y %H:%M"),
+                event.timezone
+            );
+            let tracks = context.tracks.join(", ");
+            let venue = context.venue_name.clone().unwrap_or_default();
+            (
+                format!("Your time slot for {}", event.name),
+                format!(
+                    "Your talk \"{title}\" is on the {tracks} track at {when}. The venue is {venue}. The event page has the schedule."
+                ),
+            )
+        }
+    }
+}
+
+/// Form data for emailing one speaker prep step.
+#[derive(Debug, Deserialize, Serialize, Validate)]
+pub(crate) struct CfsPrepEmail {
+    /// Speaker prep step to email.
+    #[garde(skip)]
+    pub step: PrepEmailStep,
+}
+
+/// Speaker prep email tracked on an approved submission.
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Serialize, strum::AsRefStr)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum PrepEmailStep {
+    /// The talk is on the public speakers list.
+    #[strum(serialize = "listed")]
+    Listed,
+    /// The speaker should add a photo and bio.
+    #[strum(serialize = "profile")]
+    Profile,
+    /// The speaker should add slides.
+    #[strum(serialize = "slides")]
+    Slides,
+    /// Track, time, and venue are ready.
+    #[strum(serialize = "schedule")]
+    Schedule,
 }
 
 /// Form data for emailing submission speakers.

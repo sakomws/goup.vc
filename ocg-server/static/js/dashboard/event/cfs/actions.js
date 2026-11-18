@@ -27,6 +27,13 @@ const SUBMISSION_EMAIL_COPY = {
   approved: "This email goes to speakers and co-speakers on approved submissions who accept organizer email.",
   rejected: "This email goes to speakers and co-speakers on rejected submissions who accept organizer email.",
 };
+const PREP_EMAIL_SUCCESS = {
+  listed: "Listed email sent.",
+  profile: "Photo and bio email sent.",
+  slides: "Slides email sent.",
+  schedule: "Schedule email sent.",
+};
+const PREP_EMAIL_ERROR = "The speaker prep email could not be sent. Please try again.";
 const SUBMISSION_EMAIL_SUCCESS = {
   all: "Email sent to speakers.",
   approved: "Email sent to approved speakers.",
@@ -184,6 +191,17 @@ const bindCfsSubmissionGlobalHandlers = () => {
   });
 
   document.addEventListener("htmx:afterRequest", (event) => {
+    const prepButton = closestElement(event.target, "[data-prep-email]");
+    if (prepButton instanceof HTMLElement) {
+      const step = prepButton.dataset.step || "";
+      handleHtmxResponse({
+        errorMessage: event.detail?.xhr?.responseText || PREP_EMAIL_ERROR,
+        successMessage: PREP_EMAIL_SUCCESS[step] || "Speaker prep email sent.",
+        xhr: event.detail?.xhr,
+      });
+      return;
+    }
+
     const form = event.target;
     if (!(form instanceof HTMLFormElement) || form.id !== SUBMISSION_EMAIL_FORM_ID) {
       return;

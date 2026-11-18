@@ -31,6 +31,8 @@ pub struct ListPage {
     pub can_manage_events: bool,
     /// Whether the event has been canceled.
     pub event_canceled: bool,
+    /// Whether the event has a venue name for the schedule email.
+    pub event_has_venue: bool,
     /// Event CFS labels available for filtering and submission updates.
     pub event_cfs_labels: Vec<CfsLabelFilterOption>,
     /// Event identifier.
@@ -105,6 +107,9 @@ pub struct CfsSubmission {
     pub created_at: DateTime<Utc>,
     /// Labels assigned to the submission.
     pub labels: Vec<EventCfsLabel>,
+    /// Speaker prep emails already sent for this submission.
+    #[serde(default)]
+    pub prep_emails: Vec<String>,
     /// Ratings for this submission.
     pub ratings: Vec<CfsSubmissionRating>,
     /// Total number of ratings.
@@ -124,11 +129,71 @@ pub struct CfsSubmission {
     pub average_rating: Option<f64>,
     /// Linked session identifier.
     pub linked_session_id: Option<Uuid>,
+    /// Start time of the linked session.
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub session_starts_at: Option<DateTime<Utc>>,
     /// Reviewer information.
     pub reviewed_by: Option<UserSummary>,
     /// Submission last update time.
     #[serde(default, with = "chrono::serde::ts_seconds_option")]
     pub updated_at: Option<DateTime<Utc>>,
+}
+
+impl CfsSubmission {
+    /// Whether the named speaker prep email has already been sent.
+    pub fn prep_email_sent(&self, step: &str) -> bool {
+        self.prep_emails.iter().any(|sent| sent == step)
+    }
+
+    /// Whether this talk is on the event agenda.
+    pub fn has_session(&self) -> bool {
+        self.linked_session_id.is_some()
+    }
+
+    /// Whether the talk has a track and a session time.
+    pub fn has_schedule_details(&self) -> bool {
+        self.session_starts_at.is_some() && !self.labels.is_empty()
+    }
+}
+
+/// Facts used to compose one speaker prep email.
+#[skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CfsSubmissionPrepEmailContext {
+    /// Speaker who submitted the proposal.
+    pub speaker_user_id: Uuid,
+    /// Submission status identifier.
+    pub status_id: String,
+    /// Proposal title.
+    pub title: String,
+
+    /// Co-speaker on the proposal.
+    pub co_speaker_user_id: Option<Uuid>,
+    /// Linked session identifier.
+    pub linked_session_id: Option<Uuid>,
+    /// Speaker prep emails already sent.
+    #[serde(default)]
+    pub prep_emails: Vec<String>,
+    /// Start time of the linked session.
+    #[serde(default, with = "chrono::serde::ts_seconds_option")]
+    pub session_starts_at: Option<DateTime<Utc>>,
+    /// Track names assigned to the submission.
+    #[serde(default)]
+    pub tracks: Vec<String>,
+    /// Event venue name.
+    pub venue_name: Option<String>,
+}
+
+impl CfsSubmissionPrepEmailContext {
+    /// Whether the named speaker prep email has already been sent.
+    pub fn prep_email_sent(&self, step: &str) -> bool {
+        self.prep_emails.iter().any(|sent| sent == step)
+    }
+
+    /// Whether this talk is on the event agenda.
+    pub fn has_session(&self) -> bool {
+        self.linked_session_id.is_some()
+    }
 }
 
 /// Notification data for a submission update.
