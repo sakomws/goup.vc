@@ -30,6 +30,8 @@ describe("dashboard base template", () => {
 
     // Verify the open button, close button, and backdrop keep their drawer wiring.
     expect(template).to.include('<button id="open-dashboard-menu"');
+    expect(template).to.include('src="/static/js/dashboard/menu-drawer.js"');
+    expect(template).to.include("z-[60]");
     expect(template).to.include('aria-controls="dashboard-menu-drawer"');
     expect(template).to.include('aria-expanded="false"');
     expect(template).to.include('<button id="close-dashboard-menu"');
