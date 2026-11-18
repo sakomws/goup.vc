@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(89);
+select plan(90);
 
 -- ============================================================================
 -- TESTS
@@ -18,6 +18,7 @@ select has_table('attachment');
 select has_table('audit_log');
 select has_table('auth_session');
 select has_table('cfs_submission');
+select has_table('cfs_submission_prep_email');
 select has_table('cfs_submission_label');
 select has_table('cfs_submission_rating');
 select has_table('cfs_submission_status');

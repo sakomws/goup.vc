@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(82);
+select plan(83);
 
 -- ============================================================================
 -- TESTS
@@ -38,6 +38,11 @@ select indexes_are('cfs_submission', array[
     'cfs_submission_reviewed_by_idx',
     'cfs_submission_session_proposal_id_idx',
     'cfs_submission_status_id_idx'
+]);
+
+-- Test: cfs_submission_prep_email indexes should match expected
+select indexes_are('cfs_submission_prep_email', array[
+    'cfs_submission_prep_email_pkey'
 ]);
 
 -- Test: cfs_submission_label indexes should match expected

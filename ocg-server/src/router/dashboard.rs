@@ -653,6 +653,10 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
             post(dashboard::group::submissions::send_email),
         )
         .route(
+            "/events/{event_id}/submissions/{cfs_submission_id}/prep-email",
+            post(dashboard::group::submissions::send_prep_email),
+        )
+        .route(
             "/events/{event_id}/submissions/{cfs_submission_id}",
             put(dashboard::group::submissions::update),
         )

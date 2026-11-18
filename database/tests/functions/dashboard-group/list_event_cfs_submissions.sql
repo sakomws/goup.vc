@@ -293,6 +293,8 @@ select is(
                     )
                 ),
                 'linked_session_id', :'sessionID'::uuid,
+                'prep_emails', '[]'::jsonb,
+                'session_starts_at', floor(extract(epoch from timestamptz '2024-02-01 10:00:00+00'))::bigint,
                 'ratings', jsonb_build_array(
                     jsonb_build_object(
                         'comments', 'Excellent fit',
@@ -347,6 +349,8 @@ select is(
                     )
                 ),
                 'linked_session_id', null,
+                'prep_emails', '[]'::jsonb,
+                'session_starts_at', null,
                 'ratings', jsonb_build_array(
                     jsonb_build_object(
                         'comments', 'Needs more detail',
@@ -433,6 +437,8 @@ select is(
                 )
             ),
             'linked_session_id', :'sessionID'::uuid,
+                'prep_emails', '[]'::jsonb,
+                'session_starts_at', floor(extract(epoch from timestamptz '2024-02-01 10:00:00+00'))::bigint,
             'ratings', jsonb_build_array(
                 jsonb_build_object(
                     'comments', 'Excellent fit',

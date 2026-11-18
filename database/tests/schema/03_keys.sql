@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(175);
+select plan(178);
 
 -- ============================================================================
 -- TESTS
@@ -14,6 +14,7 @@ select has_pk('attachment');
 select has_pk('audit_log');
 select has_pk('auth_session');
 select has_pk('cfs_submission');
+select has_pk('cfs_submission_prep_email');
 select has_pk('cfs_submission_rating');
 select has_pk('cfs_submission_status');
 select has_pk('alliance');
@@ -102,6 +103,8 @@ select col_is_fk('cfs_submission', 'event_id', 'event');
 select col_is_fk('cfs_submission', 'reviewed_by', 'user');
 select col_is_fk('cfs_submission', 'session_proposal_id', 'session_proposal');
 select col_is_fk('cfs_submission', 'status_id', 'cfs_submission_status');
+select col_is_fk('cfs_submission_prep_email', 'cfs_submission_id', 'cfs_submission');
+select col_is_fk('cfs_submission_prep_email', 'sent_by', 'user');
 select col_is_fk('cfs_submission_rating', 'cfs_submission_id', 'cfs_submission');
 select col_is_fk('cfs_submission_rating', 'reviewer_id', 'user');
 select col_is_fk('email_verification_code', 'user_id', 'user');

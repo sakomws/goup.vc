@@ -46,8 +46,8 @@ use ocg_templates_dashboard::dashboard::{
         spotlights::{GroupMemberSpotlight, SpotlightInput},
         store::{GroupStoreItem, StoreItemInput},
         submissions::{
-            CfsSubmissionNotificationData, CfsSubmissionUpdate, CfsSubmissionsFilters,
-            CfsSubmissionsOutput,
+            CfsSubmissionNotificationData, CfsSubmissionPrepEmailContext, CfsSubmissionUpdate,
+            CfsSubmissionsFilters, CfsSubmissionsOutput,
         },
         team::{GroupTeamFilters, GroupTeamOutput},
         waitlist::{WaitlistFilters, WaitlistOutput},
@@ -271,6 +271,14 @@ pub trait DBDashboardGroup {
         group_id: Uuid,
         user_id: Uuid,
     ) -> Result<()>;
+
+    /// Gets the facts needed to email one speaker prep step.
+    async fn get_cfs_submission_prep_email_context(
+        &self,
+        group_id: Uuid,
+        event_id: Uuid,
+        cfs_submission_id: Uuid,
+    ) -> Result<Option<CfsSubmissionPrepEmailContext>>;
 
     /// Gets submission notification data.
     async fn get_cfs_submission_notification_data(
@@ -749,6 +757,19 @@ pub trait DBDashboardGroup {
         actor_user_id: Uuid,
         group_id: Uuid,
         event_ids: &[Uuid],
+    ) -> Result<()>;
+
+    /// Sends one speaker prep email and records the step.
+    async fn send_cfs_submission_prep_email(
+        &self,
+        created_by: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        cfs_submission_id: Uuid,
+        step: &str,
+        template_data: &serde_json::Value,
+        subject: &str,
+        body: &str,
     ) -> Result<()>;
 
     /// Updates a CFS submission for an event.
@@ -1379,6 +1400,21 @@ where
         self.execute(
             "select delete_group_team_member($1::uuid, $2::uuid, $3::uuid)",
             &[&actor_user_id, &group_id, &user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::get_cfs_submission_prep_email_context`]
+    #[instrument(skip(self), err)]
+    async fn get_cfs_submission_prep_email_context(
+        &self,
+        group_id: Uuid,
+        event_id: Uuid,
+        cfs_submission_id: Uuid,
+    ) -> Result<Option<CfsSubmissionPrepEmailContext>> {
+        self.fetch_json_opt(
+            "select get_cfs_submission_prep_email_context($1::uuid, $2::uuid, $3::uuid)",
+            &[&group_id, &event_id, &cfs_submission_id],
         )
         .await
     }
@@ -2558,6 +2594,46 @@ where
         self.execute(
             "select unpublish_event_series_events($1::uuid, $2::uuid, $3::uuid[])",
             &[&actor_user_id, &group_id, &event_ids],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::send_cfs_submission_prep_email`]
+    #[instrument(skip(self, template_data, subject, body), err)]
+    async fn send_cfs_submission_prep_email(
+        &self,
+        created_by: Uuid,
+        group_id: Uuid,
+        event_id: Uuid,
+        cfs_submission_id: Uuid,
+        step: &str,
+        template_data: &serde_json::Value,
+        subject: &str,
+        body: &str,
+    ) -> Result<()> {
+        self.execute(
+            "
+            select send_cfs_submission_prep_email(
+                $1::uuid,
+                $2::uuid,
+                $3::uuid,
+                $4::uuid,
+                $5::text,
+                $6::jsonb,
+                $7::text,
+                $8::text
+            )
+            ",
+            &[
+                &created_by,
+                &group_id,
+                &event_id,
+                &cfs_submission_id,
+                &step,
+                &Json(template_data),
+                &subject,
+                &body,
+            ],
         )
         .await
     }

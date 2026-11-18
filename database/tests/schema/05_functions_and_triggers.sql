@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(325);
+select plan(327);
 
 -- ============================================================================
 -- VARIABLES
@@ -160,6 +160,7 @@ select has_function('expire_event_purchase_for_checkout_session', array['text', 
 select has_function('generate_slug', array['integer']::name[]);
 select has_function('generate_slug_from_source', array['text', 'integer']::name[]);
 select has_function('get_cfs_submission_notification_data', array['uuid', 'uuid']::name[]);
+select has_function('get_cfs_submission_prep_email_context', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('get_custom_domain', array['uuid', 'uuid']::name[]);
 select has_function('get_alliance_full', array['uuid']::name[]);
 select has_function('get_alliance_id_by_name', array['text']::name[]);
@@ -236,6 +237,10 @@ select has_function('list_event_attendees_ids', array['uuid', 'uuid']::name[]);
 select has_function('list_event_categories', array['uuid']::name[]);
 select has_function('list_event_cfs_labels', array['uuid']::name[]);
 select has_function('list_event_cfs_submissions', array['uuid', 'jsonb']::name[]);
+select has_function(
+    'send_cfs_submission_prep_email',
+    array['uuid', 'uuid', 'uuid', 'uuid', 'text', 'jsonb', 'text', 'text']::name[]
+);
 select has_function('list_event_discount_codes', array['uuid']::name[]);
 select has_function('list_event_kinds', '{}'::name[]);
 select has_function('list_event_series_event_ids', array['uuid', 'uuid']::name[]);

@@ -158,6 +158,7 @@ pub(crate) async fn send_group_custom_notification(
     db.enqueue_tracked_custom_notification(
         &new_notification,
         CustomNotificationTracking {
+            alliance_id: Some(alliance_id),
             body: notification.body.clone(),
             created_by: user.user_id,
             event_id: None,

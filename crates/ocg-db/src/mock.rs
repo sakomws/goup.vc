@@ -751,6 +751,12 @@ mock! {
             group_id: Uuid,
             user_id: Uuid,
         ) -> Result<()>;
+        async fn get_cfs_submission_prep_email_context(
+            &self,
+            group_id: Uuid,
+            event_id: Uuid,
+            cfs_submission_id: Uuid,
+        ) -> Result<Option<ocg_templates_dashboard::dashboard::group::submissions::CfsSubmissionPrepEmailContext>>;
         async fn get_cfs_submission_notification_data(
             &self,
             event_id: Uuid,
@@ -1110,6 +1116,17 @@ mock! {
             event: &serde_json::Value,
             cfg_max_participants: &HashMap<ocg_core::shared::MeetingProvider, i32>,
         ) -> Result<Vec<Uuid>>;
+        async fn send_cfs_submission_prep_email(
+            &self,
+            created_by: Uuid,
+            group_id: Uuid,
+            event_id: Uuid,
+            cfs_submission_id: Uuid,
+            step: &str,
+            template_data: &serde_json::Value,
+            subject: &str,
+            body: &str,
+        ) -> Result<()>;
         async fn update_cfs_submission(
             &self,
             reviewer_id: Uuid,

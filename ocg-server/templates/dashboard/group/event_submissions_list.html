@@ -198,6 +198,83 @@ description = "Review and manage call for speakers submissions.") -}}
                     {% if let Some(company) = submission.speaker.company.as_deref() -%}
                       <div class="break-words text-stone-500">{{ company }}</div>
                     {% endif -%}
+                    {% if can_manage_events && submission.status_id == "approved" -%}
+                      <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span class="rounded-full border border-stone-200 px-2 py-0.5 text-[0.7rem] text-stone-600">Approval emailed</span>
+                        {% if submission.prep_email_sent("listed") -%}
+                          <span class="rounded-full border border-stone-200 px-2 py-0.5 text-[0.7rem] text-stone-600">Listed emailed</span>
+                        {% else -%}
+                          <button type="button"
+                                  class="btn-primary-outline btn-mini"
+                                  data-prep-email
+                                  data-step="listed"
+                                  hx-post="/dashboard/group/events/{{ event_id }}/submissions/{{ submission.cfs_submission_id }}/prep-email"
+                                  hx-vals='{"step":"listed"}'
+                                  hx-swap="none"
+                                  hx-disabled-elt="this"
+                                  {% if event_canceled || !submission.has_session() -%}
+                                    disabled
+                                    title="{% if event_canceled -%}
+                                             Canceled events cannot send speaker emails.
+                                           {% else -%}
+                                             Add this talk to the agenda before emailing that it is listed.
+                                           {% endif -%}"
+                                  {% endif -%}>Email listed</button>
+                        {% endif -%}
+                        {% if submission.prep_email_sent("profile") -%}
+                          <span class="rounded-full border border-stone-200 px-2 py-0.5 text-[0.7rem] text-stone-600">Photo and bio emailed</span>
+                        {% else -%}
+                          <button type="button"
+                                  class="btn-primary-outline btn-mini"
+                                  data-prep-email
+                                  data-step="profile"
+                                  hx-post="/dashboard/group/events/{{ event_id }}/submissions/{{ submission.cfs_submission_id }}/prep-email"
+                                  hx-vals='{"step":"profile"}'
+                                  hx-swap="none"
+                                  hx-disabled-elt="this"
+                                  {% if event_canceled -%}
+                                    disabled
+                                    title="Canceled events cannot send speaker emails."
+                                  {% endif -%}>Email photo and bio</button>
+                        {% endif -%}
+                        {% if submission.prep_email_sent("slides") -%}
+                          <span class="rounded-full border border-stone-200 px-2 py-0.5 text-[0.7rem] text-stone-600">Slides emailed</span>
+                        {% else -%}
+                          <button type="button"
+                                  class="btn-primary-outline btn-mini"
+                                  data-prep-email
+                                  data-step="slides"
+                                  hx-post="/dashboard/group/events/{{ event_id }}/submissions/{{ submission.cfs_submission_id }}/prep-email"
+                                  hx-vals='{"step":"slides"}'
+                                  hx-swap="none"
+                                  hx-disabled-elt="this"
+                                  {% if event_canceled -%}
+                                    disabled
+                                    title="Canceled events cannot send speaker emails."
+                                  {% endif -%}>Email slides</button>
+                        {% endif -%}
+                        {% if submission.prep_email_sent("schedule") -%}
+                          <span class="rounded-full border border-stone-200 px-2 py-0.5 text-[0.7rem] text-stone-600">Schedule emailed</span>
+                        {% else -%}
+                          <button type="button"
+                                  class="btn-primary-outline btn-mini"
+                                  data-prep-email
+                                  data-step="schedule"
+                                  hx-post="/dashboard/group/events/{{ event_id }}/submissions/{{ submission.cfs_submission_id }}/prep-email"
+                                  hx-vals='{"step":"schedule"}'
+                                  hx-swap="none"
+                                  hx-disabled-elt="this"
+                                  {% if event_canceled || !event_has_venue || !submission.has_schedule_details() -%}
+                                    disabled
+                                    title="{% if event_canceled -%}
+                                             Canceled events cannot send speaker emails.
+                                           {% else -%}
+                                             Assign a track, session time, and venue before emailing the schedule.
+                                           {% endif -%}"
+                                  {% endif -%}>Email schedule</button>
+                        {% endif -%}
+                      </div>
+                    {% endif -%}
                   </div>
                 </div>
                 <div class="mt-3 min-w-0 2xl:hidden">
