@@ -1,4 +1,9 @@
-import { bindHtmxResponseAlert, confirmAction, showConfirmAlert } from "/static/js/common/alerts.js";
+import {
+  bindHtmxResponseAlert,
+  confirmAction,
+  handleHtmxResponse,
+  showConfirmAlert,
+} from "/static/js/common/alerts.js";
 import {
   getElementById,
   initializeMatchingRoots,
@@ -7,6 +12,7 @@ import {
 } from "/static/js/common/dom.js";
 import { parseJsonAttribute } from "/static/js/common/utils.js";
 import "/static/js/common/modals/share-modal.js";
+import { hasSpeaker, normalizeSpeakers } from "/static/js/dashboard/event/sessions/speaker-utils.js";
 import { loadEventAnalyticsTab } from "/static/js/dashboard/group/event-analytics-tab.js";
 import { initializeSessionsRemovalWarning } from "/static/js/dashboard/group/event-form-helpers.js";
 import { initializeEventPreview } from "/static/js/dashboard/group/event-preview.js";
@@ -90,6 +96,7 @@ export const initializeEventUpdatePage = (root = document) => {
   } = controls;
   const updateEventButton = getElementById(pageRoot, "update-event-button");
   const setEventDefaultsButton = getElementById(pageRoot, "set-event-defaults-button");
+  const syncApprovedSpeakersButton = getElementById(pageRoot, "sync-event-approved-speakers-button");
   const locationSearchField = queryOne("location-search-field");
   const inertForm = queryOne(".inert-form");
   const capacityInput = getElementById(pageRoot, "capacity");
@@ -216,7 +223,7 @@ export const initializeEventUpdatePage = (root = document) => {
       isCfsFieldLocked: (field) => field?.dataset?.locked === "true",
     });
 
-  initializeEventPagePendingChanges({
+  const pendingChanges = initializeEventPagePendingChanges({
     pageRoot,
     confirmMessage: "You have pending changes. If you continue, unsaved changes will be lost.",
   });
@@ -230,6 +237,56 @@ export const initializeEventUpdatePage = (root = document) => {
     successMessage: "Group event defaults updated.",
     errorMessage: "Something went wrong updating group event defaults. Please try again later.",
   });
+
+  if (syncApprovedSpeakersButton && markDatasetReady(syncApprovedSpeakersButton, "syncSpeakersBound")) {
+    syncApprovedSpeakersButton.addEventListener("htmx:afterRequest", (event) => {
+      const xhr = event.detail?.xhr;
+      if (!xhr || xhr.status < 200 || xhr.status >= 300) {
+        handleHtmxResponse({
+          xhr,
+          successMessage: "",
+          errorMessage: "Something went wrong syncing approved speakers. Please try again later.",
+        });
+        return;
+      }
+
+      const payload = parseJsonAttribute(xhr.responseText, {});
+      const syncedSpeakers = normalizeSpeakers(payload?.speakers || []);
+      const addedCount = Number.parseInt(payload?.added_count ?? "0", 10) || 0;
+      const speakersSelector = queryOne('speakers-selector[field-name-prefix="speakers"]');
+      const wasDirty = pendingChanges?.hasPendingChanges?.() ?? false;
+
+      if (speakersSelector) {
+        if (!wasDirty) {
+          speakersSelector.selectedSpeakers = syncedSpeakers;
+        } else {
+          const currentSpeakers = normalizeSpeakers(speakersSelector.selectedSpeakers || []);
+          const missingSpeakers = syncedSpeakers.filter((speaker) => !hasSpeaker(currentSpeakers, speaker));
+          speakersSelector.selectedSpeakers = [...currentSpeakers, ...missingSpeakers];
+        }
+        speakersSelector.setAttribute("selected-speakers", JSON.stringify(speakersSelector.selectedSpeakers));
+        speakersSelector.requestUpdate?.();
+
+        if (!wasDirty) {
+          Promise.resolve(speakersSelector.updateComplete).then(() => {
+            pendingChanges?.resetBaseline?.();
+          });
+        }
+      }
+
+      const successMessage =
+        addedCount === 0
+          ? "All approved speakers are already synced."
+          : addedCount === 1
+            ? "Synced 1 approved speaker to the event."
+            : `Synced ${addedCount} approved speakers to the event.`;
+      handleHtmxResponse({
+        xhr,
+        successMessage,
+        errorMessage: "",
+      });
+    });
+  }
 
   if (!updateEventButton) {
     return;
