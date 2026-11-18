@@ -18,7 +18,7 @@ use std::{
 use anyhow::Result;
 use axum::{
     Router,
-    extract::{FromRef, Request, State as AxumState},
+    extract::{DefaultBodyLimit, FromRef, Request, State as AxumState},
     http::{
         HeaderName, HeaderValue, Method, StatusCode, Uri,
         header::{CACHE_CONTROL, CONTENT_TYPE, HOST, VARY},
@@ -427,8 +427,12 @@ pub(crate) async fn setup(
         .nest("/dashboard/alliance", alliance_dashboard_router)
         .nest("/dashboard/group", group_dashboard_router)
         .nest("/dashboard/user", user_dashboard_router)
-        // Protected image upload
-        .route("/images", post(images::upload))
+        // Protected image upload. The route limit has to cover a 10 MiB profile
+        // photo; nginx allows the same request through.
+        .route(
+            "/images",
+            post(images::upload).layer(DefaultBodyLimit::max(images::MAX_IMAGE_UPLOAD_BODY_BYTES)),
+        )
         .route_layer(login_required!(
             AuthnBackend,
             login_url = LOG_IN_URL,
