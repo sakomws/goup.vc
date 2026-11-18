@@ -27,9 +27,9 @@ use ocg_core::types::{
 use ocg_core::validation::{
     MAX_LEN_COUNTRY_CODE, MAX_LEN_DESCRIPTION, MAX_LEN_DESCRIPTION_SHORT, MAX_LEN_ENTITY_NAME,
     MAX_LEN_EVENT_LABELS_PER_EVENT, MAX_LEN_L, MAX_LEN_S, MAX_LEN_TIMEZONE, MAX_PAGINATION_LIMIT,
-    MAX_RECURRING_ADDITIONAL_OCCURRENCES, email_vec, image_url_opt, trimmed_non_empty,
-    trimmed_non_empty_opt, trimmed_non_empty_tag_vec, trimmed_non_empty_vec, valid_latitude,
-    valid_longitude,
+    MAX_RECURRING_ADDITIONAL_OCCURRENCES, blank_string_as_none, email_vec, image_url_opt,
+    trimmed_non_empty, trimmed_non_empty_opt, trimmed_non_empty_tag_vec, trimmed_non_empty_vec,
+    valid_latitude, valid_longitude,
 };
 use ocg_templates_common::filters;
 use ocg_templates_common::helpers::DATE_FORMAT;
@@ -680,13 +680,14 @@ pub struct EventSponsor {
     /// Sponsor level for this event.
     #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_S))]
     pub level: String,
-    /// Logo URL for a new event-only sponsor.
+    /// Logo URL for a new or edited sponsor.
     #[garde(custom(image_url_opt))]
     pub logo_url: Option<String>,
-    /// Name for a new event-only sponsor.
+    /// Name for a new or edited sponsor.
     #[garde(custom(trimmed_non_empty_opt), length(max = MAX_LEN_ENTITY_NAME))]
     pub name: Option<String>,
-    /// Website URL for a new event-only sponsor.
+    /// Website URL for a new or edited sponsor.
+    #[serde(default, deserialize_with = "blank_string_as_none")]
     #[garde(url, length(max = MAX_LEN_L))]
     pub website_url: Option<String>,
 }
@@ -940,6 +941,36 @@ sponsors[0][level]=Gold",
             "https://example.com/partner.png"
         );
         assert_eq!(payload["sponsors"][0]["level"], "Gold");
+    }
+
+    #[test]
+    fn to_db_payload_keeps_edited_sponsor_profile() {
+        let event: Event = serde_qs::from_str(
+            "\
+category_id=00000000-0000-0000-0000-000000000001&\
+description=Event%20description&\
+kind_id=virtual&\
+name=Sample%20Event&\
+timezone=UTC&\
+sponsors[0][group_sponsor_id]=00000000-0000-0000-0000-000000000002&\
+sponsors[0][name]=Renamed%20Sponsor&\
+sponsors[0][logo_url]=https%3A%2F%2Fexample.com%2Flogo.png&\
+sponsors[0][website_url]=&\
+sponsors[0][level]=Partner",
+        )
+        .unwrap();
+
+        event.validate().unwrap();
+        let sponsor = &event.to_db_payload().unwrap()["sponsors"][0];
+
+        assert_eq!(
+            sponsor["group_sponsor_id"],
+            "00000000-0000-0000-0000-000000000002"
+        );
+        assert_eq!(sponsor["name"], "Renamed Sponsor");
+        assert_eq!(sponsor["logo_url"], "https://example.com/logo.png");
+        assert_eq!(sponsor["level"], "Partner");
+        assert!(sponsor.get("website_url").is_none());
     }
 
     #[test]

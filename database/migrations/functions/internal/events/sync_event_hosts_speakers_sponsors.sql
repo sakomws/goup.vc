@@ -83,6 +83,22 @@ begin
                     nullif(v_sponsor->>'website_url', '')
                 )
                 returning group_sponsor_id into v_group_sponsor_id;
+            elsif nullif(btrim(v_sponsor->>'name'), '') is not null
+              and nullif(btrim(v_sponsor->>'logo_url'), '') is not null then
+                -- Name, logo, and website live on the sponsor profile. Level
+                -- stays on the event association inserted below.
+                update group_sponsor
+                set
+                    logo_url = btrim(v_sponsor->>'logo_url'),
+                    name = btrim(v_sponsor->>'name'),
+                    website_url = nullif(btrim(v_sponsor->>'website_url'), '')
+                where group_sponsor_id = v_group_sponsor_id
+                  and group_id = v_event_group_id
+                  and (event_id is null or event_id = p_event_id);
+
+                if not found then
+                    raise exception 'sponsor is not available for this event';
+                end if;
             end if;
 
             insert into event_sponsor (event_id, group_sponsor_id, level)

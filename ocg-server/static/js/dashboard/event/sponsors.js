@@ -35,6 +35,7 @@ export class SponsorsSection extends LitWrapper {
     newSponsorLogoUrl: { type: String },
     newSponsorWebsiteUrl: { type: String },
     newSponsorLevel: { type: String },
+    editingSponsorKey: { type: String },
     disabled: { type: Boolean },
   };
 
@@ -54,6 +55,7 @@ export class SponsorsSection extends LitWrapper {
     this.newSponsorLogoUrl = "";
     this.newSponsorWebsiteUrl = "";
     this.newSponsorLevel = "";
+    this.editingSponsorKey = "";
     this._nextClientId = 0;
     this.disabled = false;
     this._modalContainer = null;
@@ -64,6 +66,7 @@ export class SponsorsSection extends LitWrapper {
 
   connectedCallback() {
     super.connectedCallback();
+    this.classList.add("block", "min-w-0", "w-full", "max-w-full");
 
     // Parse JSON provided via attributes when needed
     this._ensureArrayProp("sponsors");
@@ -267,6 +270,27 @@ export class SponsorsSection extends LitWrapper {
 
   _openCreateModal() {
     if (this.disabled) return;
+    this.editingSponsorKey = "";
+    this.newSponsorName = "";
+    this.newSponsorLogoUrl = "";
+    this.newSponsorWebsiteUrl = "";
+    this.newSponsorLevel = "";
+    this._suspendBackdropDismiss();
+    this.showCreateModal = true;
+  }
+
+  /**
+   * Opens the sponsor dialog with the selected card's current details.
+   * @param {Object} sponsor
+   * @private
+   */
+  _openEditModal(sponsor) {
+    if (this.disabled) return;
+    this.editingSponsorKey = this._sponsorKey(sponsor);
+    this.newSponsorName = sponsor.name || "";
+    this.newSponsorLogoUrl = sponsor.logo_url || "";
+    this.newSponsorWebsiteUrl = sponsor.website_url || "";
+    this.newSponsorLevel = sponsor.level || "";
     this._suspendBackdropDismiss();
     this.showCreateModal = true;
   }
@@ -303,6 +327,7 @@ export class SponsorsSection extends LitWrapper {
 
   _closeCreateModal() {
     this.showCreateModal = false;
+    this.editingSponsorKey = "";
     this.newSponsorName = "";
     this.newSponsorLogoUrl = "";
     this.newSponsorWebsiteUrl = "";
@@ -313,19 +338,29 @@ export class SponsorsSection extends LitWrapper {
     if (this.disabled) return;
     const name = this.newSponsorName.trim();
     const logoUrl = this.newSponsorLogoUrl.trim();
+    const websiteUrl = this.newSponsorWebsiteUrl.trim() || null;
     const level = this.newSponsorLevel.trim();
     if (!name || !logoUrl || !level) return;
 
-    this.selectedSponsors = [
-      ...(this.selectedSponsors || []),
-      {
-        client_id: `event-sponsor-${++this._nextClientId}`,
-        name,
-        logo_url: logoUrl,
-        website_url: this.newSponsorWebsiteUrl.trim() || null,
-        level,
-      },
-    ];
+    if (this.editingSponsorKey) {
+      const key = this.editingSponsorKey;
+      this.selectedSponsors = (this.selectedSponsors || []).map((sponsor) =>
+        this._sponsorKey(sponsor) === key
+          ? { ...sponsor, name, logo_url: logoUrl, website_url: websiteUrl, level }
+          : sponsor,
+      );
+    } else {
+      this.selectedSponsors = [
+        ...(this.selectedSponsors || []),
+        {
+          client_id: `event-sponsor-${++this._nextClientId}`,
+          name,
+          logo_url: logoUrl,
+          website_url: websiteUrl,
+          level,
+        },
+      ];
+    }
     this._closeCreateModal();
   }
 
@@ -425,7 +460,7 @@ export class SponsorsSection extends LitWrapper {
 
   render() {
     return html`
-      <div class="space-y-4">
+      <div class="min-w-0 max-w-full space-y-4">
         <div class="text-sm/6 text-stone-500">
           Select a reusable group sponsor or add one that belongs only to this event.
         </div>
@@ -491,11 +526,13 @@ export class SponsorsSection extends LitWrapper {
 
         ${
           this.selectedSponsors && this.selectedSponsors.length > 0
-            ? html`<div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4 mt-2 w-full">
+            ? html`<div
+                class="grid min-w-0 max-w-full grid-cols-1 gap-4 mt-2 w-full xl:grid-cols-2 2xl:grid-cols-3"
+              >
                 ${this.selectedSponsors.map(
                   (s, i) =>
                     html`<div
-                        class="inline-flex min-w-0 items-center gap-3 rounded-xl border border-stone-200 bg-white p-4 w-full"
+                        class="flex min-w-0 max-w-full items-center gap-3 rounded-xl border border-stone-200 bg-white p-4 w-full"
                       >
                         <div
                           class="relative flex items-center justify-center size-15 md:size-18 shrink-0 rounded-lg bg-white border border-stone-200 overflow-hidden"
@@ -521,7 +558,17 @@ export class SponsorsSection extends LitWrapper {
                         </div>
                         <button
                           type="button"
-                          class="p-1 rounded-full hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                          class="shrink-0 p-1 rounded-full hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                          aria-label="Edit ${s.name}"
+                          title="Edit"
+                          @click=${() => this._openEditModal(s)}
+                          ?disabled=${this.disabled}
+                        >
+                          <div class="svg-icon size-4 icon-pencil bg-stone-600"></div>
+                        </button>
+                        <button
+                          type="button"
+                          class="shrink-0 p-1 rounded-full hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                           aria-label="Remove ${s.name}"
                           title="Remove"
                           @click=${() => this._onRemove(this._sponsorKey(s))}
@@ -537,20 +584,11 @@ export class SponsorsSection extends LitWrapper {
                               name="sponsors[${i}][group_sponsor_id]"
                               value=${s.group_sponsor_id}
                             />`
-                          : html`
-                              <input type="hidden" name="sponsors[${i}][name]" value=${s.name || ""} />
-                              <input
-                                type="hidden"
-                                name="sponsors[${i}][logo_url]"
-                                value=${s.logo_url || ""}
-                              />
-                              <input
-                                type="hidden"
-                                name="sponsors[${i}][website_url]"
-                                value=${s.website_url || ""}
-                              />
-                            `
+                          : ""
                       }
+                      <input type="hidden" name="sponsors[${i}][name]" value=${s.name || ""} />
+                      <input type="hidden" name="sponsors[${i}][logo_url]" value=${s.logo_url || ""} />
+                      <input type="hidden" name="sponsors[${i}][website_url]" value=${s.website_url || ""} />
                       <input type="hidden" name="sponsors[${i}][level]" value=${s.level || ""} />`,
                 )}
               </div>`
@@ -657,7 +695,7 @@ export class SponsorsSection extends LitWrapper {
             class="relative z-10 max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-lg border border-stone-200 bg-white p-6 shadow-xl"
           >
             <div id="event-sponsor-modal-title" class="mb-4 text-lg font-semibold text-stone-900">
-              Add sponsor for this event
+              ${this.editingSponsorKey ? "Edit sponsor" : "Add sponsor for this event"}
             </div>
             <div class="space-y-4">
               <div>
@@ -680,8 +718,8 @@ export class SponsorsSection extends LitWrapper {
                 required
                 .value=${this.newSponsorLogoUrl}
                 @image-change=${(event) => {
-                this.newSponsorLogoUrl = event.detail?.value || "";
-              }}
+                  this.newSponsorLogoUrl = event.detail?.value || "";
+                }}
               ></image-field>
               <div>
                 <label class="form-label" for="event-sponsor-website">Website URL</label>
@@ -716,11 +754,13 @@ export class SponsorsSection extends LitWrapper {
                 type="button"
                 class="btn-primary"
                 ?disabled=${
-                !this.newSponsorName.trim() || !this.newSponsorLogoUrl.trim() || !this.newSponsorLevel.trim()
-              }
+                  !this.newSponsorName.trim() ||
+                  !this.newSponsorLogoUrl.trim() ||
+                  !this.newSponsorLevel.trim()
+                }
                 @click=${() => this._confirmCreateSponsor()}
               >
-                Add sponsor
+                ${this.editingSponsorKey ? "Save changes" : "Add sponsor"}
               </button>
             </div>
           </div>
