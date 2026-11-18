@@ -162,6 +162,31 @@ describe("review-submission-modal", () => {
     expect(submitCalls).to.have.length(2);
   });
 
+  it("submits filters when the submission search changes or is cleared", async () => {
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `
+        <form id="submissions-filters-form">
+          <input id="submissions-search" name="ts_query" value="rust">
+          <button id="submissions-search-clear" type="button">Clear</button>
+        </form>
+      `,
+    );
+    const form = document.getElementById("submissions-filters-form");
+    const submitCalls = [];
+    form.requestSubmit = () => submitCalls.push(form);
+    const search = document.getElementById("submissions-search");
+
+    initializeSubmissionFilters();
+    search.dispatchEvent(new Event("change"));
+    await waitForFilterSubmit();
+    document.getElementById("submissions-search-clear").click();
+    await waitForFilterSubmit();
+
+    expect(search.value).to.equal("");
+    expect(submitCalls).to.have.length(2);
+  });
+
   it("initializes submissions filters on htmx load", async () => {
     // Prepare the submissions filters fixture.
     const { sort, submitCalls } = renderFilters();
