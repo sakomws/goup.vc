@@ -29,6 +29,8 @@ use super::events::CfsSubmissionStatus;
 pub struct ListPage {
     /// Whether the current user can manage events.
     pub can_manage_events: bool,
+    /// Whether the event has been canceled.
+    pub event_canceled: bool,
     /// Event CFS labels available for filtering and submission updates.
     pub event_cfs_labels: Vec<CfsLabelFilterOption>,
     /// Event identifier.

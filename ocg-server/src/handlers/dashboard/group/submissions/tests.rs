@@ -15,7 +15,10 @@ use crate::{
     db::mock::MockDB,
     handlers::tests::*,
     services::notifications::{MockNotificationsManager, NotificationKind},
-    templates::{dashboard::DASHBOARD_PAGINATION_LIMIT, notifications::CfsSubmissionUpdated},
+    templates::{
+        dashboard::DASHBOARD_PAGINATION_LIMIT,
+        notifications::{CfsSubmissionUpdated, EventCustom},
+    },
     types::permissions::GroupPermission,
 };
 
@@ -423,4 +426,194 @@ async fn test_update_success() {
         &HeaderValue::from_static("refresh-event-submissions"),
     );
     assert!(bytes.is_empty());
+}
+
+#[tokio::test]
+#[allow(clippy::too_many_lines)]
+async fn test_send_email_to_approved_speakers() {
+    let alliance_id = Uuid::new_v4();
+    let group_id = Uuid::new_v4();
+    let event_id = Uuid::new_v4();
+    let speaker_id = Uuid::new_v4();
+    let co_speaker_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(
+        session_id,
+        user_id,
+        &auth_hash,
+        Some(alliance_id),
+        Some(group_id),
+    );
+    let event = sample_event_summary(event_id, group_id);
+    let event_for_db = event.clone();
+    let event_for_notifications = event.clone();
+    let site_settings = sample_site_settings();
+    let site_settings_for_notifications = site_settings.clone();
+    let notification_body = "Your proposal was approved.";
+    let notification_subject = "Proposal approved";
+    let expected_link = format!(
+        "/{}/group/{}/event/{}",
+        event.alliance_name, event.group_slug, event.slug
+    );
+    let form_data = serde_qs::to_string(&super::CfsSubmissionEmail {
+        audience: super::CfsEmailAudience::Approved,
+        body: notification_body.to_string(),
+        subject: notification_subject.to_string(),
+    })
+    .unwrap();
+    let track_user_id = user_id;
+    let track_event_id = event_id;
+    let track_group_id = group_id;
+    let track_subject = notification_subject.to_string();
+    let track_body = notification_body.to_string();
+
+    let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == alliance_id
+                && *gid == group_id
+                && *uid == user_id
+                && permission == GroupPermission::EventsWrite
+        })
+        .returning(|_, _, _, _| Ok(true));
+    db.expect_get_site_settings()
+        .times(1)
+        .returning(move || Ok(site_settings.clone()));
+    db.expect_get_event_summary()
+        .times(1)
+        .withf(move |cid, gid, eid| *cid == alliance_id && *gid == group_id && *eid == event_id)
+        .returning(move |_, _, _| Ok(event_for_db.clone()));
+    db.expect_resolve_event_cfs_email_recipient_ids()
+        .times(1)
+        .withf(move |gid, eid, audience| {
+            *gid == group_id && *eid == event_id && audience == "approved"
+        })
+        .returning(move |_, _, _| Ok(vec![speaker_id, co_speaker_id]));
+    db.expect_enqueue_tracked_custom_notification()
+        .times(1)
+        .withf(move |notification, tracking| {
+            matches!(notification.kind, NotificationKind::EventCustom)
+                && notification.recipients == vec![speaker_id, co_speaker_id]
+                && notification.template_data.as_ref().is_some_and(|value| {
+                    from_value::<EventCustom>(value.clone()).is_ok_and(|template| {
+                        template.subject == notification_subject
+                            && template.body == notification_body
+                            && template.event.name == event_for_notifications.name
+                            && template.link == expected_link
+                            && template.theme.primary_color
+                                == site_settings_for_notifications.theme.primary_color
+                    })
+                })
+                && tracking.created_by == track_user_id
+                && tracking.event_id == Some(track_event_id)
+                && tracking.group_id == Some(track_group_id)
+                && tracking.recipient_count == 2
+                && tracking.subject == track_subject
+                && tracking.body == track_body
+        })
+        .returning(|_, _| Ok(()));
+
+    let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
+        .build()
+        .await;
+    let request = Request::builder()
+        .method("POST")
+        .uri(format!(
+            "/dashboard/group/events/{event_id}/submissions/email"
+        ))
+        .header(COOKIE, format!("id={session_id}"))
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(form_data))
+        .unwrap();
+    let response = router.oneshot(request).await.unwrap();
+    let (parts, body) = response.into_parts();
+    let bytes = to_bytes(body, usize::MAX).await.unwrap();
+
+    assert_empty_response(&parts, &bytes, StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn test_send_email_rejects_empty_recipient_list() {
+    let alliance_id = Uuid::new_v4();
+    let group_id = Uuid::new_v4();
+    let event_id = Uuid::new_v4();
+    let session_id = session::Id::default();
+    let user_id = Uuid::new_v4();
+    let auth_hash = "hash".to_string();
+    let session_record = sample_session_record(
+        session_id,
+        user_id,
+        &auth_hash,
+        Some(alliance_id),
+        Some(group_id),
+    );
+    let event = sample_event_summary(event_id, group_id);
+    let form_data = serde_qs::to_string(&super::CfsSubmissionEmail {
+        audience: super::CfsEmailAudience::Rejected,
+        body: "Body".to_string(),
+        subject: "Subject".to_string(),
+    })
+    .unwrap();
+
+    let mut db = MockDB::new();
+    db.expect_get_session()
+        .times(1)
+        .withf(move |id| *id == session_id)
+        .returning(move |_| Ok(Some(session_record.clone())));
+    db.expect_get_user_by_id()
+        .times(1)
+        .withf(move |id| *id == user_id)
+        .returning(move |_| Ok(Some(sample_auth_user(user_id, &auth_hash))));
+    db.expect_user_has_group_permission()
+        .times(1)
+        .withf(move |cid, gid, uid, permission| {
+            *cid == alliance_id
+                && *gid == group_id
+                && *uid == user_id
+                && permission == GroupPermission::EventsWrite
+        })
+        .returning(|_, _, _, _| Ok(true));
+    db.expect_get_site_settings()
+        .times(1)
+        .returning(|| Ok(sample_site_settings()));
+    db.expect_get_event_summary()
+        .times(1)
+        .returning(move |_, _, _| Ok(event.clone()));
+    db.expect_resolve_event_cfs_email_recipient_ids()
+        .times(1)
+        .withf(|_, _, audience| audience == "rejected")
+        .returning(|_, _, _| Ok(Vec::new()));
+
+    let router = TestRouterBuilder::new(db, MockNotificationsManager::new())
+        .build()
+        .await;
+    let request = Request::builder()
+        .method("POST")
+        .uri(format!(
+            "/dashboard/group/events/{event_id}/submissions/email"
+        ))
+        .header(COOKIE, format!("id={session_id}"))
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(form_data))
+        .unwrap();
+    let response = router.oneshot(request).await.unwrap();
+    let (parts, body) = response.into_parts();
+    let bytes = to_bytes(body, usize::MAX).await.unwrap();
+
+    assert_eq!(parts.status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        String::from_utf8(bytes.to_vec()).unwrap(),
+        "No rejected speakers with verified email addresses who accept messages from event organizers."
+    );
 }

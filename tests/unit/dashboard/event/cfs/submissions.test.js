@@ -2,14 +2,8 @@ import { expect } from "@open-wc/testing";
 
 import { initializeSubmissionFilters } from "/static/js/dashboard/event/cfs/actions.js";
 import { useDashboardTestEnv } from "/tests/unit/test-utils/env.js";
-import {
-  dispatchHtmxAfterRequest,
-  dispatchHtmxLoad,
-} from "/tests/unit/test-utils/htmx.js";
-import {
-  mountLitComponent,
-  useMountedElementsCleanup,
-} from "/tests/unit/test-utils/lit.js";
+import { dispatchHtmxAfterRequest, dispatchHtmxLoad } from "/tests/unit/test-utils/htmx.js";
+import { mountLitComponent, useMountedElementsCleanup } from "/tests/unit/test-utils/lit.js";
 
 describe("review-submission-modal", () => {
   useDashboardTestEnv({
@@ -59,8 +53,7 @@ describe("review-submission-modal", () => {
   };
 
   // Wait for filter submission scheduled in the next animation frame.
-  const waitForFilterSubmit = () =>
-    new Promise((resolve) => window.requestAnimationFrame(resolve));
+  const waitForFilterSubmit = () => new Promise((resolve) => window.requestAnimationFrame(resolve));
 
   // Render the component fixture.
   const renderModal = async (properties = {}) => {
@@ -130,9 +123,7 @@ describe("review-submission-modal", () => {
 
     // Verify opens with the current reviewer state and syncs labels from the filter.
     expect(element._isOpen).to.equal(true);
-    expect(element.labels).to.deep.equal([
-      { event_cfs_label_id: "7", name: "Backend", color: "blue" },
-    ]);
+    expect(element.labels).to.deep.equal([{ event_cfs_label_id: "7", name: "Backend", color: "blue" }]);
     expect(element._message).to.equal("Please expand the abstract");
     expect(element._ratingComment).to.equal("Looks promising");
     expect(element._ratingStars).to.equal(4);
@@ -198,9 +189,7 @@ describe("review-submission-modal", () => {
     );
 
     // Verify opens from a review trigger after the dashboard body.
-    document
-      .querySelector('[data-action="open-cfs-submission-modal"]')
-      ?.click();
+    document.querySelector('[data-action="open-cfs-submission-modal"]')?.click();
     await element.updateComplete;
 
     // Verify opens from a review trigger after the dashboard body is swapped.
@@ -307,21 +296,16 @@ describe("review-submission-modal", () => {
     const receivedEvents = [];
 
     // Verify approved submission updates are emitted.
-    document.body.addEventListener(
-      "event-approved-submissions-updated",
-      (event) => {
-        receivedEvents.push(event.detail);
-      },
-    );
+    document.body.addEventListener("event-approved-submissions-updated", (event) => {
+      receivedEvents.push(event.detail);
+    });
 
     // Call build submission.
     element._submission = buildSubmission();
     element._statusId = "approved";
 
     // Assert the element state.
-    expect(element._buildSubmissionEndpoint()).to.equal(
-      "/dashboard/group/events/event-7/submissions/12",
-    );
+    expect(element._buildSubmissionEndpoint()).to.equal("/dashboard/group/events/event-7/submissions/12");
 
     // Call emit approved submissions update.
     element._emitApprovedSubmissionsUpdate();
@@ -347,12 +331,9 @@ describe("review-submission-modal", () => {
     const receivedEvents = [];
 
     // Verify binds HTMX afterRequest handlers that close.
-    document.body.addEventListener(
-      "event-approved-submissions-updated",
-      (event) => {
-        receivedEvents.push(event.detail);
-      },
-    );
+    document.body.addEventListener("event-approved-submissions-updated", (event) => {
+      receivedEvents.push(event.detail);
+    });
 
     // Open an approved submission before emitting the update.
     element.open(
@@ -410,5 +391,31 @@ describe("review-submission-modal", () => {
     expect(element._isOpen).to.equal(false);
     expect(element._removeDismissListeners).to.equal(removeDismissListeners);
     expect(cleanupCalls).to.equal(0);
+  });
+
+  it("opens and closes the speaker email dialog for the chosen audience", () => {
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `
+        <button type="button" data-submission-email-open data-audience="rejected">Email rejected</button>
+        <div id="submission-email-modal" class="hidden" aria-hidden="true">
+          <p id="submission-email-summary"></p>
+          <input id="submission-email-audience" name="audience" value="">
+          <button id="close-submission-email-modal" type="button">Close</button>
+        </div>
+      `,
+    );
+
+    dispatchHtmxLoad(document.body);
+    document.querySelector("[data-audience='rejected']").click();
+
+    const modal = document.getElementById("submission-email-modal");
+    expect(modal.classList.contains("hidden")).to.equal(false);
+    expect(modal.classList.contains("flex")).to.equal(true);
+    expect(document.getElementById("submission-email-audience").value).to.equal("rejected");
+    expect(document.getElementById("submission-email-summary").textContent).to.include("rejected");
+
+    document.getElementById("close-submission-email-modal").click();
+    expect(modal.classList.contains("hidden")).to.equal(true);
   });
 });

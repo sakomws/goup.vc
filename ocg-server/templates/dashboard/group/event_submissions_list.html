@@ -6,7 +6,42 @@
 {# Header -#}
 {{ dashboard::page_title(title = "Submissions",
 description = "Review and manage call for speakers submissions.") -}}
-<div class="mt-4 flex justify-end">
+<div class="mt-4 flex flex-wrap items-center justify-end gap-2">
+  {% if can_manage_events -%}
+    <button type="button"
+            class="btn-primary-outline btn-mini
+                   {% if event_canceled -%}
+                     opacity-50 cursor-not-allowed
+                   {% endif -%}"
+            data-submission-email-open
+            data-audience="approved"
+            {% if event_canceled -%}
+              disabled
+              title="Canceled events cannot send speaker emails."
+            {% endif -%}>Email approved</button>
+    <button type="button"
+            class="btn-primary-outline btn-mini
+                   {% if event_canceled -%}
+                     opacity-50 cursor-not-allowed
+                   {% endif -%}"
+            data-submission-email-open
+            data-audience="rejected"
+            {% if event_canceled -%}
+              disabled
+              title="Canceled events cannot send speaker emails."
+            {% endif -%}>Email rejected</button>
+    <button type="button"
+            class="btn-primary btn-mini
+                   {% if event_canceled -%}
+                     opacity-50 cursor-not-allowed
+                   {% endif -%}"
+            data-submission-email-open
+            data-audience="all"
+            {% if event_canceled -%}
+              disabled
+              title="Canceled events cannot send speaker emails."
+            {% endif -%}>Email all</button>
+  {% endif -%}
   <a href="/dashboard/group/events/{{ event_id }}/submissions.csv"
      class="btn-primary-outline btn-mini"
      download>Export CSV</a>

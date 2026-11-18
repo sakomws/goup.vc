@@ -1070,6 +1070,12 @@ mock! {
             group_id: Uuid,
             user_id: Uuid,
         ) -> Result<()>;
+        async fn resolve_event_cfs_email_recipient_ids(
+            &self,
+            group_id: Uuid,
+            event_id: Uuid,
+            audience: &str,
+        ) -> Result<Vec<Uuid>>;
         async fn resolve_event_custom_notification_recipient_ids(
             &self,
             group_id: Uuid,

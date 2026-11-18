@@ -267,6 +267,7 @@
 {{ template "dashboard-group/publish_event.sql" }}
 {{ template "dashboard-group/publish_event_series_events.sql" }}
 {{ template "dashboard-group/reject_event_invitation_request.sql" }}
+{{ template "dashboard-group/resolve_event_cfs_email_recipient_ids.sql" }}
 {{ template "dashboard-group/resolve_event_custom_notification_recipient_ids.sql" }}
 {{ template "dashboard-group/request_group_member_phone.sql" }}
 {{ template "dashboard-group/request_event_cohost.sql" }}
