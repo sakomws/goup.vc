@@ -516,6 +516,7 @@ async fn test_send_email_to_approved_speakers() {
                     })
                 })
                 && tracking.created_by == track_user_id
+                && tracking.alliance_id == Some(alliance_id)
                 && tracking.event_id == Some(track_event_id)
                 && tracking.group_id == Some(track_group_id)
                 && tracking.recipient_count == 2
