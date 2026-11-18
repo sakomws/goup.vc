@@ -43,6 +43,46 @@ fn test_event_url_uses_pretty_group_slug() {
 }
 
 #[test]
+fn test_inbox_summary_accepts_alliance_display_name_from_database() {
+    let summary: InboxConversationSummary = serde_json::from_str(
+        r#"{
+            "alliance_display_name": "Open Alliance",
+            "group_name": "Baku",
+            "inbox_conversation_id": "00000000-0000-0000-0000-000000000002",
+            "last_message_at": 1894276800,
+            "last_message_excerpt": "When do doors open?",
+            "last_message_kind": "user-reply",
+            "status": "open"
+        }"#,
+    )
+    .unwrap();
+
+    assert_eq!(summary.community_display_name, "Open Alliance");
+    assert_eq!(summary.last_message_excerpt, "When do doors open?");
+}
+
+#[test]
+fn test_inbox_conversation_accepts_alliance_fields_from_database() {
+    let conversation: InboxConversation = serde_json::from_str(
+        r#"{
+            "alliance_display_name": "Open Alliance",
+            "alliance_name": "goup",
+            "created_at": 1894269600,
+            "group_name": "Baku",
+            "group_slug": "baku",
+            "inbox_conversation_id": "00000000-0000-0000-0000-000000000002",
+            "last_message_at": 1894276800,
+            "messages": [],
+            "status": "open"
+        }"#,
+    )
+    .unwrap();
+
+    assert_eq!(conversation.community_display_name, "Open Alliance");
+    assert_eq!(conversation.community_name, "goup");
+}
+
+#[test]
 fn test_inbox_contact_context_accepts_alliance_name_from_database() {
     let context: InboxContactContext = serde_json::from_str(
         r#"{

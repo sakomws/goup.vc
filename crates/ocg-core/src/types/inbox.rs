@@ -22,8 +22,14 @@ mod tests;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InboxConversation {
     /// Display name of the group's community.
+    ///
+    /// The database function emits this as `alliance_display_name`.
+    #[serde(alias = "alliance_display_name")]
     pub community_display_name: String,
     /// Name of the group's community (slug for URLs).
+    ///
+    /// The database function emits this as `alliance_name`.
+    #[serde(alias = "alliance_name")]
     pub community_name: String,
     /// When the conversation was started.
     #[serde(with = "chrono::serde::ts_seconds")]
@@ -162,6 +168,9 @@ impl InboxConversationStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InboxConversationSummary {
     /// Display name of the group's community.
+    ///
+    /// The database function emits this as `alliance_display_name`.
+    #[serde(alias = "alliance_display_name")]
     pub community_display_name: String,
     /// Group name.
     pub group_name: String,
