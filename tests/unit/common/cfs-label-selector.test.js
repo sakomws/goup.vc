@@ -129,4 +129,72 @@ describe("cfs-label-selector", () => {
     expect(dropdown).to.equal(element.querySelector("[data-multi-select-dropdown]"));
     expect(dropdown.getAttribute("role")).to.equal("listbox");
   });
+
+  it("supports a mutually exclusive No label filter option with counts", async () => {
+    document.body.innerHTML = '<form id="labels-filter-form"></form>';
+    const form = document.getElementById("labels-filter-form");
+    const element = document.createElement("cfs-label-selector");
+    element.setAttribute("include-no-label", "");
+    element.setAttribute("show-counts", "");
+    element.setAttribute("no-label-count", "4");
+    element.labels = [
+      { event_cfs_label_id: "1", name: "Alpha", color: "blue", submissions_count: 2 },
+      { event_cfs_label_id: "2", name: "Zeta", color: "green", submissions_count: 1 },
+    ];
+    form.append(element);
+    await element.updateComplete;
+
+    // Open dropdown and verify "No label" is pinned at the top with its count, while labels stays clean.
+    element.querySelector('input[type="search"]').dispatchEvent(new FocusEvent("focus"));
+    await element.updateComplete;
+    const options = [...element.querySelectorAll('[role="option"]')];
+    expect(options.map((opt) => opt.textContent.replace(/\s+/g, " ").trim())).to.deep.equal([
+      "No label 4",
+      "Alpha 2",
+      "Zeta 1",
+    ]);
+    expect(element.labels).to.have.length(2);
+
+    // Select a normal label first, then switch to "No label" and verify exclusivity.
+    options[1].click();
+    await element.updateComplete;
+    expect(new FormData(form).getAll("label_ids[]")).to.deep.equal(["1"]);
+    expect(new FormData(form).get("no_labels")).to.equal(null);
+
+    options[0].click();
+    await element.updateComplete;
+    expect(new FormData(form).getAll("label_ids[]")).to.deep.equal([]);
+    expect(new FormData(form).get("no_labels")).to.equal("true");
+    expect(element.querySelector('[title="No label"]')).to.not.equal(null);
+
+    // Switching back to a real label clears "No label".
+    element.querySelectorAll('[role="option"]')[2].click();
+    await element.updateComplete;
+    expect(new FormData(form).getAll("label_ids[]")).to.deep.equal(["2"]);
+    expect(new FormData(form).get("no_labels")).to.equal(null);
+  });
+
+  it("initializes from no-label-selected and clears on chip removal", async () => {
+    document.body.innerHTML = `
+      <form id="labels-init-form">
+        <cfs-label-selector
+          include-no-label
+          no-label-selected
+          no-label-count="2"
+          labels='[{"event_cfs_label_id":"1","name":"Backend","color":"blue"}]'
+        ></cfs-label-selector>
+      </form>
+    `;
+    const form = document.getElementById("labels-init-form");
+    const element = form.querySelector("cfs-label-selector");
+    await element.updateComplete;
+
+    expect(new FormData(form).get("no_labels")).to.equal("true");
+    expect(element.querySelector('[aria-label="Remove No label"]')).to.not.equal(null);
+
+    element.querySelector('[aria-label="Remove No label"]').click();
+    await element.updateComplete;
+    expect(new FormData(form).get("no_labels")).to.equal(null);
+    expect(element.noLabelSelected).to.equal(false);
+  });
 });

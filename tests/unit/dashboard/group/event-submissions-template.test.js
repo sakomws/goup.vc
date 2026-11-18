@@ -18,6 +18,9 @@ describe("dashboard event submissions template", () => {
     expect(template).to.include('data-audience="all"');
     expect(template).to.include('name="ts_query"');
     expect(template).to.include('placeholder="Search speaker or proposal"');
+    expect(template).to.include("include-no-label");
+    expect(template).to.include('no-label-count="{{ unlabeled_submissions_count }}"');
+    expect(template).to.include("no-label-selected");
     expect(template).to.include("Approval emailed");
     expect(template).to.include('data-step="listed"');
     expect(template).to.include('data-step="profile"');

@@ -25,11 +25,24 @@ returns json as $$
         label_filter as (
             select
                 count(*)::int as labels_total,
-                coalesce(array_agg(label_id), '{}') as selected_label_ids
+                coalesce(array_agg(label_id), '{}') as selected_label_ids,
+                coalesce((p_filters->>'no_labels')::boolean, false) as no_labels
             from (
                 select value::uuid as label_id
                 from jsonb_array_elements_text(coalesce(p_filters->'label_ids', '[]'::jsonb))
             ) input_labels
+        ),
+        -- Count active submissions without any label assigned, independent of the current filters
+        unlabeled_counts as (
+            select count(*)::int as unlabeled_count
+            from cfs_submission cs
+            where cs.event_id = p_event_id
+            and cs.status_id <> 'withdrawn'
+            and not exists (
+                select 1
+                from cfs_submission_label csl
+                where csl.cfs_submission_id = cs.cfs_submission_id
+            )
         ),
         -- Count active submissions for every event label, independent of the current filters
         label_counts as (
@@ -84,6 +97,14 @@ returns json as $$
                 or speaker.title ilike f.ilike_pattern
                 or co_speaker.name ilike f.ilike_pattern
                 or co_speaker.username ilike f.ilike_pattern
+            )
+            and (
+                not (select no_labels from label_filter)
+                or not exists (
+                    select 1
+                    from cfs_submission_label csl
+                    where csl.cfs_submission_id = cs.cfs_submission_id
+                )
             )
             and (
                 (select labels_total from label_filter) = 0
@@ -244,7 +265,8 @@ returns json as $$
     select json_build_object(
         'label_counts', label_counts.label_counts,
         'submissions', submissions_json.submissions,
-        'total', totals.total
+        'total', totals.total,
+        'unlabeled_count', unlabeled_counts.unlabeled_count
     )
-    from submissions_json, totals, label_counts;
+    from submissions_json, totals, label_counts, unlabeled_counts;
 $$ language sql;

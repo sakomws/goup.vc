@@ -191,6 +191,23 @@ describe("review-submission-modal", () => {
     expect(submitCalls).to.have.length(1);
   });
 
+  it("syncs real labels without exposing the No label filter option in the review modal", async () => {
+    const labelsFilter = document.createElement("cfs-label-selector");
+    labelsFilter.id = "submissions-label-filter";
+    labelsFilter.setAttribute("include-no-label", "");
+    labelsFilter.setAttribute("no-label-selected", "");
+    labelsFilter.labels = [{ event_cfs_label_id: "7", name: "Backend", color: "blue" }];
+    document.body.append(labelsFilter);
+    await labelsFilter.updateComplete;
+
+    const element = await renderModal();
+    element.open(buildSubmission());
+    await element.updateComplete;
+
+    expect(element.labels).to.deep.equal([{ event_cfs_label_id: "7", name: "Backend", color: "blue" }]);
+    labelsFilter.remove();
+  });
+
   it("opens from a review trigger after the dashboard body is swapped", async () => {
     // Prepare replacement body for opening from a review trigger.
     const replacementBody = document.createElement("body");
