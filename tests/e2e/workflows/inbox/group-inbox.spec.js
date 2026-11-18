@@ -22,7 +22,6 @@ import {
   waitForActionResponse,
 } from "../../utils.js";
 
-const MOBILE_NOTICE = "This dashboard is not optimized yet for mobile devices";
 const NO_INBOX_ACCESS_WARNING = "You don't have Inbox access for the selected group.";
 
 test.describe("group inbox workflow", () => {
@@ -371,16 +370,16 @@ test.describe("group inbox workflow", () => {
     }
   });
 
-  test("inbox stays desktop only on mobile @mobile", async ({ member2Page, organizerGroupPage }) => {
-    // Verify the user inbox shows the mobile notice instead of the list
+  test("inbox opens on mobile @mobile", async ({ member2Page, organizerGroupPage }) => {
+    // Verify the user inbox list is available on a phone.
     await navigateToPath(member2Page, "/dashboard/user?tab=inbox");
-    await expect(member2Page.getByText(MOBILE_NOTICE)).toBeVisible();
-    await expect(member2Page.locator("[data-inbox-list]")).toBeHidden();
+    await expect(member2Page.locator("#dashboard-main-content")).toBeVisible();
+    await expect(member2Page.locator("[data-inbox-list]")).toBeVisible();
 
-    // Verify the group inbox shows the mobile notice instead of the list
+    // Verify the group inbox list is available on a phone.
     await navigateToPath(organizerGroupPage, "/dashboard/group?tab=inbox");
-    await expect(organizerGroupPage.getByText(MOBILE_NOTICE)).toBeVisible();
-    await expect(organizerGroupPage.locator("[data-inbox-list]")).toBeHidden();
+    await expect(organizerGroupPage.locator("#dashboard-main-content")).toBeVisible();
+    await expect(organizerGroupPage.locator("[data-inbox-list]")).toBeVisible();
   });
 });
 
