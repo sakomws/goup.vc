@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(327);
+select plan(328);
 
 -- ============================================================================
 -- VARIABLES
@@ -337,6 +337,7 @@ select has_function('submit_event_registration_answers', array['uuid', 'uuid', '
 select has_function('unsubscribe_coffee_meet', array['uuid', 'uuid']::name[]);
 select has_function('sync_cfs_submission_labels', array['uuid', 'uuid', 'uuid[]']::name[]);
 select has_function('sync_event_cfs_labels', array['uuid', 'jsonb']::name[]);
+select has_function('sync_event_approved_speakers', array['uuid', 'uuid', 'uuid']::name[]);
 select has_function('sync_event_discount_codes', array['uuid', 'jsonb']::name[]);
 select has_function('sync_event_hosts_speakers_sponsors', array['uuid', 'jsonb']::name[]);
 select has_function('sync_event_sessions', array['uuid', 'jsonb', 'jsonb']::name[]);
