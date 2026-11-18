@@ -63,6 +63,13 @@ export const uploadImageFile = async (file, { target = "" } = {}) => {
 };
 
 /**
+ * Returns true when a response body is an HTML error page rather than a message.
+ * @param {string} message - Response body
+ * @returns {boolean} True for HTML error documents
+ */
+const isHtmlErrorPage = (message) => /<\s*html[\s>]|<\s*head[\s>]|<\s*body[\s>]/i.test(message);
+
+/**
  * Builds the shared upload failure alert body.
  * @param {string} imageLabel - Human-facing noun for the failed upload
  * @param {string} serverMessage - Specific server error message when available
@@ -71,7 +78,8 @@ export const uploadImageFile = async (file, { target = "" } = {}) => {
  */
 export const getImageUploadErrorMessage = (imageLabel, serverMessage = "", target = "") => {
   const specificMessage = serverMessage.trim();
-  const escapedMessage = specificMessage ? escapeHtml(specificMessage) : "";
+  const escapedMessage =
+    specificMessage && !isHtmlErrorPage(specificMessage) ? escapeHtml(specificMessage) : "";
   const message = escapedMessage
     ? `${escapedMessage}<br /><br />Something went wrong adding the ${imageLabel}. Please try again later.`
     : `Something went wrong adding the ${imageLabel}. Please try again later.`;

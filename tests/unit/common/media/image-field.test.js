@@ -149,4 +149,29 @@ describe("image-field", () => {
     expect(alert.html).to.include("Logo must be square &lt;script&gt;");
     expect(alert.html).to.include("Something went wrong adding the image.");
   });
+
+  it("hides an nginx HTML error page when the upload is rejected", async () => {
+    fetchMock.setImpl(async () => ({
+      status: 413,
+      async text() {
+        return "<html> <head><title>413 Request Entity Too Large</title></head> <body> nginx/1.28.0</body> </html>";
+      },
+    }));
+
+    const element = await mountLitComponent("image-field", {
+      label: "Photo",
+      name: "photo_url",
+      imageKind: "logo",
+      target: "logo",
+    });
+
+    await element._uploadFile(new File(["data"], "photo.jpg", { type: "image/jpeg" }));
+    await element.updateComplete;
+
+    const alert = env.current.swal.calls.at(-1);
+    expect(alert.html).to.not.include("413 Request Entity Too Large");
+    expect(alert.html).to.not.include("<html>");
+    expect(alert.html).to.include("Something went wrong adding the image.");
+    expect(alert.html).to.include("Maximum source size: 10MB.");
+  });
 });

@@ -35,6 +35,9 @@ mod tests;
 const MAX_IMAGE_SIZE_BYTES: usize = 1024 * 1024;
 /// Maximum source payload size allowed for logo image uploads (10 MiB).
 const MAX_LOGO_IMAGE_SIZE_BYTES: usize = 10 * 1024 * 1024;
+/// Request body budget for `/images`. Profile photos use the logo limit, and
+/// multipart framing needs room above the 10 MiB source.
+pub(crate) const MAX_IMAGE_UPLOAD_BODY_BYTES: usize = MAX_LOGO_IMAGE_SIZE_BYTES + 256 * 1024;
 /// Maximum decoded source image size allowed for logo normalization.
 const MAX_LOGO_SOURCE_PIXELS: u64 = 16_000_000;
 /// Normalized logo dimensions.
