@@ -75,17 +75,25 @@ insert into event (
     slug,
     description,
     timezone,
+    capacity,
+    starts_at,
+    ends_at,
+    meeting_provider_id,
     meeting_requested,
     meeting_in_sync
 ) values (
     :'eventID',
     :'groupID',
     :'eventCategoryID',
-    'in-person',
+    'virtual',
     'Speaker Sync Event',
     'speaker-sync-event',
     'Event for testing approved speaker synchronization',
     'UTC',
+    100,
+    '2026-01-01 10:00:00+00',
+    '2026-01-01 12:00:00+00',
+    'zoom',
     true,
     true
 );
