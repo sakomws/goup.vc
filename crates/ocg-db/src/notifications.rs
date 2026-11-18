@@ -348,9 +348,10 @@ where
                 $5::uuid,
                 $6::uuid,
                 $7::uuid,
-                $8::int,
-                $9::text,
-                $10::text
+                $8::uuid,
+                $9::int,
+                $10::text,
+                $11::text
             );
             ",
             &[
@@ -359,6 +360,7 @@ where
                 &attachments,
                 &notification.recipients,
                 &tracking.created_by,
+                &tracking.alliance_id,
                 &tracking.event_id,
                 &tracking.group_id,
                 &recipient_count,
@@ -570,6 +572,8 @@ pub struct CustomNotificationTracking {
     pub body: String,
     /// User who sent the custom notification.
     pub created_by: Uuid,
+    /// Alliance that owns the notification scope.
+    pub alliance_id: Option<Uuid>,
     /// Event associated with the notification, for event custom notifications.
     pub event_id: Option<Uuid>,
     /// Group associated with the notification.
