@@ -695,6 +695,15 @@ pub trait DBDashboardGroup {
         recipient_user_id: Uuid,
     ) -> Result<()>;
 
+    /// Resolves speaker and co-speaker user ids who can receive a submission email.
+    /// `audience` is `approved`, `rejected`, or `all` active submissions.
+    async fn resolve_event_cfs_email_recipient_ids(
+        &self,
+        group_id: Uuid,
+        event_id: Uuid,
+        audience: &str,
+    ) -> Result<Vec<Uuid>>;
+
     /// Resolves custom email recipient user ids for an event and recipient scope.
     /// Selected scopes are constrained to `requested_user_ids`.
     async fn resolve_event_custom_notification_recipient_ids(
@@ -2431,6 +2440,21 @@ where
         self.execute(
             "select reject_group_join_request($1::uuid, $2::uuid, $3::uuid)",
             &[&actor_user_id, &group_id, &user_id],
+        )
+        .await
+    }
+
+    /// [`DBDashboardGroup::resolve_event_cfs_email_recipient_ids`]
+    #[instrument(skip(self), err)]
+    async fn resolve_event_cfs_email_recipient_ids(
+        &self,
+        group_id: Uuid,
+        event_id: Uuid,
+        audience: &str,
+    ) -> Result<Vec<Uuid>> {
+        self.fetch_scalar_one(
+            "select resolve_event_cfs_email_recipient_ids($1::uuid, $2::uuid, $3::text)",
+            &[&group_id, &event_id, &audience],
         )
         .await
     }

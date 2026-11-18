@@ -9,12 +9,14 @@ use axum::{
     },
     response::{Html, IntoResponse},
 };
+use garde::Validate;
+use serde::{Deserialize, Serialize};
 use tracing::{instrument, warn};
 use uuid::Uuid;
 
 use crate::{
     config::HttpServerConfig,
-    db::DynDB,
+    db::{DynDB, notifications::CustomNotificationTracking},
     handlers::{
         error::HandlerError,
         extractors::{CurrentUser, SelectedAllianceId, SelectedGroupId, ValidatedFormQs},
@@ -25,13 +27,13 @@ use crate::{
         dashboard::group::submissions::{
             self, CfsLabelFilterOption, CfsSubmission, CfsSubmissionUpdate, CfsSubmissionsFilters,
         },
-        notifications::CfsSubmissionUpdated,
+        notifications::{CfsSubmissionUpdated, EventCustom},
     },
     types::{
         pagination::{self, NavigationLinks},
         permissions::GroupPermission,
     },
-    validation::MAX_PAGINATION_LIMIT,
+    validation::{MAX_LEN_M, MAX_LEN_NOTIFICATION_BODY, MAX_PAGINATION_LIMIT, trimmed_non_empty},
 };
 
 #[cfg(test)]
@@ -52,7 +54,7 @@ pub(crate) async fn list_page(
     // Fetch event submissions (checking event belongs to group)
     let filters: CfsSubmissionsFilters =
         serde_qs_config().deserialize_str(raw_query.as_deref().unwrap_or_default())?;
-    let (can_manage_events, _event, labels, statuses, submissions) = tokio::try_join!(
+    let (can_manage_events, event, labels, statuses, submissions) = tokio::try_join!(
         db.user_has_group_permission(
             &alliance_id,
             &group_id,
@@ -92,6 +94,7 @@ pub(crate) async fn list_page(
         .collect();
     let template = submissions::ListPage {
         can_manage_events,
+        event_canceled: event.canceled,
         event_cfs_labels,
         event_id,
         statuses,
@@ -302,4 +305,110 @@ fn build_submissions_csv(submissions: &[CfsSubmission]) -> anyhow::Result<Vec<u8
     }
 
     Ok(writer.into_inner().map_err(csv::IntoInnerError::into_error)?)
+}
+
+/// Emails speakers for approved, rejected, or all active submissions.
+#[instrument(skip_all, err)]
+pub(crate) async fn send_email(
+    CurrentUser(user): CurrentUser,
+    SelectedAllianceId(alliance_id): SelectedAllianceId,
+    SelectedGroupId(group_id): SelectedGroupId,
+    State(db): State<DynDB>,
+    State(server_cfg): State<HttpServerConfig>,
+    Path(event_id): Path<Uuid>,
+    ValidatedFormQs(email): ValidatedFormQs<CfsSubmissionEmail>,
+) -> Result<impl IntoResponse, HandlerError> {
+    let (site_settings, event, recipients) = tokio::try_join!(
+        db.get_site_settings(),
+        db.get_event_summary(alliance_id, group_id, event_id),
+        db.resolve_event_cfs_email_recipient_ids(group_id, event_id, email.audience.as_ref()),
+    )?;
+
+    if event.canceled {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            "Canceled events cannot send speaker emails.",
+        )
+            .into_response());
+    }
+
+    if recipients.is_empty() {
+        let message = match email.audience {
+            CfsEmailAudience::Approved => {
+                "No approved speakers with verified email addresses who accept messages from event organizers."
+            }
+            CfsEmailAudience::Rejected => {
+                "No rejected speakers with verified email addresses who accept messages from event organizers."
+            }
+            CfsEmailAudience::All => {
+                "No speakers with verified email addresses who accept messages from event organizers."
+            }
+        };
+        return Ok((StatusCode::BAD_REQUEST, message).into_response());
+    }
+
+    let base_url = server_cfg.base_url.strip_suffix('/').unwrap_or(&server_cfg.base_url);
+    let link = format!(
+        "{}/{}/group/{}/event/{}",
+        base_url,
+        event.alliance_name,
+        event.public_group_slug(),
+        event.slug
+    );
+    let template_data = EventCustom {
+        body: email.body.clone(),
+        event,
+        link,
+        subject: email.subject.clone(),
+        theme: site_settings.theme,
+    };
+    let notification = NewNotification {
+        attachments: vec![],
+        kind: NotificationKind::EventCustom,
+        recipients,
+        template_data: Some(serde_json::to_value(&template_data)?),
+    };
+    db.enqueue_tracked_custom_notification(
+        &notification,
+        CustomNotificationTracking {
+            body: email.body.clone(),
+            created_by: user.user_id,
+            event_id: Some(event_id),
+            group_id: Some(group_id),
+            recipient_count: notification.recipients.len(),
+            subject: email.subject.clone(),
+        },
+    )
+    .await?;
+
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+/// Form data for emailing submission speakers.
+#[derive(Debug, Deserialize, Serialize, Validate)]
+pub(crate) struct CfsSubmissionEmail {
+    /// Which submissions' speakers should receive the email.
+    #[garde(skip)]
+    pub audience: CfsEmailAudience,
+    /// Body text for the notification.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_NOTIFICATION_BODY))]
+    pub body: String,
+    /// Subject line for the notification email.
+    #[garde(custom(trimmed_non_empty), length(max = MAX_LEN_M))]
+    pub subject: String,
+}
+
+/// Speaker audience for a submission email.
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Serialize, strum::AsRefStr)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum CfsEmailAudience {
+    /// Speakers and co-speakers on every submission except withdrawn ones.
+    #[strum(serialize = "all")]
+    All,
+    /// Speakers and co-speakers on approved submissions.
+    #[strum(serialize = "approved")]
+    Approved,
+    /// Speakers and co-speakers on rejected submissions.
+    #[strum(serialize = "rejected")]
+    Rejected,
 }

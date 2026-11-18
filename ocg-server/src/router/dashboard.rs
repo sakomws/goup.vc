@@ -649,6 +649,10 @@ pub(super) fn setup_group_dashboard_router(state: &State) -> Router<State> {
                 .delete(dashboard::group::events::revoke_sponsor_report_share),
         )
         .route(
+            "/events/{event_id}/submissions/email",
+            post(dashboard::group::submissions::send_email),
+        )
+        .route(
             "/events/{event_id}/submissions/{cfs_submission_id}",
             put(dashboard::group::submissions::update),
         )

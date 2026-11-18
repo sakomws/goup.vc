@@ -1010,6 +1010,72 @@
         </div>
       </div>
       <review-submission-modal id="review-submission-modal" event-id="{{ event.event_id }}" statuses="{{ cfs_submission_statuses|json }}" labels="{{ event.cfs_labels|json }}" current-user-id="{{ current_user_id }}" message-max-length="{{ crate::validation::MAX_LEN_DESCRIPTION }}"></review-submission-modal>
+      <div id="submission-email-modal"
+           role="dialog"
+           aria-modal="true"
+           aria-hidden="true"
+           aria-labelledby="submission-email-modal-title"
+           class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-[1000] h-full w-full items-center justify-center">
+        <div id="overlay-submission-email-modal"
+             class="modal-overlay absolute h-full w-full bg-stone-950 opacity-[0.35]"></div>
+        <div class="modal-panel relative z-10 p-4 w-full max-w-2xl">
+          <div class="modal-card rounded-lg bg-white">
+            {{ dashboard::modal_header(title_id = "submission-email-modal-title",
+            title = "Email speakers",
+            close_id = "close-submission-email-modal") -}}
+            <form id="submission-email-form"
+                  class="p-4 md:p-5"
+                  hx-post="/dashboard/group/events/{{ event.event_id }}/submissions/email"
+                  hx-swap="none"
+                  hx-disabled-elt="find button[type='submit']">
+              <input id="submission-email-audience" type="hidden" name="audience" value="all">
+              <p id="submission-email-summary" class="mb-6 text-sm text-stone-600"></p>
+              <div class="mb-6">
+                <label for="submission-email-subject" class="form-label">
+                  Subject <span class="asterisk">*</span>
+                </label>
+                <input id="submission-email-subject"
+                       name="subject"
+                       type="text"
+                       required
+                       maxlength="{{ crate::validation::MAX_LEN_M }}"
+                       class="input-primary mt-2"
+                       placeholder="Enter email subject">
+              </div>
+              <div class="mb-6">
+                <label for="submission-email-body" class="form-label">
+                  Body <span class="asterisk">*</span>
+                </label>
+                <textarea id="submission-email-body"
+                          name="body"
+                          required
+                          rows="6"
+                          maxlength="{{ crate::validation::MAX_LEN_NOTIFICATION_BODY }}"
+                          class="input-primary mt-2"
+                          placeholder="Enter email body (plain text only)"></textarea>
+                <p class="mt-1 text-xs text-stone-500">Plain text only. No HTML formatting.</p>
+              </div>
+              <div class="flex justify-end gap-3 pt-6 border-t border-stone-200">
+                <button id="cancel-submission-email" type="button" class="btn-primary-outline">Cancel</button>
+                <button id="submit-submission-email"
+                        type="submit"
+                        class="btn-primary relative
+                               {% if !can_manage_events || event.canceled -%}
+                                 opacity-50 cursor-not-allowed
+                               {% endif -%}"
+                        {% if !can_manage_events -%}
+                          disabled title="Your role cannot send emails to speakers."
+                        {% else if event.canceled -%}
+                          disabled title="Canceled events cannot send speaker emails."
+                        {% endif -%}>
+                  {{ ui::btn_spinner(id = "submission-email-spinner", spinner_type = "2") -}}
+                  <span>Send email</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
     {# End Submissions Tab -#}
 
