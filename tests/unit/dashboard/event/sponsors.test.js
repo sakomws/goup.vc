@@ -19,6 +19,20 @@ describe("sponsors-section", () => {
 
   useMountedElementsCleanup("sponsors-section");
 
+  it("keeps a selected sponsor and its remove control inside the section width", async () => {
+    const element = await mountLitComponent("sponsors-section", {
+      sponsors,
+      selectedSponsors: ["sponsor-1"],
+    });
+
+    expect(element.classList.contains("block")).to.equal(true);
+    expect(element.classList.contains("max-w-full")).to.equal(true);
+    const card = element.querySelector('[aria-label="Remove Acme Cloud"]')?.parentElement;
+    expect(card?.className).to.include("flex");
+    expect(card?.className).to.include("max-w-full");
+    expect(element.querySelector('[aria-label="Remove Acme Cloud"]')?.className).to.include("shrink-0");
+  });
+
   it("normalizes selected sponsor ids into sponsor objects", async () => {
     // Call mount lit component.
     const element = await mountLitComponent("sponsors-section", {
