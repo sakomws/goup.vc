@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(11);
+select plan(14);
 
 -- ============================================================================
 -- VARIABLES
@@ -26,6 +26,8 @@ select plan(11);
 \set submission1ID '3a1a0000-0000-0000-0000-000000000015'
 \set submission2ID '3a1a0000-0000-0000-0000-000000000016'
 \set submission3ID '3a1a0000-0000-0000-0000-000000000017'
+\set submission4ID '3a1a0000-0000-0000-0000-000000000020'
+\set proposal4ID '3a1a0000-0000-0000-0000-000000000021'
 \set user1ID '3a1a0000-0000-0000-0000-000000000018'
 \set user2ID '3a1a0000-0000-0000-0000-000000000019'
 
@@ -381,7 +383,8 @@ select is(
                     where cfs_submission_id = :'submission1ID'::uuid)
             )
         ),
-        'total', 2
+        'total', 2,
+        'unlabeled_count', 0
     ),
     'Should list event submissions excluding withdrawn'
 );
@@ -402,7 +405,8 @@ select is(
     jsonb_build_object(
         'label_counts', '[]'::jsonb,
         'submissions', '[]'::jsonb,
-        'total', 0
+        'total', 0,
+        'unlabeled_count', 0
     ),
     'Should return empty submissions for events without submissions'
 );
@@ -586,6 +590,81 @@ select is(
     ),
     jsonb_build_array(:'submission2ID'::uuid),
     'Should search submissions by speaker username'
+);
+
+-- Add an unlabeled active submission to test no_labels filtering and unlabeled_count
+insert into session_proposal (
+    session_proposal_id,
+    created_at,
+    description,
+    duration,
+    session_proposal_level_id,
+    title,
+    user_id
+) values (
+    :'proposal4ID',
+    '2024-01-05 00:00:00+00',
+    'Talk without labels',
+    make_interval(mins => 30),
+    'beginner',
+    'Unlabeled Talk',
+    :'user1ID'
+);
+
+insert into cfs_submission (
+    cfs_submission_id,
+    created_at,
+    event_id,
+    session_proposal_id,
+    status_id,
+    updated_at
+) values (
+    :'submission4ID',
+    '2024-01-07 00:00:00+00',
+    :'eventID',
+    :'proposal4ID',
+    'not-reviewed',
+    '2024-01-07 00:00:00+00'
+);
+
+-- Should report active unlabeled submission count
+select is(
+    (
+        list_event_cfs_submissions(
+            :'eventID'::uuid,
+            '{"limit": 10, "offset": 0}'::jsonb
+        )::jsonb ->> 'unlabeled_count'
+    )::int,
+    1,
+    'Should count active submissions without labels excluding withdrawn submissions'
+);
+
+-- Should filter submissions with no labels assigned
+select is(
+    (
+        select jsonb_agg(submission->'cfs_submission_id')
+        from jsonb_array_elements(
+            list_event_cfs_submissions(
+                :'eventID'::uuid,
+                '{"limit": 10, "offset": 0, "no_labels": true}'::jsonb
+            )::jsonb->'submissions'
+        ) submission
+    ),
+    jsonb_build_array(:'submission4ID'::uuid),
+    'Should filter submissions with no labels assigned'
+);
+
+-- Should return empty submissions when combining no_labels with label_ids
+select is(
+    list_event_cfs_submissions(
+        :'eventID'::uuid,
+        format(
+            '{"limit": 10, "offset": 0, "no_labels": true, "label_ids": ["%s"]}',
+            :'label1ID'
+        )::jsonb
+    )::jsonb -> 'submissions',
+    '[]'::jsonb,
+    'Should return no submissions when both no_labels and label_ids are set'
 );
 
 -- ============================================================================

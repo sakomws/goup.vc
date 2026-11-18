@@ -39,6 +39,8 @@ pub struct ListPage {
     pub event_id: Uuid,
     /// Pagination navigation links.
     pub navigation_links: pagination::NavigationLinks,
+    /// Whether submissions are filtered to entries without any labels.
+    pub no_labels: bool,
     /// URL used to refresh the submissions list.
     pub refresh_url: String,
     /// Selected CFS label identifiers used to filter submissions.
@@ -53,6 +55,8 @@ pub struct ListPage {
     pub submissions: Vec<CfsSubmission>,
     /// Total number of submissions.
     pub total: usize,
+    /// Number of active submissions without any label assigned.
+    pub unlabeled_submissions_count: usize,
 
     /// Number of results per page.
     pub limit: Option<usize>,
@@ -231,6 +235,9 @@ pub struct CfsSubmissionsFilters {
     /// Labels to filter by.
     #[garde(length(max = MAX_LEN_EVENT_LABELS_PER_EVENT))]
     pub label_ids: Option<Vec<Uuid>>,
+    /// Whether to filter submissions with no labels assigned.
+    #[garde(skip)]
+    pub no_labels: Option<bool>,
     /// Number of results per page.
     #[serde(default = "dashboard::default_limit")]
     #[garde(range(max = MAX_PAGINATION_LIMIT))]
@@ -258,6 +265,9 @@ pub struct CfsSubmissionsOutput {
     pub submissions: Vec<CfsSubmission>,
     /// Total number of submissions.
     pub total: usize,
+    /// Number of active submissions without any label assigned.
+    #[serde(default)]
+    pub unlabeled_count: usize,
 }
 
 /// Number of active submissions assigned to an event CFS label.

@@ -105,11 +105,13 @@ pub(crate) async fn list_page(
         statuses,
         submissions: submissions.submissions,
         navigation_links,
+        no_labels: filters.no_labels == Some(true),
         refresh_url,
         selected_event_cfs_label_ids: filters.label_ids.clone(),
         sort: filters.sort.clone().unwrap_or_else(|| "created-desc".to_string()),
         ts_query: filters.ts_query.clone(),
         total: submissions.total,
+        unlabeled_submissions_count: submissions.unlabeled_count,
         limit: filters.limit,
         offset: filters.offset,
     };
@@ -132,6 +134,7 @@ pub(crate) async fn download_csv(
     loop {
         let filters = CfsSubmissionsFilters {
             label_ids: None,
+            no_labels: None,
             limit: Some(MAX_PAGINATION_LIMIT),
             offset: Some(offset),
             sort: Some("created-asc".to_string()),
