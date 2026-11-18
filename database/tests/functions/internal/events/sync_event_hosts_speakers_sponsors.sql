@@ -3,7 +3,7 @@
 -- ============================================================================
 
 begin;
-select plan(13);
+select plan(15);
 
 -- ============================================================================
 -- VARIABLES
@@ -304,6 +304,73 @@ select is(
         'website_url', 'https://e/event-only'
     ),
     'Should scope the inline sponsor to this event'
+);
+
+select lives_ok(
+    format(
+        $$select sync_event_hosts_speakers_sponsors(
+            '%s'::uuid,
+            jsonb_build_object(
+                'sponsors',
+                jsonb_build_array(
+                    jsonb_build_object(
+                        'group_sponsor_id', (
+                            select group_sponsor_id
+                            from group_sponsor
+                            where event_id = '%s'::uuid
+                        ),
+                        'name', 'Renamed Event Sponsor',
+                        'logo_url', 'https://e/renamed.png',
+                        'website_url', '',
+                        'level', 'Partner'
+                    ),
+                    jsonb_build_object(
+                        'group_sponsor_id', '%s'::uuid,
+                        'name', 'Renamed Sponsor 1',
+                        'logo_url', 'https://e/sponsor-1-new.png',
+                        'website_url', 'https://e/sponsor-1',
+                        'level', 'Platinum'
+                    )
+                )
+            )
+        )$$,
+        :'eventID',
+        :'eventID',
+        :'sponsor1ID'
+    ),
+    'Should update sponsor name, logo, website, and level in place'
+);
+
+select is(
+    (
+        select jsonb_agg(sponsor order by sponsor->>'name')
+        from (
+            select jsonb_build_object(
+                'level', es.level,
+                'logo_url', gs.logo_url,
+                'name', gs.name,
+                'website_url', gs.website_url
+            ) as sponsor
+            from event_sponsor es
+            join group_sponsor gs using (group_sponsor_id)
+            where es.event_id = :'eventID'::uuid
+        ) sponsors
+    ),
+    jsonb_build_array(
+        jsonb_build_object(
+            'level', 'Partner',
+            'logo_url', 'https://e/renamed.png',
+            'name', 'Renamed Event Sponsor',
+            'website_url', null
+        ),
+        jsonb_build_object(
+            'level', 'Platinum',
+            'logo_url', 'https://e/sponsor-1-new.png',
+            'name', 'Renamed Sponsor 1',
+            'website_url', 'https://e/sponsor-1'
+        )
+    ),
+    'Should persist edited sponsor profiles and this event level'
 );
 
 -- Should clear omitted association sections
