@@ -33,10 +33,14 @@ const attendeeEmailSelectionState = {
  * @returns {Object} Notification controls.
  */
 const getAttendeeNotificationControls = (root) => ({
+  deliveryMode: getElementById(root, "attendee-notification-delivery-mode"),
   form: getElementById(root, formId),
   modal: getElementById(root, modalId),
   recipientScope: getElementById(root, "attendee-notification-recipient-scope"),
   recipientSummary: getElementById(root, "attendee-notification-recipient-summary"),
+  scheduleFields: getElementById(root, "attendee-notification-schedule-fields"),
+  scheduledAt: getElementById(root, "attendee-notification-scheduled-at"),
+  scheduledLocal: getElementById(root, "attendee-notification-scheduled-local"),
   selectedFields: getElementById(root, "attendee-notification-selected-fields"),
   submit: getElementById(root, "submit-attendee-notification"),
 });
@@ -182,10 +186,50 @@ const setNotificationEndpoint = (root, eventId) => {
   const { form } = getAttendeeNotificationControls(root);
   if (!form) return;
 
-  if (eventId) {
-    form.setAttribute("hx-post", `/dashboard/group/notifications/${eventId}`);
-  } else {
+  form.dataset.eventId = eventId || "";
+  applyNotificationDeliveryMode(root);
+};
+
+/**
+ * Sync the compose form's submit endpoint and schedule field visibility with
+ * the selected delivery mode ("now" or "scheduled").
+ * @param {Document|Element} root Query root.
+ * @returns {void}
+ */
+const applyNotificationDeliveryMode = (root) => {
+  const { deliveryMode, form, scheduleFields, scheduledLocal } = getAttendeeNotificationControls(root);
+  if (!form) return;
+
+  const eventId = form.dataset.eventId || "";
+  const scheduled = deliveryMode?.value === "scheduled";
+
+  setElementHidden(scheduleFields, !scheduled);
+  if (scheduledLocal) {
+    scheduledLocal.required = scheduled;
+    if (scheduled) {
+      const now = new Date();
+      now.setSeconds(0, 0);
+      scheduledLocal.min = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16);
+    } else {
+      scheduledLocal.value = "";
+    }
+  }
+
+  if (!eventId) {
     form.removeAttribute("hx-post");
+  } else {
+    form.setAttribute(
+      "hx-post",
+      scheduled
+        ? `/dashboard/group/notifications/${eventId}/scheduled`
+        : `/dashboard/group/notifications/${eventId}`,
+    );
+  }
+
+  if (window.htmx && typeof window.htmx.process === "function") {
+    window.htmx.process(form);
   }
 };
 
@@ -199,6 +243,7 @@ const resetNotificationForm = (root) => {
   const allRecipientTotal = Number(recipientSummary?.dataset.allRecipientTotal || 0);
 
   form?.reset();
+  applyNotificationDeliveryMode(root);
   setNotificationRecipients(root, {
     allRecipientTotal,
     recipients: [],
@@ -422,6 +467,37 @@ export const initializeAttendeeNotification = (root = document) => {
     );
   });
 
+  root.addEventListener("change", (event) => {
+    if (event.target instanceof HTMLElement && event.target.id === "attendee-notification-delivery-mode") {
+      applyNotificationDeliveryMode(root);
+    }
+  });
+
+  root.addEventListener("htmx:configRequest", (event) => {
+    const requestTarget = event.target;
+    if (!(requestTarget instanceof HTMLFormElement) || requestTarget.id !== formId) {
+      return;
+    }
+
+    const { deliveryMode, scheduledLocal } = getAttendeeNotificationControls(root);
+    const localValue = deliveryMode?.value === "scheduled" ? scheduledLocal?.value || "" : "";
+    const scheduledDate = localValue ? new Date(localValue) : null;
+    const scheduledAtIso =
+      scheduledDate && !Number.isNaN(scheduledDate.getTime()) ? scheduledDate.toISOString() : "";
+
+    [event.detail?.parameters, event.detail?.unfilteredParameters].forEach((parameterSet) => {
+      if (!parameterSet || typeof parameterSet !== "object") {
+        return;
+      }
+
+      if (scheduledAtIso) {
+        parameterSet.scheduled_at = scheduledAtIso;
+      } else {
+        delete parameterSet.scheduled_at;
+      }
+    });
+  });
+
   root.addEventListener("htmx:afterRequest", (event) => {
     const requestTarget = event.target;
     if (!(requestTarget instanceof HTMLFormElement) || requestTarget.id !== formId) {
@@ -434,12 +510,16 @@ export const initializeAttendeeNotification = (root = document) => {
       readSubmittedParameter(event.detail?.parameters, "recipient_scope") ||
       (submittedRecipientScope instanceof HTMLInputElement ? submittedRecipientScope.value : "");
     const scope = submittedScope === "selected" ? "selected" : "all";
+    const { deliveryMode } = getAttendeeNotificationControls(root);
+    const scheduled = deliveryMode?.value === "scheduled";
+    const successMessage = scheduled
+      ? "Email scheduled successfully!"
+      : scope === "selected"
+        ? "Email sent successfully to selected attendees!"
+        : "Email sent successfully to all event attendees!";
     const ok = handleHtmxResponse({
       xhr: event.detail?.xhr,
-      successMessage:
-        scope === "selected"
-          ? "Email sent successfully to selected attendees!"
-          : "Email sent successfully to all event attendees!",
+      successMessage,
       errorMessage: event.detail?.xhr?.responseText || defaultNotificationErrorMessage,
     });
     if (ok) {
