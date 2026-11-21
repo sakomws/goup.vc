@@ -1,28 +1,37 @@
-# Deploys production EC2 after merges to main.
+# Deploys production EC2 with the ocg-server binary from the image built for the same commit.
 # Requires production environment secrets:
 # PRODUCTION_HOST, PRODUCTION_USER, PRODUCTION_SSH_KEY, PRODUCTION_SSH_HOST_KEY
-# Optional repository variable: PRODUCTION_CARGO_BUILD_JOBS (defaults to 2)
 name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Build images
+    types:
+      - completed
     branches:
       - main
   workflow_dispatch:
 
 concurrency:
   group: production-deploy
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
     environment: production
-    if: github.repository == 'sakomws/goup.vc'
+    if: >-
+      github.repository == 'sakomws/goup.vc' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      github.event.workflow_run.conclusion == 'success')
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - name: Check deploy secrets
         env:
@@ -41,19 +50,37 @@ jobs:
             exit 1
           fi
 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract ocg-server binary
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/server:sha-${DEPLOY_SHA}"
+          docker pull "${image}"
+          container="$(docker create "${image}")"
+          docker cp "${container}:/usr/local/bin/ocg-server" ocg-server
+          docker rm "${container}"
+          file ocg-server
+          if ! file ocg-server | grep -Eq 'statically linked|static-pie linked'; then
+            echo "ocg-server from ${image} is not statically linked"
+            exit 1
+          fi
+          ./ocg-server --help >/dev/null
+          sha256sum ocg-server
+
       - name: Deploy via SSH
         env:
           PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
           PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
           PRODUCTION_SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
           PRODUCTION_SSH_HOST_KEY: ${{ secrets.PRODUCTION_SSH_HOST_KEY }}
-          CARGO_BUILD_JOBS: ${{ vars.PRODUCTION_CARGO_BUILD_JOBS || '2' }}
         run: |
           set -euo pipefail
-          if [[ ! "${CARGO_BUILD_JOBS}" =~ ^[1-9][0-9]*$ ]]; then
-            echo "PRODUCTION_CARGO_BUILD_JOBS must be a positive integer"
-            exit 1
-          fi
 
           mkdir -p "${HOME}/.ssh"
           chmod 700 "${HOME}/.ssh"
@@ -156,19 +183,35 @@ jobs:
           fi
           chmod 644 "${HOME}/.ssh/known_hosts"
 
-          ssh -i "${HOME}/.ssh/deploy_key" \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="${HOME}/.ssh/known_hosts" \
+          ssh_opts=(
+            -i "${HOME}/.ssh/deploy_key"
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="${HOME}/.ssh/known_hosts"
+            -o ServerAliveInterval=30
+            -o ServerAliveCountMax=6
+          )
+          upload="ocg-server-${DEPLOY_SHA}"
+
+          scp -C "${ssh_opts[@]}" ocg-server "${PRODUCTION_USER}@${PRODUCTION_HOST}:${upload}"
+
+          printf -v remote_cmd 'bash -s -- %q %q' "${DEPLOY_SHA}" "${upload}"
+          ssh "${ssh_opts[@]}" \
             "${PRODUCTION_USER}@${PRODUCTION_HOST}" \
-            "bash -s -- '${CARGO_BUILD_JOBS}'" <<'REMOTE'
+            "${remote_cmd}" <<'REMOTE'
           set -euo pipefail
-          CARGO_BUILD_JOBS="$1"
+          deploy_sha="$1"
+          binary="${HOME}/$2"
+          trap 'rm -f "${binary}"' EXIT
           exec 9>/tmp/goup-production-deploy.lock
           flock 9
           cd "${HOME}/goup.vc"
           git fetch origin main
           git checkout main
-          git pull --ff-only origin main
-          DEPLOY_PULL=false CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS}" ./scripts/deploy-ec2.sh
+          git merge --ff-only "${deploy_sha}"
+          if [[ "$(git rev-parse HEAD)" != "${deploy_sha}" ]]; then
+            echo "Production checkout $(git rev-parse --short HEAD) is ahead of ${deploy_sha}; refusing to install an older binary"
+            exit 1
+          fi
+          DEPLOY_PULL=false DEPLOY_BINARY="${binary}" ./scripts/deploy-ec2.sh
           REMOTE

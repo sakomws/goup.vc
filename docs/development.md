@@ -22,8 +22,9 @@ enhancements.
   schema and are called through Rust DB traits.
 - **Background work:** Notification delivery, reminders, payment flows, and
   meeting integrations run from services under `ocg-server/src/services/`.
-- **Operations:** The production EC2 deployment pulls from `main`, runs
-  migrations, builds the release binary, and restarts systemd services. The
+- **Operations:** The production EC2 deployment checks out the deployed `main`
+  commit, runs migrations, installs the release binary built in CI, and
+  restarts systemd services. The
   optional MCP server exposes authenticated operational tools.
 
 ## Repository Map
@@ -175,7 +176,7 @@ cargo test -p ocg-server handlers::auth::tests::test_sign_up_success
 
 ## Deployment Notes
 
-Production EC2 updates run from `.github/workflows/deploy.yml` after a merge to `main`. The workflow SSHs into the instance and runs `scripts/deploy-ec2.sh`.
+Production EC2 updates run from `.github/workflows/deploy.yml` after `Build images` succeeds for a merge to `main`. The workflow uploads the `ocg-server` binary from that commit's server image and runs `scripts/deploy-ec2.sh` with `DEPLOY_BINARY` set, so the instance does not compile Rust.
 
 To update the instance by hand:
 

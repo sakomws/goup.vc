@@ -28,7 +28,7 @@ Key environment variables that control bootstrap behavior:
 
 ### Updating after a code change
 
-Merges to `main` deploy through `.github/workflows/deploy.yml`. The workflow SSHs into EC2, pulls `origin/main`, runs migrations, builds the release binary, and restarts `ocg-server`.
+Merges to `main` deploy through `.github/workflows/deploy.yml` once `Build images` succeeds for that commit. The workflow copies the statically linked `ocg-server` binary out of the commit's server image, uploads it to EC2, checks out the same commit, runs migrations, installs the binary, and restarts `ocg-server`. Automated deploys do not compile Rust on the instance. A deploy that is already running is never cancelled; a newer commit waits for it.
 
 Required GitHub Actions secrets on the `production` environment:
 
@@ -47,7 +47,7 @@ gh secret set PRODUCTION_SSH_KEY --repo sakomws/goup.vc --env production < ~/.ss
 
 The value must include the `-----BEGIN ... PRIVATE KEY-----` and `-----END ... PRIVATE KEY-----` lines, use Unix newlines, and have no passphrase. Do not paste the `.pub` file or a one-line key with `\n` escapes. `Load key ... error in libcrypto` means the stored value is not a valid private key file.
 
-The deploy job is limited to `sakomws/goup.vc` and uses the `production` environment. Trigger a manual run from the Actions tab with **workflow_dispatch** if you need to redeploy the current `main` SHA.
+The deploy job is limited to `sakomws/goup.vc` and uses the `production` environment. Trigger a manual run from the Actions tab with **workflow_dispatch** on `main` if you need to redeploy the current `main` SHA. Its server image must already exist.
 
 To update the instance by hand:
 
@@ -56,7 +56,7 @@ cd ~/goup.vc
 ./scripts/deploy-ec2.sh
 ```
 
-That script pulls `main`, runs `database/migrations/migrate.sh`, builds `ocg-server` in release mode, restarts `ocg-server`, and restarts `goup-mcp` only when `mcp/` changed.
+That script pulls `main`, runs `database/migrations/migrate.sh`, builds `ocg-server` in release mode, restarts `ocg-server`, and restarts `goup-mcp` only when `mcp/` changed. Set `DEPLOY_BINARY=/path/to/ocg-server` to install a prebuilt binary instead of building one.
 
 ## MCP server
 

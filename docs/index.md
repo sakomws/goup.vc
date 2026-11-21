@@ -216,7 +216,7 @@ just e2e-tests
 
 ## Deployment Notes
 
-Production is currently a pull, migrate, release-build, restart flow on EC2:
+Automated deploys install the `ocg-server` binary built by `Build images` (see [Deployment](deployment.md)). To pull, migrate, build, and restart by hand on EC2:
 
 ```bash
 cd ~/goup.vc
