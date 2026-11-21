@@ -7,8 +7,9 @@ cd "${ROOT_DIR}"
 CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-1}"
 TERN_CONF="${TERN_CONF:-${HOME}/.config/ocg/tern.conf}"
 DEPLOY_PULL="${DEPLOY_PULL:-true}"
+DEPLOY_BINARY="${DEPLOY_BINARY:-}"
 DEPLOY_RESTART_MCP="${DEPLOY_RESTART_MCP:-auto}"
-HEALTHCHECK_URL="${DEPLOY_HEALTHCHECK_URL:-http://127.0.0.1:9000}"
+HEALTHCHECK_URL="${DEPLOY_HEALTHCHECK_URL:-http://127.0.0.1:9000/health-check}"
 
 # Pull the latest main branch when this script is run directly on EC2.
 if [[ "${DEPLOY_PULL}" == "true" ]]; then
@@ -28,14 +29,33 @@ echo "Deploying $(git rev-parse --short HEAD) from $(git rev-parse --abbrev-ref 
 echo "Backing up the current release binary"
 "${ROOT_DIR}/scripts/backup-ocg-server.sh"
 
-echo "Building ocg-server with CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS}"
-CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS}" cargo build --release -p ocg-server
+if [[ -n "${DEPLOY_BINARY}" ]]; then
+    echo "Installing prebuilt ocg-server from ${DEPLOY_BINARY}"
+    if pgrep -u "$(id -u)" -f 'cargo build --release -p ocg-server' >/dev/null; then
+        echo "Warning: a cargo release build is still running and may later overwrite target/release/ocg-server"
+    fi
+    mkdir -p target/release
+    install -m 0755 "${DEPLOY_BINARY}" target/release/ocg-server.new
+    target/release/ocg-server.new --help >/dev/null
+    mv -f target/release/ocg-server.new target/release/ocg-server
+else
+    echo "Building ocg-server with CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS}"
+    CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS}" cargo build --release -p ocg-server
+fi
 
 sudo systemctl restart ocg-server
 sudo systemctl --no-pager --full status ocg-server
 
 # Keep the production reverse proxy aligned with the versioned configuration.
-sudo install -d -o www-data -g www-data /var/cache/nginx/goup-pages
+nginx_user="$(awk '$1 == "user" && !found { sub(";", "", $2); print $2; found = 1 }' /etc/nginx/nginx.conf 2>/dev/null || true)"
+if [[ -z "${nginx_user}" ]]; then
+    if id -u www-data >/dev/null 2>&1; then
+        nginx_user="www-data"
+    else
+        nginx_user="nginx"
+    fi
+fi
+sudo install -d -o "${nginx_user}" -g "$(id -gn "${nginx_user}")" /var/cache/nginx/goup-pages
 sudo install -m 0644 scripts/nginx-goup.conf /etc/nginx/conf.d/goup.conf
 sudo nginx -t
 sudo systemctl reload nginx
@@ -57,5 +77,5 @@ if systemctl list-unit-files --type=service --no-legend | grep -q '^goup-mcp.ser
     fi
 fi
 
-curl -fsS -I --max-time 20 "${HEALTHCHECK_URL}" >/dev/null
+curl -fsS -o /dev/null --max-time 20 --retry 10 --retry-delay 2 --retry-connrefused "${HEALTHCHECK_URL}"
 echo "Deployed $(git rev-parse --short HEAD)"
